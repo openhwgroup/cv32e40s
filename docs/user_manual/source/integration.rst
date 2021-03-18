@@ -3,7 +3,7 @@
 Core Integration
 ================
 
-The main module is named ``cv32e40x_core`` and can be found in ``cv32e40x_core.sv``.
+The main module is named ``cv32e40s_core`` and can be found in ``cv32e40s_core.sv``.
 Below, the instantiation template is given and the parameters and interfaces are described.
 
 Instantiation Template
@@ -11,14 +11,11 @@ Instantiation Template
 
 .. code-block:: verilog
 
-  cv32e40x_core #(
+  cv32e40s_core #(
       .LIB                      (         0 ),
-      .A_EXT                    (         0 ),
-      .B_EXT                    (         0 ),
-      .P_EXT                    (         0 ),
-      .X_EXT                    (         0 ),
-      .NUM_MHPMCOUNTERS         (         1 ),
-      .PMA_NUM_REGIONS          (         1 ),
+      .PMP_GRANULARITY          (         0 ),
+      .PMP_NUM_REGIONS          (         0 ),
+      .PMA_NUM_REGIONS          (         0 ),
       .PMA_CFG                  ( PMA_CFG[] )
   ) u_core (
       // Clock and reset
@@ -39,9 +36,11 @@ Instantiation Template
       .instr_gnt_i              (),
       .instr_addr_o             (),
       .instr_prot_o             (),
+      .instr_chk_o              (),
       .instr_rvalid_i           (),
       .instr_rdata_i            (),
       .instr_err_i              (),
+      .instr_chk_i              (),
 
       // Data memory interface
       .data_req_o               (),
@@ -51,9 +50,11 @@ Instantiation Template
       .data_prot_o              (),
       .data_wdata_o             (),
       .data_we_o                (),
+      .data_chk_o               (),
       .data_rvalid_i            (),
       .data_rdata_i             (),
       .data_err_i               (),
+      .data_chk_i               (),
 
        // Interrupt interface
       .irq_i                    (),
@@ -65,6 +66,10 @@ Instantiation Template
       .debug_havereset_o        (),
       .debug_running_o          (),
       .debug_halted_o           (),
+
+       // Alert interface
+      .alert_major_o            (),
+      .alert_minor_o            (),
 
       // Special control signals
       .fetch_enable_i           (),
@@ -82,20 +87,13 @@ Parameters
 +==============================+================+============+====================================================================+
 | ``LIB``                      | int            | 0          | Standard cell library (semantics defined by integrator)            |
 +------------------------------+----------------+------------+--------------------------------------------------------------------+
-| ``A_EXT``                    | bit            | 0          | Enable Atomic Instruction (A) support  (**not implemented yet**)   |
+| ``PMP_GRANULARITY``          | int (0..31)    | 0          | Minimum granularity of PMP address matching                        |
 +------------------------------+----------------+------------+--------------------------------------------------------------------+
-| ``B_EXT``                    | bit            | 0          | Enable Bit Manipulation (B) support  (**not implemented yet**)     |
+| ``PMP_NUM_REGIONS``          | int (0..16)    | 0          | Number of PMP regions                                              |
 +------------------------------+----------------+------------+--------------------------------------------------------------------+
-| ``P_EXT``                    | bit            | 0          | Enable Packed-SIMD (P) support (**not implemented yet**)           |
+| ``PMA_NUM_REGIONS``          | int (0..16)    | 0          | Number of PMA regions                                              |
 +------------------------------+----------------+------------+--------------------------------------------------------------------+
-| ``X_EXT``                    | bit            | 0          | Enable eXtension Interface (X) support, see :ref:`x_ext`           |
-+------------------------------+----------------+------------+--------------------------------------------------------------------+
-| ``NUM_MHPMCOUNTERS``         | int (0..29)    | 1          | Number of MHPMCOUNTER performance counters, see                    |
-|                              |                |            | :ref:`performance-counters`                                        |
-+------------------------------+----------------+------------+--------------------------------------------------------------------+
-| ``PMA_NUM_REGIONS``          | int (1..16)    | 1          | Number of PMA regions                                              |
-+------------------------------+----------------+------------+--------------------------------------------------------------------+
-| ``PMA_CFG[]``                | pma_region_t   | 1          | PMA configuration.                                                 |
+| ``PMA_CFG[]``                | pma_region_t   | N/A        | PMA configuration.                                                 |
 |                              |                |            | Array of pma_region_t with PMA_NUM_REGIONS entries, see :ref:`pma` |
 +------------------------------+----------------+------------+--------------------------------------------------------------------+
 
@@ -152,6 +150,8 @@ Interfaces
 | ``irq_*``               | Interrupt inputs, see :ref:`exceptions-interrupts`                         |
 +-------------------------+----------------------------------------------------------------------------+
 | ``debug_*``             | Debug interface, see :ref:`debug-support`                                  |
++-------------------------+-------------------------+-----+--------------------------------------------+
+| ``alert_*``             | Alert interface, see :ref:`xsecure`                                        |
 +-------------------------+-------------------------+-----+--------------------------------------------+
 | ``fetch_enable_i``      | 1                       | in  | Enable the instruction fetch of |corev|.   |
 |                         |                         |     | The first instruction fetch after reset    |

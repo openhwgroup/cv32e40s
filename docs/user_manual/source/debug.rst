@@ -140,7 +140,7 @@ Executing the EBREAK instruction when the core is **not** in Debug Mode and the 
 
 To properly return from the exception, the ebreak handler will need to increment the MEPC to the next instruction. This requires querying the size of the ebreak instruction that was used to enter the exception (16 bit c.ebreak or 32 bit ebreak). 
 
-*Note: The CV32E40X does not support MTVAL CSR register which would have saved the value of the instruction for exceptions. This may be supported on a future core.*
+*Note: The |corev| does not support MTVAL CSR register which would have saved the value of the instruction for exceptions. This may be supported on a future core.*
 
 Scenario 2 : Enter Debug Mode
 """""""""""""""""""""""""""""

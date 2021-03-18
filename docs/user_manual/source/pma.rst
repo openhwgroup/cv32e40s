@@ -4,7 +4,7 @@ Physical Memory Attribution (PMA)
 =================================
 The |corev| includes a Physical Memory Attribution (PMA) unit that allows compile time attribution of the physical memory map.
 The PMA is configured through the top level parameters ``PMA_NUM_REGIONS`` and ``PMA_CFG[]``.
-The configuration array, ``PMA_CFG[]``, must consist of ``PMA_NUM_REGIONS`` entries of the type ``pma_region_t``, defined in ``cv32e40x_pkg.sv``:
+The configuration array, ``PMA_CFG[]``, must consist of ``PMA_NUM_REGIONS`` entries of the type ``pma_region_t``, defined in ``cv32e40s_pkg.sv``:
 
 .. code-block:: verilog
 

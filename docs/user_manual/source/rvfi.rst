@@ -8,8 +8,8 @@ RISC-V Formal Interface
    A bindable RISC-V Formal Interface (RVFI) interface will be provided for |corev|. See https://github.com/SymbioticEDA/riscv-formal/blob/master/docs/rvfi.md for
    details on RVFI.
 
-The module ``cv32e40x_rvfi`` can be used to create a log of the executed instructions.
-It is a behavioral, non-synthesizable, module that can be bound to the ``cv32e40x_core``.
+The module ``cv32e40s_rvfi`` can be used to create a log of the executed instructions.
+It is a behavioral, non-synthesizable, module that can be bound to the ``cv32e40s_core``.
 
 RVFI serves the following purposes:
 
@@ -20,7 +20,7 @@ RVFI serves the following purposes:
 Trace output file
 -----------------
 
-Tracing can be enabled during simulation by defining **CV32E40X_TRACE_EXECUTION**. All traced instructions are written to a log file.
+Tracing can be enabled during simulation by defining **CV32E40S_TRACE_EXECUTION**. All traced instructions are written to a log file.
 The log file is named ``trace_core_<HARTID>.log``, with ``<HARTID>`` being the 32 digit hart ID of the core being traced.
 
 Trace output format
