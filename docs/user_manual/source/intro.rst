@@ -4,7 +4,7 @@ Introduction
 |corev| is a 4-stage in-order 32-bit RISC-V
 processor core. :numref:`blockdiagram` shows a block diagram of the core.
 
-.. figure:: ../images/CV32E40X_Block_Diagram.png
+.. figure:: ../images/CV32E40S_Block_Diagram.png
    :name: blockdiagram
    :align: center
    :alt:
@@ -61,10 +61,6 @@ In addition, the following standard instruction set extensions are available.
      - 2.0
      - always enabled
 
-   * - **Zicount**: Performance Counters
-     - 2.0
-     - always enabled
-
    * - **Zicsr**: Control and Status Register Instructions
      - 2.0
      - always enabled
@@ -74,38 +70,22 @@ In addition, the following standard instruction set extensions are available.
      - always enabled
 
    * - **Zce**: Standard Extension for Enhanced Compressed Instructions
-     - To be defined (standard has not been ratified yet)
+     - https://github.com/riscv/riscv-code-size-reduction/blob/master/ISA%20proposals/Huawei/Zce_spec.adoc (standard has not been ratified yet)
      - always enabled
 
-   * - **A**: Atomic Instructions
-     - 2.1
-     - optionally enabled based on ``A_EXT`` parameter
-
-   * - **B**: Bit Manipulation
-     - 0.93 (not ratified yet; version can change)
-     - optionally enabled based on ``B_EXT`` parameter
-
-   * - **P**: Packed-SIMD Instructions
-     - 0.9.2-draft-20210202 (not ratified yet; version can change)
-     - optionally enabled based on ``P_EXT`` parameter
-
-   * - **X**: eXtension Interface
-     - 1.0 (not finalized yet; version can change)
-     - optionally enabled based on ``X_EXT`` parameter
-
-.. note::
-
-   |corev| does not implement the **F** extension for single-precision floating-point instructions internal to the core. The **F** extension
-   can be supported by interfacing the |corev| to an external FPU via the eXtension interface.
+   * - **Xsecure**: Security extensions
+     - 1.0
+     - always enabled
 
 Most content of the RISC-V privileged specification is optional.
 |corev| currently supports the following features according to the RISC-V Privileged Specification, version 1.11.
 
-* M-Mode
+* M-Mode and U-mode
 * All CSRs listed in :ref:`cs-registers`
-* Hardware Performance Counters as described in :ref:`performance-counters` based on ``NUM_MHPMCOUNTERS`` parameter
+* Hardware Performance Counters as described in :ref:`performance-counters`
 * Trap handling supporting direct mode or vectored mode as described at :ref:`exceptions-interrupts`
 * Physical Memory Attribution (PMA)
+* Physical Memory Protection (enhanced PMP, https://docs.google.com/document/d/1Mh_aiHYxemL0umN3GTTw8vsbmzHZ_nxZXgjgOUzbvc8/edit?usp=sharing)
 
 Synthesis guidelines
 --------------------
@@ -116,9 +96,9 @@ is supported as well.
 
 All the files in the ``rtl`` and ``rtl/include`` folders are synthesizable. The user must provide a clock-gating module that instantiates
 the clock-gating cells of the target technology. This file must have the same interface and module name of the one provided for simulation-only purposes
-at ``bhv/cv32e40x_sim_clock_gate.sv`` (see :ref:`clock-gating-cell`).
+at ``bhv/cv32e40s_sim_clock_gate.sv`` (see :ref:`clock-gating-cell`).
 
-The ``constraints/cv32e40x_core.sdc`` file provides an example of synthesis constraints.
+The ``constraints/cv32e40s_core.sdc`` file provides an example of synthesis constraints.
 
 ASIC Synthesis
 ^^^^^^^^^^^^^^
@@ -150,9 +130,10 @@ Contents
  * :ref:`core-integration` provides the instantiation template and gives descriptions of the design parameters as well as the input and output ports.
  * :ref:`pipeline-details` described the overal pipeline structure.
  * The instruction and data interfaces of |corev| are explained in :ref:`instruction-fetch` and :ref:`load-store-unit`, respectively.
+ * :ref:`xsecure` describes the custom **Xsecure** security features.
  * :ref:`pma` describes the Physical Memory Attribution (PMA) unit.
+ * :ref:`pmp` describes the Physical Memory Protection (PMP) unit.
  * The register-file is described in :ref:`register-file`.
- * :ref:`x_ext` describes the custom eXtension interface.
  * :ref:`sleep_unit` describes the Sleep unit.
  * The control and status registers are explained in :ref:`cs-registers`.
  * :ref:`performance-counters` gives an overview of the performance monitors and event counters available in |corev|.

@@ -3,4 +3,4 @@
 CORE-V Instruction Set Extensions
 =================================
 
-|corev| does not support any custom ISA Extensions internal to the core. Custom instructions can be added external to the core via the eXtension interface described in :ref:`x_ext`.
+|corev| does support custom security configuration related CSRs as described in :ref:`cs-registers`. No custom instructions are present.
