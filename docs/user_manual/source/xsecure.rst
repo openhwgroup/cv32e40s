@@ -58,3 +58,9 @@ Hardware checks are performed to check that the bus protocol is not being violat
 Reduction of profiling infrastructure
 -------------------------------------
 User mode code is prevented from seeing Machine mode statistics by removal of the **Zicount** (Performance Counters) feature.
+
+.. note::
+
+   **Zicount** is used in this User Manual to refer to the counter, timer, and performance counter related functionality described
+   in the Counters chapter of the RISC-V unprivileged specification. Unfortunately RISC-V International did not name this extension,
+   so for now we introduced our own name to refer to this functionality.
