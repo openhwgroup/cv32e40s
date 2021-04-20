@@ -85,7 +85,7 @@ Most content of the RISC-V privileged specification is optional.
 * Hardware Performance Counters as described in :ref:`performance-counters`
 * Trap handling supporting direct mode or vectored mode as described at :ref:`exceptions-interrupts`
 * Physical Memory Attribution (PMA)
-* Physical Memory Protection (enhanced PMP, https://docs.google.com/document/d/1Mh_aiHYxemL0umN3GTTw8vsbmzHZ_nxZXgjgOUzbvc8/edit?usp=sharing)
+* Physical Memory Protection (enhanced PMP, version 0.9.1, https://docs.google.com/document/d/1Mh_aiHYxemL0umN3GTTw8vsbmzHZ_nxZXgjgOUzbvc8/edit?usp=sharing)
 
 Synthesis guidelines
 --------------------
