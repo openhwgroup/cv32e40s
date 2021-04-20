@@ -64,7 +64,8 @@ For more information, see the :ref:`cs-registers` documentation.
 
 If multiple interrupts are pending, they are handled in the fixed priority order defined by the RISC-V Privileged Specification, version 1.11 (see Machine Interrupt Registers, Section 3.1.9).
 The highest priority is given to the interrupt with the highest ID, except for the Machine Timer Interrupt, which has the lowest priority. So from high to low priority the interrupts are
-ordered as follows: ``irq_i[31]``, ``irq_i[30]``, ..., ``irq_i[16]``, ``irq_i[11]``, ``irq_i[3]``, ``irq_i[7]``.
+ordered as follows: ``store parity/checksum fault NMI (67)``, ``load parity/checksum fault NMI (66)``, ``store bus fault NMI (65)``, ``load bus fault NMI (64)``, ``irq_i[31]``,
+``irq_i[30]``, ..., ``irq_i[16]``, ``irq_i[11]``, ``irq_i[3]``, ``irq_i[7]``.
 
 All interrupt lines are level-sensitive. There are two supported mechanisms by which interrupts can be cleared at the external source.
 
@@ -73,55 +74,89 @@ All interrupt lines are level-sensitive. There are two supported mechanisms by w
 
 In Debug Mode, all interrupts are ignored independent of ``mstatus``.MIE and the content of the ``mie`` CSR.
 
+|corev| can trigger the following interrupts as reported in ``mcause``:
+
+ +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+ | Interrupt      | Exception Code | Description                                     | Scenario(s)                                                     |
+ +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+ |              1 |              3 | Machine Software Interrupt (MSI)                | ``irq_i[3]``                                                    |
+ +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+ |              1 |              7 | Machine Timer Interrupt (MTI)                   | ``irq_i[7]``                                                    |
+ +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+ |              1 |             11 | Machine External Interrupt (MEI)                | ``irq_i[11]``                                                   |
+ +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+ |              1 |          31-16 | Machine Fast Interrupts                         | ``irq_i[31]``-``irq_i[16]``                                     |
+ +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+ |              1 |             64 | Load bus fault NMI (imprecise)                  | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for load           |
+ +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+ |              1 |             65 | Store bus fault NMI (imprecise)                 | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for store          |
+ +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+ |              1 |             66 | Load parity/checksum fault NMI (imprecise)      | Load parity/checksum fault (imprecise)                          |
+ +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+ |              1 |             67 | Store parity/checksum fault NMI (imprecise)     | Store parity/checksum fault (imprecise)                         |
+ +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+
+.. note::
+
+   Load bus fault, store bus fault,  load parity/checksum fault and store parity/checksum fault are handled as imprecise non-maskable interrupts
+   (as opposed to precise exceptions).
+
 Exceptions
 ----------
 
-|corev| can trigger an exception due to the following exception causes:
+|corev| can trigger the following exceptions as reported in ``mcause``:
 
-+----------------+---------------------------------------------------------------+
-| Exception Code | Description                                                   |
-+----------------+---------------------------------------------------------------+
-|              1 | Instruction access fault                                      |
-+----------------+---------------------------------------------------------------+
-|              2 | Illegal instruction                                           |
-+----------------+---------------------------------------------------------------+
-|              3 | Breakpoint                                                    |
-+----------------+---------------------------------------------------------------+
-|             11 | Environment call from M-Mode (ECALL)                          |
-+----------------+---------------------------------------------------------------+
-|             24 | Instruction bus fault                                         |
-+----------------+---------------------------------------------------------------+
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
+ | Interrupt      | Exception Code | Description                           | Scenario(s)                                                               |
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
+ |              0 |              1 | Instruction access fault              | Execution attempt from I/O region.                                        |
+ |                |                |                                       | Execution attempt with address failing PMP check.                         |
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
+ |              0 |              2 | Illegal instruction                   |                                                                           |
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
+ |              0 |              3 | Breakpoint                            | Instruction address breakpoint.                                           |
+ |                |                |                                       | Load/store/AMO address breakpoint.                                        |
+ |                |                |                                       | Environment break.                                                        |
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
+ |              0 |              5 | Load access fault                     | Non-naturally aligned load access attempt to an I/O region.               |
+ |                |                |                                       | Load-Reserved attempt to region without atomic support.                   |
+ |                |                |                                       | Load attempt with address failing PMP check.                              |
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
+ |              0 |              7 | Store/AMO access fault                | Non-naturally aligned store access attempt to an I/O region.              |
+ |                |                |                                       | Store-Conditional or Atomic Memory Operation (AMO) attempt                |
+ |                |                |                                       | to region without atomic support.                                         |
+ |                |                |                                       | Store attempt with address failing PMP check.                             |
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
+ |              0 |              8 | Environment call from U-Mode (ECALL)  |                                                                           |
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
+ |              0 |             11 | Environment call from M-Mode (ECALL)  |                                                                           |
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
+ |              0 |             24 | Instruction bus fault                 | ``instr_err_i`` = 1 and ``instr_rvalid_i`` = 1 for instruction fetch      |
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
+ |              0 |             25 | Instruction parity/checksum fault     | ``instr_gntpar_i``, ``instr_rvalidpar``, ``instr_rchk_i`` related errors  |
+ +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
 
-The illegal instruction exception, instruction access fault, instruction bus error and M-Mode ECALL instruction exceptions cannot be disabled and are always active.
-The core raises an illegal instruction exception for any instruction in the RISC-V privileged and unprivileged specifications that is explicitly defined as being illegal according to the ISA implemented by the core, as well as for any instruction that is left undefined in these specifications unless the instruction encoding is configured as a custom |corev| instruction for specific parameter settings as defined in (see :ref:custom-isa-extensions).
-For example, in case the parameter FPU is set to 0, the |corev| raises an illegal instruction exception for any RVF instruction.
+If an instruction raises multiple exceptions, the priority, from high to low, is as follows: 
+``instruction address breakpoint (3)``,
+``instruction access fault (1)``,
+``instruction parity/checksum fault (25)``,
+``instruction bus fault (24)``,
+``illegal instruction (2)``,
+``environment call from U-Mode (8)``,
+``environment call from M-Mode (11)``,
+``environment break (3)``,
+``load/store/AMO address breakpoint (3)``,
+``store/AMO access fault (7)``,
+``load access fault (5)``.
+
+Exceptions in general cannot be disabled and are always active. 
+All exceptions are precise.
+Whether the PMP and PMA will actually cause exceptions depends on their configuration.
+|corev|  raises an illegal instruction exception for any instruction in the RISC-V privileged and unprivileged specifications that is explicitly defined as being
+illegal according to the ISA implemented by the core, as well as for any instruction that is left undefined in these specifications unless the instruction encoding
+is configured as a custom |corev| instruction for specific parameter settings as defined in (see :ref:custom-isa-extensions).
 An instruction bus error leads to a precise instruction interface bus fault if an attempt is made to execute the instruction that has an associated bus error.
-If an instruction fetch fails its PMA check, a precise instruction access exception is caused if instruction execution is attempted for the failed fetch.
-
-.. only:: PMP
-
-  +----------------+---------------------------------------------------------------+
-  | Exception Code | Description                                                   |
-  +----------------+---------------------------------------------------------------+
-  |              1 | Instruction access fault                                      |
-  +----------------+---------------------------------------------------------------+
-  |              5 | Load access fault                                             |
-  +----------------+---------------------------------------------------------------+
-  |              7 | Store access fault                                            |
-  +----------------+---------------------------------------------------------------+
-
-  The instruction access fault and load-store access faults cannot be disabled and are always active. The PMP
-  itself can be disabled.
-
-.. only:: USER
-
-  +----------------+---------------------------------------------------------------+
-  | Exception Code | Description                                                   |
-  +----------------+---------------------------------------------------------------+
-  |              8 | Environment call from U-Mode (ECALL)                          |
-  +----------------+---------------------------------------------------------------+
-
-  The U-Mode ECALL instruction exception cannot be disabled and is always active.
+Similarly an instruction fetch with a failing PMA or PMP check only leads to an instruction access exception if an actual execution attempt is made for it.
 
 Nested Interrupt/Exception Handling
 -----------------------------------

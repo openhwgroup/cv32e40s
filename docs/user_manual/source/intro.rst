@@ -33,18 +33,31 @@ Standards Compliance
 |corev| is a standards-compliant 32-bit RISC-V processor.
 It follows these specifications:
 
-* `RISC-V Instruction Set Manual, Volume I: User-Level ISA, Document Version 20191213 (December 13, 2019) <https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf>`_
-* `RISC-V Instruction Set Manual, Volume II: Privileged Architecture, document version 20190608-Base-Ratified (June 8, 2019) <https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMFDQC-and-Priv-v1.11/riscv-privileged-20190608.pdf>`_.
-  |corev| implements the Machine ISA version 1.11.
-* `RISC-V External Debug Support, version 0.13.2 <https://content.riscv.org/wp-content/uploads/2019/03/riscv-debug-release.pdf>`_
+.. [RISC-V-UNPRIV] RISC-V Instruction Set Manual, Volume I: User-Level ISA, Document Version 20191213 (December 13, 2019),
+   https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf
+
+.. [RISC-V-PRIV] RISC-V Instruction Set Manual, Volume II: Privileged Architecture, document version 20190608-Base-Ratified (June 8, 2019),
+   https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMFDQC-and-Priv-v1.11/riscv-privileged-20190608.pdf
+
+.. [RISC-V-DEBUG] RISC-V External Debug Support, version 0.13.2,
+   https://content.riscv.org/wp-content/uploads/2019/03/riscv-debug-release.pdf
+
+.. [RISC-V-ZCE] RISC-V Standard Extension for Enhanced Compressed Instructions, v0.29.1 (not ratified yet),
+   https://github.com/riscv/riscv-code-size-reduction/blob/master/ISA%20proposals/Huawei/Zce_spec.adoc
+
+.. [RISC-V-EPMP] RISC-V Enhanced Physical Memory Protection, version 0.9.1 (not ratified yet),
+   https://docs.google.com/document/d/1Mh_aiHYxemL0umN3GTTw8vsbmzHZ_nxZXgjgOUzbvc8/edit?usp=sharing
+
+.. [OPENHW-OBI] OpenHW Open Bus Interface (OBI) protocol, version 1.2,
+   https://github.com/openhwgroup/core-v-docs/blob/master/cores/cv32e40p/OBI-v1.2.pdf
 
 Many features in the RISC-V specification are optional, and |corev| can be parameterized to enable or disable some of them.
 
-|corev| supports the following base instruction set.
+|corev| supports the following base instruction set from [RISC-V-UNPRIV]_.
 
 * The RV32I Base Integer Instruction Set, version 2.1
 
-In addition, the following standard instruction set extensions are available.
+In addition, the following standard instruction set extensions are available from [RISC-V-UNPRIV]_ and [RISC-V-ZCE]_.
 
 .. list-table:: |corev| Standard Instruction Set Extensions
    :header-rows: 1
@@ -69,23 +82,32 @@ In addition, the following standard instruction set extensions are available.
      - 2.0
      - always enabled
 
-   * - **Zce**: Standard Extension for Enhanced Compressed Instructions
-     - https://github.com/riscv/riscv-code-size-reduction/blob/master/ISA%20proposals/Huawei/Zce_spec.adoc (standard has not been ratified yet)
+   * - **Zce**: Standard Extension for Code-Size Reduction
+     - v0.29.1 (not ratified yet; version will change)
      - always enabled
+
+The following custom instruction set extensions are available.
+
+.. list-table:: |corev| Custom Instruction Set Extensions
+   :header-rows: 1
+
+   * - Custom Extension
+     - Version
+     - Configurability
 
    * - **Xsecure**: Security extensions
      - 1.0
      - always enabled
 
 Most content of the RISC-V privileged specification is optional.
-|corev| currently supports the following features according to the RISC-V Privileged Specification, version 1.11.
+|corev| currently supports the following features according to the RISC-V Privileged Specification [RISC-V-PRIV]_.
 
 * M-Mode and U-mode
 * All CSRs listed in :ref:`cs-registers`
 * Hardware Performance Counters as described in :ref:`performance-counters`
 * Trap handling supporting direct mode or vectored mode as described at :ref:`exceptions-interrupts`
 * Physical Memory Attribution (PMA)
-* Physical Memory Protection (enhanced PMP, version 0.9.1, https://docs.google.com/document/d/1Mh_aiHYxemL0umN3GTTw8vsbmzHZ_nxZXgjgOUzbvc8/edit?usp=sharing)
+* Enhanced Physical Memory Protection
 
 Synthesis guidelines
 --------------------
