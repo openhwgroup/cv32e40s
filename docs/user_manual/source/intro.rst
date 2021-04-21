@@ -106,8 +106,8 @@ Most content of the RISC-V privileged specification is optional.
 * All CSRs listed in :ref:`cs-registers`
 * Hardware Performance Counters as described in :ref:`performance-counters`
 * Trap handling supporting direct mode or vectored mode as described at :ref:`exceptions-interrupts`
-* Physical Memory Attribution (PMA)
-* Enhanced Physical Memory Protection
+* Physical Memory Attribution (PMA) as described in :ref:`pma`
+* Enhanced Physical Memory Protection ([RISC-V-EPMP]_)
 
 Synthesis guidelines
 --------------------
