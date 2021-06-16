@@ -13,6 +13,7 @@ Instantiation Template
 
   cv32e40s_core #(
       .LIB                      (         0 ),
+      .B_EXT                    (      NONE ),
       .PMP_GRANULARITY          (         0 ),
       .PMP_NUM_REGIONS          (         0 ),
       .PMA_NUM_REGIONS          (         0 ),
@@ -94,6 +95,10 @@ Parameters
 | Name                         | Type/Range     | Default       | Description                                                        |
 +==============================+================+===============+====================================================================+
 | ``LIB``                      | int            | 0             | Standard cell library (semantics defined by integrator)            |
++------------------------------+----------------+---------------+--------------------------------------------------------------------+
+| ``B_EXT``                    | b_ext_e        | NONE          | Enable Bit Manipulation (B) support. ``B_EXT`` = NONE: no Bit      |
+|                              |                |               | Manipulation instructions are supported, ``B_EXT`` = ZBA_ZBB_ZBS:  |
+|                              |                |               | Zba, Zbb and Zbs are supported.                                    |
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
 | ``PMP_GRANULARITY``          | int (0..31)    | 0             | Minimum granularity of PMP address matching                        |
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
