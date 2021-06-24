@@ -848,6 +848,38 @@ typedef enum logic [1:0] {
                           } mpu_status_e;
 
 typedef enum logic [2:0] {MPU_IDLE, MPU_RE_ERR_RESP, MPU_RE_ERR_WAIT, MPU_WR_ERR_RESP, MPU_WR_ERR_WAIT} mpu_state_e;
+
+// PMP access type
+typedef enum logic [1:0] {
+  PMP_ACC_EXEC    = 2'b00,
+  PMP_ACC_WRITE   = 2'b01,
+  PMP_ACC_READ    = 2'b10
+} pmp_req_e;
+
+// PMP cfg structures
+typedef enum logic [1:0] {
+  PMP_MODE_OFF   = 2'b00,
+  PMP_MODE_TOR   = 2'b01,
+  PMP_MODE_NA4   = 2'b10,
+  PMP_MODE_NAPOT = 2'b11
+} pmp_cfg_mode_e;
+
+// PMP region config
+typedef struct packed {
+  logic          lock;
+  pmp_cfg_mode_e mode;
+  logic          exec;
+  logic          write;
+  logic          read;
+} pmp_cfg_t;
+
+// Machine Security Configuration (ePMP)
+typedef struct packed {
+  logic rlb;  // Rule Locking Bypass
+  logic mmwp; // Machine Mode Whitelist Policy
+  logic mml;  // Machine Mode Lockdown
+} pmp_mseccfg_t;
+
   
 // OBI bus and internal data types
 
