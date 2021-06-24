@@ -30,7 +30,6 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
    input logic        clk,
    input logic        rst_n,
    
-   input logic        speculative_access_i,
    input logic        atomic_access_i,
 
    // Interface towards bus interface

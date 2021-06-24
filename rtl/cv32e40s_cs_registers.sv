@@ -32,7 +32,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
   parameter A_EXTENSION      = 0,
   parameter USE_PMP          = 0,
-  parameter N_PMP_ENTRIES    = 16,
+  parameter PMP_NUM_REGIONS  = 4,
   parameter NUM_MHPMCOUNTERS = 1
 )
 (
@@ -73,6 +73,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output logic            m_irq_enable_o,
   
   output logic [31:0]     mepc_o,
+
+  // PMP CSR's
+  output pmp_cfg_t        csr_pmp_cfg_o [PMP_NUM_REGIONS],
+  output logic [33:0]     csr_pmp_addr_o [PMP_NUM_REGIONS],
+  output pmp_mseccfg_t    csr_pmp_mseccfg_o,
 
   // debug
   output logic [31:0]     dpc_o,
@@ -642,7 +647,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign priv_lvl_q   = PRIV_LVL_M;
 
   assign mie_o = mie_q;
+
+  always_comb begin
+    for (int i=0; i<PMP_NUM_REGIONS; i++) begin
+      csr_pmp_cfg_o[i] = 0;
+      csr_pmp_addr_o[i] = 0;
+    end
+  end
   
+  assign csr_pmp_mseccfg_o = 0;
 
 
  ////////////////////////////////////////////////////////////////////////

@@ -38,8 +38,8 @@ module cv32e40s_pmp import cv32e40x_pkg::*;
     )
   (
    // Clock and Reset
-   input logic        clk_i,
-   input logic        rst_ni,
+   input logic        clk,
+   input logic        rst_n,
 
    // Interface to CSRs
    input              pmp_cfg_t csr_pmp_cfg_i [PMP_NUM_REGIONS],
@@ -47,7 +47,7 @@ module cv32e40s_pmp import cv32e40x_pkg::*;
    input              pmp_mseccfg_t csr_pmp_mseccfg_i,
 
    // Privilege mode
-   input              PrivLvl_t priv_mode_i,
+   input              PrivLvl_t priv_lvl_i,
    // Access checking
    input logic [33:0] pmp_req_addr_i,
    input              pmp_req_e pmp_req_type_i,
@@ -93,10 +93,10 @@ module cv32e40s_pmp import cv32e40x_pkg::*;
         // thus mask = 1111 0000
         if (PMP_GRANULARITY == 0) begin : g_region_addr_mask_zero_granularity
           assign region_addr_mask[r][b] = (csr_pmp_cfg_i[r].mode != PMP_MODE_NAPOT) ||
-                                          !&csr_pmp_addr_i[r][b-1:2];
+                                          !(&csr_pmp_addr_i[r][b-1:2]);
         end else begin : g_region_addr_mask_other_granularity
           assign region_addr_mask[r][b] = (csr_pmp_cfg_i[r].mode != PMP_MODE_NAPOT) ||
-                                          !&csr_pmp_addr_i[r][b-1:PMP_GRANULARITY+1];
+                                          !(&csr_pmp_addr_i[r][b-1:PMP_GRANULARITY+1]);
         end
       end
     end
@@ -138,14 +138,14 @@ module cv32e40s_pmp import cv32e40x_pkg::*;
         unique case ({csr_pmp_cfg_i[r].lock, csr_pmp_cfg_i[r].exec})
           // Read/write in M, read only in S/U
           2'b00: region_mml_perm_check[r] = (pmp_req_type_i == PMP_ACC_READ) ||
-                                            ((pmp_req_type_i == PMP_ACC_WRITE) && (priv_mode_i == PRIV_LVL_M));
+                                            ((pmp_req_type_i == PMP_ACC_WRITE) && (priv_lvl_i == PRIV_LVL_M));
           // Read/write in M/S/U
           2'b01: region_mml_perm_check[r] = (pmp_req_type_i == PMP_ACC_READ) || (pmp_req_type_i == PMP_ACC_WRITE);
           // Execute only on M/S/U
           2'b10: region_mml_perm_check[r] = (pmp_req_type_i == PMP_ACC_EXEC);
           // Read/execute in M, execute only on S/U
           2'b11: region_mml_perm_check[r] = (pmp_req_type_i == PMP_ACC_EXEC) ||
-                                            ((pmp_req_type_i == PMP_ACC_READ) && (priv_mode_i == PRIV_LVL_M));
+                                            ((pmp_req_type_i == PMP_ACC_READ) && (priv_lvl_i == PRIV_LVL_M));
           default: ;
         endcase
       end else begin
@@ -156,7 +156,7 @@ module cv32e40s_pmp import cv32e40x_pkg::*;
         end else begin
           // Otherwise use basic permission check. Permission is always denied if in S/U mode and
           // L is set or if in M mode and L is unset.
-          region_mml_perm_check[r] = priv_mode_i == PRIV_LVL_M ? 
+          region_mml_perm_check[r] = priv_lvl_i == PRIV_LVL_M ? 
                                      csr_pmp_cfg_i[r].lock && region_basic_perm_check[r] :
                                      !csr_pmp_cfg_i[r].lock && region_basic_perm_check[r];
         end
@@ -169,7 +169,7 @@ module cv32e40s_pmp import cv32e40x_pkg::*;
   always_comb begin
     // When MSECCFG.MMWP is set default deny always, otherwise allow for M-mode, deny for other
     // modes
-    access_fault = csr_pmp_mseccfg_i.mmwp || (priv_mode_i != PRIV_LVL_M);
+    access_fault = csr_pmp_mseccfg_i.mmwp || (priv_lvl_i != PRIV_LVL_M);
     // TODO:OE The spec specifies:
     // "If no PMP entry matches an S-mode or U-mode access, but at least one PMP entry is implemented, the access fails."
     // Accesses would fail for all S- and U-mode accesses if no PMP entires are implemented.
@@ -183,7 +183,7 @@ module cv32e40s_pmp import cv32e40x_pkg::*;
           access_fault = !region_mml_perm_check[r];
         end else begin
           // Otherwise use original PMP behaviour
-          access_fault = (priv_mode_i == PRIV_LVL_M) ?
+          access_fault = (priv_lvl_i == PRIV_LVL_M) ?
                          // For M-mode, any region which matches with the L-bit clear, or with sufficient
                          // access permissions will be allowed
                          (csr_pmp_cfg_i[r].lock && !region_basic_perm_check[r]) :

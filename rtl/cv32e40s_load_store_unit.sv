@@ -26,8 +26,10 @@
 
 module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   #(parameter bit          A_EXTENSION = 0,
+    parameter int unsigned PMP_GRANULARITY = 0,
+    parameter int unsigned PMP_NUM_REGIONS = 4,
     parameter int unsigned PMA_NUM_REGIONS = 0,
-    parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
+                           parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -51,6 +53,14 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   output logic [31:0] lsu_addr_1_o,
   output logic        lsu_err_1_o,           
   output logic [31:0] lsu_rdata_1_o,    // LSU read data
+
+  // PMP CSR's
+  input        pmp_cfg_t csr_pmp_cfg_i [PMP_NUM_REGIONS],
+  input logic [33:0] csr_pmp_addr_i [PMP_NUM_REGIONS],
+  input        pmp_mseccfg_t csr_pmp_mseccfg_i,
+
+  // Privilege mode
+  input              PrivLvl_t priv_lvl_i,
 
   // Handshakes
   input  logic        valid_0_i,        // Handshakes for first LSU stage (EX)
@@ -535,15 +545,20 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
       .BUS_RESP_TYPE   (obi_data_resp_t),
       .CORE_REQ_TYPE   (obi_data_req_t ),
       .PMA_NUM_REGIONS (PMA_NUM_REGIONS),
-      .PMA_CFG         (PMA_CFG        ))
+      .PMA_CFG         (PMA_CFG        ),
+      .PMP_GRANULARITY(PMP_GRANULARITY),
+      .PMP_NUM_REGIONS(PMP_NUM_REGIONS))
   mpu_i
     (
      .clk                  ( clk             ),
      .rst_n                ( rst_n           ),
-     .speculative_access_i ( 1'b0            ), // Load/stores are not speculative
      .atomic_access_i      ( 1'b0            ), // TODO:OE update to support atomic PMA checks
-     .execute_access_i     ( 1'b0            ), // No accesses are intended for execution
 
+     .priv_lvl_i           ( priv_lvl_i        ),
+     .csr_pmp_cfg_i        ( csr_pmp_cfg_i     ),
+     .csr_pmp_addr_i       ( csr_pmp_addr_i    ),
+     .csr_pmp_mseccfg_i    ( csr_pmp_mseccfg_i ),
+     
      .core_one_txn_pend_n  ( cnt_is_one_next ),
      .core_trans_valid_i   ( trans_valid     ),
      .core_trans_ready_o   ( trans_ready     ),
