@@ -33,7 +33,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter NUM_MHPMCOUNTERS             =  1,
   parameter LIB                          =  0,
   parameter int unsigned PMP_GRANULARITY =  0,
-  parameter int unsigned PMP_NUM_REGIONS =  4,
+  parameter int unsigned PMP_NUM_REGIONS =  16,
   parameter int unsigned PMA_NUM_REGIONS =  0,
   parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT}
 )
@@ -604,6 +604,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .A_EXTENSION      ( A_EXTENSION           ),
     .USE_PMP          ( USE_PMP               ),
     .PMP_NUM_REGIONS  ( PMP_NUM_REGIONS       ),
+    .PMP_GRANULARITY  ( PMP_GRANULARITY       ),
     .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      )
   )
   cs_registers_i
