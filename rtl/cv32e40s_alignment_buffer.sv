@@ -15,13 +15,13 @@
 //                 Igor Loi - igor.loi@greenwaves-technologies.com            //
 //                 Øystein Knauserud - oystein.knauserud@silabs.com           //
 //                                                                            //
-// Design Name:    cv32e40x_alignment_buffer                                  //
+// Design Name:    cv32e40s_alignment_buffer                                  //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_alignment_buffer import cv32e40x_pkg::*;
+module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 (
   input  logic           clk,
   input  logic           rst_n,

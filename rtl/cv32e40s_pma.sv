@@ -23,7 +23,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_pma import cv32e40x_pkg::*;
+module cv32e40s_pma import cv32e40s_pkg::*;
   #(  
       parameter bit          A_EXTENSION = 0,
       parameter int unsigned PMA_NUM_REGIONS = 0,

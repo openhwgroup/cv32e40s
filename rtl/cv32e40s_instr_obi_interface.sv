@@ -35,7 +35,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_instr_obi_interface import cv32e40x_pkg::*;
+module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 (
   input  logic           clk,
   input  logic           rst_n,
@@ -148,11 +148,11 @@ module cv32e40x_instr_obi_interface import cv32e40x_pkg::*;
   end
 
   // Always ready to accept a new transfer requests when previous A channel
-  // transfer has been granted. Note that cv32e40x_obi_interface does not limit
+  // transfer has been granted. Note that cv32e40s_obi_interface does not limit
   // the number of outstanding transactions in any way.
   assign trans_ready_o = (state_q == TRANSPARENT);
 
   
   
 
-endmodule // cv32e40x_instr_obi_interface
+endmodule // cv32e40s_instr_obi_interface

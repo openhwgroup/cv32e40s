@@ -21,7 +21,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_int_controller import cv32e40x_pkg::*;
+module cv32e40s_int_controller import cv32e40s_pkg::*;
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -29,12 +29,12 @@ module cv32e40x_int_controller import cv32e40x_pkg::*;
   // External interrupt lines
   input  logic [31:0] irq_i,                    // Level-triggered interrupt inputs
 
-  // To cv32e40x_controller
+  // To cv32e40s_controller
   output logic        irq_req_ctrl_o,
   output logic  [4:0] irq_id_ctrl_o,
   output logic        irq_wu_ctrl_o,
 
-  // To/from cv32e40x_cs_registers
+  // To/from cv32e40s_cs_registers
   input  logic [31:0] mie_i,             // MIE CSR (bypass)
   output logic [31:0] mip_o,                    // MIP CSR
   input  logic        m_ie_i,                   // Interrupt enable bit from CSR (M mode)
@@ -122,4 +122,4 @@ module cv32e40x_int_controller import cv32e40x_pkg::*;
   end
 
 
-endmodule // cv32e40x_int_controller
+endmodule // cv32e40s_int_controller

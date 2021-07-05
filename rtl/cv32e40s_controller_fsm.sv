@@ -21,15 +21,15 @@
 //                                                                            //
 // Additional contributions by:                                               //
 //                                                                            //
-// Design Name:    cv32e40x_controller_fsm                                 //
-// Project Name:   CV32E40X                                                   //
+// Design Name:    cv32e40s_controller_fsm                                 //
+// Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    FSM of the pipeline controller                             //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_controller_fsm import cv32e40x_pkg::*;
+module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 (
   // Clocks and reset
   input  logic        clk,                        // Gated clock
@@ -732,4 +732,4 @@ module cv32e40x_controller_fsm import cv32e40x_pkg::*;
   assign ctrl_fsm_o.debug_running   = debug_fsm_cs[RUNNING_INDEX];
   assign ctrl_fsm_o.debug_halted    = debug_fsm_cs[HALTED_INDEX];
 
-endmodule //cv32e40x_controller_fsm
+endmodule //cv32e40s_controller_fsm

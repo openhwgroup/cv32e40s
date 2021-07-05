@@ -24,7 +24,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_compressed_decoder import cv32e40x_pkg::*;
+module cv32e40s_compressed_decoder import cv32e40s_pkg::*;
 (
   input  inst_resp_t  instr_i,
   output inst_resp_t  instr_o,
@@ -32,7 +32,7 @@ module cv32e40x_compressed_decoder import cv32e40x_pkg::*;
   output logic        illegal_instr_o
 );
 
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
 
   logic [31:0] instr;
 

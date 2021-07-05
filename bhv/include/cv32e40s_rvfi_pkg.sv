@@ -18,8 +18,8 @@
 // Contributors: Davide Schiavone <davide@openhwgroup.org>
 //               Halfdan Bechmann <halfdan.bechmann@silabs.com>
 
-package cv32e40x_rvfi_pkg;
-  import cv32e40x_pkg::*;
+package cv32e40s_rvfi_pkg;
+  import cv32e40s_pkg::*;
 
   // RVFI only supports MHPMCOUNTER_WIDTH == 64
   parameter MHPMCOUNTER_WORDS  = MHPMCOUNTER_WIDTH/32;
@@ -95,5 +95,5 @@ package cv32e40x_rvfi_pkg;
     logic [31:0] pc_wdata;
   } rvfi_intr_t;
 
-endpackage // cv32e40x_rvfi_pkg
+endpackage // cv32e40s_rvfi_pkg
   

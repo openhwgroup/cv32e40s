@@ -23,9 +23,9 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
   
-module cv32e40x_decoder_sva
+module cv32e40s_decoder_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
   (
    input logic clk,
    input logic rst_n,
@@ -46,6 +46,6 @@ module cv32e40x_decoder_sva
   a_i_dec_idle : assert property(p_idle_dec(decoder_i_ctrl)) else `uvm_error("decoder", "Assertion a_i_dec_idle failed")
   
 
-endmodule : cv32e40x_decoder_sva
+endmodule : cv32e40s_decoder_sva
 
 

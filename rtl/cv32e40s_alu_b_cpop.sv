@@ -18,8 +18,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Engineers       Halfdan Bechmann  -   halfdan.bechmann@silabs.com          //
 //                                                                            //
-// Design Name:    cv32e40x_alu_b_cpop                                        //
-// Project Name:   CV32E40X                                                   //
+// Design Name:    cv32e40s_alu_b_cpop                                        //
+// Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    CPOP for Zbb extension                                     //
@@ -27,7 +27,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-module cv32e40x_alu_b_cpop
+module cv32e40s_alu_b_cpop
   (input  logic [31:0] operand_i,
    output logic [ 5:0] result_o);
 

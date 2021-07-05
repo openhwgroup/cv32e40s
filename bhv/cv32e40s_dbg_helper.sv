@@ -23,8 +23,8 @@
 //                                                                                   //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_dbg_helper
-  import cv32e40x_pkg::*;
+module cv32e40s_dbg_helper
+  import cv32e40s_pkg::*;
   ( input logic [31:0]                       instr,
     input logic                              is_compressed,
     input logic [REGFILE_NUM_READ_PORTS-1:0] rf_re,

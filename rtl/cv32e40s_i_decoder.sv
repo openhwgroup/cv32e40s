@@ -26,7 +26,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_i_decoder import cv32e40x_pkg::*;
+module cv32e40s_i_decoder import cv32e40s_pkg::*;
   #(
     parameter DEBUG_TRIGGER_EN  = 1
     )
@@ -500,4 +500,4 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
     
   end // always_comb
 
-endmodule : cv32e40x_i_decoder
+endmodule : cv32e40s_i_decoder

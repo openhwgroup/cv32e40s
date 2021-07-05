@@ -21,7 +21,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Engineer:       Arjan Bink - arjan.bink@silabs.com                         //
 //                                                                            //
-// Design Name:    cv32e40x_core_log.sv (cv32e40x_core simulation log)        //
+// Design Name:    cv32e40s_core_log.sv (cv32e40s_core simulation log)        //
 // Project Name:   CV32E40P                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
@@ -30,13 +30,13 @@
 //                 - top level parameter settings                             //
 //                 - illegal instructions                                     //
 //                                                                            //
-// Note:           This code was here from cv32e40x_core.sv and               //
-//                 cv32e40x_controller.sv in order to remove the use of       //
+// Note:           This code was here from cv32e40s_core.sv and               //
+//                 cv32e40s_controller.sv in order to remove the use of       //
 //                 global defines in the RTL code.                            //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_core_log import cv32e40x_pkg::*;
+module cv32e40s_core_log import cv32e40s_pkg::*;
 #(
   parameter NUM_MHPMCOUNTERS    =  1
 )
@@ -50,7 +50,7 @@ module cv32e40x_core_log import cv32e40x_pkg::*;
   // Log top level parameter values
   initial
   begin
-    $display("[cv32e40x_core]: NUM_MHPMCOUNTERS %d", NUM_MHPMCOUNTERS);
+    $display("[cv32e40s_core]: NUM_MHPMCOUNTERS %d", NUM_MHPMCOUNTERS);
   end
 
   // Log illegal instructions
@@ -62,4 +62,4 @@ module cv32e40x_core_log import cv32e40x_pkg::*;
     end
   end
 
-endmodule // cv32e40x_core_log
+endmodule // cv32e40s_core_log

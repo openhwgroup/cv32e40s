@@ -18,7 +18,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_load_store_unit_sva
+module cv32e40s_load_store_unit_sva
   import uvm_pkg::*;
   #(parameter DEPTH = 0)
   (input logic       clk,
@@ -66,6 +66,6 @@ module cv32e40x_load_store_unit_sva
     assert property(p_address_phase_signals_defined)
       else `uvm_error("load_store_unit", "Assertion a_address_phase_signals_defined failed")
 
-endmodule // cv32e40x_load_store_unit_sva
+endmodule // cv32e40s_load_store_unit_sva
 
   

@@ -20,9 +20,9 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_if_stage_sva
+module cv32e40s_if_stage_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
 (
   input  logic          clk,
   input  logic          rst_n,
@@ -63,5 +63,5 @@ module cv32e40x_if_stage_sva
       else `uvm_error("if_stage", "Kill and halt should not both be asserted")
 
 */
-endmodule // cv32e40x_if_stage
+endmodule // cv32e40s_if_stage
 

@@ -25,7 +25,7 @@
 //                 Øystein Knauserud - oystein.knauserud@silabs.com           //
 //                                                                            //
 // Design Name:    Write Back stage                                           //
-// Project Name:   CV32E40X                                                   //
+// Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Write back stage: Hosts write back from load/store unit    //
@@ -33,7 +33,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_wb_stage import cv32e40x_pkg::*;
+module cv32e40s_wb_stage import cv32e40s_pkg::*;
 (
   input  logic          clk,            // Not used in RTL; only used by assertions
   input  logic          rst_n,          // Not used in RTL; only used by assertions
@@ -125,4 +125,4 @@ module cv32e40x_wb_stage import cv32e40x_pkg::*;
 
   assign wb_valid_o = wb_valid;
   
-endmodule // cv32e40x_wb_stage
+endmodule // cv32e40s_wb_stage

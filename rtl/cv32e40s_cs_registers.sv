@@ -28,7 +28,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_cs_registers import cv32e40x_pkg::*;
+module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
   parameter A_EXTENSION      = 0,
   parameter USE_PMP          = 0,
@@ -196,7 +196,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
   ////////////////////////////////////////////
 
   // NOTE!!!: Any new CSR register added in this file must also be
-  //   added to the valid CSR register list cv32e40x_decoder.v
+  //   added to the valid CSR register list cv32e40s_decoder.v
 
   // read logic
   always_comb
@@ -492,7 +492,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
   end
 
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -505,7 +505,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
     .rd_error_o (dscratch0_rd_error)
   );
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -518,7 +518,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
     .rd_error_o (dscratch1_rd_error)
   );
 
- cv32e40x_csr #(
+ cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (DCSR_RESET_VAL)
@@ -531,7 +531,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
     .rd_error_o (dcsr_rd_error)
   );
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -544,7 +544,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
     .rd_error_o (dpc_rd_error)
   );
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -557,7 +557,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
     .rd_error_o (mepc_rd_error)
   );
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -570,7 +570,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
     .rd_error_o (mscratch_rd_error)
   );
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -583,7 +583,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
     .rd_error_o (mie_rd_error)
   );
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (MSTATUS_RESET_VAL)
@@ -596,7 +596,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
     .rd_error_o (mstatus_rd_error)
   );
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -611,7 +611,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
 
   
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (MTVEC_RESET_VAL)
@@ -695,7 +695,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
 
   assign tmatch_value_n = csr_wdata_int; 
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (TMATCH_CONTROL_RST_VAL)
@@ -708,7 +708,7 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
     .rd_error_o (tmatch_control_rd_error)
   );   
   
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -966,4 +966,4 @@ module cv32e40x_cs_registers import cv32e40x_pkg::*;
     end
   endgenerate
 
-endmodule // cv32e40x_cs_registers
+endmodule // cv32e40s_cs_registers

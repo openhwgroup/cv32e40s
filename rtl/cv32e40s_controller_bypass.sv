@@ -22,15 +22,15 @@
 //                 Halfdan Bechmann - halfdan.bechmann@silabs.com             //
 //                 Øystein Knauserud - oystein.knauserud@silabs.com           //
 //                                                                            //
-// Design Name:    cv32e40x_controller_bypass                                 //
-// Project Name:   CV32E40X                                                   //
+// Design Name:    cv32e40s_controller_bypass                                 //
+// Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Bypass logic, hazard detection and stall control           //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_controller_bypass import cv32e40x_pkg::*;
+module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   (
   // From decoder
   input  logic [1:0]  ctrl_transfer_insn_raw_i,          // decoded control transfer instruction. Not gated with deassert
@@ -246,4 +246,4 @@ module cv32e40x_controller_bypass import cv32e40x_pkg::*;
     end
   end
 
-endmodule // cv32e40x_controller_bypass
+endmodule // cv32e40s_controller_bypass

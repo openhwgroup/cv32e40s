@@ -27,9 +27,9 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_sleep_unit_sva
+module cv32e40s_sleep_unit_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
   (
    input logic clk_ungated_i,
    input logic rst_n,
@@ -87,7 +87,7 @@ module cv32e40x_sleep_unit_sva
   // Core sleep is only signaled in SLEEP state
   property p_core_sleep;
     @(posedge clk_ungated_i) disable iff (!rst_n)
-      (core_sleep_o == 1'b1) -> ((ctrl_fsm_cs == cv32e40x_pkg::SLEEP));
+      (core_sleep_o == 1'b1) -> ((ctrl_fsm_cs == cv32e40s_pkg::SLEEP));
   endproperty
 
   a_core_sleep : assert property(p_core_sleep) else `uvm_error("sleep_unit", "Assertion a_core_sleep failed")
@@ -134,5 +134,5 @@ module cv32e40x_sleep_unit_sva
   a_not_busy_during_sleep : assert property(p_not_busy_during_sleep)
     else `uvm_error("sleep_unit", "Assertion a_not_busy_during_sleep failed")
 
-endmodule // cv32e40x_sleep_unit_sva
+endmodule // cv32e40s_sleep_unit_sva
   

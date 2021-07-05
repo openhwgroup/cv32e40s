@@ -23,7 +23,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_pc_target import cv32e40x_pkg::*;
+module cv32e40s_pc_target import cv32e40s_pkg::*;
   (
    input jt_mux_e      ctrl_transfer_target_mux_sel_i,
    input logic [31:0]  pc_id_i,

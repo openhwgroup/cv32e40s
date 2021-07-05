@@ -23,7 +23,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_mpu import cv32e40x_pkg::*;
+module cv32e40s_mpu import cv32e40s_pkg::*;
   #(  parameter bit          IF_STAGE                     = 1,
       parameter bit          A_EXTENSION                  = 0,
       parameter type         CORE_REQ_TYPE                = obi_inst_req_t,
@@ -158,7 +158,7 @@ module cv32e40x_mpu import cv32e40x_pkg::*;
   assign core_trans_ready_o     = bus_trans_ready_i && !mpu_block_core; 
   
   // PMA - Physical Memory Attribution
-  cv32e40x_pma
+  cv32e40s_pma
     #(.A_EXTENSION(A_EXTENSION),
       .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
       .PMA_CFG(PMA_CFG))

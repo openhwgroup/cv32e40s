@@ -23,9 +23,9 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_wb_stage_sva
+module cv32e40s_wb_stage_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
 (
   input logic           clk,
   input logic           rst_n,
@@ -64,4 +64,4 @@ module cv32e40x_wb_stage_sva
                       |-> (!ctrl_fsm_i.halt_wb))
       else `uvm_error("wb_stage", "Kill and halt should not both be asserted")
 
-endmodule // cv32e40x_wb_stage_sva
+endmodule // cv32e40s_wb_stage_sva

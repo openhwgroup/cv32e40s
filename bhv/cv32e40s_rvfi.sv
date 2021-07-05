@@ -14,13 +14,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
-// CV32E40X RVFI interface
+// CV32E40S RVFI interface
 // Contributors: Davide Schiavone <davide@openhwgroup.org>
 //               Halfdan Bechmann <halfdan.bechmann@silabs.com>
 
-module cv32e40x_rvfi
-  import cv32e40x_pkg::*;
-  import cv32e40x_rvfi_pkg::*;
+module cv32e40s_rvfi
+  import cv32e40s_pkg::*;
+  import cv32e40s_rvfi_pkg::*;
   (
    input logic                                clk_i,
    input logic                                rst_ni,
@@ -383,8 +383,8 @@ module cv32e40x_rvfi
   assign insn_funct7 = rvfi_insn[31:25];
   assign insn_csr    = rvfi_insn[31:20];
 
-`ifdef CV32E40X_TRACE_EXECUTION
-  `include "cv32e40x_rvfi_trace.svh"
+`ifdef CV32E40S_TRACE_EXECUTION
+  `include "cv32e40s_rvfi_trace.svh"
 `endif
 
   localparam STAGE_ID = 0;
@@ -396,7 +396,7 @@ module cv32e40x_rvfi
   assign is_dret_wb        = (pc_mux_i == PC_DRET);
 
   // Assign rvfi channels
-  assign rvfi_halt              = 1'b0; // No intruction causing halt in cv32e40x
+  assign rvfi_halt              = 1'b0; // No intruction causing halt in cv32e40s
   assign rvfi_intr              = intr_d;
   assign rvfi_mode              = 2'b11; // Privilege level: Machine-mode (3)
   assign rvfi_ixl               = 2'b01; // XLEN for current privilege level, must be 1(32) for RV32 systems
@@ -922,5 +922,5 @@ module cv32e40x_rvfi
   assign rvfi_csr_hpmcounterh_wdata       = rvfi_csr_wdata.hpmcounterh;
   assign rvfi_csr_hpmcounterh_wmask       = rvfi_csr_wmask.hpmcounterh;
 
-endmodule // cv32e40x_rvfi
+endmodule // cv32e40s_rvfi
 

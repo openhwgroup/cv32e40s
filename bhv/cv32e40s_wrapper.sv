@@ -8,38 +8,38 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-// Wrapper for a cv32e40x, containing cv32e40x and RVFI
+// Wrapper for a cv32e40s, containing cv32e40s and RVFI
 // Contributors: Davide Schiavone <davide@openhwgroup.org>
 //               Halfdan Bechmann <halfdan.behcmann@silabs.com>
 
 `ifndef COREV_ASSERT_OFF
-  `include "cv32e40x_alignment_buffer_sva.sv"
-  `include "cv32e40x_controller_fsm_sva.sv"
-  `include "cv32e40x_core_sva.sv"
-  `include "cv32e40x_cs_registers_sva.sv"
-  `include "cv32e40x_decoder_sva.sv"
-  `include "cv32e40x_div_sva.sv"
-  `include "cv32e40x_if_stage_sva.sv"
-  `include "cv32e40x_id_stage_sva.sv"
-  `include "cv32e40x_ex_stage_sva.sv"
-  `include "cv32e40x_wb_stage_sva.sv"
-  `include "cv32e40x_load_store_unit_sva.sv"
-  `include "cv32e40x_mpu_sva.sv"
-  `include "cv32e40x_mult_sva.sv"
-  `include "cv32e40x_prefetcher_sva.sv"
-  `include "cv32e40x_prefetch_unit_sva.sv"
-  `include "cv32e40x_sleep_unit_sva.sv"
+  `include "cv32e40s_alignment_buffer_sva.sv"
+  `include "cv32e40s_controller_fsm_sva.sv"
+  `include "cv32e40s_core_sva.sv"
+  `include "cv32e40s_cs_registers_sva.sv"
+  `include "cv32e40s_decoder_sva.sv"
+  `include "cv32e40s_div_sva.sv"
+  `include "cv32e40s_if_stage_sva.sv"
+  `include "cv32e40s_id_stage_sva.sv"
+  `include "cv32e40s_ex_stage_sva.sv"
+  `include "cv32e40s_wb_stage_sva.sv"
+  `include "cv32e40s_load_store_unit_sva.sv"
+  `include "cv32e40s_mpu_sva.sv"
+  `include "cv32e40s_mult_sva.sv"
+  `include "cv32e40s_prefetcher_sva.sv"
+  `include "cv32e40s_prefetch_unit_sva.sv"
+  `include "cv32e40s_sleep_unit_sva.sv"
 `endif
 
-`include "cv32e40x_core_log.sv"
-`include "cv32e40x_dbg_helper.sv"
+`include "cv32e40s_core_log.sv"
+`include "cv32e40s_dbg_helper.sv"
 
 `ifdef RISCV_FORMAL
   `include "rvfi_macros.vh"
 `endif
 
-module cv32e40x_wrapper
-  import cv32e40x_pkg::*;
+module cv32e40s_wrapper
+  import cv32e40s_pkg::*;
 #(
   parameter NUM_MHPMCOUNTERS             =  1,
   parameter int unsigned PMA_NUM_REGIONS =  0,
@@ -113,36 +113,36 @@ module cv32e40x_wrapper
 
   // RTL Assertions
 
-  bind cv32e40x_if_stage:
-    core_i.if_stage_i cv32e40x_if_stage_sva if_stage_sva
+  bind cv32e40s_if_stage:
+    core_i.if_stage_i cv32e40s_if_stage_sva if_stage_sva
     (
       .m_c_obi_instr_if (core_i.m_c_obi_instr_if), // SVA monitor modport cannot connect to a master modport
       .*
     );
 
 
-  bind cv32e40x_id_stage:
-    core_i.id_stage_i cv32e40x_id_stage_sva id_stage_sva
+  bind cv32e40s_id_stage:
+    core_i.id_stage_i cv32e40s_id_stage_sva id_stage_sva
     (
       .*
     );
 
 
-  bind cv32e40x_ex_stage:
-    core_i.ex_stage_i cv32e40x_ex_stage_sva ex_stage_sva
+  bind cv32e40s_ex_stage:
+    core_i.ex_stage_i cv32e40s_ex_stage_sva ex_stage_sva
     (
       .*
     );
 
-  bind cv32e40x_wb_stage:
-    core_i.wb_stage_i cv32e40x_wb_stage_sva wb_stage_sva
+  bind cv32e40s_wb_stage:
+    core_i.wb_stage_i cv32e40s_wb_stage_sva wb_stage_sva
     (
       .*
     );
 
-  bind cv32e40x_id_stage:
+  bind cv32e40s_id_stage:
     core_i.id_stage_i
-    cv32e40x_dbg_helper
+    cv32e40s_dbg_helper
       dbg_help_i(.is_compressed(if_id_pipe_i.is_compressed),
                  .rf_re    (core_i.rf_re_id               ),
                  .rf_raddr (core_i.rf_raddr_id            ),
@@ -151,42 +151,42 @@ module cv32e40x_wrapper
                  .illegal_insn (core_i.id_stage_i.illegal_insn       ),
                  .*);
 
-  bind cv32e40x_mult:            core_i.ex_stage_i.mult_i           cv32e40x_mult_sva         mult_sva         (.*);
+  bind cv32e40s_mult:            core_i.ex_stage_i.mult_i           cv32e40s_mult_sva         mult_sva         (.*);
 
-  bind cv32e40x_controller_fsm:
+  bind cv32e40s_controller_fsm:
     core_i.controller_i.controller_fsm_i
-      cv32e40x_controller_fsm_sva
+      cv32e40s_controller_fsm_sva
         controller_fsm_sva   (
                               .lsu_outstanding_cnt (core_i.load_store_unit_i.cnt_q),
                               .rf_we_wb_i          (core_i.wb_stage_i.rf_we_wb_o  ),
                               .csr_op_i            (core_i.cs_registers_i.csr_op  ),
                               .*);
-  bind cv32e40x_cs_registers:        core_i.cs_registers_i              cv32e40x_cs_registers_sva cs_registers_sva (.*);
+  bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
 
-  bind cv32e40x_load_store_unit:
-    core_i.load_store_unit_i cv32e40x_load_store_unit_sva #(.DEPTH (DEPTH)) load_store_unit_sva (
+  bind cv32e40s_load_store_unit:
+    core_i.load_store_unit_i cv32e40s_load_store_unit_sva #(.DEPTH (DEPTH)) load_store_unit_sva (
       // The SVA's monitor modport can't connect to a master modport, so it is connected to the interface instance directly:
       .m_c_obi_data_if(core_i.m_c_obi_data_if),
       .*);
 
-  bind cv32e40x_prefetch_unit:
-    core_i.if_stage_i.prefetch_unit_i cv32e40x_prefetch_unit_sva prefetch_unit_sva (.*);
+  bind cv32e40s_prefetch_unit:
+    core_i.if_stage_i.prefetch_unit_i cv32e40s_prefetch_unit_sva prefetch_unit_sva (.*);
 
-  bind cv32e40x_div:
-    core_i.ex_stage_i.div_i cv32e40x_div_sva div_sva (.*);
+  bind cv32e40s_div:
+    core_i.ex_stage_i.div_i cv32e40s_div_sva div_sva (.*);
 
-  bind cv32e40x_alignment_buffer:
+  bind cv32e40s_alignment_buffer:
     core_i.if_stage_i.prefetch_unit_i.alignment_buffer_i
-      cv32e40x_alignment_buffer_sva
+      cv32e40s_alignment_buffer_sva
         alignment_buffer_sva (.*);
 
-  bind cv32e40x_prefetcher:
+  bind cv32e40s_prefetcher:
     core_i.if_stage_i.prefetch_unit_i.prefetcher_i
-      cv32e40x_prefetcher_sva  
+      cv32e40s_prefetcher_sva  
         prefetcher_sva (.*);
 
-  bind cv32e40x_core:
-    core_i cv32e40x_core_sva
+  bind cv32e40s_core:
+    core_i cv32e40s_core_sva
       core_sva (// probed cs_registers signals
                 .cs_registers_mie_q               (core_i.cs_registers_i.mie_q),
                 .cs_registers_mepc_n              (core_i.cs_registers_i.mepc_n),
@@ -204,38 +204,38 @@ module cv32e40x_wrapper
                 .id_stage_id_valid                (core_i.id_stage_i.id_valid),
                 .*);
 
-bind cv32e40x_sleep_unit:
-  core_i.sleep_unit_i cv32e40x_sleep_unit_sva
+bind cv32e40s_sleep_unit:
+  core_i.sleep_unit_i cv32e40s_sleep_unit_sva
     sleep_unit_sva (// probed id_stage_i.controller_i signals
                     .ctrl_fsm_cs (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
                     .ctrl_fsm_ns (core_i.controller_i.controller_fsm_i.ctrl_fsm_ns),
                     .*);
 
-  bind cv32e40x_decoder: core_i.id_stage_i.decoder_i cv32e40x_decoder_sva 
+  bind cv32e40s_decoder: core_i.id_stage_i.decoder_i cv32e40s_decoder_sva 
     decoder_sva(.clk(core_i.id_stage_i.clk), 
                 .rst_n(core_i.id_stage_i.rst_n),
                 .*);
 
   // MPU assertions
-  bind cv32e40x_mpu: 
+  bind cv32e40s_mpu: 
     core_i.if_stage_i.mpu_i 
-    cv32e40x_mpu_sva
+    cv32e40s_mpu_sva
       #(.PMA_NUM_REGIONS(PMA_NUM_REGIONS),
         .PMA_CFG(PMA_CFG))
   mpu_if_sva(.*);
 
   // TODO:low Reintroduce once LSU PMA support has been properly implemented in the controller
   /*
-  bind cv32e40x_mpu:
+  bind cv32e40s_mpu:
     core_i.load_store_unit_i.mpu_i
-    cv32e40x_mpu_sva
+    cv32e40s_mpu_sva
       #(.PMA_NUM_REGIONS(PMA_NUM_REGIONS),
         .PMA_CFG(PMA_CFG))
   mpu_lsu_sva(.*);
   */
 `endif //  `ifndef COREV_ASSERT_OFF
   
-    cv32e40x_core_log
+    cv32e40s_core_log
      #(
           .NUM_MHPMCOUNTERS      ( NUM_MHPMCOUNTERS      ))
     core_log_i(
@@ -245,7 +245,7 @@ bind cv32e40x_sleep_unit:
           
       );
 
-    cv32e40x_rvfi
+    cv32e40s_rvfi
       rvfi_i
         (.clk_i                    ( clk_i                                                                ),
          .rst_ni                   ( rst_ni                                                               ),
@@ -372,7 +372,7 @@ bind cv32e40x_sleep_unit:
 
 
     // instantiate the core
-    cv32e40x_core
+    cv32e40s_core
         #(
           .NUM_MHPMCOUNTERS      ( NUM_MHPMCOUNTERS      ),
           .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),

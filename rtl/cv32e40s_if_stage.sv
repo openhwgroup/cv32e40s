@@ -25,7 +25,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_if_stage import cv32e40x_pkg::*;
+module cv32e40s_if_stage import cv32e40s_pkg::*;
   #(parameter bit          A_EXTENSION     = 0,
     parameter int unsigned PMA_NUM_REGIONS = 0,
     parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
@@ -143,7 +143,7 @@ module cv32e40x_if_stage import cv32e40x_pkg::*;
   assign csr_mtvec_init_o = (ctrl_fsm_i.pc_mux == PC_BOOT) & ctrl_fsm_i.pc_set;
 
   // prefetch buffer, caches a fixed number of instructions
-  cv32e40x_prefetch_unit prefetch_unit_i
+  cv32e40s_prefetch_unit prefetch_unit_i
   (
     .clk               ( clk                         ),
     .rst_n             ( rst_n                       ),
@@ -179,7 +179,7 @@ module cv32e40x_if_stage import cv32e40x_pkg::*;
   assign core_trans.prot[2:1] = PRIV_LVL_M; // Machine mode
   assign core_trans.memtype   = 2'b00; // memtype is assigned in the MPU, tie off.
   
-  cv32e40x_mpu
+  cv32e40s_mpu
     #(.IF_STAGE(1),
       .A_EXTENSION(A_EXTENSION),
       .CORE_REQ_TYPE(obi_inst_req_t),
@@ -212,7 +212,7 @@ module cv32e40x_if_stage import cv32e40x_pkg::*;
 // OBI interface
 //////////////////////////////////////////////////////////////////////////////
 
-cv32e40x_instr_obi_interface
+cv32e40s_instr_obi_interface
 instruction_obi_i
 (
   .clk                   ( clk               ),
@@ -268,7 +268,7 @@ instruction_obi_i
     end
   end
 
-  cv32e40x_compressed_decoder
+  cv32e40s_compressed_decoder
   compressed_decoder_i
   (
     .instr_i         ( prefetch_instr          ),
@@ -277,4 +277,4 @@ instruction_obi_i
     .illegal_instr_o ( illegal_c_insn          )
   );
 
-endmodule // cv32e40x_if_stage
+endmodule // cv32e40s_if_stage

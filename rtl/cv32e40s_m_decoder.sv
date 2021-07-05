@@ -26,7 +26,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_m_decoder import cv32e40x_pkg::*;
+module cv32e40s_m_decoder import cv32e40s_pkg::*;
   (
    // from IF/ID pipeline
    input logic [31:0] instr_rdata_i,
@@ -120,4 +120,4 @@ module cv32e40x_m_decoder import cv32e40x_pkg::*;
     
   end // always_comb
 
-endmodule : cv32e40x_m_decoder
+endmodule : cv32e40s_m_decoder

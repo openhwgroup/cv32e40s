@@ -22,9 +22,9 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_core_sva
+module cv32e40s_core_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
   (
   input logic        clk,
   input logic        rst_ni,
@@ -273,5 +273,5 @@ always_ff @(posedge clk , negedge rst_ni)
                       |-> (ctrl_fsm.debug_mode && debug_single_step))
       else `uvm_error("core", "Assertion a_single_step_with_irq failed")
   
-endmodule // cv32e40x_core_sva
+endmodule // cv32e40s_core_sva
 

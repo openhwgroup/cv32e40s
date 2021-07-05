@@ -29,7 +29,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_id_stage import cv32e40x_pkg::*;
+module cv32e40s_id_stage import cv32e40s_pkg::*;
 #(
   parameter USE_PMP                 =  0,
   parameter A_EXTENSION             =  0,
@@ -230,7 +230,7 @@ module cv32e40x_id_stage import cv32e40x_pkg::*;
   //                       |_|                    |___/           //
   //////////////////////////////////////////////////////////////////
 
-  cv32e40x_pc_target cv32e40x_pc_target_i
+  cv32e40s_pc_target cv32e40s_pc_target_i
   (
     .ctrl_transfer_target_mux_sel_i ( ctrl_transfer_target_mux_sel),
     .pc_id_i                        ( if_id_pipe_i.pc             ),
@@ -363,7 +363,7 @@ module cv32e40x_id_stage import cv32e40x_pkg::*;
   //                                           //
   ///////////////////////////////////////////////
 
-  cv32e40x_decoder
+  cv32e40s_decoder
     #(
       .A_EXTENSION             ( A_EXTENSION            ),
       .B_EXT                   ( B_EXT                  ),
@@ -624,4 +624,4 @@ module cv32e40x_id_stage import cv32e40x_pkg::*;
   // todo:AB would want to use the following expression, but this is not SEC clean; need to investigate
   // assign id_valid = instr_valid || (multi_cycle_id_stall && !ctrl_fsm_i.kill_id && !ctrl_fsm_i.halt_id);
 
-endmodule // cv32e40x_id_stage
+endmodule // cv32e40s_id_stage

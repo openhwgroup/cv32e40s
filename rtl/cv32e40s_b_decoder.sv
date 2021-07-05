@@ -20,14 +20,14 @@
 //                 Halfdan Bechmann  -   halfdan.bechmann@silabs.com          //
 //                                                                            //
 // Design Name:    B Decoder                                                  //
-// Project Name:   CV32E40X                                                   //
+// Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Decoder for the RV32B extension                            //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_b_decoder import cv32e40x_pkg::*;
+module cv32e40s_b_decoder import cv32e40s_pkg::*;
   #(parameter b_ext_e B_EXT = NONE)
   (
    // from IF/ID pipeline
@@ -275,4 +275,4 @@ module cv32e40x_b_decoder import cv32e40x_pkg::*;
     
   end // always_comb
 
-endmodule : cv32e40x_b_decoder
+endmodule : cv32e40s_b_decoder

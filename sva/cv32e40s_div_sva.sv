@@ -19,7 +19,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_div_sva
+module cv32e40s_div_sva
   import uvm_pkg::*;
   (
    input logic  clk,
@@ -67,5 +67,5 @@ module cv32e40x_div_sva
                      (valid_o |-> valid_i))
       else `uvm_error("div", "valid_o=1 when valid_i=0")
     
-endmodule // cv32e40x_div_sva
+endmodule // cv32e40s_div_sva
 

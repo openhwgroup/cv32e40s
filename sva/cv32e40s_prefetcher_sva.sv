@@ -27,7 +27,7 @@
 //                 Prefetch Controller.                                       //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_prefetcher_sva import cv32e40x_pkg::*;
+module cv32e40s_prefetcher_sva import cv32e40s_pkg::*;
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -166,4 +166,4 @@ module cv32e40x_prefetcher_sva import cv32e40x_pkg::*;
     else
       `uvm_error("Prefetcher SVA",
                 $sformatf("First fetch after reset is not a branch"))
-endmodule: cv32e40x_prefetcher_sva
+endmodule: cv32e40s_prefetcher_sva

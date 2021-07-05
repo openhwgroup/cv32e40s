@@ -19,9 +19,9 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_mult_sva
+module cv32e40s_mult_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
   (// Module boundary signals
    input logic        clk,
    input logic        rst_n,
@@ -201,4 +201,4 @@ module cv32e40x_mult_sva
                      (mulh_acc == shift_result_ll_lh_hl_shift))
       else `uvm_error("mult", "MUL_H accumulated 'ah x bl' wrong")
 
-endmodule // cv32e40x_mult
+endmodule // cv32e40s_mult

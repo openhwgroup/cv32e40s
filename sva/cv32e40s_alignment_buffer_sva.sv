@@ -19,8 +19,8 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_alignment_buffer_sva
-  import cv32e40x_pkg::*, uvm_pkg::*;
+module cv32e40s_alignment_buffer_sva
+  import cv32e40s_pkg::*, uvm_pkg::*;
   (
    input logic                     clk,
    input logic                     rst_n,
@@ -196,5 +196,5 @@ module cv32e40x_alignment_buffer_sva
 
   
 
-endmodule // cv32e40x_alignment_buffer_sva
+endmodule // cv32e40s_alignment_buffer_sva
 

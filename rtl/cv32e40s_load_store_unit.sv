@@ -24,7 +24,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_load_store_unit import cv32e40x_pkg::*;
+module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   #(parameter bit          A_EXTENSION = 0,
     parameter int unsigned PMA_NUM_REGIONS = 0,
     parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
@@ -66,23 +66,23 @@ module cv32e40x_load_store_unit import cv32e40x_pkg::*;
 
   localparam DEPTH = 2;                 // Maximum number of outstanding transactions
 
-  // Transaction request (to cv32e40x_mpu)
+  // Transaction request (to cv32e40s_mpu)
   logic          trans_valid;
   logic          trans_ready;
   obi_data_req_t trans;
 
-  // Transaction response interface (from cv32e40x_mpu)
+  // Transaction response interface (from cv32e40s_mpu)
   logic         resp_valid;
   logic [31:0]  resp_rdata;
   logic         resp_err;               // Unused for now
   data_resp_t   resp;
   
-  // Transaction request (from cv32e40x_mpu to cv32e40x_data_obi_interface)
+  // Transaction request (from cv32e40s_mpu to cv32e40s_data_obi_interface)
   logic          bus_trans_valid;
   logic          bus_trans_ready;
   obi_data_req_t bus_trans;
 
-  // Transaction response (from cv32e40x_data_obi_interface to cv32e40x_mpu)
+  // Transaction response (from cv32e40s_data_obi_interface to cv32e40s_mpu)
   logic           bus_resp_valid;
   obi_data_resp_t bus_resp;
   
@@ -528,7 +528,7 @@ module cv32e40x_load_store_unit import cv32e40x_pkg::*;
   assign trans.prot[2:1] = PRIV_LVL_M; // Machine mode
   assign trans.memtype   = 2'b00; // memtype is assigned in the MPU, tie off.
   
-  cv32e40x_mpu
+  cv32e40s_mpu
     #(.IF_STAGE        (0              ),
       .A_EXTENSION     (A_EXTENSION    ),
       .CORE_RESP_TYPE  (data_resp_t    ),
@@ -565,7 +565,7 @@ module cv32e40x_load_store_unit import cv32e40x_pkg::*;
   // OBI interface
   //////////////////////////////////////////////////////////////////////////////
 
-  cv32e40x_data_obi_interface
+  cv32e40s_data_obi_interface
   data_obi_i
   (
     .clk                   ( clk               ),
@@ -581,4 +581,4 @@ module cv32e40x_load_store_unit import cv32e40x_pkg::*;
     .m_c_obi_data_if       ( m_c_obi_data_if   )
   );
 
-endmodule // cv32e40x_load_store_unit
+endmodule // cv32e40s_load_store_unit

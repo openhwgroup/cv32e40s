@@ -44,7 +44,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_alu import cv32e40x_pkg::*;
+module cv32e40s_alu import cv32e40s_pkg::*;
 (
   input  logic              clk,
   input  logic              rst_n,
@@ -317,7 +317,7 @@ module cv32e40x_alu import cv32e40x_pkg::*;
     end
   endgenerate
 
-  cv32e40x_ff_one ff_one_i
+  cv32e40s_ff_one ff_one_i
   (
     .in_i        ( clz_data_in ),
     .first_one_o ( ff1_result ),
@@ -329,7 +329,7 @@ module cv32e40x_alu import cv32e40x_pkg::*;
  
 
   // CPOP
-  cv32e40x_alu_b_cpop alu_b_cpop_i
+  cv32e40s_alu_b_cpop alu_b_cpop_i
     (.operand_i (operand_a_i),
      .result_o  (cpop_result_o));
 
@@ -414,4 +414,4 @@ module cv32e40x_alu import cv32e40x_pkg::*;
     endcase
   end
 
-endmodule // cv32e40x_alu
+endmodule // cv32e40s_alu

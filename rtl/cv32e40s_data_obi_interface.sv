@@ -35,7 +35,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_data_obi_interface import cv32e40x_pkg::*;
+module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -75,4 +75,4 @@ module cv32e40x_data_obi_interface import cv32e40x_pkg::*;
 
   assign trans_ready_o = m_c_obi_data_if.s_gnt.gnt;
 
-endmodule // cv32e40x_data_obi_interface
+endmodule // cv32e40s_data_obi_interface

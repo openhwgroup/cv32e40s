@@ -23,7 +23,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_mpu_sva import cv32e40x_pkg::*; import uvm_pkg::*;
+module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   #(  parameter int unsigned PMA_NUM_REGIONS              = 0,
       parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
   (
@@ -96,5 +96,5 @@ module cv32e40x_mpu_sva import cv32e40x_pkg::*; import uvm_pkg::*;
                      (mpu_block_bus) |-> (mpu_err || (state_q != MPU_IDLE)) )
       else `uvm_error("mpu", "MPU blocking OBI side when not needed")
 
-endmodule : cv32e40x_mpu_sva
+endmodule : cv32e40s_mpu_sva
 

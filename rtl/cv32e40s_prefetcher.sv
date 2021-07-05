@@ -37,7 +37,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_prefetcher
+module cv32e40s_prefetcher
 (
   input  logic                     clk,
   input  logic                     rst_n,
@@ -56,7 +56,7 @@ module cv32e40x_prefetcher
   
 );
 
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
 
   prefetch_state_e state_q, next_state;
 
@@ -133,4 +133,4 @@ module cv32e40x_prefetcher
     end
   end
 
-endmodule // cv32e40x_prefetcher
+endmodule // cv32e40s_prefetcher

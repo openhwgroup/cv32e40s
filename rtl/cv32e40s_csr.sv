@@ -7,7 +7,7 @@
  */
 
 
-module cv32e40x_csr #(
+module cv32e40s_csr #(
     parameter int unsigned    WIDTH      = 32,
     parameter bit             SHADOWCOPY = 1'b0,
     parameter bit [WIDTH-1:0] RESETVALUE = '0
