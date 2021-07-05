@@ -34,10 +34,8 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
    // from IF/ID pipeline
    input logic [31:0] instr_rdata_i,
 
-   input logic        debug_mode_i,
-   input logic        debug_wfi_no_sleep_i,
-  
-   output             decoder_ctrl_t decoder_ctrl_o
+   input  ctrl_fsm_t     ctrl_fsm_i, // todo:low each use of this signal needs a comment explaining why the signal from the controller is safe to be used with ID timing (probably add comment in FSM)
+   output decoder_ctrl_t decoder_ctrl_o
    );
   
   always_comb
@@ -94,7 +92,7 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
       OPCODE_BRANCH: begin // Branch
         decoder_ctrl_o.ctrl_transfer_target_mux_sel = JT_COND;
         decoder_ctrl_o.ctrl_transfer_insn           = BRANCH_COND;
-        decoder_ctrl_o.op_c_mux_sel                 = OP_C_JT;
+        decoder_ctrl_o.op_c_mux_sel                 = OP_C_BCH;
         decoder_ctrl_o.rf_re[0]                     = 1'b1;
         decoder_ctrl_o.rf_re[1]                     = 1'b1;
         
@@ -121,8 +119,8 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
       //////////////////////////////////
 
       OPCODE_STORE: begin
-        decoder_ctrl_o.data_req     = 1'b1;
-        decoder_ctrl_o.data_we      = 1'b1;
+        decoder_ctrl_o.lsu_en       = 1'b1;
+        decoder_ctrl_o.lsu_we       = 1'b1;
         decoder_ctrl_o.rf_re[0]     = 1'b1;
         decoder_ctrl_o.rf_re[1]     = 1'b1;
         decoder_ctrl_o.alu_operator = ALU_ADD;
@@ -134,7 +132,7 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
 
         // Data type encoded in instr_rdata_i[13:12]:
         // 2'b00: SB, 2'b01: SH, 2'10: SW
-        decoder_ctrl_o.data_type = instr_rdata_i[13:12];
+        decoder_ctrl_o.lsu_type = instr_rdata_i[13:12];
         
         if ((instr_rdata_i[14] == 1'b1) || (instr_rdata_i[13:12] == 2'b11)) begin
           decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
@@ -142,7 +140,7 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
       end
 
       OPCODE_LOAD: begin
-        decoder_ctrl_o.data_req          = 1'b1;
+        decoder_ctrl_o.lsu_en            = 1'b1;
         decoder_ctrl_o.rf_we             = 1'b1;
         decoder_ctrl_o.rf_re[0]          = 1'b1;
         // offset from immediate
@@ -151,11 +149,11 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
         decoder_ctrl_o.imm_b_mux_sel     = IMMB_I;
         
         // sign/zero extension
-        decoder_ctrl_o.data_sign_ext = !instr_rdata_i[14];
+        decoder_ctrl_o.lsu_sign_ext = !instr_rdata_i[14];
 
         // Data type encoded in instr_rdata_i[13:12]:
         // 2'b00: LB, 2'b01: LH, 2'10: LW
-        decoder_ctrl_o.data_type = instr_rdata_i[13:12];
+        decoder_ctrl_o.lsu_type = instr_rdata_i[13:12];
 
         // Reserved or RV64
         if ((instr_rdata_i[14:12] == 3'b111) || (instr_rdata_i[14:12] == 3'b110) || (instr_rdata_i[14:12] == 3'b011)) begin
@@ -310,14 +308,12 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
               12'h302:  // mret
               begin
                 decoder_ctrl_o.mret_insn = 1'b1;
-                decoder_ctrl_o.mret_dec  = 1'b1;
               end
 
               12'h7b2:  // dret
                 begin
-                  if(debug_mode_i) begin
-                    decoder_ctrl_o.dret_insn    =  debug_mode_i;
-                    decoder_ctrl_o.dret_dec     =  1'b1;
+                  if (ctrl_fsm_i.debug_mode) begin
+                    decoder_ctrl_o.dret_insn    =  1'b1;
                   end
                   else begin
                     decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
@@ -326,15 +322,15 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
 
               12'h105:  // wfi
               begin
-                decoder_ctrl_o.wfi_insn = 1'b1;
-                if (debug_wfi_no_sleep_i) begin
-                  // Treat as NOP (do not cause sleep mode entry)
-                  // Using decoding similar to ADDI, but without register reads/writes, i.e.
-                  // keep rf_we = 0, rf_re[0] = 0
-                  decoder_ctrl_o.alu_op_b_mux_sel = OP_B_IMM;
-                  decoder_ctrl_o.imm_b_mux_sel    = IMMB_I;
-                  decoder_ctrl_o.alu_operator     = ALU_ADD;
-                end
+                // Treat as NOP
+                // Using decoding similar to ADDI, but without register reads/writes, i.e.
+                // keep rf_we = 0, rf_re[0] = 0
+                // Suppressing wfi_insn bit in case of ctrl_fsm_i.debug_wfi_no_sleep to prevent
+                // sleeping when not allowed to.
+                decoder_ctrl_o.wfi_insn = ctrl_fsm_i.debug_wfi_no_sleep ? 1'b0 : 1'b1;
+                decoder_ctrl_o.alu_op_b_mux_sel = OP_B_IMM;
+                decoder_ctrl_o.imm_b_mux_sel    = IMMB_I;
+                decoder_ctrl_o.alu_operator     = ALU_ADD;
               end
 
               default:
@@ -371,7 +367,7 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
             2'b01:   decoder_ctrl_o.csr_op = CSR_OP_WRITE;
             2'b10:   decoder_ctrl_o.csr_op = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_SET;
             2'b11:   decoder_ctrl_o.csr_op = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_CLEAR;
-            default: decoder_ctrl_o.csr_illegal = 1'b1;
+            default: decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
           endcase
 
           
@@ -382,24 +378,25 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
               CSR_MARCHID,
               CSR_MIMPID,
               CSR_MHARTID :
-                if(decoder_ctrl_o.csr_op != CSR_OP_READ) decoder_ctrl_o.csr_illegal = 1'b1;
+                if(decoder_ctrl_o.csr_op != CSR_OP_READ) begin
+                  decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
+                end
 
             // These are valid CSR registers
             CSR_MSTATUS,
               CSR_MEPC,
               CSR_MTVEC,
-              CSR_MCAUSE :
-                // Not illegal, but treat as status CSR for side effect handling
-                decoder_ctrl_o.csr_status = 1'b1;
-
+              CSR_MCAUSE : begin
+                ; // do nothing, not illegal
+              end
             // These are valid CSR registers
             CSR_MISA,
               CSR_MIE,
               CSR_MSCRATCH,
               CSR_MTVAL,
-              CSR_MIP :
+              CSR_MIP : begin
                 ; // do nothing, not illegal
-
+              end
             // Hardware Performance Monitor
             CSR_MCYCLE,
               CSR_MINSTRET,
@@ -429,9 +426,9 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
               CSR_MHPMEVENT16, CSR_MHPMEVENT17, CSR_MHPMEVENT18, CSR_MHPMEVENT19,
               CSR_MHPMEVENT20, CSR_MHPMEVENT21, CSR_MHPMEVENT22, CSR_MHPMEVENT23,
               CSR_MHPMEVENT24, CSR_MHPMEVENT25, CSR_MHPMEVENT26, CSR_MHPMEVENT27,
-              CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31 :
-                // Not illegal, but treat as status CSR to get accurate counts
-                decoder_ctrl_o.csr_status = 1'b1;
+              CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31 : begin
+                ; // do nothing, not illegal
+              end
 
             // Hardware Performance Monitor (unprivileged read-only mirror CSRs)
             // Removal of these is not SEC equivalent
@@ -457,9 +454,9 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
               CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H :
                 // Read-only and readable from user mode only if the bit of mcounteren is set
                 if((decoder_ctrl_o.csr_op != CSR_OP_READ)) begin
-                  decoder_ctrl_o.csr_illegal = 1'b1;
+                  decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
                 end else begin
-                  decoder_ctrl_o.csr_status = 1'b1;
+                  ; // do nothing, not illegal
                 end
 
             // Debug register access
@@ -467,10 +464,10 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
               CSR_DPC,
               CSR_DSCRATCH0,
               CSR_DSCRATCH1 :
-                if(!debug_mode_i) begin
-                  decoder_ctrl_o.csr_illegal = 1'b1;
+                if (!ctrl_fsm_i.debug_mode) begin
+                  decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
               end else begin
-                decoder_ctrl_o.csr_status = 1'b1;
+                ; // do nothing, not illegal
               end
 
             // Debug Trigger register access
@@ -481,19 +478,19 @@ module cv32e40x_i_decoder import cv32e40x_pkg::*;
               CSR_TINFO,
               CSR_MCONTEXT,
               CSR_SCONTEXT :
-                if(DEBUG_TRIGGER_EN != 1)
-                  decoder_ctrl_o.csr_illegal = 1'b1;
+                if(DEBUG_TRIGGER_EN != 1) begin
+                  decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
+                end
 
-            default : decoder_ctrl_o.csr_illegal = 1'b1;
+                  default : decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
 
           endcase // case (instr_rdata_i[31:20])
 
-          if(decoder_ctrl_o.csr_illegal) begin
+          if (decoder_ctrl_o.illegal_insn) begin
             decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
           end
 
         end
-
       end
 
       default: begin

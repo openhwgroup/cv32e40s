@@ -14,12 +14,13 @@
 // Additional contributions by:                                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
 //                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
+//                 Halfdan Bechmann - halfdan.bechmann@silabs.com             //
 //                                                                            //
-// Design Name:    Subword multiplier and MAC                                 //
+// Design Name:    Multiplier                                                 //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
-// Description:    Advanced MAC unit for PULP.                                //
+// Description:    Multiplier unit.                                           //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -28,11 +29,11 @@ module cv32e40x_mult import cv32e40x_pkg::*;
   input  logic        clk,
   input  logic        rst_n,
 
-  input  logic        enable_i,
+  input  logic        valid_i,
   input  mul_opcode_e operator_i,
 
   // integer and short multiplier
-  input  logic [ 1:0] short_signed_i,
+  input  logic [ 1:0] signed_mode_i,
 
   input  logic [31:0] op_a_i,
   input  logic [31:0] op_b_i,
@@ -40,9 +41,9 @@ module cv32e40x_mult import cv32e40x_pkg::*;
   output logic [31:0] result_o,
 
   output logic        ready_o,
-  input  logic        ex_ready_i
+  output logic        valid_o,
+  input  logic        ready_i
 );
-
 
   ///////////////////////////////////////////////////////////////
   //  ___ _  _ _____ ___ ___ ___ ___   __  __ _   _ _  _____   //
@@ -61,8 +62,8 @@ module cv32e40x_mult import cv32e40x_pkg::*;
   logic        mulh_shift;
 
   // MULH State variables
-  mult_state_e mulh_state;
-  mult_state_e mulh_state_next;
+  mul_state_e  mulh_state;
+  mul_state_e  mulh_state_next;
 
   // MULH Part select operands
   logic [16:0] mulh_al;
@@ -76,10 +77,12 @@ module cv32e40x_mult import cv32e40x_pkg::*;
 
   // MULH Intermediate Results
   logic [32:0] mulh_acc;
-  logic [33:0] mulh_sum;
-  logic [33:0] mulh_sum_shifted;
-  logic [33:0] mulh_result;
+  logic [32:0] mulh_acc_next;
+  logic [32:0] mulh_acc_res;
 
+  // Result
+  logic [33:0] result;
+  logic [33:0] result_shifted;
 
   assign mulh_al[15:0] = op_a_i[15:0];
   assign mulh_bl[15:0] = op_b_i[15:0];
@@ -91,15 +94,15 @@ module cv32e40x_mult import cv32e40x_pkg::*;
   assign mulh_bl[16] = 1'b0;
 
   // Sign extention for the upper halfword is decided by the instuction used.
-  // MULH   :   signed x signed    : short_signed_i == 'b00
-  // MULHSU :   signed x unsigned  : short_signed_i == 'b01
-  // MULHU  : unsigned x unsigned  : short_signed_i == 'b11
-  assign mulh_ah[16] = short_signed_i[0] && op_a_i[31];
-  assign mulh_bh[16] = short_signed_i[1] && op_b_i[31];
+  // MULH   :   signed x signed    : signed_mode_i == 'b00
+  // MULHSU :   signed x unsigned  : signed_mode_i == 'b01
+  // MULHU  : unsigned x unsigned  : signed_mode_i == 'b11
+  assign mulh_ah[16] = signed_mode_i[0] && op_a_i[31];
+  assign mulh_bh[16] = signed_mode_i[1] && op_b_i[31];
 
-  assign mulh_sum         = $signed(int_result) + $signed(mulh_acc);
-  assign mulh_sum_shifted = $signed(mulh_sum) >>> 16;
-  assign mulh_result      = (mulh_shift) ? mulh_sum_shifted : mulh_sum;
+  ////////////////
+  //  MULH FSM  //
+  ////////////////
 
   always_comb
   begin
@@ -107,57 +110,81 @@ module cv32e40x_mult import cv32e40x_pkg::*;
     mulh_a           = mulh_al;
     mulh_b           = mulh_bl;
     mulh_state_next  = mulh_state;
-    ready_o          = 1'b1;
+    ready_o          = 1'b0;
+    valid_o          = 1'b0;
+    mulh_acc_next    = mulh_acc;
 
+    // Case statement assumes valid_i = 1; the valid_i = 0 scenario
+    // is handled after the case statement.    
     case (mulh_state)
-      ALBL: begin
-        mulh_shift        = 1'b1;
-        if ((operator_i == MUL_H) && enable_i) begin
-          ready_o         = 1'b0;
-          mulh_state_next = ALBH;
+      MUL_ALBL: begin
+        if (operator_i == MUL_H) begin
+          // Multicycle multiplication
+          mulh_shift      = 1'b1;
+          mulh_state_next = MUL_ALBH;
+          mulh_acc_next   = mulh_acc_res;
+        end
+        else begin
+          // Single cycle multiplication
+          valid_o         = 1'b1;
+
+          if (ready_i) begin
+            ready_o        = 1'b1;
+          end
         end
       end
 
-      ALBH: begin
-        ready_o          = 1'b0;
+      MUL_ALBH: begin
+        mulh_state_next  = MUL_AHBL;
+        mulh_acc_next    = mulh_acc_res;
         mulh_a           = mulh_al;
         mulh_b           = mulh_bh;
-        mulh_state_next  = AHBL;
       end
 
-      AHBL: begin
-        ready_o          = 1'b0;
+      MUL_AHBL: begin
+        mulh_state_next  = MUL_AHBH;
+        mulh_acc_next    = mulh_acc_res;
         mulh_shift       = 1'b1;
         mulh_a           = mulh_ah;
         mulh_b           = mulh_bl;
-        mulh_state_next  = AHBH;
       end
 
-      AHBH: begin
+      MUL_AHBH: begin
+        valid_o           = 1'b1;
         mulh_a            = mulh_ah;
         mulh_b            = mulh_bh;
-        if (ex_ready_i)
-          mulh_state_next = ALBL;
+
+        if (ready_i) begin
+          ready_o         = 1'b1;
+          mulh_state_next = MUL_ALBL;
+          mulh_acc_next   = '0;
+        end
       end
       default: ;
     endcase
-  end
+
+    // Allow kill at any time
+    if (!valid_i) begin
+      mulh_state_next = MUL_ALBL;
+      ready_o = 1'b1;
+      valid_o = 1'b0;
+      mulh_acc_next = '0;
+    end
+  end // always_comb
 
   always_ff @(posedge clk, negedge rst_n) begin
-    if (~rst_n) begin
-      mulh_acc     <=  '0;
-      mulh_state   <= ALBL;
-    end else if (enable_i && (operator_i == MUL_H)) begin
-      if (!ready_o) begin
-        mulh_acc   <= mulh_result[32:0];
-      end else if (!ex_ready_i) begin
-        mulh_acc   <= mulh_acc;
-      end else begin
-        mulh_acc   <=  '0;
-      end
-      mulh_state   <= mulh_state_next;
+    if (rst_n == 1'b0) begin
+      mulh_acc   <=  '0;
+      mulh_state <= MUL_ALBL;
+    end else begin
+      mulh_acc   <= mulh_acc_next;
+      mulh_state <= mulh_state_next;
     end
   end
+
+  // MULH Shift Mux
+  assign result_shifted = $signed(result) >>> 16;
+  assign mulh_acc_res   = mulh_shift ? result_shifted[32:0] : result[32:0];
 
   ///////////////////////////
   //   32-bit multiplier   //
@@ -168,22 +195,18 @@ module cv32e40x_mult import cv32e40x_pkg::*;
 
   assign int_result = $signed(op_a) * $signed(op_b);
 
-  ////////////////////////////////////////////////////////
-  //   ____                 _ _     __  __              //
-  //  |  _ \ ___  ___ _   _| | |_  |  \/  |_   ___  __  //
-  //  | |_) / _ \/ __| | | | | __| | |\/| | | | \ \/ /  //
-  //  |  _ <  __/\__ \ |_| | | |_  | |  | | |_| |>  <   //
-  //  |_| \_\___||___/\__,_|_|\__| |_|  |_|\__,_/_/\_\  //
-  //                                                    //
-  ////////////////////////////////////////////////////////
+  ////////////////////////////////////
+  //   ____                 _ _     //
+  //  |  _ \ ___  ___ _   _| | |_   //
+  //  | |_) / _ \/ __| | | | | __|  //
+  //  |  _ <  __/\__ \ |_| | | |_   //
+  //  |_| \_\___||___/\__,_|_|\__|  //
+  //                                //
+  ////////////////////////////////////
 
-  always_comb
-  begin
-    if (operator_i == MUL_M32) begin
-      result_o = int_result[31:0];
-    end else begin
-      result_o = mulh_result[31:0];
-    end
-  end
+  // 34bit Adder - mulh_acc is always 0 for the MUL instruction
+  assign result   = $signed(int_result) + $signed(mulh_acc);
+
+  assign result_o = result[31:0];
 
 endmodule

@@ -41,25 +41,17 @@ module cv32e40x_data_obi_interface import cv32e40x_pkg::*;
   input  logic        rst_n,
 
   // Transaction request interface
-  input  logic        trans_valid_i,
-  output logic        trans_ready_o,
-  input  logic [31:0] trans_addr_i,
-  input  logic        trans_we_i,
-  input  logic  [3:0] trans_be_i,
-  input  logic [31:0] trans_wdata_i,
-  input  logic  [5:0] trans_atop_i,             // Future proof addition (not part of OBI 1.0 spec; not used in CV32E40P)
+  input  logic         trans_valid_i,
+  output logic         trans_ready_o,
+  input obi_data_req_t trans_i,
 
   // Transaction response interface
-  output logic        resp_valid_o,             // Note: Consumer is assumed to be 'ready' whenever resp_valid_o = 1
-  output logic [31:0] resp_rdata_o,
-  output logic        resp_err_o,
+  output logic           resp_valid_o,          // Note: Consumer is assumed to be 'ready' whenever resp_valid_o = 1
+  output obi_data_resp_t resp_o,
 
   // OBI interface
   if_c_obi.master     m_c_obi_data_if
-
 );
-
-  obi_if_state_e state_q, next_state;
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI R Channel
@@ -69,28 +61,18 @@ module cv32e40x_data_obi_interface import cv32e40x_pkg::*;
   // interface (resp_*). It is assumed that the consumer of the transaction response
   // is always receptive when resp_valid_o = 1 (otherwise a response would get dropped)
 
-  assign resp_valid_o = m_c_obi_data_if.rvalid;
-  assign resp_rdata_o = m_c_obi_data_if.resp_payload.rdata;
-  assign resp_err_o   = m_c_obi_data_if.resp_payload.err;
-
+  assign resp_valid_o = m_c_obi_data_if.s_rvalid.rvalid;
+  assign resp_o       = m_c_obi_data_if.resp_payload;
   
   //////////////////////////////////////////////////////////////////////////////
   // OBI A Channel
   //////////////////////////////////////////////////////////////////////////////
 
-
   // If the incoming transaction itself is stable, then it satisfies the OBI protocol
   // and signals can be passed to/from OBI directly.
-  assign m_c_obi_data_if.req                 = trans_valid_i;
-  assign m_c_obi_data_if.req_payload.addr    = trans_addr_i;
-  assign m_c_obi_data_if.req_payload.we      = trans_we_i;
-  assign m_c_obi_data_if.req_payload.be      = trans_be_i;
-  assign m_c_obi_data_if.req_payload.wdata   = trans_wdata_i;
-  assign m_c_obi_data_if.req_payload.atop    = trans_atop_i;
+  assign m_c_obi_data_if.s_req.req   = trans_valid_i;
+  assign m_c_obi_data_if.req_payload = trans_i;
 
-  assign trans_ready_o = m_c_obi_data_if.gnt;
-
-
-  
+  assign trans_ready_o = m_c_obi_data_if.s_gnt.gnt;
 
 endmodule // cv32e40x_data_obi_interface
