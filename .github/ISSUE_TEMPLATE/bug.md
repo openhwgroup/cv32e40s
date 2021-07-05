@@ -1,6 +1,6 @@
 # Template for Bug Issue
 
-Please use this template if the issue that you are reporting is a (potential) bug in CV32E40X RTL, User Manual, or associated files like constraints or assertions.
+Please use this template if the issue that you are reporting is a (potential) bug in CV32E40S RTL, User Manual, or associated files like constraints or assertions.
 
 <br>**Note**: Please file bugs related to the core-v-verif verification environment in https://github.com/openhwgroup/core-v-verif instead.
 
