@@ -16,6 +16,7 @@
 //                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                 Andrea Bettati - andrea.bettati@studenti.unipr.it          //
 //                 Halfdan Bechmann - halfdan.bechmann@silabs.com             //
+//                 Øystein Knauserud - oystein.knauserud@silabs.com           //
 //                                                                            //
 // Description:    RTL assertions for the cs_registers module                 //
 //                                                                            //
@@ -23,17 +24,15 @@
 
 module cv32e40x_cs_registers_sva
   import uvm_pkg::*;
+  import cv32e40x_pkg::*;
   (
    input logic        clk,
    input logic        rst_n,
-   
-   input logic [31:0] mie_n,
-   input logic        mie_we,
-   input logic [31:0] mie_bypass_o
+
+   input id_ex_pipe_t id_ex_pipe_i,
+   input logic [31:0] csr_rdata_o
    );
-  // Check that mie_bypass_o equals mie_n
-  a_mie_bypass : assert property (@(posedge clk) disable iff (!rst_n)
-                                  (mie_we) |-> (mie_bypass_o == mie_n))
-    else `uvm_error("cs_registers", "Assertion a_mie_bypass failed")
+
+
 endmodule // cv32e40x_cs_registers_sva
 

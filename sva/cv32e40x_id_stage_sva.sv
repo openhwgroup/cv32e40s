@@ -26,55 +26,50 @@
 module cv32e40x_id_stage_sva
   import uvm_pkg::*;
   import cv32e40x_pkg::*;
-  (
-   input logic        clk,
-   input logic        rst_n,
-   
-   input logic [31:0] instr,
-   input logic        rf_we,
-   input logic        alu_en,
-   input logic        mult_en,
-   input logic        pc_set_o,
-   input logic        data_req,
-   input logic        wfi_insn,
-   input logic        ebrk_insn,
-   input logic        mret_insn,
-   input logic        dret_insn,
-   input logic        ecall_insn,
-   input logic        fencei_insn,
-   input logic        ex_ready_i,
-   input logic        illegal_insn,
-   input logic        branch_decision_i,
-   input              csr_opcode_e csr_op,
-   input              pc_mux_e pc_mux_o,
-   input              if_id_pipe_t if_id_pipe_i,
-   input              id_ex_pipe_t id_ex_pipe_o
-   );
+(
+  input logic           clk,
+  input logic           rst_n,
 
-  // make sure that branch decision is valid when jumping
-  a_br_decision :
-    assert property (@(posedge clk)
-                     (id_ex_pipe_o.branch_in_ex) |-> (branch_decision_i !== 1'bx) )
-      else begin `uvm_warning("id_stage", $sformatf("%t, Branch decision is X in module %m", $time)); end
+  input logic [31:0]    instr,
+  input logic           rf_we,
+  input logic           alu_en,
+  input logic           mul_en,
+  input logic           lsu_en,
+  input logic           wfi_insn,
+  input logic           ebrk_insn,
+  input logic           mret_insn,
+  input logic           dret_insn,
+  input logic           ecall_insn,
+  input logic           fencei_insn,
+  input logic           ex_ready_i,
+  input logic           illegal_insn,
+  input csr_opcode_e    csr_op,
+  input if_id_pipe_t    if_id_pipe_i,
+  input id_ex_pipe_t    id_ex_pipe_o,
+  input ctrl_fsm_t      ctrl_fsm_i
+);
+
 
     // the instruction delivered to the ID stage should always be valid
     a_valid_instr :
       assert property (@(posedge clk)
                        (if_id_pipe_i.instr_valid & (~if_id_pipe_i.illegal_c_insn)) |-> (!$isunknown(instr)) )
-        else `uvm_warning("id_stage", $sformatf("%t, Instruction is valid, but has at least one X", $time));
-
+        else `uvm_error("id_stage", $sformatf("%t, Instruction is valid, but has at least one X", $time));
+/* todo: check and fix/remove
       // Check that instruction after taken branch is flushed (more should actually be flushed, but that is not checked here)
       // and that EX stage is ready to receive flushed instruction immediately
       property p_branch_taken_ex;
         @(posedge clk) disable iff (!rst_n) (branch_taken_ex == 1'b1) |-> ((ex_ready_i == 1'b1) &&
                                                                            (alu_en == 1'b0) &&
-                                                                           (mult_en == 1'b0) &&
+                                                                           (mul_en == 1'b0) &&
                                                                            (rf_we == 1'b0) &&
-                                                                           (data_req == 1'b0));
+                                                                           (lsu_en == 1'b0));
       endproperty
 
       a_branch_taken_ex : assert property(p_branch_taken_ex) else `uvm_error("id_stage", "Assertion p_branch_taken_ex failed")
+*/
 
+/* todo: check and fix/remove
       // Check that if IRQ PC update does not coincide with IRQ related CSR write
       // MIE is excluded from the check because it has a bypass.
       property p_irq_csr;
@@ -89,18 +84,9 @@ module cv32e40x_id_stage_sva
       endproperty
 
       a_irq_csr : assert property(p_irq_csr) else `uvm_error("id_stage", "Assertion p_irq_csr failed")
+*/
 
-      // Check that xret does not coincide with CSR write (to avoid using wrong return address)
-      // This check is more strict than really needed; a CSR instruction would be allowed in EX as long
-      // as its write action happens before the xret CSR usage
-      property p_xret_csr;
-        @(posedge clk) disable iff (!rst_n)
-          (pc_set_o && ((pc_mux_o == PC_MRET) || (pc_mux_o == PC_DRET))) |->
-                                   (!(id_ex_pipe_o.csr_access && (id_ex_pipe_o.csr_op != CSR_OP_READ)));
-      endproperty
-
-      a_xret_csr : assert property(p_xret_csr) else `uvm_error("id_stage", "Assertion a_xret_csr failed")
-
+/* todo: fix
       generate
         if (!A_EXTENSION) begin : gen_no_a_extension_assertions
 
@@ -113,17 +99,39 @@ module cv32e40x_id_stage_sva
 
         end
       endgenerate
-
+*/
       // Check that illegal instruction has no other side effects
       property p_illegal_2;
         @(posedge clk) disable iff (!rst_n) (illegal_insn == 1'b1) |-> !(ebrk_insn || mret_insn || dret_insn ||
                                                                          ecall_insn || wfi_insn || fencei_insn ||
-                                                                         alu_en || mult_en ||
+                                                                         alu_en || mul_en ||
                                                                          rf_we ||
-                                                                         csr_op != CSR_OP_READ || data_req);
+                                                                         csr_op != CSR_OP_READ || lsu_en);
       endproperty
 
       a_illegal_2 : assert property(p_illegal_2) else `uvm_error("id_stage", "Assertion p_illegal_2 failed")
+/* todo: uncomment and fix; even more important, include this file in the wrapper
+  // Halt implies not ready and not valid
+  a_halt :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (ctrl_fsm_i.halt_id)
+                      |-> (!id_ready_o && !id_valid))
+      else `uvm_error("id_stage", "Halt should imply not ready and not valid")
 
+  // Kill implies ready and not valid
+  a_kill :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (ctrl_fsm_i.kill_id)
+                      |-> (id_ready_o && !id_valid))
+      else `uvm_error("id_stage", "Kill should imply ready and not valid")
+
+  // Never kill and halt at the same time (as they have conflicting requirements on ready)
+  a_kill_halt :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (ctrl_fsm_i.kill_id)
+                      |-> (!ctrl_fsm_i.halt_id))
+      else `uvm_error("id_stage", "Kill and halt should not both be asserted")
+
+*/
 endmodule // cv32e40x_id_stage_sva
 
