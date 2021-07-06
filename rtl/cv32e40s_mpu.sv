@@ -30,7 +30,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
       parameter type         CORE_RESP_TYPE               = inst_resp_t,
       parameter type         BUS_RESP_TYPE                = obi_inst_resp_t,
       parameter int unsigned PMP_GRANULARITY              = 0,
-      parameter int unsigned PMP_NUM_REGIONS              = 4,
+      parameter int unsigned PMP_NUM_REGIONS              = 0,
       parameter int unsigned PMA_NUM_REGIONS              = 0,
       parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
   (
@@ -56,8 +56,8 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    output       CORE_RESP_TYPE core_resp_o,
 
    // PMP CSR's
-   input        pmp_cfg_t csr_pmp_cfg_i [PMP_NUM_REGIONS],
-   input logic [33:0] csr_pmp_addr_i [PMP_NUM_REGIONS],
+   input        pmp_cfg_t csr_pmp_cfg_i [PMP_MAX_REGIONS],
+   input logic [33:0] csr_pmp_addr_i [PMP_MAX_REGIONS],
    input        pmp_mseccfg_t csr_pmp_mseccfg_i,
 
    // Privilege mode

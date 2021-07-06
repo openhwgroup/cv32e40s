@@ -28,7 +28,7 @@
 module cv32e40s_if_stage import cv32e40s_pkg::*;
   #(parameter bit          A_EXTENSION     = 0,
     parameter int unsigned PMP_GRANULARITY = 0,
-    parameter int unsigned PMP_NUM_REGIONS = 4,
+    parameter int unsigned PMP_NUM_REGIONS = 0,
     parameter int unsigned PMA_NUM_REGIONS = 0,
     parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
 (
@@ -70,8 +70,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     input  logic [31:0] branch_target_ex_i,     // jump target address
 
     // PMP CSR's
-    input        pmp_cfg_t csr_pmp_cfg_i [PMP_NUM_REGIONS],
-    input logic [33:0] csr_pmp_addr_i [PMP_NUM_REGIONS],
+    input        pmp_cfg_t csr_pmp_cfg_i [PMP_MAX_REGIONS],
+    input logic [33:0] csr_pmp_addr_i [PMP_MAX_REGIONS],
     input        pmp_mseccfg_t csr_pmp_mseccfg_i,
 
     // Privilege mode
@@ -186,7 +186,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   assign core_trans.addr = prefetch_trans_addr;
   assign core_trans.prot[0]   = 1'b0;  // Transfers from IF stage are instruction transfers
-  assign core_trans.prot[2:1] = PRIV_LVL_M; // Machine mode. TODO:OE connect this to priv_lvl_i?
+  assign core_trans.prot[2:1] = PRIV_LVL_M; // Machine mode.
   assign core_trans.memtype   = 2'b00; // memtype is assigned in the MPU, tie off.
 
   cv32e40s_mpu

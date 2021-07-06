@@ -33,7 +33,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter NUM_MHPMCOUNTERS             =  1,
   parameter LIB                          =  0,
   parameter int unsigned PMP_GRANULARITY =  0,
-  parameter int unsigned PMP_NUM_REGIONS =  16,
+  parameter int unsigned PMP_NUM_REGIONS =  0,
   parameter int unsigned PMA_NUM_REGIONS =  0,
   parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT}
 )
@@ -99,8 +99,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   
   // Unused parameters and signals (left in code for future design extensions)
   localparam A_EXTENSION         =  0;
-  localparam N_PMP_ENTRIES       = 16;
-  localparam USE_PMP             =  0;
   localparam b_ext_e B_EXT       =  NONE;
 
   logic [31:0]       pc_if;             // Program counter in IF stage
@@ -227,8 +225,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        irq_wu_ctrl;
 
   // PMP CSR's
-  pmp_cfg_t csr_pmp_cfg [PMP_NUM_REGIONS];
-  logic [33:0] csr_pmp_addr [PMP_NUM_REGIONS];
+  pmp_cfg_t csr_pmp_cfg [PMP_MAX_REGIONS];
+  logic [33:0] csr_pmp_addr [PMP_MAX_REGIONS];
   pmp_mseccfg_t csr_pmp_mseccfg;
 
   // Internal OBI interfaces
@@ -384,7 +382,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   /////////////////////////////////////////////////
   cv32e40s_id_stage
   #(
-    .USE_PMP                      ( USE_PMP                ),
     .A_EXTENSION                  ( A_EXTENSION            ),
     .B_EXT                        ( B_EXT                  )
   )
@@ -602,7 +599,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   cv32e40s_cs_registers
   #(
     .A_EXTENSION      ( A_EXTENSION           ),
-    .USE_PMP          ( USE_PMP               ),
     .PMP_NUM_REGIONS  ( PMP_NUM_REGIONS       ),
     .PMP_GRANULARITY  ( PMP_GRANULARITY       ),
     .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      )

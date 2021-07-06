@@ -449,10 +449,6 @@ parameter MARCHID = 32'h4;
 parameter MTVEC_MODE        = 2'b01;
 parameter NUM_HPM_EVENTS    =   16;
 
-parameter MAX_N_PMP_ENTRIES = 16;
-parameter MAX_N_PMP_CFG     =  4;
-
-
 parameter MSTATUS_UIE_BIT      = 0;
 parameter MSTATUS_SIE_BIT      = 1;
 parameter MSTATUS_MIE_BIT      = 3;

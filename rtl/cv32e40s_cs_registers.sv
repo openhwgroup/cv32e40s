@@ -31,8 +31,7 @@
 module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
   parameter A_EXTENSION      = 0,
-  parameter USE_PMP          = 0, // TODO:OE remove this if not needed
-  parameter PMP_NUM_REGIONS  = 4,
+  parameter PMP_NUM_REGIONS  = 0,
   parameter PMP_GRANULARITY  = 0,
   parameter NUM_MHPMCOUNTERS = 1
 )
@@ -76,8 +75,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output logic [31:0]     mepc_o,
 
   // PMP CSR's
-  output pmp_cfg_t        csr_pmp_cfg_o [PMP_NUM_REGIONS],
-  output logic [33:0]     csr_pmp_addr_o [PMP_NUM_REGIONS],
+  output pmp_cfg_t        csr_pmp_cfg_o [PMP_MAX_REGIONS],
+  output logic [33:0]     csr_pmp_addr_o [PMP_MAX_REGIONS],
   output pmp_mseccfg_t    csr_pmp_mseccfg_o,
 
   // debug
@@ -158,9 +157,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic mie_we;
   logic mie_rd_error;
 
-  pmp_cfg_t     pmp_cfg_q[PMP_NUM_REGIONS];
+  pmp_cfg_t     pmp_cfg_q[PMP_MAX_REGIONS];
   logic [PMP_CFG_W-1:0]   pmp_cfg_rdata[PMP_MAX_REGIONS];
-  logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_q[PMP_NUM_REGIONS];
+  logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_q[PMP_MAX_REGIONS];
   logic [31:0]  pmp_addr_rdata[PMP_MAX_REGIONS];
   pmp_mseccfg_t pmp_mseccfg_q;
   logic [31:0]  pmp_mseccfg_rdata;
@@ -734,18 +733,18 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             unique case (csr_wdata_int[(i%4)*PMP_CFG_W+3+:2])
               PMP_MODE_OFF   : pmp_cfg_wdata.mode = PMP_MODE_OFF;
               PMP_MODE_TOR   : pmp_cfg_wdata.mode = PMP_MODE_TOR;
-              PMP_MODE_NA4   : pmp_cfg_wdata.mode = (PMP_GRANULARITY == 0) ? PMP_MODE_NA4 : // TODO:OE is this correct? PMP_GRAN=1 gives PMP_ADDR_WIDTH = 32
-                                             PMP_MODE_OFF;
+              PMP_MODE_NA4   : pmp_cfg_wdata.mode = (PMP_GRANULARITY == 0) ? PMP_MODE_NA4 :
+                                                    PMP_MODE_OFF;
               PMP_MODE_NAPOT : pmp_cfg_wdata.mode = PMP_MODE_NAPOT;
               default : pmp_cfg_wdata.mode = PMP_MODE_OFF;
             endcase
           end
           
           assign pmp_cfg_wdata.exec  = csr_wdata_int[(i%4)*PMP_CFG_W+2];
-          assign pmp_cfg_wdata.write = csr_wdata_int[(i%4)*PMP_CFG_W+1]; // TODO:OE Ibex has some logic here, disallowing RW=10 when MML=0, needed? No, just document this in the uarch
+          assign pmp_cfg_wdata.write = csr_wdata_int[(i%4)*PMP_CFG_W+1];
           assign pmp_cfg_wdata.read  = csr_wdata_int[(i%4)*PMP_CFG_W+0];
           
-          cv32e40x_csr #(
+          cv32e40s_csr #(
                          .WIDTH      ($bits(pmp_cfg_t)),
                          .SHADOWCOPY (1'b0),
                          .RESETVALUE ('0))
@@ -761,7 +760,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign pmp_cfg_rdata[i] = {pmp_cfg_q[i].lock, 2'b00, pmp_cfg_q[i].mode, 
                                      pmp_cfg_q[i].exec, pmp_cfg_q[i].write, pmp_cfg_q[i].read};
           
-          // TODO:OE 
           assign csr_pmp_cfg_o[i]  = pmp_cfg_q[i];
 
           if (i == PMP_NUM_REGIONS-1) begin: pmp_addr_qual_upper
@@ -775,7 +773,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                                          (!pmp_cfg_locked[i+1] || pmp_cfg_q[i+1].mode != PMP_MODE_TOR);
           end
           
-          cv32e40x_csr #(
+          cv32e40s_csr #(
                          .WIDTH      (PMP_ADDR_WIDTH),
                          .SHADOWCOPY (1'b0),
                          .RESETVALUE ('0))
@@ -815,7 +813,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             end
           end
           
-          // TODO:OE
           assign csr_pmp_addr_o[i] = {pmp_addr_rdata[i], 2'b00};
           
         end // if (i < PMP_NUM_REGIONS)
@@ -824,6 +821,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           // Tie off outputs for unimplemeted regions
           assign pmp_cfg_rdata[i]  = '0;
           assign pmp_addr_rdata[i] = '0;
+
+          assign csr_pmp_addr_o[i] = '0;
+          assign csr_pmp_cfg_o[i]  = pmp_cfg_t'('0);
+
+          assign pmp_addr_q[i] = '0;
+          assign pmp_cfg_q[i]  = pmp_cfg_t'('0);
           
         end
       end
@@ -835,7 +838,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign pmp_mseccfg_wdata.mmwp = csr_wdata_int[CSR_MSECCFG_MMWP_BIT] || pmp_mseccfg_q.mmwp;
 
       // MSECFG.RLB cannot be set if any PMP region is locked
-      // TODO Spec: When mseccfg.RLB is 0 and pmpcfg.L is 1 in any entry (including disabled entries), then mseccfg.RLB is locked and any further modifications to mseccfg.RLB are ignored (WARL). -> locked is not the same as clear..
+      // TODO:OE Spec: When mseccfg.RLB is 0 and pmpcfg.L is 1 in any entry (including disabled entries), then mseccfg.RLB is locked and any further modifications to mseccfg.RLB are ignored (WARL). Ibex version would clear RLB upon MSECCFG write if any region is locked, even if RLB=1.
       
       // Ibex version: assign pmp_mseccfg_wdata.rlb = csr_wdata_int[CSR_MSECCFG_RLB_BIT]  && !(|pmp_cfg_locked);
 
@@ -843,7 +846,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign pmp_mseccfg_wdata.rlb  = pmp_mseccfg_q.rlb ? csr_wdata_int[CSR_MSECCFG_RLB_BIT] :
                                       csr_wdata_int[CSR_MSECCFG_RLB_BIT] && !(|pmp_cfg_locked);
         
-      cv32e40x_csr #(
+      cv32e40s_csr #(
                      .WIDTH      ($bits(pmp_mseccfg_t)),
                      .SHADOWCOPY (1'b0),
                      .RESETVALUE ('0))
@@ -863,7 +866,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         pmp_mseccfg_rdata[CSR_MSECCFG_RLB_BIT]  = pmp_mseccfg_q.rlb;
       end
 
-      // TOOD:OE
       assign csr_pmp_mseccfg_o = pmp_mseccfg_q;
 
       // Combine read error signals
@@ -877,14 +879,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       for (genvar i = 0; i < PMP_MAX_REGIONS; i++) begin : g_tie_pmp_rdata
         assign pmp_cfg_rdata[i]  = '0;
         assign pmp_addr_rdata[i] = '0;
-      end
-      for (genvar i = 0; i < PMP_NUM_REGIONS; i++) begin : g_tie_pmp_outputs
-        assign csr_pmp_cfg_o[i]  = pmp_cfg_t'(1'b0);
+        assign csr_pmp_cfg_o[i]  = pmp_cfg_t'('0);
         assign csr_pmp_addr_o[i] = '0;
       end
 
       assign pmp_mseccfg_rdata = '0;
-      assign csr_pmp_mseccfg_o = '0;
+      assign csr_pmp_mseccfg_o = pmp_mseccfg_t'('0);
       
       assign pmp_rd_error = 1'b0;
       

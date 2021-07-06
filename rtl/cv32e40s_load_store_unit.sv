@@ -27,7 +27,7 @@
 module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   #(parameter bit          A_EXTENSION = 0,
     parameter int unsigned PMP_GRANULARITY = 0,
-    parameter int unsigned PMP_NUM_REGIONS = 4,
+    parameter int unsigned PMP_NUM_REGIONS = 0,
     parameter int unsigned PMA_NUM_REGIONS = 0,
                            parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
 (
@@ -55,8 +55,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   output logic [31:0] lsu_rdata_1_o,    // LSU read data
 
   // PMP CSR's
-  input        pmp_cfg_t csr_pmp_cfg_i [PMP_NUM_REGIONS],
-  input logic [33:0] csr_pmp_addr_i [PMP_NUM_REGIONS],
+  input        pmp_cfg_t csr_pmp_cfg_i [PMP_MAX_REGIONS],
+  input logic [33:0] csr_pmp_addr_i [PMP_MAX_REGIONS],
   input        pmp_mseccfg_t csr_pmp_mseccfg_i,
 
   // Privilege mode
@@ -120,7 +120,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic [31:0]  wdata;
 
   logic         misaligned_st;          // high if we are currently performing the second part of a misaligned store
-  logic         load_err_o, store_err_o;
 
   logic [31:0]  rdata_q;
 
@@ -359,11 +358,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   assign lsu_rdata_1_o = (resp_valid == 1'b1) ? rdata_ext : rdata_q;
 
   assign misaligned_st = id_ex_pipe_i.lsu_misaligned; // todo: rename
-
-  // Note: PMP is not fully supported at the moment (not even if USE_PMP = 1)
-  assign load_err_o      = 1'b0; // Not currently used
-  assign store_err_o     = 1'b0; // Not currently used
-
 
   // check for misaligned accesses that need a second memory access
   // If one is detected, this is signaled with lsu_misaligned_0_o to

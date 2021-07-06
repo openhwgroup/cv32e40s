@@ -28,13 +28,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-module cv32e40s_pmp import cv32e40x_pkg::*;
+module cv32e40s_pmp import cv32e40s_pkg::*;
   #(
     // Granularity of NAPOT access,
     // 0 = No restriction, 1 = 8 byte, 2 = 16 byte, 3 = 32 byte, etc.
     parameter int unsigned PMP_GRANULARITY = 0,
     // Number of implemented regions
-    parameter int unsigned PMP_NUM_REGIONS = 4
+    parameter int unsigned PMP_NUM_REGIONS = 0
     )
   (
    // Clock and Reset
@@ -42,8 +42,8 @@ module cv32e40s_pmp import cv32e40x_pkg::*;
    input logic        rst_n,
 
    // Interface to CSRs
-   input              pmp_cfg_t csr_pmp_cfg_i [PMP_NUM_REGIONS],
-   input logic [33:0] csr_pmp_addr_i [PMP_NUM_REGIONS],
+   input              pmp_cfg_t csr_pmp_cfg_i [PMP_MAX_REGIONS],
+   input logic [33:0] csr_pmp_addr_i [PMP_MAX_REGIONS],
    input              pmp_mseccfg_t csr_pmp_mseccfg_i,
 
    // Privilege mode
