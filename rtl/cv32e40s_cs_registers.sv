@@ -164,7 +164,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_q[PMP_MAX_REGIONS];
   logic [31:0]  pmp_addr_rdata[PMP_MAX_REGIONS];
   pmp_mseccfg_t pmp_mseccfg_q;
-  logic [31:0]  pmp_mseccfg_rdata;
+  logic [31:0]  pmp_mseccfg0_rdata;
 
   logic [PMP_MAX_REGIONS-1:0] pmp_cfg_we;
   logic [PMP_MAX_REGIONS-1:0] pmp_addr_we;
@@ -355,7 +355,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         csr_rdata_int = pmp_addr_rdata[csr_raddr[3:0]];
 
       CSR_PMPMSECCFG0:
-        csr_rdata_int = pmp_mseccfg_rdata;
+        csr_rdata_int = pmp_mseccfg0_rdata;
+
+      CSR_PMPMSECCFG1:
+        csr_rdata_int = '0;
         
       default:
         csr_rdata_int = '0;
@@ -473,6 +476,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
         CSR_PMPMSECCFG0: begin
           pmp_mseccfg_we = 1'b1;
+        end
+        CSR_PMPMSECCFG1: begin
+          // No bits implemented in MSECCFG1, do nothing
         end
       endcase
     end
@@ -862,10 +868,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       // Extract MSECCFG rdata
       always_comb begin
-        pmp_mseccfg_rdata                       = '0;
-        pmp_mseccfg_rdata[CSR_MSECCFG_MML_BIT]  = pmp_mseccfg_q.mml;
-        pmp_mseccfg_rdata[CSR_MSECCFG_MMWP_BIT] = pmp_mseccfg_q.mmwp;
-        pmp_mseccfg_rdata[CSR_MSECCFG_RLB_BIT]  = pmp_mseccfg_q.rlb;
+        pmp_mseccfg0_rdata                       = '0;
+        pmp_mseccfg0_rdata[CSR_MSECCFG_MML_BIT]  = pmp_mseccfg_q.mml;
+        pmp_mseccfg0_rdata[CSR_MSECCFG_MMWP_BIT] = pmp_mseccfg_q.mmwp;
+        pmp_mseccfg0_rdata[CSR_MSECCFG_RLB_BIT]  = pmp_mseccfg_q.rlb;
       end
 
       assign csr_pmp_o.mseccfg = pmp_mseccfg_q;
@@ -885,7 +891,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         assign csr_pmp_o.addr[i] = '0;
       end
 
-      assign pmp_mseccfg_rdata = '0;
+      assign pmp_mseccfg0_rdata = '0;
       assign csr_pmp_o.mseccfg = pmp_mseccfg_t'('0);
       
       assign pmp_rd_error = 1'b0;
