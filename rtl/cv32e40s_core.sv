@@ -225,9 +225,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        irq_wu_ctrl;
 
   // PMP CSR's
-  pmp_cfg_t csr_pmp_cfg [PMP_MAX_REGIONS];
-  logic [33:0] csr_pmp_addr [PMP_MAX_REGIONS];
-  pmp_mseccfg_t csr_pmp_mseccfg;
+  pmp_csr_t csr_pmp;
 
   // Internal OBI interfaces
   if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
@@ -337,9 +335,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .m_c_obi_instr_if    ( m_c_obi_instr_if          ),
 
     // CSR registers
-    .csr_pmp_cfg_i        ( csr_pmp_cfg       ),
-    .csr_pmp_addr_i       ( csr_pmp_addr      ),
-    .csr_pmp_mseccfg_i    ( csr_pmp_mseccfg   ),
+    .csr_pmp_i            ( csr_pmp                  ),
 
     // Privilege level
     .priv_lvl_i           ( current_priv_lvl   ),
@@ -531,9 +527,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lsu_rdata_1_o         ( lsu_rdata_wb       ),
 
     // CSR registers
-    .csr_pmp_cfg_i        ( csr_pmp_cfg       ),
-    .csr_pmp_addr_i       ( csr_pmp_addr      ),
-    .csr_pmp_mseccfg_i    ( csr_pmp_mseccfg   ),
+    .csr_pmp_i             ( csr_pmp            ),
 
     // Privilege level
     .priv_lvl_i           ( current_priv_lvl   ),
@@ -643,9 +637,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mepc_o                     ( mepc                   ),
  
     // PMP CSR's    
-    .csr_pmp_cfg_o              ( csr_pmp_cfg            ),
-    .csr_pmp_addr_o             ( csr_pmp_addr           ),
-    .csr_pmp_mseccfg_o          ( csr_pmp_mseccfg        ),
+    .csr_pmp_o                  ( csr_pmp                ),
    
     // debug
     .dpc_o                      ( dpc                    ),

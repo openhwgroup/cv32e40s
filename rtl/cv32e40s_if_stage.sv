@@ -70,9 +70,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     input  logic [31:0] branch_target_ex_i,     // jump target address
 
     // PMP CSR's
-    input        pmp_cfg_t csr_pmp_cfg_i [PMP_MAX_REGIONS],
-    input logic [33:0] csr_pmp_addr_i [PMP_MAX_REGIONS],
-    input        pmp_mseccfg_t csr_pmp_mseccfg_i,
+    input pmp_csr_t     csr_pmp_i,
 
     // Privilege mode
     input              PrivLvl_t priv_lvl_i,
@@ -205,10 +203,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
      .rst_n                ( rst_n ),
      .atomic_access_i      ( 1'b0  ), // No atomic transfers on instruction side
 
-     .priv_lvl_i           ( priv_lvl_i        ),
-     .csr_pmp_cfg_i        ( csr_pmp_cfg_i     ),
-     .csr_pmp_addr_i       ( csr_pmp_addr_i    ),
-     .csr_pmp_mseccfg_i    ( csr_pmp_mseccfg_i ),
+     .priv_lvl_i           ( priv_lvl_i ),
+     .csr_pmp_i            ( csr_pmp_i  ),
      
      .core_one_txn_pend_n  ( prefetch_one_txn_pend_n ),
      .core_trans_valid_i   ( prefetch_trans_valid    ),

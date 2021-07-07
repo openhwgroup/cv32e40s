@@ -1,3 +1,7 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the "License"); you may not use this file except in
@@ -75,9 +79,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output logic [31:0]     mepc_o,
 
   // PMP CSR's
-  output pmp_cfg_t        csr_pmp_cfg_o [PMP_MAX_REGIONS],
-  output logic [33:0]     csr_pmp_addr_o [PMP_MAX_REGIONS],
-  output pmp_mseccfg_t    csr_pmp_mseccfg_o,
+  output pmp_csr_t        csr_pmp_o,
 
   // debug
   output logic [31:0]     dpc_o,
@@ -760,7 +762,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign pmp_cfg_rdata[i] = {pmp_cfg_q[i].lock, 2'b00, pmp_cfg_q[i].mode, 
                                      pmp_cfg_q[i].exec, pmp_cfg_q[i].write, pmp_cfg_q[i].read};
           
-          assign csr_pmp_cfg_o[i]  = pmp_cfg_q[i];
+          assign csr_pmp_o.cfg[i] = pmp_cfg_q[i];
 
           if (i == PMP_NUM_REGIONS-1) begin: pmp_addr_qual_upper
             assign pmp_addr_we_qual[i] = pmp_addr_we[i]     && 
@@ -813,7 +815,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             end
           end
           
-          assign csr_pmp_addr_o[i] = {pmp_addr_rdata[i], 2'b00};
+          assign csr_pmp_o.addr[i] = {pmp_addr_rdata[i], 2'b00};
           
         end // if (i < PMP_NUM_REGIONS)
         else begin: no_pmp_region
@@ -822,8 +824,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign pmp_cfg_rdata[i]  = '0;
           assign pmp_addr_rdata[i] = '0;
 
-          assign csr_pmp_addr_o[i] = '0;
-          assign csr_pmp_cfg_o[i]  = pmp_cfg_t'('0);
+          assign csr_pmp_o.addr[i] = '0;
+          assign csr_pmp_o.cfg[i]  = pmp_cfg_t'('0);
 
           assign pmp_addr_q[i] = '0;
           assign pmp_cfg_q[i]  = pmp_cfg_t'('0);
@@ -866,7 +868,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         pmp_mseccfg_rdata[CSR_MSECCFG_RLB_BIT]  = pmp_mseccfg_q.rlb;
       end
 
-      assign csr_pmp_mseccfg_o = pmp_mseccfg_q;
+      assign csr_pmp_o.mseccfg = pmp_mseccfg_q;
 
       // Combine read error signals
       assign pmp_rd_error = |pmp_cfg_rd_error ||
@@ -879,12 +881,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       for (genvar i = 0; i < PMP_MAX_REGIONS; i++) begin : g_tie_pmp_rdata
         assign pmp_cfg_rdata[i]  = '0;
         assign pmp_addr_rdata[i] = '0;
-        assign csr_pmp_cfg_o[i]  = pmp_cfg_t'('0);
-        assign csr_pmp_addr_o[i] = '0;
+        assign csr_pmp_o.cfg[i]  = pmp_cfg_t'('0);
+        assign csr_pmp_o.addr[i] = '0;
       end
 
       assign pmp_mseccfg_rdata = '0;
-      assign csr_pmp_mseccfg_o = pmp_mseccfg_t'('0);
+      assign csr_pmp_o.mseccfg = pmp_mseccfg_t'('0);
       
       assign pmp_rd_error = 1'b0;
       

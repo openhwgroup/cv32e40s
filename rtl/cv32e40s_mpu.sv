@@ -56,9 +56,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    output       CORE_RESP_TYPE core_resp_o,
 
    // PMP CSR's
-   input        pmp_cfg_t csr_pmp_cfg_i [PMP_MAX_REGIONS],
-   input logic [33:0] csr_pmp_addr_i [PMP_MAX_REGIONS],
-   input        pmp_mseccfg_t csr_pmp_mseccfg_i,
+   input        pmp_csr_t csr_pmp_i,
 
    // Privilege mode
    input              PrivLvl_t priv_lvl_i,
@@ -196,9 +194,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
      .clk                               (clk),
      .rst_n                             (rst_n),
      .pmp_req_type_i                    (pmp_req_type),
-     .csr_pmp_cfg_i                     (csr_pmp_cfg_i),
-     .csr_pmp_addr_i                    (csr_pmp_addr_i),
-     .csr_pmp_mseccfg_i                 (csr_pmp_mseccfg_i),
+     .csr_pmp_i                         (csr_pmp_i),
      .priv_lvl_i                        (priv_lvl_i),
      .pmp_req_addr_i                    (pmp_req_addr));
 

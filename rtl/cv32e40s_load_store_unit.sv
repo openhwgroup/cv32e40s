@@ -55,9 +55,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   output logic [31:0] lsu_rdata_1_o,    // LSU read data
 
   // PMP CSR's
-  input        pmp_cfg_t csr_pmp_cfg_i [PMP_MAX_REGIONS],
-  input logic [33:0] csr_pmp_addr_i [PMP_MAX_REGIONS],
-  input        pmp_mseccfg_t csr_pmp_mseccfg_i,
+  input               pmp_csr_t csr_pmp_i,
 
   // Privilege mode
   input              PrivLvl_t priv_lvl_i,
@@ -548,10 +546,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
      .rst_n                ( rst_n           ),
      .atomic_access_i      ( 1'b0            ), // TODO:OE update to support atomic PMA checks
 
-     .priv_lvl_i           ( priv_lvl_i        ),
-     .csr_pmp_cfg_i        ( csr_pmp_cfg_i     ),
-     .csr_pmp_addr_i       ( csr_pmp_addr_i    ),
-     .csr_pmp_mseccfg_i    ( csr_pmp_mseccfg_i ),
+     .priv_lvl_i           ( priv_lvl_i      ),
+     .csr_pmp_i            ( csr_pmp_i       ),
      
      .core_one_txn_pend_n  ( cnt_is_one_next ),
      .core_trans_valid_i   ( trans_valid     ),

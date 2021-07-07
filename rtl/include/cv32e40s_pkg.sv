@@ -886,6 +886,12 @@ typedef struct packed {
   logic mml;  // Machine Mode Lockdown
 } pmp_mseccfg_t;
 
+typedef struct packed {
+  pmp_cfg_t [PMP_MAX_REGIONS-1:0]   cfg;
+  logic [PMP_MAX_REGIONS-1:0][33:0] addr;
+  pmp_mseccfg_t                     mseccfg;
+} pmp_csr_t;
+
   
 // OBI bus and internal data types
 
