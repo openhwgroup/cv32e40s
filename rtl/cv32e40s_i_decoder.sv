@@ -390,6 +390,15 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
                 ; // do nothing, not illegal
               end
             // These are valid CSR registers
+            CSR_PMPCFG0, CSR_PMPCFG1, CSR_PMPCFG2, CSR_PMPCFG3,
+            CSR_PMPADDR0, CSR_PMPADDR1, CSR_PMPADDR2, CSR_PMPADDR3,
+            CSR_PMPADDR4, CSR_PMPADDR5, CSR_PMPADDR6, CSR_PMPADDR7,
+            CSR_PMPADDR8, CSR_PMPADDR9, CSR_PMPADDR10, CSR_PMPADDR11,
+            CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15,
+            CSR_PMPMSECCFG0, CSR_PMPMSECCFG1 : begin
+                ; // do nothing, not illegal
+              end
+            // These are valid CSR registers
             CSR_MISA,
               CSR_MIE,
               CSR_MSCRATCH,

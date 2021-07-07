@@ -32,6 +32,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 #(
   parameter NUM_MHPMCOUNTERS             =  1,
   parameter LIB                          =  0,
+  parameter int unsigned PMP_GRANULARITY =  0,
+  parameter int unsigned PMP_NUM_REGIONS =  0,
   parameter int unsigned PMA_NUM_REGIONS =  0,
   parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT}
 )
@@ -97,8 +99,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   
   // Unused parameters and signals (left in code for future design extensions)
   localparam A_EXTENSION         =  0;
-  localparam N_PMP_ENTRIES       = 16;
-  localparam USE_PMP             =  0;
   localparam b_ext_e B_EXT       =  NONE;
 
   logic [31:0]       pc_if;             // Program counter in IF stage
@@ -224,6 +224,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic [4:0]  irq_id_ctrl;
   logic        irq_wu_ctrl;
 
+  // PMP CSR's
+  pmp_csr_t csr_pmp;
+
   // Internal OBI interfaces
   if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
   if_c_obi #(.REQ_TYPE(obi_data_req_t), .RESP_TYPE(obi_data_resp_t))  m_c_obi_data_if();
@@ -309,6 +312,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //////////////////////////////////////////////////
   cv32e40s_if_stage
     #(.A_EXTENSION(A_EXTENSION),
+      .PMP_GRANULARITY(PMP_GRANULARITY),
+      .PMP_NUM_REGIONS(PMP_NUM_REGIONS),
       .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
       .PMA_CFG(PMA_CFG))
   if_stage_i
@@ -328,6 +333,12 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // instruction cache interface
     .m_c_obi_instr_if    ( m_c_obi_instr_if          ),
+
+    // CSR registers
+    .csr_pmp_i            ( csr_pmp                  ),
+
+    // Privilege level
+    .priv_lvl_i           ( current_priv_lvl   ),
 
     // IF/ID pipeline
     .if_id_pipe_o        ( if_id_pipe                ),
@@ -367,7 +378,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   /////////////////////////////////////////////////
   cv32e40s_id_stage
   #(
-    .USE_PMP                      ( USE_PMP                ),
     .A_EXTENSION                  ( A_EXTENSION            ),
     .B_EXT                        ( B_EXT                  )
   )
@@ -487,6 +497,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   cv32e40s_load_store_unit
     #(.A_EXTENSION(A_EXTENSION),
+      .PMP_GRANULARITY(PMP_GRANULARITY),
+      .PMP_NUM_REGIONS(PMP_NUM_REGIONS),
       .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
       .PMA_CFG(PMA_CFG))
   load_store_unit_i
@@ -513,6 +525,12 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lsu_addr_1_o          ( lsu_addr_wb        ), // To controller (has WB timing, but does not pass through WB stage)
     .lsu_err_1_o           ( lsu_err_wb         ), // To controller (has WB timing, but does not pass through WB stage)
     .lsu_rdata_1_o         ( lsu_rdata_wb       ),
+
+    // CSR registers
+    .csr_pmp_i             ( csr_pmp            ),
+
+    // Privilege level
+    .priv_lvl_i           ( current_priv_lvl   ),
 
     // Valid/ready
     .valid_0_i             ( lsu_valid_ex       ), // First LSU stage (EX)
@@ -575,8 +593,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   cv32e40s_cs_registers
   #(
     .A_EXTENSION      ( A_EXTENSION           ),
-    .USE_PMP          ( USE_PMP               ),
-    .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
+    .PMP_NUM_REGIONS  ( PMP_NUM_REGIONS       ),
+    .PMP_GRANULARITY  ( PMP_GRANULARITY       ),
     .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      )
   )
   cs_registers_i
@@ -617,7 +635,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mip_i                      ( mip                    ),
     .m_irq_enable_o             ( m_irq_enable           ),
     .mepc_o                     ( mepc                   ),
-    
+ 
+    // PMP CSR's    
+    .csr_pmp_o                  ( csr_pmp                ),
+   
     // debug
     .dpc_o                      ( dpc                    ),
     .debug_single_step_o        ( debug_single_step      ),

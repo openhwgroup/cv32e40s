@@ -236,26 +236,28 @@ typedef enum logic[11:0] {
   CSR_MIP            = 12'h344,
 
   // Physical memory protection (PMP)
-  CSR_PMPCFG0        = 12'h3A0,         // Not included (USE_PMP = 0)
-  CSR_PMPCFG1        = 12'h3A1,         // Not included (USE_PMP = 0)
-  CSR_PMPCFG2        = 12'h3A2,         // Not included (USE_PMP = 0)
-  CSR_PMPCFG3        = 12'h3A3,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR0       = 12'h3B0,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR1       = 12'h3B1,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR2       = 12'h3B2,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR3       = 12'h3B3,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR4       = 12'h3B4,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR5       = 12'h3B5,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR6       = 12'h3B6,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR7       = 12'h3B7,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR8       = 12'h3B8,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR9       = 12'h3B9,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR10      = 12'h3BA,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR11      = 12'h3BB,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR12      = 12'h3BC,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR13      = 12'h3BD,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR14      = 12'h3BE,         // Not included (USE_PMP = 0)
-  CSR_PMPADDR15      = 12'h3BF,         // Not included (USE_PMP = 0)
+  CSR_PMPCFG0        = 12'h3A0,
+  CSR_PMPCFG1        = 12'h3A1,
+  CSR_PMPCFG2        = 12'h3A2,
+  CSR_PMPCFG3        = 12'h3A3,
+  CSR_PMPADDR0       = 12'h3B0,
+  CSR_PMPADDR1       = 12'h3B1,
+  CSR_PMPADDR2       = 12'h3B2,
+  CSR_PMPADDR3       = 12'h3B3,
+  CSR_PMPADDR4       = 12'h3B4,
+  CSR_PMPADDR5       = 12'h3B5,
+  CSR_PMPADDR6       = 12'h3B6,
+  CSR_PMPADDR7       = 12'h3B7,
+  CSR_PMPADDR8       = 12'h3B8,
+  CSR_PMPADDR9       = 12'h3B9,
+  CSR_PMPADDR10      = 12'h3BA,
+  CSR_PMPADDR11      = 12'h3BB,
+  CSR_PMPADDR12      = 12'h3BC,
+  CSR_PMPADDR13      = 12'h3BD,
+  CSR_PMPADDR14      = 12'h3BE,
+  CSR_PMPADDR15      = 12'h3BF,
+  CSR_PMPMSECCFG0    = 12'h747,
+  CSR_PMPMSECCFG1    = 12'h757,
 
   // Trigger
   CSR_TSELECT        = 12'h7A0,
@@ -446,10 +448,6 @@ parameter MARCHID = 32'h4;
 
 parameter MTVEC_MODE        = 2'b01;
 parameter NUM_HPM_EVENTS    =   16;
-
-parameter MAX_N_PMP_ENTRIES = 16;
-parameter MAX_N_PMP_CFG     =  4;
-
 
 parameter MSTATUS_UIE_BIT      = 0;
 parameter MSTATUS_SIE_BIT      = 1;
@@ -848,6 +846,52 @@ typedef enum logic [1:0] {
                           } mpu_status_e;
 
 typedef enum logic [2:0] {MPU_IDLE, MPU_RE_ERR_RESP, MPU_RE_ERR_WAIT, MPU_WR_ERR_RESP, MPU_WR_ERR_WAIT} mpu_state_e;
+
+// PMP constants
+parameter int unsigned PMP_MAX_REGIONS      = 16;
+parameter int unsigned PMP_CFG_W            = 8;
+
+parameter int unsigned CSR_MSECCFG_MML_BIT  = 0;
+parameter int unsigned CSR_MSECCFG_MMWP_BIT = 1;
+parameter int unsigned CSR_MSECCFG_RLB_BIT  = 2;
+  
+// PMP access type
+typedef enum logic [1:0] {
+  PMP_ACC_EXEC    = 2'b00,
+  PMP_ACC_WRITE   = 2'b01,
+  PMP_ACC_READ    = 2'b10
+} pmp_req_e;
+
+// PMP cfg structures
+typedef enum logic [1:0] {
+  PMP_MODE_OFF   = 2'b00,
+  PMP_MODE_TOR   = 2'b01,
+  PMP_MODE_NA4   = 2'b10,
+  PMP_MODE_NAPOT = 2'b11
+} pmp_cfg_mode_e;
+
+// PMP region config
+typedef struct packed {
+  logic          lock;
+  pmp_cfg_mode_e mode;
+  logic          exec;
+  logic          write;
+  logic          read;
+} pmp_cfg_t;
+
+// Machine Security Configuration (ePMP)
+typedef struct packed {
+  logic rlb;  // Rule Locking Bypass
+  logic mmwp; // Machine Mode Whitelist Policy
+  logic mml;  // Machine Mode Lockdown
+} pmp_mseccfg_t;
+
+typedef struct packed {
+  pmp_cfg_t [PMP_MAX_REGIONS-1:0]   cfg;
+  logic [PMP_MAX_REGIONS-1:0][33:0] addr;
+  pmp_mseccfg_t                     mseccfg;
+} pmp_csr_t;
+
   
 // OBI bus and internal data types
 
