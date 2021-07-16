@@ -221,18 +221,29 @@ bind cv32e40s_sleep_unit:
     core_i.if_stage_i.mpu_i 
     cv32e40s_mpu_sva
       #(.PMA_NUM_REGIONS(PMA_NUM_REGIONS),
-        .PMA_CFG(PMA_CFG))
-  mpu_if_sva(.*);
+        .PMA_CFG(PMA_CFG),
+        .IS_INSTR_SIDE(1))
+  mpu_if_sva(.pma_addr(pma_i.trans_addr_i),
+             .pma_cfg (pma_i.pma_cfg),
+             .obi_memtype(core_i.instr_memtype_o),
+             .obi_addr   (core_i.instr_addr_o),
+             .obi_req    (core_i.instr_req_o),
+             .obi_gnt    (core_i.instr_gnt_i),
+             .*);
 
-  // TODO:low Reintroduce once LSU PMA support has been properly implemented in the controller
-  /*
   bind cv32e40s_mpu:
     core_i.load_store_unit_i.mpu_i
     cv32e40s_mpu_sva
       #(.PMA_NUM_REGIONS(PMA_NUM_REGIONS),
-        .PMA_CFG(PMA_CFG))
-  mpu_lsu_sva(.*);
-  */
+        .PMA_CFG(PMA_CFG),
+        .IS_INSTR_SIDE(0))
+  mpu_lsu_sva(.pma_addr(pma_i.trans_addr_i),
+             .pma_cfg (pma_i.pma_cfg),
+             .obi_memtype(core_i.data_memtype_o),
+             .obi_addr   (core_i.data_addr_o),
+             .obi_req    (core_i.data_req_o),
+             .obi_gnt    (core_i.data_gnt_i),
+             .*);
 `endif //  `ifndef COREV_ASSERT_OFF
   
     cv32e40s_core_log
@@ -279,7 +290,7 @@ bind cv32e40s_sleep_unit:
          .lsu_type_id_i            ( core_i.id_stage_i.lsu_type                                           ),
          .lsu_we_id_i              ( core_i.id_stage_i.lsu_we                                             ),
 
-         .branch_taken_ex_i        ( core_i.controller_i.controller_fsm_i.branch_taken_ex                 ),
+         .branch_in_ex_i           ( core_i.controller_i.controller_fsm_i.branch_in_ex                    ),
          .lsu_en_ex_i              ( core_i.ex_stage_i.id_ex_pipe_i.lsu_en                                ),
 
          .instr_ex_ready_i         ( core_i.ex_stage_i.ex_ready_o                                         ),
