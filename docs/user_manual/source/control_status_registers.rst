@@ -377,7 +377,7 @@ Detailed:
 +-------------+------------+------------------------------------------------------------------------+
 | 21          | RO   (0x0) | **V** (Tentatively reserved for Vector extension).                     |
 +-------------+------------+------------------------------------------------------------------------+
-| 20          | RO   (0x0) | **U** (User mode implemented).                                         |
+| 20          | RO   (0x1) | **U** (User mode implemented).                                         |
 +-------------+------------+------------------------------------------------------------------------+
 | 19          | RO   (0x0) | **T** (Tentatively reserved for Transactional Memory extension).       |
 +-------------+------------+------------------------------------------------------------------------+
@@ -427,6 +427,7 @@ All bitfields in the ``misa`` CSR read as 0 except for the following:
 * **I** = 1
 * **M** = 1
 * **MXL** = 1 (i.e. XLEN = 32)
+* **U** = 1
 * **X** = 1
 
 Machine Interrupt Enable Register (``mie``)
