@@ -103,7 +103,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 | (32'(1)                               << 12)  // M - Integer Multiply/Divide extension
 | (32'(0)                               << 13)  // N - User level interrupts supported
 | (32'(0)                               << 18)  // S - Supervisor mode implemented
-| (32'(0)                               << 20)  // U - User mode implemented
+| (32'(1)                               << 20)  // U - User mode implemented
 | (32'(0)                          << 23)  // X - Non-standard extensions present
 | (32'(MXL)                        << 30); // M-XLEN
 
