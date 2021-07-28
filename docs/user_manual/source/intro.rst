@@ -49,7 +49,7 @@ It follows these specifications:
    https://docs.google.com/document/d/1Mh_aiHYxemL0umN3GTTw8vsbmzHZ_nxZXgjgOUzbvc8/edit?usp=sharing
 
 .. [OPENHW-OBI] OpenHW Open Bus Interface (OBI) protocol, version 1.2,
-   https://github.com/openhwgroup/core-v-docs/blob/master/cores/cv32e40p/OBI-v1.2.pdf
+   https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf
 
 Many features in the RISC-V specification are optional, and |corev| can be parameterized to enable or disable some of them.
 
