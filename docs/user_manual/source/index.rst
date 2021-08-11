@@ -17,6 +17,7 @@ Editor: **Davide Schiavone**
    pma
    pmp
    register_file
+   fencei
    sleep
    control_status_registers
    perf_counters
