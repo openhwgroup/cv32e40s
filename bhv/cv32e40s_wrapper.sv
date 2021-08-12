@@ -42,6 +42,7 @@ module cv32e40s_wrapper
   import cv32e40s_pkg::*;
 #(
   parameter NUM_MHPMCOUNTERS             =  1,
+  parameter b_ext_e      B_EXT           = NONE,
   parameter int unsigned PMA_NUM_REGIONS =  0,
   parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT}
 )
@@ -159,7 +160,7 @@ module cv32e40s_wrapper
         controller_fsm_sva   (
                               .lsu_outstanding_cnt (core_i.load_store_unit_i.cnt_q),
                               .rf_we_wb_i          (core_i.wb_stage_i.rf_we_wb_o  ),
-                              .csr_op_i            (core_i.cs_registers_i.csr_op  ),
+                              .csr_we_i            (core_i.cs_registers_i.csr_we_int  ),
                               .*);
   bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
 
@@ -309,9 +310,9 @@ bind cv32e40s_sleep_unit:
          .lsu_rvalid_wb_i          ( core_i.load_store_unit_i.resp_valid                                  ),
          .lsu_rdata_wb_i           ( core_i.load_store_unit_i.lsu_rdata_1_o                               ),
 
-         .exception_target_wb_i    ( core_i.if_stage_i.exc_pc                                             ),
+         .exception_target_wb_i    ( core_i.if_stage_i.exc_pc                                             ), // todo: make names match
 
-         .mepc_target_wb_i         ( core_i.if_stage_i.mepc_i                                             ),
+         .mepc_target_wb_i         ( core_i.if_stage_i.mepc_i                                             ), // todo: make names match
 
          // CSRs
          .csr_mstatus_n_i          ( core_i.cs_registers_i.mstatus_n                                      ),
@@ -346,10 +347,10 @@ bind cv32e40s_sleep_unit:
          .csr_mip_q_i              ( core_i.cs_registers_i.mip_i                                          ),
          .csr_mip_we_i             ( core_i.cs_registers_i.csr_we_int &&
                                      (core_i.cs_registers_i.csr_waddr == CSR_MIP)                         ),
-         .csr_tdata1_n_i           ( core_i.cs_registers_i.tmatch_control_n                               ),
+         .csr_tdata1_n_i           ( core_i.cs_registers_i.tmatch_control_n                               ), // todo:ok:rename in RTL to use official CSR names from priv spec
          .csr_tdata1_q_i           ( core_i.cs_registers_i.tmatch_control_q                               ),
          .csr_tdata1_we_i          ( core_i.cs_registers_i.tmatch_control_we                              ),
-         .csr_tdata2_n_i           ( core_i.cs_registers_i.tmatch_value_n                                 ),
+         .csr_tdata2_n_i           ( core_i.cs_registers_i.tmatch_value_n                                 ), // todo:ok:rename in RTL to use official CSR names from priv spec
          .csr_tdata2_q_i           ( core_i.cs_registers_i.tmatch_value_q                                 ),
          .csr_tdata2_we_i          ( core_i.cs_registers_i.tmatch_value_we                                ),
          .csr_tinfo_n_i            ( {16'h0, core_i.cs_registers_i.tinfo_types}                           ),
@@ -386,6 +387,7 @@ bind cv32e40s_sleep_unit:
     cv32e40s_core
         #(
           .NUM_MHPMCOUNTERS      ( NUM_MHPMCOUNTERS      ),
+          .B_EXT                 ( B_EXT                 ),
           .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),
           .PMA_CFG               ( PMA_CFG               ))
     core_i (.*);
