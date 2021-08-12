@@ -397,7 +397,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_PMPMSECCFG1:
         csr_rdata_int = '0;
         
-      default:
+      default: begin
         csr_rdata_int = '0;
         illegal_csr_read = 1'b1;
       end

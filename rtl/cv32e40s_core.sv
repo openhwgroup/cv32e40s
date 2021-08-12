@@ -100,7 +100,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   
   // Unused parameters and signals (left in code for future design extensions)
   localparam A_EXTENSION         =  0;
-  localparam b_ext_e B_EXT       =  NONE;
 
   logic [31:0]       pc_if;             // Program counter in IF stage
 
