@@ -39,6 +39,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
 
   // CSR interface
   input  logic [31:0] csr_rdata_i,
+  input  logic        csr_illegal_i,
 
   // EX/WB pipeline 
   output ex_wb_pipe_t ex_wb_pipe_o,
@@ -47,8 +48,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   input  ctrl_fsm_t   ctrl_fsm_i,
 
   // Register file forwarding signals (to ID)
-  output logic        rf_we_o,
-  output rf_addr_t    rf_waddr_o,
   output logic [31:0] rf_wdata_o,
 
   // To IF: Jump and branch target and decision
@@ -84,7 +83,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   logic           mul_en_gated;
   logic           div_en_gated;
   logic           lsu_en_gated;
-  logic           rf_we_gated;
   logic           previous_exception;
 
   // Divider signals
@@ -93,20 +91,20 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   logic [31:0]    div_result;
   
   logic           div_clz_en;   
-  logic [31:0]    div_clz_data;
+  logic [31:0]    div_clz_data_rev;
   logic [5:0]     div_clz_result;
 
   logic           div_shift_en;
   logic [5:0]     div_shift_amt;
-  logic [31:0]    div_op_a_shifted;
+  logic [31:0]    div_op_b_shifted;
 
   //assign instr_valid = id_ex_pipe_i.instr_valid && !ctrl_fsm_i.kill_ex; // todo: why does halt_ex not factor in here just like in LSU?
   assign instr_valid = id_ex_pipe_i.instr_valid && !ctrl_fsm_i.kill_ex && !ctrl_fsm_i.halt_ex; // todo: This gives SEC error, explain why this is ok.
  
-  assign mul_en_gated = id_ex_pipe_i.mul_en && instr_valid;
-  assign div_en_gated = id_ex_pipe_i.div_en && instr_valid;
-  assign lsu_en_gated = id_ex_pipe_i.lsu_en && instr_valid;
-  assign rf_we_gated  = id_ex_pipe_i.rf_we  && instr_valid;
+  assign mul_en_gated = id_ex_pipe_i.mul_en && instr_valid; // Factoring in instr_valid to kill mul instructions on kill/halt
+  assign div_en_gated = id_ex_pipe_i.div_en && instr_valid; // Factoring in instr_valid to kill div instructions on kill/halt
+  assign lsu_en_gated = id_ex_pipe_i.lsu_en && instr_valid; // Factoring in instr_valid to suppress bus transactions on kill/halt
+
 
   // Exception happened during IF or ID, or trigger match in ID (converted to NOP).
   // signal needed for ex_valid to go high in such cases
@@ -119,9 +117,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   // ALU write port mux
   always_comb
   begin
-    rf_we_o    = rf_we_gated;
-    rf_waddr_o = id_ex_pipe_i.rf_waddr;
-
     // There is no need to use gated versions of alu_en, mul_en, etc. as rf_wdata_o will be ignored
     // for invalid instructions (as the register file write enable will be suppressed).
     unique case (1'b1)
@@ -147,27 +142,23 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   
   cv32e40s_alu alu_i
   (
-    .clk                 ( clk                        ),
-    .rst_n               ( rst_n                      ),
-
     .operator_i          ( id_ex_pipe_i.alu_operator  ),
-    .shifter_i           ( id_ex_pipe_i.alu_shifter   ),
     .operand_a_i         ( id_ex_pipe_i.alu_operand_a ),
     .operand_b_i         ( id_ex_pipe_i.alu_operand_b ),
     
     // ALU CLZ interface
     .div_clz_en_i        ( div_clz_en                 ),
-    .div_clz_data_i      ( div_clz_data               ),
+    .div_clz_data_rev_i  ( div_clz_data_rev           ),
     .div_clz_result_o    ( div_clz_result             ),
                                                      
     // ALU shifter interface
     .div_shift_en_i      ( div_shift_en               ),
     .div_shift_amt_i     ( div_shift_amt              ),
-    .div_op_a_shifted_o  ( div_op_a_shifted           ),
+    .div_op_b_shifted_o  ( div_op_b_shifted           ),
 
     // Result(s)
     .result_o            ( alu_result                 ),
-    .comparison_result_o ( alu_cmp_result             )
+    .cmp_result_o        ( alu_cmp_result             )
   );
 
   ////////////////////////////////////////////////////
@@ -181,9 +172,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
 
   // TODO:low COCO analysis. is it okay from a leakage perspective to use the ALU at all for DIV/REM instructions?
   
-  // Inputs A and B are swapped in ID stage.
-  // This is done becase the divider utilizes the shifter in the ALU to shift the divisor (div_i.op_b_i), and the ALU
-  // shifter operates on alu_i.operand_a_i
   cv32e40s_div div_i
   (
     .clk                ( clk                        ),
@@ -192,16 +180,16 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
     // Input IF
     .data_ind_timing_i  ( 1'b0                       ), // TODO:OE:low connect to CSR
     .operator_i         ( id_ex_pipe_i.div_operator  ),
-    .op_a_i             ( id_ex_pipe_i.alu_operand_b ), // Inputs A and B are swapped in ID stage.
-    .op_b_i             ( id_ex_pipe_i.alu_operand_a ), // Inputs A and B are swapped in ID stage.
+    .op_a_i             ( id_ex_pipe_i.alu_operand_a ),
+    .op_b_i             ( id_ex_pipe_i.alu_operand_b ),
 
     // ALU CLZ interface
     .alu_clz_result_i   ( div_clz_result             ),
     .alu_clz_en_o       ( div_clz_en                 ),
-    .alu_clz_data_o     ( div_clz_data               ),
+    .alu_clz_data_rev_o ( div_clz_data_rev           ),
 
     // ALU shifter interface
-    .alu_op_b_shifted_i ( div_op_a_shifted           ), // Inputs A and B are swapped in ID stage.
+    .alu_op_b_shifted_i ( div_op_b_shifted           ),
     .alu_shift_en_o     ( div_shift_en               ),
     .alu_shift_amt_o    ( div_shift_amt              ),
 
@@ -276,7 +264,8 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
     begin
       if (ex_valid_o && wb_ready_i) begin
         ex_wb_pipe_o.instr_valid <= 1'b1;
-        ex_wb_pipe_o.rf_we       <= id_ex_pipe_i.rf_we;
+        // Deassert rf_we in case of illegal csr instruction
+        ex_wb_pipe_o.rf_we       <= csr_illegal_i ? 1'b0 : id_ex_pipe_i.rf_we;
         ex_wb_pipe_o.lsu_en      <= id_ex_pipe_i.lsu_en;
           
         if (id_ex_pipe_i.rf_we) begin
@@ -287,11 +276,12 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
         end
 
         // Update signals for CSR access in WB
-        ex_wb_pipe_o.csr_en     <= id_ex_pipe_i.csr_en;
-        ex_wb_pipe_o.csr_op     <= id_ex_pipe_i.csr_op; // todo: why can csr_op not be in below if-body?
+        // deassert csr_en in case of illegal csr instruction
+        ex_wb_pipe_o.csr_en     <= csr_illegal_i ? 1'b0 : id_ex_pipe_i.csr_en;
         if (id_ex_pipe_i.csr_en) begin
           ex_wb_pipe_o.csr_addr  <= id_ex_pipe_i.alu_operand_b[11:0];
           ex_wb_pipe_o.csr_wdata <= id_ex_pipe_i.alu_operand_a;
+          ex_wb_pipe_o.csr_op     <= id_ex_pipe_i.csr_op;
         end
 
         // Propagate signals needed for exception handling in WB
@@ -299,7 +289,8 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
         //          and LSU it not in use
         ex_wb_pipe_o.pc             <= id_ex_pipe_i.pc;
         ex_wb_pipe_o.instr          <= id_ex_pipe_i.instr;
-        ex_wb_pipe_o.illegal_insn   <= id_ex_pipe_i.illegal_insn;
+        // CSR illegal instruction detected in this stage, OR'ing in the status
+        ex_wb_pipe_o.illegal_insn   <= id_ex_pipe_i.illegal_insn || csr_illegal_i;
         ex_wb_pipe_o.ebrk_insn      <= id_ex_pipe_i.ebrk_insn;
         ex_wb_pipe_o.wfi_insn       <= id_ex_pipe_i.wfi_insn;
         ex_wb_pipe_o.ecall_insn     <= id_ex_pipe_i.ecall_insn;

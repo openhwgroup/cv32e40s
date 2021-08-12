@@ -59,7 +59,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // From WB stage
   input  logic        lsu_err_wb_i,               // LSU caused bus_error in WB stage
   input  logic [31:0] lsu_addr_wb_i,              // LSU address in WB stage
-  input  logic        lsu_en_wb_i,                // LSU data is written back in WB
 
   // Interrupt Controller Signals
   input  logic        irq_req_ctrl_i,             // irq requst
@@ -163,7 +162,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                          if_id_pipe_i.instr_valid;
 
   // Blocking on branch_taken_q, as a jump has already been taken
-  assign jump_taken_id = jump_in_id && !branch_taken_q;
+  assign jump_taken_id = jump_in_id && !branch_taken_q; // todo: RVFI does not use jump_taken_id (which is not in itself an issue); we should have an assertion showing that the target address remains constant during jump_in_id; same remark for branches
 
   // EX stage 
   // Branch taken for valid branch instructions in EX with valid decision
@@ -204,7 +203,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign ebreak_in_wb = ex_wb_pipe_i.ebrk_insn && ex_wb_pipe_i.instr_valid;
 
   // Trigger match in wb
-  assign trigger_match_in_wb = (ex_wb_pipe_i.trigger_match && ex_wb_pipe_i.instr_valid) && !debug_mode_q;
+  // Trigger_match during debug mode is masked in the trigger logic inside cs_registers.sv
+  assign trigger_match_in_wb = (ex_wb_pipe_i.trigger_match && ex_wb_pipe_i.instr_valid);
 
   // Pending NMI
   assign pending_nmi = 1'b0;
@@ -220,37 +220,37 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign pending_single_step = (!debug_mode_q && debug_single_step_i && ex_wb_pipe_i.instr_valid) && !pending_debug;
 
   // Regular debug will kill insn in WB, do not allow for LSU in WB as insn must finish with rvalid
-  // or for any case where a LSU in EX has asserted its obi data_req for at least one cycle
-  assign debug_allowed = !(ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid) && !obi_data_req_q;
+  // or for any case where a LSU in EX has asserted its obi data_req for at least one cycle.
+  // Also do not allow debug when EX is handling the second part of a misaligned load/store.
+  assign debug_allowed = !(ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid) && !obi_data_req_q && !(id_ex_pipe_i.lsu_misaligned && id_ex_pipe_i.instr_valid);
 
   // Debug pending for any other reason than single step
-  assign pending_debug = (trigger_match_in_wb && !debug_mode_q) ||
-                         (((debug_req_i || debug_req_q) && !debug_mode_q)      || // External request
-                         (ebreak_in_wb && debug_ebreakm_i && !debug_mode_q)   || // Ebreak with dcsr.ebreakm==1
-                         (ebreak_in_wb && debug_mode_q)) && !id_ex_pipe_i.lsu_misaligned;
+  assign pending_debug = (trigger_match_in_wb) ||
+                         ((debug_req_i || debug_req_q) && !debug_mode_q) ||    // External request
+                         (ebreak_in_wb && debug_ebreakm_i && !debug_mode_q) || // Ebreak with dcsr.ebreakm==1
+                         (ebreak_in_wb && debug_mode_q); // Ebreak during debug_mode restarts execution from dm_halt_addr, as a regular debug entry without CSR updates.
 
-                           
   // Determine cause of debug
   // pending_single_step may only happen if no other causes for debug are true.
   // The flopped version of this is checked during DEBUG_TAKEN state (one cycle delay)
-  assign debug_cause_n = (pending_single_step) ? DBG_CAUSE_STEP :
-                         (trigger_match_in_wb)          ? DBG_CAUSE_TRIGGER :
-                         (ebreak_in_wb && !debug_mode_q)                 ? DBG_CAUSE_EBREAK  :
+  assign debug_cause_n = pending_single_step ? DBG_CAUSE_STEP :
+                         trigger_match_in_wb ? DBG_CAUSE_TRIGGER :
+                         (ebreak_in_wb && debug_ebreakm_i && !debug_mode_q) ? DBG_CAUSE_EBREAK :
                          DBG_CAUSE_HALTREQ;
-
 
   // Debug cause to CSR from flopped version (valid during DEBUG_TAKEN)
   assign ctrl_fsm_o.debug_cause = debug_cause_q;
 
   
-  assign pending_interrupt = irq_req_ctrl_i && !debug_mode_q;
+  assign pending_interrupt = irq_req_ctrl_i && !debug_mode_q; // todo: explain why !debug_mode_q is used here (it does not seem logical to use that to qualify pending interrupts)
 
   // Allow interrupts to be taken only if there is no data request in WB, 
   // and no data_req has been clocked from EX to environment.
   // LSU instructions which were suppressed due to previous exceptions or trigger match
   // will be interruptable as they were convered to NOP in ID stage.
   // TODO:OK:low May allow interuption of Zce to idempotent memories
-  // TODO:low Should be able remove lsu_misaligned as well, but is not SEC clean since the code does not check for id_ex_pipe.instr_valid.
+  // TODO:low Should be able remove lsu_misaligned as well, but is not SEC clean since the code does not check for id_ex_pipe.instr_valid. 
+  // todo: if lsu_misaligned remain in below expression, then it should be qualified with id_ex_pipe_i.instr_valid
   assign interrupt_allowed = ((!(ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid) && !obi_data_req_q &&
                               !id_ex_pipe_i.lsu_misaligned)) && !debug_mode_q;
                                
@@ -332,8 +332,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     // to avoid more than one instructions passing down the pipe.
     ctrl_fsm_o.halt_if = single_step_halt_if_q;
     // ID stage is halted for regular stalls (i.e. stalls for which the instruction
-    // currently in ID is not ready to be issued yet)
-    ctrl_fsm_o.halt_id = ctrl_byp_i.jr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_stall;
+    // currently in ID is not ready to be issued yet). Also halted if interrupt or debug pending
+    // but not allowed to be taken. This is to create an interruptible bubble in WB.
+    ctrl_fsm_o.halt_id = ctrl_byp_i.jr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_stall ||
+                         (pending_interrupt && !interrupt_allowed) ||
+                         (pending_debug && !debug_allowed);
     // Halting EX if minstret_stall occurs. Otherwise we would read the wrong minstret value
     ctrl_fsm_o.halt_ex = ctrl_byp_i.minstret_stall;
     ctrl_fsm_o.halt_wb = 1'b0;
@@ -385,60 +388,48 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
         // NMI // TODO:OK:low Implement
         if (pending_nmi) begin
         // Debug entry (except single step which is handled later)
-        end else if (pending_debug) begin
-          if (debug_allowed) begin
-            // Halt the whole pipeline
-            ctrl_fsm_o.halt_if = 1'b1;
-            ctrl_fsm_o.halt_id = 1'b1;
-            ctrl_fsm_o.halt_ex = 1'b1;
-            ctrl_fsm_o.halt_wb = 1'b1;
+        end else if (pending_debug && debug_allowed) begin
+          // Halt the whole pipeline
+          ctrl_fsm_o.halt_if = 1'b1;
+          ctrl_fsm_o.halt_id = 1'b1;
+          ctrl_fsm_o.halt_ex = 1'b1;
+          ctrl_fsm_o.halt_wb = 1'b1;
 
-            ctrl_fsm_ns = DEBUG_TAKEN;
-          end else begin
-            // Halt ID to allow debug @bubble later
-            ctrl_fsm_o.halt_id = 1'b1;
-          end
+          ctrl_fsm_ns = DEBUG_TAKEN;
         // IRQ
-        end else if (pending_interrupt) begin
-          if (interrupt_allowed) begin
-            ctrl_fsm_o.kill_if = 1'b1;
-            ctrl_fsm_o.kill_id = 1'b1;
-            ctrl_fsm_o.kill_ex = 1'b1;
-            ctrl_fsm_o.kill_wb = 1'b1;
+        end else if (pending_interrupt && interrupt_allowed) begin
+          ctrl_fsm_o.kill_if = 1'b1;
+          ctrl_fsm_o.kill_id = 1'b1;
+          ctrl_fsm_o.kill_ex = 1'b1;
+          ctrl_fsm_o.kill_wb = 1'b1;
 
-            ctrl_fsm_o.pc_set     = 1'b1;
-            ctrl_fsm_o.pc_mux     = PC_EXCEPTION;
-            ctrl_fsm_o.exc_pc_mux = EXC_PC_IRQ;
-            exc_cause  = irq_id_ctrl_i;
+          ctrl_fsm_o.pc_set     = 1'b1;
+          ctrl_fsm_o.pc_mux     = PC_EXCEPTION;
+          ctrl_fsm_o.exc_pc_mux = EXC_PC_IRQ;
+          exc_cause  = irq_id_ctrl_i;
 
-            ctrl_fsm_o.irq_ack = 1'b1;
-            ctrl_fsm_o.irq_id  = irq_id_ctrl_i;
+          ctrl_fsm_o.irq_ack = 1'b1;
+          ctrl_fsm_o.irq_id  = irq_id_ctrl_i;
 
-            ctrl_fsm_o.csr_save_cause  = 1'b1;
-            ctrl_fsm_o.csr_cause       = {1'b1,irq_id_ctrl_i};
+          ctrl_fsm_o.csr_save_cause  = 1'b1;
+          ctrl_fsm_o.csr_cause       = {1'b1,irq_id_ctrl_i};
 
-            // Save pc from oldest valid instruction
-            if (ex_wb_pipe_i.instr_valid) begin
-              ctrl_fsm_o.csr_save_wb = 1'b1;
-            end else if (id_ex_pipe_i.instr_valid) begin
-              ctrl_fsm_o.csr_save_ex = 1'b1;
-            end else if (if_id_pipe_i.instr_valid) begin
-              ctrl_fsm_o.csr_save_id = 1'b1;
-            end else begin
-              // IF PC will always be valid as it points to the next
-              // instruction to be issued from IF to ID.
-              ctrl_fsm_o.csr_save_if = 1'b1;
-            end
+          // Save pc from oldest valid instruction
+          if (ex_wb_pipe_i.instr_valid) begin
+            ctrl_fsm_o.csr_save_wb = 1'b1;
+          end else if (id_ex_pipe_i.instr_valid) begin
+            ctrl_fsm_o.csr_save_ex = 1'b1;
+          end else if (if_id_pipe_i.instr_valid) begin
+            ctrl_fsm_o.csr_save_id = 1'b1;
+          end else begin
+            // IF PC will always be valid as it points to the next
+            // instruction to be issued from IF to ID.
+            ctrl_fsm_o.csr_save_if = 1'b1;
+          end
 
-            // Unstall IF in case of single stepping
-            if (debug_single_step_i) begin
-              single_step_halt_if_n = 1'b0;
-            end
-          end else begin // !interrupt_allowed
-            // Halt ID to allow interrupt on bubble later. This assumes that it is okay to interrupt
-            // any multi-cycle ID instruction in the middle.
-            // TODO:low Consider effect of halting EX instead, could gain 1 cycle latency
-            ctrl_fsm_o.halt_id = 1'b1;
+          // Unstall IF in case of single stepping
+          if (debug_single_step_i) begin
+            single_step_halt_if_n = 1'b0;
           end
         end else begin
           if (exception_in_wb) begin
@@ -525,16 +516,17 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           if (mret_in_wb && !ctrl_fsm_o.kill_wb) begin
             ctrl_fsm_o.csr_restore_mret  = !debug_mode_q;
           end
-
-          // Single step debug entry
-          // Need to be after exception/interrupt handling
-          // to ensure mepc and if_pc set correctly for use in dpc
-          if (pending_single_step) begin
-            if (single_step_allowed) begin
-              ctrl_fsm_ns = DEBUG_TAKEN;
-            end
-          end
         end // !debug or interrupts
+
+        // Single step debug entry
+          // Need to be after (in parallell with) exception/interrupt handling
+          // to ensure mepc and if_pc set correctly for use in dpc,
+          // and to ensure only one instruction can retire during single step
+        if (pending_single_step) begin
+          if (single_step_allowed) begin
+            ctrl_fsm_ns = DEBUG_TAKEN;
+          end
+        end
       end
       SLEEP: begin
         ctrl_fsm_o.ctrl_busy = 1'b0;

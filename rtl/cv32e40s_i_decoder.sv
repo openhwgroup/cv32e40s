@@ -99,8 +99,8 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
         unique case (instr_rdata_i[14:12])
           3'b000: decoder_ctrl_o.alu_operator = ALU_EQ;
           3'b001: decoder_ctrl_o.alu_operator = ALU_NE;
-          3'b100: decoder_ctrl_o.alu_operator = ALU_LTS;
-          3'b101: decoder_ctrl_o.alu_operator = ALU_GES;
+          3'b100: decoder_ctrl_o.alu_operator = ALU_LT;
+          3'b101: decoder_ctrl_o.alu_operator = ALU_GE;
           3'b110: decoder_ctrl_o.alu_operator = ALU_LTU;
           3'b111: decoder_ctrl_o.alu_operator = ALU_GEU;
           default: begin
@@ -195,7 +195,7 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
 
         unique case (instr_rdata_i[14:12])
           3'b000: decoder_ctrl_o.alu_operator = ALU_ADD;  // Add Immediate
-          3'b010: decoder_ctrl_o.alu_operator = ALU_SLTS; // Set to one if Lower Than Immediate
+          3'b010: decoder_ctrl_o.alu_operator = ALU_SLT;  // Set to one if Lower Than Immediate
           3'b011: decoder_ctrl_o.alu_operator = ALU_SLTU; // Set to one if Lower Than Immediate Unsigned
           3'b100: decoder_ctrl_o.alu_operator = ALU_XOR;  // Exclusive Or with Immediate
           3'b110: decoder_ctrl_o.alu_operator = ALU_OR;   // Or with Immediate
@@ -210,12 +210,9 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
 
           3'b101: begin
             if (instr_rdata_i[31:25] == 7'b0) begin
-              decoder_ctrl_o.alu_operator       = ALU_SRL;     // Shift Right Logical by Immediate
-              decoder_ctrl_o.alu_shifter.rshift = 1'b1;
+              decoder_ctrl_o.alu_operator = ALU_SRL; // Shift Right Logical by Immediate
             end else if (instr_rdata_i[31:25] == 7'b010_0000) begin
-              decoder_ctrl_o.alu_operator           = ALU_SRA; // Shift Right Arithmetically by Immediate
-              decoder_ctrl_o.alu_shifter.rshift     = 1'b1;
-              decoder_ctrl_o.alu_shifter.arithmetic = 1'b1;
+              decoder_ctrl_o.alu_operator = ALU_SRA; // Shift Right Arithmetically by Immediate
             end else begin
               decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
             end
@@ -238,22 +235,19 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
 
           unique case ({instr_rdata_i[30:25], instr_rdata_i[14:12]})
             // RV32I ALU operations
-            {6'b00_0000, 3'b000}: decoder_ctrl_o.alu_operator = ALU_ADD;   // Add
-            {6'b10_0000, 3'b000}: decoder_ctrl_o.alu_operator = ALU_SUB;   // Sub
-            {6'b00_0000, 3'b010}: decoder_ctrl_o.alu_operator = ALU_SLTS;  // Set Lower Than
-            {6'b00_0000, 3'b011}: decoder_ctrl_o.alu_operator = ALU_SLTU;  // Set Lower Than Unsigned
-            {6'b00_0000, 3'b100}: decoder_ctrl_o.alu_operator = ALU_XOR;   // Xor
-            {6'b00_0000, 3'b110}: decoder_ctrl_o.alu_operator = ALU_OR;    // Or
-            {6'b00_0000, 3'b111}: decoder_ctrl_o.alu_operator = ALU_AND;   // And
-            {6'b00_0000, 3'b001}: decoder_ctrl_o.alu_operator = ALU_SLL;   // Shift Left Logical
+            {6'b00_0000, 3'b000}: decoder_ctrl_o.alu_operator = ALU_ADD;  // Add
+            {6'b10_0000, 3'b000}: decoder_ctrl_o.alu_operator = ALU_SUB;  // Sub
+            {6'b00_0000, 3'b010}: decoder_ctrl_o.alu_operator = ALU_SLT;  // Set Lower Than
+            {6'b00_0000, 3'b011}: decoder_ctrl_o.alu_operator = ALU_SLTU; // Set Lower Than Unsigned
+            {6'b00_0000, 3'b100}: decoder_ctrl_o.alu_operator = ALU_XOR;  // Xor
+            {6'b00_0000, 3'b110}: decoder_ctrl_o.alu_operator = ALU_OR;   // Or
+            {6'b00_0000, 3'b111}: decoder_ctrl_o.alu_operator = ALU_AND;  // And
+            {6'b00_0000, 3'b001}: decoder_ctrl_o.alu_operator = ALU_SLL;  // Shift Left Logical
             {6'b00_0000, 3'b101}: begin
-              decoder_ctrl_o.alu_operator       = ALU_SRL;                 // Shift Right Logical
-              decoder_ctrl_o.alu_shifter.rshift = 1'b1;
+              decoder_ctrl_o.alu_operator                     = ALU_SRL;  // Shift Right Logical
             end
             {6'b10_0000, 3'b101}: begin
-              decoder_ctrl_o.alu_operator           = ALU_SRA;             // Shift Right Arithmetic
-              decoder_ctrl_o.alu_shifter.rshift     = 1'b1;
-              decoder_ctrl_o.alu_shifter.arithmetic = 1'b1;
+              decoder_ctrl_o.alu_operator                     = ALU_SRA;  // Shift Right Arithmetic
             end
             default: begin
               decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
@@ -378,131 +372,6 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
             2'b11:   decoder_ctrl_o.csr_op = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_CLEAR;
             default: decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
           endcase
-
-          
-          // Determine if CSR access is illegal
-          case (instr_rdata_i[31:20])
-            //  Writes to read only CSRs results in illegal instruction
-            CSR_MVENDORID,
-              CSR_MARCHID,
-              CSR_MIMPID,
-              CSR_MHARTID :
-                if(decoder_ctrl_o.csr_op != CSR_OP_READ) begin
-                  decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
-                end
-
-            // These are valid CSR registers
-            CSR_MSTATUS,
-              CSR_MEPC,
-              CSR_MTVEC,
-              CSR_MCAUSE : begin
-                ; // do nothing, not illegal
-              end
-            // These are valid CSR registers
-            CSR_PMPCFG0, CSR_PMPCFG1, CSR_PMPCFG2, CSR_PMPCFG3,
-            CSR_PMPADDR0, CSR_PMPADDR1, CSR_PMPADDR2, CSR_PMPADDR3,
-            CSR_PMPADDR4, CSR_PMPADDR5, CSR_PMPADDR6, CSR_PMPADDR7,
-            CSR_PMPADDR8, CSR_PMPADDR9, CSR_PMPADDR10, CSR_PMPADDR11,
-            CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15,
-            CSR_PMPMSECCFG0, CSR_PMPMSECCFG1 : begin
-                ; // do nothing, not illegal
-              end
-            // These are valid CSR registers
-            CSR_MISA,
-              CSR_MIE,
-              CSR_MSCRATCH,
-              CSR_MTVAL,
-              CSR_MIP : begin
-                ; // do nothing, not illegal
-              end
-            // Hardware Performance Monitor
-            CSR_MCYCLE,
-              CSR_MINSTRET,
-              CSR_MHPMCOUNTER3,
-              CSR_MHPMCOUNTER4,  CSR_MHPMCOUNTER5,  CSR_MHPMCOUNTER6,  CSR_MHPMCOUNTER7,
-              CSR_MHPMCOUNTER8,  CSR_MHPMCOUNTER9,  CSR_MHPMCOUNTER10, CSR_MHPMCOUNTER11,
-              CSR_MHPMCOUNTER12, CSR_MHPMCOUNTER13, CSR_MHPMCOUNTER14, CSR_MHPMCOUNTER15,
-              CSR_MHPMCOUNTER16, CSR_MHPMCOUNTER17, CSR_MHPMCOUNTER18, CSR_MHPMCOUNTER19,
-              CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
-              CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
-              CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31,
-              CSR_MCYCLEH,
-              CSR_MINSTRETH,
-              CSR_MHPMCOUNTER3H,
-              CSR_MHPMCOUNTER4H,  CSR_MHPMCOUNTER5H,  CSR_MHPMCOUNTER6H,  CSR_MHPMCOUNTER7H,
-              CSR_MHPMCOUNTER8H,  CSR_MHPMCOUNTER9H,  CSR_MHPMCOUNTER10H, CSR_MHPMCOUNTER11H,
-              CSR_MHPMCOUNTER12H, CSR_MHPMCOUNTER13H, CSR_MHPMCOUNTER14H, CSR_MHPMCOUNTER15H,
-              CSR_MHPMCOUNTER16H, CSR_MHPMCOUNTER17H, CSR_MHPMCOUNTER18H, CSR_MHPMCOUNTER19H,
-              CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
-              CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
-              CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H,
-              CSR_MCOUNTINHIBIT,
-              CSR_MHPMEVENT3,
-              CSR_MHPMEVENT4,  CSR_MHPMEVENT5,  CSR_MHPMEVENT6,  CSR_MHPMEVENT7,
-              CSR_MHPMEVENT8,  CSR_MHPMEVENT9,  CSR_MHPMEVENT10, CSR_MHPMEVENT11,
-              CSR_MHPMEVENT12, CSR_MHPMEVENT13, CSR_MHPMEVENT14, CSR_MHPMEVENT15,
-              CSR_MHPMEVENT16, CSR_MHPMEVENT17, CSR_MHPMEVENT18, CSR_MHPMEVENT19,
-              CSR_MHPMEVENT20, CSR_MHPMEVENT21, CSR_MHPMEVENT22, CSR_MHPMEVENT23,
-              CSR_MHPMEVENT24, CSR_MHPMEVENT25, CSR_MHPMEVENT26, CSR_MHPMEVENT27,
-              CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31 : begin
-                ; // do nothing, not illegal
-              end
-
-            // Hardware Performance Monitor (unprivileged read-only mirror CSRs)
-            // Removal of these is not SEC equivalent
-            CSR_CYCLE,
-              CSR_INSTRET,
-              CSR_HPMCOUNTER3,
-              CSR_HPMCOUNTER4,  CSR_HPMCOUNTER5,  CSR_HPMCOUNTER6,  CSR_HPMCOUNTER7,
-              CSR_HPMCOUNTER8,  CSR_HPMCOUNTER9,  CSR_HPMCOUNTER10, CSR_HPMCOUNTER11,
-              CSR_HPMCOUNTER12, CSR_HPMCOUNTER13, CSR_HPMCOUNTER14, CSR_HPMCOUNTER15,
-              CSR_HPMCOUNTER16, CSR_HPMCOUNTER17, CSR_HPMCOUNTER18, CSR_HPMCOUNTER19,
-              CSR_HPMCOUNTER20, CSR_HPMCOUNTER21, CSR_HPMCOUNTER22, CSR_HPMCOUNTER23,
-              CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
-              CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31,
-              CSR_CYCLEH,
-              CSR_INSTRETH,
-              CSR_HPMCOUNTER3H,
-              CSR_HPMCOUNTER4H,  CSR_HPMCOUNTER5H,  CSR_HPMCOUNTER6H,  CSR_HPMCOUNTER7H,
-              CSR_HPMCOUNTER8H,  CSR_HPMCOUNTER9H,  CSR_HPMCOUNTER10H, CSR_HPMCOUNTER11H,
-              CSR_HPMCOUNTER12H, CSR_HPMCOUNTER13H, CSR_HPMCOUNTER14H, CSR_HPMCOUNTER15H,
-              CSR_HPMCOUNTER16H, CSR_HPMCOUNTER17H, CSR_HPMCOUNTER18H, CSR_HPMCOUNTER19H,
-              CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
-              CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
-              CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H :
-                // Read-only and readable from user mode only if the bit of mcounteren is set
-                if((decoder_ctrl_o.csr_op != CSR_OP_READ)) begin
-                  decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
-                end else begin
-                  ; // do nothing, not illegal
-                end
-
-            // Debug register access
-            CSR_DCSR,
-              CSR_DPC,
-              CSR_DSCRATCH0,
-              CSR_DSCRATCH1 :
-                if (!ctrl_fsm_i.debug_mode) begin
-                  decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
-              end else begin
-                ; // do nothing, not illegal
-              end
-
-            // Debug Trigger register access
-            CSR_TSELECT,
-              CSR_TDATA1,
-              CSR_TDATA2,
-              CSR_TDATA3,
-              CSR_TINFO,
-              CSR_MCONTEXT,
-              CSR_SCONTEXT :
-                if(DEBUG_TRIGGER_EN != 1) begin
-                  decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
-                end
-
-                  default : decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
-
-          endcase // case (instr_rdata_i[31:20])
 
           if (decoder_ctrl_o.illegal_insn) begin
             decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;

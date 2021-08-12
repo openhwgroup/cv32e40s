@@ -44,8 +44,9 @@ module cv32e40s_controller_fsm_sva
   input id_ex_pipe_t    id_ex_pipe_i,
   input ex_wb_pipe_t    ex_wb_pipe_i,
   input logic           rf_we_wb_i,
-  input csr_opcode_e    csr_op_i,
-  input logic           pending_single_step
+  input logic           csr_we_i,
+  input logic           pending_single_step,
+  input logic           trigger_match_in_wb
 );
 
 
@@ -82,7 +83,7 @@ module cv32e40s_controller_fsm_sva
   property p_xret_csr;
     @(posedge clk) disable iff (!rst_n)
       (ctrl_fsm_o.pc_set && ((ctrl_fsm_o.pc_mux == PC_MRET) || (ctrl_fsm_o.pc_mux == PC_DRET))) |->
-                                (!(ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.csr_en && (ex_wb_pipe_i.csr_op != CSR_OP_READ)));
+                                (!(ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.csr_en && csr_we_i));
   endproperty
 
   a_xret_csr : assert property(p_xret_csr) else `uvm_error("controller", "Assertion a_xret_csr failed")
@@ -138,7 +139,7 @@ module cv32e40s_controller_fsm_sva
 
   a_kill_wb_csr :
   assert property (@(posedge clk)
-                    (ctrl_fsm_o.kill_wb) |-> (csr_op_i == CSR_OP_READ) )
+                    (ctrl_fsm_o.kill_wb) |-> (!csr_we_i) )
     else `uvm_error("controller", "csr written while kill_wb is asserted")
 
   // Check that no stages have valid instructions using RESET or BOOT_SET
@@ -158,5 +159,11 @@ module cv32e40s_controller_fsm_sva
     assert property (@(posedge clk)
             (pending_single_step && (ctrl_fsm_ns == DEBUG_TAKEN)) |-> (!id_ex_pipe_i.instr_valid && !if_id_pipe_i.instr_valid))
       else `uvm_error("controller", "ID and EX not empty when when single step is taken")
+
+  // Check trigger match never happens during debug_mode
+  a_trigger_match_in_debug :
+    assert property (@(posedge clk)
+            ctrl_fsm_o.debug_mode |-> !trigger_match_in_wb)
+      else `uvm_error("controller", "Trigger match during debug mode")
 endmodule // cv32e40s_controller_fsm_sva
 
