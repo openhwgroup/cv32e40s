@@ -26,8 +26,8 @@
 
 module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   #(parameter bit          A_EXTENSION = 0,
-    parameter int unsigned PMP_GRANULARITY = 0,
-    parameter int unsigned PMP_NUM_REGIONS = 0,
+    parameter int          PMP_GRANULARITY = 0,
+    parameter int          PMP_NUM_REGIONS = 0,
     parameter int unsigned PMA_NUM_REGIONS = 0,
                            parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
 (
