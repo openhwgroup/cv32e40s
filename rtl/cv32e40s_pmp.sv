@@ -32,9 +32,9 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
   #(
     // Granularity of NAPOT access,
     // 0 = No restriction, 1 = 8 byte, 2 = 16 byte, 3 = 32 byte, etc.
-    parameter int unsigned PMP_GRANULARITY = 0,
+    parameter int PMP_GRANULARITY = 0,
     // Number of implemented regions
-    parameter int unsigned PMP_NUM_REGIONS = 0
+    parameter int PMP_NUM_REGIONS = 0
     )
   (
    // Clock and Reset
