@@ -23,9 +23,10 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+
 module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
-  #(  parameter int unsigned PMA_NUM_REGIONS              = 0,
-      parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT},
+  #(  parameter int PMA_NUM_REGIONS              = 0,
+      parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
       parameter int unsigned IS_INSTR_SIDE = 0)
   (
    input logic        clk,
@@ -33,6 +34,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
    
    input logic        speculative_access,
    input logic        atomic_access_i,
+   input logic        misaligned_access_i,
    input logic        execute_access,
    input logic        bus_trans_bufferable,
    input logic        bus_trans_cacheable,
@@ -170,9 +172,9 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
       pma_expected_cfg = is_pma_matched ? PMA_CFG[pma_lowest_match] : PMA_R_DEFAULT;
     end
   end
-  assign pma_expected_err =
-    ((execute_access || speculative_access) && !pma_expected_cfg.main)
-    || (atomic_access_i && !pma_expected_cfg.atomic);
+  assign pma_expected_err = ((execute_access || speculative_access) && !pma_expected_cfg.main) ||
+                            (misaligned_access_i && !pma_expected_cfg.main)                    ||
+                            (atomic_access_i && !pma_expected_cfg.atomic);
   a_pma_expect_cfg :
     assert property (@(posedge clk) disable iff (!rst_n) pma_cfg == pma_expected_cfg)
       else `uvm_error("mpu", "RTL cfg don't match SVA expectations")

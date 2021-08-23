@@ -28,8 +28,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   #(parameter bit          A_EXTENSION = 0,
     parameter int          PMP_GRANULARITY = 0,
     parameter int          PMP_NUM_REGIONS = 0,
-    parameter int unsigned PMA_NUM_REGIONS = 0,
-                           parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
+    parameter int          PMA_NUM_REGIONS = 0,
+    parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT})
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -52,7 +52,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   // Stage 1 outputs (WB)
   output logic [31:0] lsu_addr_1_o,
   output logic        lsu_err_1_o,           
-  output logic [31:0] lsu_rdata_1_o,    // LSU read data
+  output logic [31:0] lsu_rdata_1_o,            // LSU read data
+  output mpu_status_e lsu_mpu_status_1_o,       // MPU (PMA) status, response/WB timing. To controller and wb_stage
 
   // PMP CSR's
   input               pmp_csr_t csr_pmp_i,
@@ -118,6 +119,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic [31:0]  wdata;
 
   logic         misaligned_st;          // high if we are currently performing the second part of a misaligned store
+  logic         misaligned_access;
 
   logic [31:0]  rdata_q;
 
@@ -355,7 +357,10 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   // output to register file
   assign lsu_rdata_1_o = (resp_valid == 1'b1) ? rdata_ext : rdata_q;
 
-  assign misaligned_st = id_ex_pipe_i.lsu_misaligned; // todo: rename
+  assign misaligned_st = id_ex_pipe_i.lsu_misaligned; // todo: rename && possibly kill?
+
+  // misaligned_access is high for both transfers of a misaligned transfer
+  assign misaligned_access = misaligned_st || lsu_misaligned_0_o;
 
   // check for misaligned accesses that need a second memory access
   // If one is detected, this is signaled with lsu_misaligned_0_o to
@@ -415,7 +420,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   assign ready_1_o = (cnt_q == 2'b00) ? !ctrl_fsm_i.halt_wb : resp_valid && !ctrl_fsm_i.halt_wb && ready_1_i;
 
   // LSU second stage is valid when resp_valid (typically data_rvalid_i) is received. For a misaligned
-  // load/store only its second phase is marked as valid (last_q == 1'b1).
+  // load/store only its second phase is marked as valid (last_q == 1'b1)
   assign valid_1_o = (cnt_q == 2'b00) ? 1'b0 : last_q && resp_valid && valid_1_i; // todo:AB (cnt_q == 2'b00) should be same as !WB.lsu_en
 
   // LSU EX stage readyness requires two criteria to be met:
@@ -442,6 +447,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
 // todo:AB lsu_en_gated should maybe be replaced by valid_0_i
 
+  // Export mpu status to WB stage/controller
+  assign lsu_mpu_status_1_o = resp.mpu_status;
 
   // Update signals for EX/WB registers (when EX has valid data itself and is ready for next)
   assign ctrl_update = ready_0_o && lsu_en_gated;
@@ -542,25 +549,26 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
       .PMP_NUM_REGIONS(PMP_NUM_REGIONS))
   mpu_i
     (
-     .clk                  ( clk             ),
-     .rst_n                ( rst_n           ),
-     .atomic_access_i      ( 1'b0            ), // TODO:OE update to support atomic PMA checks
+     .clk                  ( clk               ),
+     .rst_n                ( rst_n             ),
+     .atomic_access_i      ( 1'b0              ), // TODO:OE update to support atomic PMA checks
+     .misaligned_access_i  ( misaligned_access ),
 
-     .priv_lvl_i           ( priv_lvl_i      ),
-     .csr_pmp_i            ( csr_pmp_i       ),
-     
-     .core_one_txn_pend_n  ( cnt_is_one_next ),
-     .core_trans_valid_i   ( trans_valid     ),
-     .core_trans_ready_o   ( trans_ready     ),
-     .core_trans_i         ( trans           ),
-     .core_resp_valid_o    ( resp_valid      ),
-     .core_resp_o          ( resp            ),
-
-     .bus_trans_valid_o    ( bus_trans_valid ),
-     .bus_trans_ready_i    ( bus_trans_ready ),
-     .bus_trans_o          ( bus_trans       ),
-     .bus_resp_valid_i     ( bus_resp_valid  ),
-     .bus_resp_i           ( bus_resp        ));
+     .priv_lvl_i           ( priv_lvl_i        ),
+     .csr_pmp_i            ( csr_pmp_i         ),
+                                               
+     .core_one_txn_pend_n  ( cnt_is_one_next   ),
+     .core_trans_valid_i   ( trans_valid       ),
+     .core_trans_ready_o   ( trans_ready       ),
+     .core_trans_i         ( trans             ),
+     .core_resp_valid_o    ( resp_valid        ),
+     .core_resp_o          ( resp              ),
+                                               
+     .bus_trans_valid_o    ( bus_trans_valid   ),
+     .bus_trans_ready_i    ( bus_trans_ready   ),
+     .bus_trans_o          ( bus_trans         ),
+     .bus_resp_valid_i     ( bus_resp_valid    ),
+     .bus_resp_i           ( bus_resp          ));
 
   // Extract rdata and err from response struct
   assign resp_rdata = resp.bus_resp.rdata;

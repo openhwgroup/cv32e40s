@@ -60,6 +60,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  logic        lsu_err_wb_i,               // LSU caused bus_error in WB stage
   input  logic [31:0] lsu_addr_wb_i,              // LSU address in WB stage
 
+  // From LSU (WB)
+  input  mpu_status_e lsu_mpu_status_wb_i,        // MPU status (WB timing)
+
   // Interrupt Controller Signals
   input  logic        irq_req_ctrl_i,             // irq requst
   input  logic [4:0]  irq_id_ctrl_i,              // irq id
@@ -146,6 +149,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   logic [4:0] exc_cause; // id of taken interrupt
 
+
   // Mux selector for vectored IRQ PC
   assign ctrl_fsm_o.m_exc_vec_pc_mux = (mtvec_mode_i == 2'b0) ? 5'h0 : exc_cause;
   
@@ -178,14 +182,18 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                             ex_wb_pipe_i.instr.bus_resp.err           ||
                             ex_wb_pipe_i.illegal_insn                 ||
                             ex_wb_pipe_i.ecall_insn                   ||
-                            ex_wb_pipe_i.ebrk_insn) && ex_wb_pipe_i.instr_valid;
+                            ex_wb_pipe_i.ebrk_insn                    ||
+                            (lsu_mpu_status_wb_i != MPU_OK))          && ex_wb_pipe_i.instr_valid;
 
   // Set exception cause
-  assign exception_cause_wb = ex_wb_pipe_i.instr.mpu_status != MPU_OK ? EXC_CAUSE_INSTR_FAULT     :
-                              ex_wb_pipe_i.instr.bus_resp.err         ? EXC_CAUSE_INSTR_BUS_FAULT :
-                              ex_wb_pipe_i.illegal_insn               ? EXC_CAUSE_ILLEGAL_INSN    :
-                              ex_wb_pipe_i.ecall_insn                 ? EXC_CAUSE_ECALL_MMODE     :
-                              EXC_CAUSE_BREAKPOINT;
+  assign exception_cause_wb = ex_wb_pipe_i.instr.mpu_status != MPU_OK       ? EXC_CAUSE_INSTR_FAULT     :
+                              ex_wb_pipe_i.instr.bus_resp.err               ? EXC_CAUSE_INSTR_BUS_FAULT :
+                              ex_wb_pipe_i.illegal_insn                     ? EXC_CAUSE_ILLEGAL_INSN    :
+                              ex_wb_pipe_i.ecall_insn                       ? EXC_CAUSE_ECALL_MMODE     :
+                              ex_wb_pipe_i.ebrk_insn                        ? EXC_CAUSE_BREAKPOINT      :
+                              (lsu_mpu_status_wb_i == MPU_WR_FAULT)         ? EXC_CAUSE_STORE_FAULT     :
+                              (lsu_mpu_status_wb_i == MPU_RE_FAULT)         ? EXC_CAUSE_LOAD_FAULT      :
+                              'h0; // todo:ok: could default to EXC_CAUSE_LOAD_FAULT instead
 
   // wfi in wb
   assign wfi_in_wb = ex_wb_pipe_i.wfi_insn && ex_wb_pipe_i.instr_valid;
@@ -214,10 +222,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Single step will need to finish insn in WB, including LSU
   // Need to check for finished multicycle instructions, avoiding rvalid (would cause path to instr_o)
   // todo: better way of factoring in last part of a misaligned LSU instruction
+  // todo:ok: May factor away single_step_allowed completely once PMA/LSU support is merged
   assign single_step_allowed = !(id_ex_pipe_i.lsu_misaligned && id_ex_pipe_i.instr_valid) && !obi_data_req_q;
                              
   // Single step are mutually exclusive from any other reason to enter debug
-  assign pending_single_step = (!debug_mode_q && debug_single_step_i && ex_wb_pipe_i.instr_valid) && !pending_debug;
+  assign pending_single_step = (!debug_mode_q && debug_single_step_i && wb_valid_i) && !pending_debug;
 
   // Regular debug will kill insn in WB, do not allow for LSU in WB as insn must finish with rvalid
   // or for any case where a LSU in EX has asserted its obi data_req for at least one cycle.
