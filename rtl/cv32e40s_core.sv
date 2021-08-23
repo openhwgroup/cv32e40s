@@ -35,8 +35,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter int PMP_GRANULARITY =  0,
   parameter int PMP_NUM_REGIONS =  0,
   parameter b_ext_e B_EXT                =  NONE,
-  parameter int unsigned PMA_NUM_REGIONS =  0,
-  parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT}
+  parameter int          PMA_NUM_REGIONS =  0,
+  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
 (
   // Clock and Reset
@@ -160,6 +160,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // LSU
   logic        lsu_misaligned_ex;
+  mpu_status_e lsu_mpu_status_wb;
   logic [31:0] lsu_rdata_wb;
   logic        lsu_err_wb;
   logic [31:0] lsu_addr_wb;
@@ -469,6 +470,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lsu_ready_o                ( lsu_ready_ex                 ),
     .lsu_valid_o                ( lsu_valid_ex                 ),
     .lsu_ready_i                ( lsu_ready_0                  ),
+    .lsu_misaligned_i           ( lsu_misaligned_ex            ),
 
     // Pipeline handshakes
     .ex_ready_o                 ( ex_ready                     ),
@@ -510,6 +512,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Stage 0 outputs (EX)
     .lsu_misaligned_0_o    ( lsu_misaligned_ex  ),
+    .lsu_mpu_status_1_o    ( lsu_mpu_status_wb  ),
 
     // Stage 1 outputs (WB)
     .lsu_addr_1_o          ( lsu_addr_wb        ), // To controller (has WB timing, but does not pass through WB stage)
@@ -552,6 +555,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // LSU
     .lsu_rdata_i                ( lsu_rdata_wb                 ),
+    .lsu_mpu_status_i           ( lsu_mpu_status_wb            ),
 
     // Write back to register file
     .rf_we_wb_o                 ( rf_we_wb                     ),
@@ -676,7 +680,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_op_id_i                    ( csr_op_id              ),
                                                                  
     // LSU
-    .lsu_misaligned_i               ( lsu_misaligned_ex      ),
+    .lsu_misaligned_ex_i            ( lsu_misaligned_ex      ),
+    .lsu_mpu_status_wb_i            ( lsu_mpu_status_wb      ),
     .lsu_addr_wb_i                  ( lsu_addr_wb            ),
     .lsu_err_wb_i                   ( lsu_err_wb             ),
   

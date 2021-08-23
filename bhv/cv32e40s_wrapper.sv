@@ -31,6 +31,7 @@
   `include "cv32e40s_sleep_unit_sva.sv"
 `endif
 
+`include "cv32e40s_wrapper.vh"
 `include "cv32e40s_core_log.sv"
 `include "cv32e40s_dbg_helper.sv"
 
@@ -43,8 +44,8 @@ module cv32e40s_wrapper
 #(
   parameter NUM_MHPMCOUNTERS             =  1,
   parameter b_ext_e      B_EXT           = NONE,
-  parameter int unsigned PMA_NUM_REGIONS =  0,
-  parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT}
+  parameter int          PMA_NUM_REGIONS =  0,
+  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
 (
   // Clock and Reset
@@ -262,11 +263,14 @@ bind cv32e40s_sleep_unit:
         (.clk_i                    ( clk_i                                                                ),
          .rst_ni                   ( rst_ni                                                               ),
 
-         .instr_id_valid_i         ( core_i.id_stage_i.id_valid                                           ),
+         .if_valid_i               ( core_i.if_stage_i.if_valid_o                                         ),
+         .id_valid_i               ( core_i.id_stage_i.id_valid                                           ),
+         .id_ready_i               ( core_i.id_stage_i.id_ready_o                                         ),
 
-         .wb_ready_i               (core_i.wb_stage_i.wb_ready_o                                          ),
-         .wb_valid_i               (core_i.wb_stage_i.wb_valid                                            ),
+         .wb_valid_i               ( core_i.wb_stage_i.wb_valid_o                                         ),
+         .wb_ready_i               ( core_i.wb_stage_i.wb_ready_o                                         ),
          .instr_rdata_wb_i         ( core_i.wb_stage_i.ex_wb_pipe_i.instr.bus_resp.rdata                  ),
+         .ebreak_in_wb_i           ( core_i.controller_i.controller_fsm_i.ebreak_in_wb                    ),
 
          .rs1_addr_id_i            ( core_i.register_file_wrapper_i.register_file_i.raddr_i[0]            ),
          .rs2_addr_id_i            ( core_i.register_file_wrapper_i.register_file_i.raddr_i[1]            ),
@@ -294,8 +298,8 @@ bind cv32e40s_sleep_unit:
          .branch_in_ex_i           ( core_i.controller_i.controller_fsm_i.branch_in_ex                    ),
          .lsu_en_ex_i              ( core_i.ex_stage_i.id_ex_pipe_i.lsu_en                                ),
 
-         .instr_ex_ready_i         ( core_i.ex_stage_i.ex_ready_o                                         ),
-         .instr_ex_valid_i         ( core_i.ex_stage_i.ex_valid_o                                         ),
+         .ex_ready_i               ( core_i.ex_stage_i.ex_ready_o                                         ),
+         .ex_valid_i               ( core_i.ex_stage_i.ex_valid_o                                         ),
 
          .branch_target_ex_i       ( core_i.if_stage_i.branch_target_ex_i                                 ),
 
@@ -313,6 +317,9 @@ bind cv32e40s_sleep_unit:
          .exception_target_wb_i    ( core_i.if_stage_i.exc_pc                                             ), // todo: make names match
 
          .mepc_target_wb_i         ( core_i.if_stage_i.mepc_i                                             ), // todo: make names match
+         .current_priv_lvl_i       ( core_i.current_priv_lvl                                              ),
+         .debug_mode_i             ( core_i.ctrl_fsm.debug_mode                                           ),
+         .debug_cause_i            ( core_i.ctrl_fsm.debug_cause                                          ),
 
          // CSRs
          .csr_mstatus_n_i          ( core_i.cs_registers_i.mstatus_n                                      ),
@@ -379,6 +386,8 @@ bind cv32e40s_sleep_unit:
 
 `ifdef RISCV_FORMAL
          ,`RVFI_CONN
+`else
+         ,`RVFI_TIEOFF
 `endif
          );
 

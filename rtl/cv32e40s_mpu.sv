@@ -31,13 +31,14 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
       parameter type         BUS_RESP_TYPE                = obi_inst_resp_t,
       parameter int          PMP_GRANULARITY              = 0,
       parameter int          PMP_NUM_REGIONS              = 0,
-      parameter int unsigned PMA_NUM_REGIONS              = 0,
-      parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
+      parameter int          PMA_NUM_REGIONS              = 0,
+      parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT})
   (
    input logic  clk,
    input logic  rst_n,
 
-   input logic  atomic_access_i, // Indicate that ongoing access is atomic
+   input logic  atomic_access_i,     // Indicate that ongoing access is atomic
+   input logic  misaligned_access_i, // Indicate that ongoing access is part of a misaligned access
 
    // Interface towards bus interface
    input logic  bus_trans_ready_i,
@@ -71,6 +72,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   logic        mpu_block_core;
   logic        mpu_block_bus;
   logic        mpu_err_trans_valid;
+  logic        mpu_err_trans_ready;
   mpu_status_e mpu_status;
   mpu_state_e  state_q, state_n;
   logic        bus_trans_cacheable;
@@ -91,18 +93,22 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   // will be completed by this FSM
   always_comb begin
 
-    state_n        = state_q;
-    mpu_status     = MPU_OK;
-    mpu_block_core = 1'b0;
-    mpu_block_bus  = 1'b0;
+    state_n             = state_q;
+    mpu_status          = MPU_OK;
+    mpu_block_core      = 1'b0;
+    mpu_block_bus       = 1'b0;
     mpu_err_trans_valid = 1'b0;
+    mpu_err_trans_ready = 1'b0;
 
     case(state_q)
       MPU_IDLE: begin
-        if (mpu_err && core_trans_valid_i && bus_trans_ready_i) begin
+        if (mpu_err && core_trans_valid_i) begin
 
           // Block transfer from going out on the bus.
           mpu_block_bus  = 1'b1;
+
+          // Signal to the core that the transfer was accepted (but will be consumed by the MPU)
+          mpu_err_trans_ready = 1'b1;
 
           if(core_trans_we) begin
             // MPU error on write
@@ -112,6 +118,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
             // MPU error on read
             state_n = core_one_txn_pend_n ? MPU_RE_ERR_RESP : MPU_RE_ERR_WAIT;
           end
+
         end
       end
       MPU_RE_ERR_WAIT, MPU_WR_ERR_WAIT: begin
@@ -134,6 +141,8 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
         mpu_err_trans_valid = 1'b1;
         mpu_status = (state_q == MPU_RE_ERR_RESP) ? MPU_RE_FAULT : MPU_WR_FAULT;
 
+        // Go back to IDLE uncoditionally. 
+        // The core is expected to always be ready for the response
         state_n = MPU_IDLE;
 
       end
@@ -165,7 +174,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   assign core_resp_o.mpu_status = mpu_status;
 
   // Signal ready towards core
-  assign core_trans_ready_o     = bus_trans_ready_i && !mpu_block_core;
+  assign core_trans_ready_o     = (bus_trans_ready_i && !mpu_block_core) || mpu_err_trans_ready;
 
   // PMA - Physical Memory Attribution
   cv32e40s_pma
@@ -177,6 +186,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
      .speculative_access_i(speculative_access),
      .atomic_access_i(atomic_access_i),
      .execute_access_i(execute_access),
+     .misaligned_access_i(misaligned_access_i),
      .pma_err_o(pma_err),
      .pma_bufferable_o(bus_trans_bufferable),
      .pma_cacheable_o(bus_trans_cacheable));
@@ -217,4 +227,6 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
     end
   endgenerate
 
+// TODO:OE any way to check that the 2nd access of a failed misalgn will not reach the MPU?
+  
 endmodule

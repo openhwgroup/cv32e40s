@@ -29,8 +29,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   #(parameter bit          A_EXTENSION     = 0,
     parameter int          PMP_GRANULARITY = 0,
     parameter int          PMP_NUM_REGIONS = 0,
-    parameter int unsigned PMA_NUM_REGIONS = 0,
-    parameter pma_region_t PMA_CFG[(PMA_NUM_REGIONS ? (PMA_NUM_REGIONS-1) : 0):0] = '{default:PMA_R_DEFAULT})
+    parameter int          PMA_NUM_REGIONS = 0,
+    parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT})
 (
     input  logic        clk,
     input  logic        rst_n,
@@ -202,7 +202,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
      .clk                  ( clk   ),
      .rst_n                ( rst_n ),
      .atomic_access_i      ( 1'b0  ), // No atomic transfers on instruction side
-
+     .misaligned_access_i  ( 1'b0  ), // MPU on instruction side will not issue misaligned access fault
+                                      // Misaligned access to main is allowed, and accesses outside main will result in instruction access fault (which will have priority over misaligned from I/O fault)
      .priv_lvl_i           ( priv_lvl_i ),
      .csr_pmp_i            ( csr_pmp_i  ),
      
