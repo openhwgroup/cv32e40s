@@ -1,6 +1,6 @@
 .. _pmp:
 
-Physical Memory Attribution (PMP)
+Physical Memory Protection (PMP)
 ===========================================
 The |corev| includes the Physical Memory Protection (PMP) unit.
 The PMP is both statically and dynamically configurable. The static configuration is performed through the top level 
