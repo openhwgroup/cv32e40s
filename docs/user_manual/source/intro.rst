@@ -45,8 +45,8 @@ It follows these specifications:
 .. [RISC-V-ZCE] RISC-V Standard Extension for Enhanced Compressed Instructions, v0.29.1 (not ratified yet),
    https://github.com/riscv/riscv-code-size-reduction/blob/master/ISA%20proposals/Huawei/Zce_spec.adoc
 
-.. [RISC-V-EPMP] RISC-V Enhanced Physical Memory Protection, version 0.9.1 (not ratified yet),
-   https://docs.google.com/document/d/1Mh_aiHYxemL0umN3GTTw8vsbmzHZ_nxZXgjgOUzbvc8/edit?usp=sharing
+.. [RISC-V-SMEPMP] PMP Enhancements for memory access and execution prevention on Machine mode, version 0.9.4 (not ratified yet),
+   https://github.com/riscv/riscv-tee/blob/main/Smepmp/Smepmp.pdf
 
 .. [OPENHW-OBI] OpenHW Open Bus Interface (OBI) protocol, version 1.2,
    https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf
@@ -119,7 +119,7 @@ Most content of the RISC-V privileged specification is optional.
 * Hardware Performance Counters as described in :ref:`performance-counters`
 * Trap handling supporting direct mode or vectored mode as described at :ref:`exceptions-interrupts`
 * Physical Memory Attribution (PMA) as described in :ref:`pma`
-* Enhanced Physical Memory Protection ([RISC-V-EPMP]_)
+* Physical Memory Protection ([RISC-V-SMEPMP]_)
 
 Synthesis guidelines
 --------------------
