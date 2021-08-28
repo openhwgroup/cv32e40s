@@ -167,17 +167,13 @@ instruction exception.
 
 .. only:: PMP
 
-  .. table:: Control and Status Register Map (additional CSRs for ePMP)
-    :name: Control and Status Register Map (additional CSRs for ePMP)
+  .. table:: Control and Status Register Map (additional CSRs for PMP)
+    :name: Control and Status Register Map (additional CSRs for PMP)
 
     +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
     |  CSR Address  |   Name            | Privilege | Parameter           |  Description                                            |
     +===============+===================+===========+=====================+=========================================================+
     | Machine CSRs                                                                                                                  |
-    +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
-    | 0x390         | ``mseccfg``       | MRW       |                     | Machine Security Configuration (lower 32 bits).         |
-    +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
-    | 0x391         | ``mseccfgh``      | MRW       |                     | Machine Security Configuration (upper 32 bits).         |
     +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
     | 0x3A0         | ``pmpcfg0``       | MRW       |                     | Physical memory protection configuration.               |
     +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
@@ -218,6 +214,10 @@ instruction exception.
     | 0x3BE         | ``pmpaddr14``     | MRW       |                     | Physical memory protection address register.            |
     +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
     | 0x3BF         | ``pmpaddr15``     | MRW       |                     | Physical memory protection address register.            |
+    +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
+    | 0x747         | ``mseccfg``       | MRW       |                     | Machine Security Configuration (lower 32 bits).         |
+    +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
+    | 0x757         | ``mseccfgh``      | MRW       |                     | Machine Security Configuration (upper 32 bits).         |
     +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
 
 .. only:: FPU
@@ -1081,7 +1081,7 @@ Reset Value: Defined
   Machine Security Configuration (``mseccfg``)
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  CSR Address: 0x390
+  CSR Address: 0x747
 
   Reset Value: 0x0000_0000
 
@@ -1102,7 +1102,7 @@ Reset Value: Defined
   Machine Security Configuration (``mseccfgh``)
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  CSR Address: 0x391
+  CSR Address: 0x757
 
   Reset Value: 0x0000_0000
 
