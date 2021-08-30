@@ -21,6 +21,7 @@
 //                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                 Andrea Bettati - andrea.bettati@studenti.unipr.it          //
 //                 Øystein Knauserud - oystein.knauserud@silabs.com           //
+//                 Øivind Ekelund - oivind.ekelund@silabs.com                 //
 //                                                                            //
 // Design Name:    Control and Status Registers                               //
 // Project Name:   RI5CY                                                      //
@@ -91,6 +92,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output logic            debug_trigger_match_o,
 
   output PrivLvl_t        priv_lvl_o,
+  output PrivLvl_t        priv_lvl_lsu_o,
 
   input  logic [31:0]     pc_if_i
 );
@@ -157,6 +159,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic mtvec_we;
   logic mtvec_rd_error;
 
+  logic [31:0] mcounteren_n, mcounteren_q;
+  logic mcounteren_we;
+  logic mcounteren_rd_error;
+
   logic [31:0] mip;                     // Bits are masked according to IRQ_MASK
   logic [31:0] mie_q, mie_n;            // Bits are masked according to IRQ_MASK
   logic mie_we;
@@ -182,7 +188,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                       pmp_mseccfg_rd_error;
   logic                       pmp_rd_error;
   
-  PrivLvl_t priv_lvl_n, priv_lvl_q;
+  PrivLvl_t                   priv_lvl_n, priv_lvl_q;
+  logic                       priv_lvl_we;
+  logic                       priv_lvl_error;
+  logic [1:0]                 priv_lvl_q_int;
+  logic                       umode_mcounteren_illegal_read;  
+  logic                       illegal_csr_write_priv, illegal_csr_read_priv;
 
   // Performance Counter Signals
   logic [31:0] [MHPMCOUNTER_WIDTH-1:0] mhpmcounter_q;                    // performance counters
@@ -235,11 +246,17 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Invalid writes will suppress ex_wb //
   // signals and avoid writing in WB    //
   ////////////////////////////////////////
+
+  // Bits [9:8] in csr_addr indicate priviledge level needed to access CSR's.
+  // The exception is access to perfomance counters from user mode, which is configured through mcounteren.
+  assign illegal_csr_write_priv =  csr_raddr[9:8] > priv_lvl_q;
+  assign illegal_csr_read_priv  = (csr_raddr[9:8] > priv_lvl_q) || umode_mcounteren_illegal_read;
+  
   assign illegal_csr_write = (id_ex_pipe_i.csr_op != CSR_OP_READ) &&
                              (id_ex_pipe_i.csr_en) &&
-                             (csr_raddr[11:10] == 2'b11); // Priv spec section 2.1
+                             ((csr_raddr[11:10] == 2'b11) || illegal_csr_write_priv); // Priv spec section 2.1
 
-  assign csr_illegal_o = (id_ex_pipe_i.instr_valid && id_ex_pipe_i.csr_en) ? illegal_csr_write || illegal_csr_read : 1'b0;
+  assign csr_illegal_o = (id_ex_pipe_i.instr_valid && id_ex_pipe_i.csr_en) ? illegal_csr_write || illegal_csr_read || illegal_csr_read_priv : 1'b0;
 
 
   ////////////////////////////////////////////
@@ -258,6 +275,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   always_comb
   begin
     illegal_csr_read = 1'b0;
+    umode_mcounteren_illegal_read = 1'b0;
 
     case (csr_raddr)
       // mstatus: always M-mode, contains IE bit
@@ -268,6 +286,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MIE: csr_rdata_int = mie_q;
       // mtvec: machine trap-handler base address
       CSR_MTVEC: csr_rdata_int = mtvec_q;
+      // mcounteren: Counter enable registers
+      CSR_MCOUNTEREN: csr_rdata_int = mcounteren_q;
       // mscratch: machine scratch
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
@@ -339,9 +359,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_HPMCOUNTER16, CSR_HPMCOUNTER17, CSR_HPMCOUNTER18, CSR_HPMCOUNTER19,
       CSR_HPMCOUNTER20, CSR_HPMCOUNTER21, CSR_HPMCOUNTER22, CSR_HPMCOUNTER23,
       CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
-      CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31:
+      CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31: begin
         csr_rdata_int = mhpmcounter_q[csr_raddr[4:0]][31:0];
-
+        umode_mcounteren_illegal_read = !mcounteren_q[csr_raddr[4:0]] && (priv_lvl_q == PRIV_LVL_U);
+      end
+      
       CSR_MCYCLEH,
       CSR_MINSTRETH,
       CSR_MHPMCOUNTER3H,
@@ -361,9 +383,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_HPMCOUNTER16H, CSR_HPMCOUNTER17H, CSR_HPMCOUNTER18H, CSR_HPMCOUNTER19H,
       CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
       CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
-      CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H:
+      CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H: begin
         csr_rdata_int = (MHPMCOUNTER_WIDTH == 64) ? mhpmcounter_q[csr_raddr[4:0]][63:32] : '0;
-
+        umode_mcounteren_illegal_read = !mcounteren_q[csr_raddr[4:0]] && (priv_lvl_q == PRIV_LVL_U);
+      end
+        
       CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
 
       CSR_MHPMEVENT3,
@@ -433,22 +457,33 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     dscratch1_we             = 1'b0;
 
     mstatus_n                = '{
-                              mprv: 1'b0,
-                              mpp:  PRIV_LVL_M,
+                              tw:   csr_wdata_int[MSTATUS_TW_BIT],
+                              mprv: csr_wdata_int[MSTATUS_MPRV_BIT],
+                              mpp:  csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW],
                               mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
                               mie:  csr_wdata_int[MSTATUS_MIE_BIT],
                               default: 'b0
                             };
+
+    // mstatus.mpp is WARL, make sure only legal values are written
+    if ((mstatus_n.mpp != PRIV_LVL_M) && (mstatus_n.mpp != PRIV_LVL_U)) begin
+      mstatus_n.mpp = PRIV_LVL_M;
+    end
+    
     mstatus_we    = 1'b0;
     mcause_n      = {csr_wdata_int[31], 26'd0, csr_wdata_int[4:0]};
     mcause_we     = 1'b0;
     exception_pc  = if_id_pipe_i.pc;
     priv_lvl_n    = priv_lvl_q;
-
+    priv_lvl_we   = 1'b0;
+    
     mtvec_n.addr  = csr_mtvec_init_i ? mtvec_addr_i[31:8] : csr_wdata_int[31:8];
     mtvec_n.zero0 = mtvec_q.zero0;
     mtvec_n.mode  = csr_mtvec_init_i ? mtvec_q.mode : {1'b0, csr_wdata_int[0]};
     mtvec_we      = csr_mtvec_init_i;
+
+    mcounteren_n  = csr_wdata_int;
+    mcounteren_we = 1'b0;
 
     mie_n         = csr_wdata_int & IRQ_MASK;
     mie_we        = 1'b0;
@@ -456,7 +491,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     pmp_cfg_we     = {PMP_MAX_REGIONS{1'b0}};
     pmp_addr_we    = {PMP_MAX_REGIONS{1'b0}};
     pmp_mseccfg_we = 1'b0;
-
+      
     if (csr_we_int) begin
       case (csr_waddr)
         // mstatus: IE bit
@@ -470,6 +505,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         // mtvec: machine trap-handler base address
         CSR_MTVEC: begin
               mtvec_we = 1'b1;
+        end
+        // mcounteren: counter enable
+        CSR_MCOUNTEREN: begin
+              mcounteren_we = 1'b1;
         end
         // mscratch: machine scratch
         CSR_MSCRATCH: begin
@@ -555,26 +594,31 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             dpc_n       = exception_pc;
             dpc_we = 1'b1;
         end else begin
-            priv_lvl_n     = PRIV_LVL_M;
-            mstatus_n.mpie = mstatus_q.mie;
-            mstatus_n.mie  = 1'b0;
-            mstatus_n.mpp  = PRIV_LVL_M;
-            mstatus_we = 1'b1;
+          priv_lvl_n     = PRIV_LVL_M; // trap into machine mode
+          priv_lvl_we    = 1'b1;
 
-            mepc_n = exception_pc;
-            mepc_we = 1'b1;
+          mstatus_n      = mstatus_q;
+          mstatus_n.mie  = 1'b0;
+          mstatus_n.mpie = mstatus_q.mie;
+          mstatus_n.mpp  = priv_lvl_q;
+          mstatus_we     = 1'b1;
 
-            mcause_n       = {ctrl_fsm_i.csr_cause[5], 26'd0, ctrl_fsm_i.csr_cause[4:0]};
-            mcause_we = 1'b1;
+          mepc_n         = exception_pc;
+          mepc_we        = 1'b1;
+
+          mcause_n       = {ctrl_fsm_i.csr_cause[5], 26'd0, ctrl_fsm_i.csr_cause[4:0]};
+          mcause_we      = 1'b1;
         end
       end //ctrl_fsm_i.csr_save_cause
 
       ctrl_fsm_i.csr_restore_mret: begin //MRET
+        priv_lvl_n     = PrivLvl_t'(mstatus_q.mpp);
+        priv_lvl_we    = 1'b1;
+        mstatus_n      = mstatus_q;
         mstatus_n.mie  = mstatus_q.mpie;
-        priv_lvl_n     = PRIV_LVL_M;
         mstatus_n.mpie = 1'b1;
-        mstatus_n.mpp  = PRIV_LVL_M;
-        mstatus_we = 1'b1;
+        mstatus_n.mpp  = PRIV_LVL_U;
+        mstatus_we     = 1'b1;
       end //ctrl_fsm_i.csr_restore_mret
 
       ctrl_fsm_i.csr_restore_dret: begin //DRET
@@ -744,10 +788,27 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign csr_rdata_o = csr_rdata_int;
 
+  // Privledge level register
+  cv32e40s_csr #(
+    .WIDTH      ($bits(PrivLvl_t)),
+    .SHADOWCOPY (1'b0),
+    .RESETVALUE (PRIV_LVL_M)
+  ) priv_lvl_i (
+    .clk      (clk),
+    .rst_n     (rst_n),
+    .wr_data_i  (priv_lvl_n),
+    .wr_en_i    (priv_lvl_we),
+    .rd_data_o  (priv_lvl_q_int),
+    .rd_error_o (priv_lvl_error)
+  );
+
+  assign priv_lvl_q = PrivLvl_t'(priv_lvl_q_int);
+
   // directly output some registers
   assign m_irq_enable_o  = mstatus_q.mie && !(dcsr_q.step && !dcsr_q.stepie);
   assign priv_lvl_o      = priv_lvl_q;
-  
+  assign priv_lvl_lsu_o  = mstatus_q.mprv ? PrivLvl_t'(mstatus_q.mpp) : priv_lvl_q;
+
   assign mtvec_addr_o    = mtvec_q.addr;
   assign mtvec_mode_o    = mtvec_q.mode;
   
@@ -756,8 +817,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign debug_single_step_o  = dcsr_q.step;
   assign debug_ebreakm_o      = dcsr_q.ebreakm;
-
-  assign priv_lvl_q   = PRIV_LVL_M;
 
   assign mie_o = mie_q;
 
@@ -1264,4 +1323,20 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     end
   endgenerate
 
+  //  Counter enable register: mcounteren
+  localparam logic [31:0] MCOUNTEREN_MASK = {{(NUM_MHPMCOUNTERS){1'b1}},3'b111};
+  
+  cv32e40s_csr #(
+    .WIDTH      (32),
+    .SHADOWCOPY (1'b0),
+    .RESETVALUE (32'd0),
+    .MASK       (MCOUNTEREN_MASK)
+  ) mcounteren_csr_i (
+    .clk        (clk),
+    .rst_n      (rst_n),
+    .wr_data_i  (mcounteren_n),
+    .wr_en_i    (mcounteren_we),
+    .rd_data_o  (mcounteren_q),
+    .rd_error_o (mcounteren_rd_error));
+  
 endmodule // cv32e40s_cs_registers

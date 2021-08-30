@@ -8,9 +8,10 @@
 
 
 module cv32e40s_csr #(
-    parameter int unsigned    WIDTH      = 32,
+    parameter int unsigned    WIDTH = 32,
     parameter bit             SHADOWCOPY = 1'b0,
-    parameter bit [WIDTH-1:0] RESETVALUE = '0
+    parameter bit [WIDTH-1:0] RESETVALUE = '0,
+    parameter bit [WIDTH-1:0] MASK = {WIDTH{1'b1}}
  ) (
     input  logic             clk,
     input  logic             rst_n,
@@ -26,9 +27,9 @@ module cv32e40s_csr #(
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      rdata_q <= RESETVALUE;
+      rdata_q <= RESETVALUE & MASK;
     end else if (wr_en_i) begin
-      rdata_q <= wr_data_i;
+      rdata_q <= wr_data_i & MASK;
     end
   end
 
@@ -39,9 +40,9 @@ module cv32e40s_csr #(
 
     always_ff @(posedge clk or negedge rst_n) begin
       if (!rst_n) begin
-        shadow_q <= ~RESETVALUE;
+        shadow_q <= ~(RESETVALUE & MASK);
       end else if (wr_en_i) begin
-        shadow_q <= ~wr_data_i;
+        shadow_q <= ~(wr_data_i & MASK);
       end
     end
 
