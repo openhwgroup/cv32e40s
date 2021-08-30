@@ -20,7 +20,7 @@
 
 module cv32e40s_load_store_unit_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
   #(parameter DEPTH = 0)
   (input logic       clk,
    input logic       rst_n,
