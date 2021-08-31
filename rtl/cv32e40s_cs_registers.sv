@@ -1324,7 +1324,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   endgenerate
 
   //  Counter enable register: mcounteren
-  localparam logic [31:0] MCOUNTEREN_MASK = {{(NUM_MHPMCOUNTERS){1'b1}},3'b111};
+  localparam logic [31:0] MCOUNTEREN_MASK = {{(29-NUM_MHPMCOUNTERS){1'b0}},{(NUM_MHPMCOUNTERS){1'b1}},3'b111};
   
   cv32e40s_csr #(
     .WIDTH      (32),
