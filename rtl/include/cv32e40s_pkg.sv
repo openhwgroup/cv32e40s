@@ -210,6 +210,7 @@ typedef enum logic[11:0] {
   CSR_MISA           = 12'h301,
   CSR_MIE            = 12'h304,
   CSR_MTVEC          = 12'h305,
+  CSR_MCOUNTEREN     = 12'h306,
 
   // Performance counters
   CSR_MCOUNTINHIBIT  = 12'h320,
@@ -473,14 +474,17 @@ parameter MSTATUS_MPIE_BIT     = 7;
 parameter MSTATUS_MPP_BIT_HIGH = 12;
 parameter MSTATUS_MPP_BIT_LOW  = 11;
 parameter MSTATUS_MPRV_BIT     = 17;
-
+parameter MSTATUS_TW_BIT       = 21;
+  
 // misa
 parameter logic [1:0] MXL = 2'd1; // M-XLEN: XLEN in M-Mode for RV32
 
 parameter MHPMCOUNTER_WIDTH  = 64;
 // Types for packed struct CSRs
 typedef struct packed {
-  logic [31:18] zero4; // Reserved, hardwired zero
+  logic [31:22] zero5; // Reserved, hardwired zero
+  logic         tw;
+  logic [20:18] zero4; // Reserved, hardwired zero
   logic         mprv; // hardwired zero
   logic [16:13] zero3; // Unimplemented, hardwired zero
   logic [12:11] mpp; // Hardwire to 2'b11 when user mode is not enabled
@@ -491,7 +495,6 @@ typedef struct packed {
   logic         mie;
   logic [2:1]   zero0; // Unimplemented, hardwired zero
   logic         uie; // Tie to zero when user mode is not enabled
-
 } Status_t;
 
 // Debug Cause
@@ -560,6 +563,8 @@ parameter Mtvec_t MTVEC_RESET_VAL = '{
   mode:  MTVEC_MODE};
 
 parameter Status_t MSTATUS_RESET_VAL = '{
+  zero5: 'b0,
+  tw : 1'b0,
   zero4: 'b0, // Reserved, hardwired zero
   mprv: 1'b0, // hardwired zero
   zero3: 'b0, // Unimplemented, hardwired zero
@@ -803,6 +808,7 @@ parameter EXC_CAUSE_ILLEGAL_INSN    = 5'h02;
 parameter EXC_CAUSE_BREAKPOINT      = 5'h03;
 parameter EXC_CAUSE_LOAD_FAULT      = 5'h05;
 parameter EXC_CAUSE_STORE_FAULT     = 5'h07;
+parameter EXC_CAUSE_ECALL_UMODE     = 5'h08;
 parameter EXC_CAUSE_ECALL_MMODE     = 5'h0B;
 parameter EXC_CAUSE_INSTR_BUS_FAULT = 5'h18; // todo: 0x30
 

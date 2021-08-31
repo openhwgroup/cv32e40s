@@ -156,7 +156,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   logic [31:0] csr_rdata;
 
-  PrivLvl_t    current_priv_lvl;
+  PrivLvl_t    current_priv_lvl, current_priv_lvl_lsu;
 
   // LSU
   logic        lsu_misaligned_ex;
@@ -521,7 +521,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_pmp_i             ( csr_pmp            ),
 
     // Privilege level
-    .priv_lvl_i           ( current_priv_lvl   ),
+    .priv_lvl_i            ( current_priv_lvl_lsu ),
 
     // Valid/ready
     .valid_0_i             ( lsu_valid_ex       ), // First LSU stage (EX)
@@ -639,6 +639,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .debug_trigger_match_o      ( debug_trigger_match_id ),
 
     .priv_lvl_o                 ( current_priv_lvl       ),
+    .priv_lvl_lsu_o             ( current_priv_lvl_lsu   ),
 
     .pc_if_i                    ( pc_if                  )
   );
