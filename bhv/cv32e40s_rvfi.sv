@@ -33,6 +33,7 @@ module cv32e40s_rvfi
    input logic [31:0]                         pc_id_i,
    input logic                                id_valid_i,
    input logic                                id_ready_i,
+   input logic [ 1:0]                         rf_re_id_i,
    input logic                                mret_insn_id_i,
    input logic                                jump_in_id_i,
    input logic [31:0]                         jump_target_id_i,
@@ -43,9 +44,9 @@ module cv32e40s_rvfi
    input logic [1:0]                          lsu_type_id_i,
    // Register reads
    input logic [4:0]                          rs1_addr_id_i,
-   input logic [31:0]                         rs1_rdata_id_i,
    input logic [4:0]                          rs2_addr_id_i,
-   input logic [31:0]                         rs2_rdata_id_i,
+   input logic [31:0]                         operand_a_fw_id_i,
+   input logic [31:0]                         operand_b_fw_id_i,
 
    //// EX probes ////
    input logic                                branch_in_ex_i,
@@ -69,9 +70,9 @@ module cv32e40s_rvfi
    input logic [31:0]                         instr_rdata_wb_i,
    input logic                                exception_in_wb_i,
    // Register writes
-   input logic                                rd_we_wb_i,
-   input logic [4:0]                          rd_addr_wb_i,
-   input logic [31:0]                         rd_wdata_wb_i,
+   input logic                                rf_we_wb_i,
+   input logic [4:0]                          rf_addr_wb_i,
+   input logic [31:0]                         rf_wdata_wb_i,
    // LSU
    input logic                                lsu_en_wb_i,
    input logic                                lsu_rvalid_wb_i,
@@ -106,7 +107,7 @@ module cv32e40s_rvfi
    input logic                                csr_mcountinhibit_we_i,
    input logic [31:0] [31:0]                  csr_mhpmevent_n_i,
    input logic [31:0] [31:0]                  csr_mhpmevent_q_i,
-   input logic                                csr_mhpmevent_we_i,
+   input logic [31:0]                         csr_mhpmevent_we_i,
    input logic [31:0]                         csr_mscratch_n_i,
    input logic [31:0]                         csr_mscratch_q_i,
    input logic                                csr_mscratch_we_i,
@@ -332,6 +333,7 @@ module cv32e40s_rvfi
   logic [2:0] [31:0] pc_wdata;
   logic [2:0]        debug_mode;
   logic [2:0] [2:0]  debug_cause;
+  logic [2:0]        in_trap;
   logic [2:0] [ 4:0] rs1_addr;
   logic [2:0] [ 4:0] rs2_addr;
   logic [2:0] [31:0] rs1_rdata;
@@ -349,8 +351,11 @@ module cv32e40s_rvfi
   logic [31:0] rvfi_mem_addr_d;
 
 
-  logic [31:0] rvfi_rd_addr_d;
-  logic [31:0] rvfi_rd_wdata_d;
+  logic [31:0] rd_addr_wb;
+  logic [31:0] rd_wdata_wb;
+
+  logic [31:0] rs1_rdata_id;
+  logic [31:0] rs2_rdata_id;
 
   // CSR inputs in struct format
   rvfi_csr_map_t rvfi_csr_rdata_d;
@@ -374,11 +379,12 @@ module cv32e40s_rvfi
 
   logic [63:0] data_wdata_ror; // Intermediate rotate signal, as direct part-select not supported in all tools
 
-  logic         intr_d;
-
+  logic         in_trap_next;
   logic [2:0]   debug_cause_if_next;
   logic         debug_taken_if;
   logic         is_dret_wb;
+  logic         exception_in_wb;
+  logic         interrupt_in_if;
 
   logic [6:0]   insn_opcode;
   logic [4:0]   insn_rd;
@@ -404,44 +410,26 @@ module cv32e40s_rvfi
   localparam STAGE_ID = 1;
   localparam STAGE_EX = 2;
 
-  rvfi_intr_t  instr_q;
 
+  assign interrupt_in_if   = (pc_mux_i == PC_EXCEPTION) &&  (exc_pc_mux_i == EXC_PC_IRQ);
   assign debug_taken_if    = (pc_mux_i == PC_EXCEPTION) && (exc_pc_mux_i == EXC_PC_DBD);
+  assign exception_in_wb   = (pc_mux_i == PC_EXCEPTION) && ((exc_pc_mux_i == EXC_PC_EXCEPTION) ||
+                                                            (exc_pc_mux_i == EXC_PC_DBE));
   assign is_dret_wb        = (pc_mux_i == PC_DRET);
 
   // Assign rvfi channels
-  assign rvfi_halt              = 1'b0; // No intruction causing halt in cv32e40s
-  assign rvfi_intr              = intr_d;
+  assign rvfi_halt              = 1'b0; // No intruction causing halt in cv32e40x
   assign rvfi_ixl               = 2'b01; // XLEN for current privilege level, must be 1(32) for RV32 systems
-
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-      instr_q           <= '0;
-    end else begin
-      // Store last valid instructions
-      if(rvfi_valid) begin
-        instr_q.valid    <= rvfi_valid && !is_dret_wb; // todo: why is this ' && !is_dret_wb' done here?; looks a bit like a hack
-        instr_q.order    <= rvfi_order;
-        instr_q.pc_wdata <= rvfi_pc_wdata;
-      end else begin
-        instr_q          <= instr_q;
-      end
-    end
-  end // always_ff @
-
-  // Check if instruction is the first instruction in trap handler
-  assign intr_d = rvfi_valid                          && // Current instruction valid
-                  instr_q.valid                       && // Previous instruction valid
-                  ((rvfi_order - instr_q.order) == 1) && // Is latest instruction
-                  (rvfi_pc_rdata != instr_q.pc_wdata);   // Is first part of trap handler // todo: get definitive answer on whether intr signal should be 1 for debug entry as well?
 
   // Pipeline stage model //
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       debug_cause_if_next<= '0;
+      in_trap_next       <= 1'b0;
       pc_wdata           <= '0;
-      debug_mode         <= 1'b0;
+      in_trap            <= '0;
+      debug_mode         <= '0;
       debug_cause        <= '0;
       rs1_addr           <= '0;
       rs2_addr           <= '0;
@@ -460,6 +448,7 @@ module cv32e40s_rvfi
       rvfi_pc_rdata      <= '0;
       rvfi_pc_wdata      <= '0;
       rvfi_trap          <= 1'b0;
+      rvfi_intr          <= 1'b0;
       rvfi_rd_addr       <= '0;
       rvfi_rd_wdata      <= '0;
       rvfi_csr_rdata     <= '0;
@@ -477,9 +466,10 @@ module cv32e40s_rvfi
 
     end else begin
 
-      // todo: Could IF stage be used to propagate first ISR through the RVFI pipeline?
       //// IF Stage ////
       if (if_valid_i && id_ready_i) begin
+        in_trap[STAGE_IF] <= in_trap_next; // Set interrupt bit when entering trap handler
+        in_trap_next      <= 1'b0;
         debug_cause[STAGE_IF]<= debug_cause_if_next;
         debug_cause_if_next  <= '0;
         debug_mode[STAGE_IF] <= debug_mode_i; // Probing in IF to make sure any LSU instructions that are not killed can complete
@@ -492,23 +482,32 @@ module cv32e40s_rvfi
           // A higher priority debug request (e.g. trigger match) will pull ebreak_in_wb_i low and allow the debug cause to propagate
           debug_cause_if_next <=  ebreak_in_wb_i ? 3'h1 : debug_cause_i;
         end
+
+        // Picking up trap entry when IF is not valid to propagate for next valid instruction
+        // The in trap signal is set for the first instruction of interrupt- and exception handlers (not debug handler)
+        if (interrupt_in_if || exception_in_wb) begin
+          in_trap_next <= 1'b1;
+        end
       end
 
       //// ID Stage ////
       if(id_valid_i && ex_ready_i) begin
 
         if (jump_in_id_i) begin
-          pc_wdata [STAGE_ID] <= mret_insn_id_i     ? csr_mepc_q_i : jump_target_id_i; // todo: could IF stage's branch_addr_n be used in both cases? (the current design is clean in that it only uses ID stage signals; the proposal covers more of the RTL)
+          // Predicting mret/jump explicitly instead of using branch_addr_n to
+          // avoid including asynchronous traps and debug reqs in prediction
+          pc_wdata [STAGE_ID] <= mret_insn_id_i     ? csr_mepc_q_i : jump_target_id_i;
         end else begin
           pc_wdata [STAGE_ID] <= is_compressed_id_i ?  pc_id_i + 2 : pc_id_i + 4;
         end
 
+        in_trap    [STAGE_ID] <= in_trap    [STAGE_IF];
         debug_mode [STAGE_ID] <= debug_mode [STAGE_IF];
         debug_cause[STAGE_ID] <= debug_cause[STAGE_IF];
         rs1_addr   [STAGE_ID] <= rs1_addr_id_i;
         rs2_addr   [STAGE_ID] <= rs2_addr_id_i;
-        rs1_rdata  [STAGE_ID] <= (rs1_addr_id_i != '0)         ? rs1_rdata_id_i    : '0; // todo: I understand that 0 needs to be returned for 0 address, but doesn't rs1_rdata_id_i already do that?
-        rs2_rdata  [STAGE_ID] <= (rs2_addr_id_i != '0)         ? rs2_rdata_id_i    : '0; // todo: I understand that 0 needs to be returned for 0 address, but doesn't rs1_rdata_id_i already do that?
+        rs1_rdata  [STAGE_ID] <= rs1_rdata_id;
+        rs2_rdata  [STAGE_ID] <= rs2_rdata_id;
         mem_rmask  [STAGE_ID] <= (lsu_en_id_i && !lsu_we_id_i) ? rvfi_mem_mask_int : '0;
         mem_wmask  [STAGE_ID] <= (lsu_en_id_i &&  lsu_we_id_i) ? rvfi_mem_mask_int : '0;
       end
@@ -516,8 +515,8 @@ module cv32e40s_rvfi
 
       //// EX Stage ////
       if (ex_valid_i && wb_ready_i) begin
-        pc_wdata [STAGE_EX] <= branch_in_ex_i       ? branch_target_ex_i :  // todo: could IF stage's branch_addr_n be used here? (the current design is clean in that it only uses EX stage signals; the proposal covers more of the RTL)
-                               pc_wdata[STAGE_ID];
+        // Predicting branch target explicitly to avoid predicting asynchronous events
+        pc_wdata   [STAGE_EX] <= branch_in_ex_i ? branch_target_ex_i : pc_wdata[STAGE_ID];
         debug_mode [STAGE_EX] <= debug_mode [STAGE_ID];
         debug_cause[STAGE_EX] <= debug_cause[STAGE_ID];
         rs1_addr   [STAGE_EX] <= rs1_addr   [STAGE_ID];
@@ -526,6 +525,7 @@ module cv32e40s_rvfi
         rs2_rdata  [STAGE_EX] <= rs2_rdata  [STAGE_ID];
         mem_rmask  [STAGE_EX] <= mem_rmask  [STAGE_ID];
         mem_wmask  [STAGE_EX] <= mem_wmask  [STAGE_ID];
+        in_trap    [STAGE_EX] <= in_trap    [STAGE_ID];
 
         if (!lsu_misaligned_q_ex_i) begin
           // The second part of the misaligned acess is suppressed to keep
@@ -546,18 +546,19 @@ module cv32e40s_rvfi
         rvfi_order      <= rvfi_order + 64'b1;
         rvfi_pc_rdata   <= pc_wb_i;
         rvfi_insn       <= instr_rdata_wb_i;
-        rvfi_trap       <= exception_in_wb_i; // Set for all synchronous traps. TODO: Verify this is the intention of the spec
+        rvfi_trap       <= (debug_taken_if || exception_in_wb); // Trap set for instructions causing exception or debug entry.
 
         rvfi_mem_rdata  <= lsu_rdata_wb_i;
 
-        rvfi_rd_addr    <= rvfi_rd_addr_d;
-        rvfi_rd_wdata   <= rvfi_rd_wdata_d;
+        rvfi_rd_addr    <= rd_addr_wb;
+        rvfi_rd_wdata   <= rd_wdata_wb;
 
         // Read/Write CSRs
         rvfi_csr_rdata  <= rvfi_csr_rdata_d;
         rvfi_csr_wdata  <= rvfi_csr_wdata_d;
         rvfi_csr_wmask  <= rvfi_csr_wmask_d;
 
+        rvfi_intr      <= in_trap  [STAGE_EX];
         rvfi_rs1_addr  <= rs1_addr [STAGE_EX];
         rvfi_rs2_addr  <= rs2_addr [STAGE_EX];
         rvfi_rs1_rdata <= rs1_rdata[STAGE_EX];
@@ -574,8 +575,9 @@ module cv32e40s_rvfi
       end
 
       // Set expected next PC, half-word aligned
-      rvfi_pc_wdata <= (exception_in_wb_i) ? exception_target_wb_i & ~32'b1 : // todo: why is exception_in_wb_i handled here? Is a synchronous exception supposed to set rvfi_intr or not?
-                       (is_dret_wb       ) ? csr_dpc_q_i :
+      // Predict synchronous exceptions and synchronous debug entry in WB to include all causes
+      rvfi_pc_wdata <= (debug_taken_if || exception_in_wb) ? exception_target_wb_i & ~32'b1 :
+                       (is_dret_wb) ? csr_dpc_q_i :
                        pc_wdata[STAGE_EX] & ~32'b1;
 
       // CSR special cases
@@ -610,8 +612,15 @@ module cv32e40s_rvfi
   assign data_wdata_ror    = {data_wdata_ex_i, data_wdata_ex_i} >> (8*rvfi_mem_addr_d[1:0]); // Rotate right
 
   // Destination Register
-  assign rvfi_rd_addr_d  = (rd_we_wb_i)           ? rd_addr_wb_i  : '0;
-  assign rvfi_rd_wdata_d = (rvfi_rd_addr_d != '0) ? rd_wdata_wb_i : '0;
+  assign rd_addr_wb  = (rf_we_wb_i) ? rf_addr_wb_i  : '0;
+  assign rd_wdata_wb = (rf_we_wb_i) ? rf_wdata_wb_i : '0;
+
+  // Source Register Read Data
+  // Setting register read data from operands if there was a read and clearing if there was not as operands can contain
+  // data that is not read from the register file when not reading (e.g. for immediate instructions).
+  // Can't use register file rdata directly as forwarded data is needed for instructions using the same register back-to-back
+  assign rs1_rdata_id = (rf_re_id_i[0]) ? operand_a_fw_id_i :'0;
+  assign rs2_rdata_id = (rf_re_id_i[1]) ? operand_b_fw_id_i :'0;
 
   ////////////////////////////////
   //  CSRs                      //
@@ -642,7 +651,9 @@ module cv32e40s_rvfi
   assign rvfi_csr_rdata_d.mhpmevent          = csr_mhpmevent_q_i;
   assign rvfi_csr_wdata_d.mhpmevent          = csr_mhpmevent_n_i;
   assign rvfi_csr_wmask_d.mhpmevent[2:0]     = '0; // No mhpevent0-2 registers
-  assign rvfi_csr_wmask_d.mhpmevent[31:3]    = csr_mhpmevent_we_i ? '1 : '0;
+  generate for (genvar i = 3; i < 32; i++)
+    assign rvfi_csr_wmask_d.mhpmevent[i]     = csr_mhpmevent_we_i[i] ? '1 : '0;
+  endgenerate
 
   // Machine trap handling
   assign rvfi_csr_rdata_d.mscratch           = csr_mscratch_q_i;
