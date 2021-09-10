@@ -318,7 +318,7 @@ bind cv32e40s_sleep_unit:
          .exc_pc_i                 ( core_i.if_stage_i.exc_pc                                             ),
 
          .priv_lvl_i               ( core_i.cs_registers_i.priv_lvl_o                                     ),
-         .priv_lvl_lsu_i           ( PRIV_LVL_M                       /* Not implemented in cv32e40x */   ),
+         .priv_lvl_lsu_i           ( core_i.cs_registers_i.priv_lvl_lsu_o                                 ),
          .debug_mode_i             ( core_i.ctrl_fsm.debug_mode                                           ),
          .debug_cause_i            ( core_i.ctrl_fsm.debug_cause                                          ),
 
@@ -386,18 +386,19 @@ bind cv32e40s_sleep_unit:
          .csr_marchid_i            ( MARCHID                                                              ),
          .csr_mhartid_i            ( core_i.cs_registers_i.hart_id_i                                      ),
 
-         .csr_mcounteren_n_i       ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_mcounteren_q_i       ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_mcounteren_we_i      ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_pmpcfg_n_i           ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_pmpcfg_q_i           ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_pmpcfg_we_i          ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_pmpaddr_n_i          ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_pmpaddr_q_i          ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_pmpaddr_we_i         ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_pmpmseccfg_n_i       ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_pmpmseccfg_q_i       ( '0                                    /* Not supported in cv32e40x*/ ),
-         .csr_pmpmseccfg_we_i      ( '0                                    /* Not supported in cv32e40x*/ )
+         .csr_mcounteren_n_i       ( core_i.cs_registers_i.mcounteren_n                                   ),
+         .csr_mcounteren_q_i       ( core_i.cs_registers_i.mcounteren_q                                   ),
+         .csr_mcounteren_we_i      ( core_i.cs_registers_i.mcounteren_we                                  ),
+         // todo:oe: Update pmp register signal names to follow cs_registers naming cnventions
+         .csr_pmpcfg_n_i           ( core_i.cs_registers_i.pmp_cfg_wdata                                  ),
+         .csr_pmpcfg_q_i           ( core_i.cs_registers_i.pmp_cfg_q                                      ),
+         .csr_pmpcfg_we_i          ( core_i.cs_registers_i.pmp_cfg_we_qual                                ),
+         .csr_pmpaddr_n_i          ( core_i.cs_registers_i.csr_wdata_int[31-:PMP_ADDR_WIDTH]              ),
+         .csr_pmpaddr_q_i          ( core_i.cs_registers_i.pmp_addr_q[i]                                  ),
+         .csr_pmpaddr_we_i         ( core_i.cs_registers_i.pmp_addr_we_qual[i]                            ),
+         .csr_pmpmseccfg_n_i       ( core_i.cs_registers_i.pmp_mseccfg_wdata                              ),
+         .csr_pmpmseccfg_q_i       ( core_i.cs_registers_i.pmp_mseccfg_q                                  ),
+         .csr_pmpmseccfg_we_i      ( core_i.cs_registers_i.pmp_mseccfg_we                                 )
 
 
 `ifdef RISCV_FORMAL
