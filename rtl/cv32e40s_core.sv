@@ -87,6 +87,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic        fencei_flush_req_o,
   input logic         fencei_flush_ack_i,       // TODO:OK:low use
 
+  // Security Alerts
+  output logic        alert_minor_o,
+  output logic        alert_major_o,
+
   // Debug Interface
   input  logic        debug_req_i,
   output logic        debug_havereset_o,
@@ -194,6 +198,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Signal from IF to init mtvec at boot time
   logic        csr_mtvec_init_if;
 
+  logic        rf_ecc_err;
+
   // debug mode and dcsr configuration
   // From cs_registers
   logic        debug_single_step;
@@ -251,6 +257,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign m_c_obi_data_if.resp_payload.exokay = data_exokay_i;
 
   assign fencei_flush_req_o = 1'b0; // TODO:OK:low connect to controller when handshake is implemented
+
+  assign alert_minor_o     = 1'b0;
+  assign alert_major_o     = rf_ecc_err;
 
   assign debug_havereset_o = ctrl_fsm.debug_havereset;
   assign debug_halted_o    = ctrl_fsm.debug_halted;
@@ -772,6 +781,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   (
     .clk                ( clk                ),
     .rst_n              ( rst_ni             ),
+
+    // ECC error output
+    .ecc_err_o          ( rf_ecc_err         ),
 
     // Read ports
     .raddr_i            ( rf_raddr_id        ),

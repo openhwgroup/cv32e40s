@@ -95,6 +95,11 @@ module cv32e40s_wrapper
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
   input logic         fencei_flush_ack_i,
+
+  // Security Alerts
+  output logic        alert_minor_o,
+  output logic        alert_major_o,
+
   // Debug Interface
   input  logic        debug_req_i,
   output logic        debug_havereset_o,

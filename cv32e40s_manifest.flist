@@ -36,6 +36,7 @@ ${DESIGN_RTL_DIR}/cv32e40s_if_stage.sv
 ${DESIGN_RTL_DIR}/cv32e40s_csr.sv
 ${DESIGN_RTL_DIR}/cv32e40s_cs_registers.sv
 ${DESIGN_RTL_DIR}/cv32e40s_register_file.sv
+${DESIGN_RTL_DIR}/cv32e40s_register_file_ecc.sv
 ${DESIGN_RTL_DIR}/cv32e40s_register_file_wrapper.sv
 ${DESIGN_RTL_DIR}/cv32e40s_load_store_unit.sv
 ${DESIGN_RTL_DIR}/cv32e40s_id_stage.sv

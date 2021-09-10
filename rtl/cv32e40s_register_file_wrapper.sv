@@ -19,7 +19,8 @@
 // limitations under the License.
 
 ////////////////////////////////////////////////////////////////////////////////
-// Engineer:       Øystein Knauserud - oystein.knauserud@silabs.com           //
+// Engineers:      Øystein Knauserud - oystein.knauserud@silabs.com           //
+//                 Halfdan Bechmann  -  halfdan.bechmann@silabs.com           //
 //                                                                            //
 // Design Name:    Register file wrapper                                      //
 // Project Name:   CV32E40S                                                   //
@@ -29,37 +30,74 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_register_file_wrapper import cv32e40s_pkg::*;
-(
-        // Clock and Reset
-        input  logic         clk,
-        input  logic         rst_n,
-    
-        // Read ports
-        input  rf_addr_t     raddr_i [REGFILE_NUM_READ_PORTS],
-        output rf_data_t     rdata_o [REGFILE_NUM_READ_PORTS],
-    
-        // Write ports
-        input rf_addr_t     waddr_i [REGFILE_NUM_WRITE_PORTS],
-        input rf_data_t     wdata_i [REGFILE_NUM_WRITE_PORTS],
-        input logic         we_i [REGFILE_NUM_WRITE_PORTS]
-);
-    
-    cv32e40s_register_file
+  (
+   // Clock and Reset
+   input logic      clk,
+   input logic      rst_n,
+
+   // ECC
+   output logic     ecc_err_o,
+
+   // Read ports
+   input  rf_addr_t raddr_i [REGFILE_NUM_READ_PORTS],
+   output rf_data_t rdata_o [REGFILE_NUM_READ_PORTS],
+
+   // Write ports
+   input rf_addr_t  waddr_i [REGFILE_NUM_WRITE_PORTS],
+   input rf_data_t  wdata_i [REGFILE_NUM_WRITE_PORTS],
+   input logic      we_i    [REGFILE_NUM_WRITE_PORTS]
+   );
+
+  // Register file data signals
+  logic [REGFILE_WORD_WIDTH-1:0] rf_rdata[REGFILE_NUM_READ_PORTS];
+  logic [REGFILE_WORD_WIDTH-1:0] rf_wdata[REGFILE_NUM_WRITE_PORTS];
+
+  cv32e40s_register_file
     register_file_i
-    (
-      .clk                ( clk                ),
-      .rst_n              ( rst_n              ),
-    
-      // Read ports
-      .raddr_i            ( raddr_i            ),
-      .rdata_o            ( rdata_o            ),
-    
-      // Write ports
-      .waddr_i            ( waddr_i            ),
-      .wdata_i            ( wdata_i            ),
-      .we_i               ( we_i               )
-                 
-    ); 
-    
-    endmodule
-    
+      (
+       .clk                ( clk                ),
+       .rst_n              ( rst_n              ),
+
+       // Read ports
+       .raddr_i            ( raddr_i            ),
+       .rdata_o            ( rf_rdata           ),
+
+       // Write ports
+       .waddr_i            ( waddr_i            ),
+       .wdata_i            ( rf_wdata           ),
+       .we_i               ( we_i               )
+       );
+
+  generate for (genvar i = 0; i < REGFILE_NUM_READ_PORTS; i++)
+    assign rdata_o[i] = (rf_data_t)'(rf_rdata[i][REGFILE_DATA_WIDTH-1:0]);
+  endgenerate
+
+  generate
+    if (SECURE) begin
+      cv32e40s_register_file_ecc register_file_ecc
+        (
+         .clk             ( clk                ),
+         .rst_n           ( rst_n              ),
+
+         // Read ports
+         .raddr_i         ( raddr_i            ),
+         .rdata_i         ( rf_rdata           ),
+
+         // Write ports
+         .waddr_i         ( waddr_i            ),
+         .wdata_i         ( wdata_i            ),
+
+         // Encoded Write Data
+         .rf_wdata_o      ( rf_wdata           ),
+
+         // Error Output
+         .ecc_err_o       ( ecc_err_o          )
+         );
+    end else begin // if (SECURE)
+      assign ecc_err_o = 1'b0;
+      assign rf_wdata  = wdata_i;
+    end
+  endgenerate
+
+endmodule
+
