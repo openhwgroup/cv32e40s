@@ -32,7 +32,7 @@ module cv32e40s_core_sva
   input ctrl_fsm_t   ctrl_fsm,
   input logic [4:0]  exc_cause,
   input logic [31:0] mie,
-  input logic        debug_single_step,
+  input Dcsr_t       dcsr,
   input              if_id_pipe_t if_id_pipe,
   input              id_stage_multi_cycle_id_stall,
   input logic        id_stage_id_valid,
@@ -109,30 +109,35 @@ always_ff @(posedge clk , negedge rst_ni)
       // code needs to check priority of what to expect
       if (!first_illegal_found && ex_wb_pipe.instr_valid && !irq_ack_o && !(ctrl_pending_debug && ctrl_debug_allowed) &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK)) &&
+        !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&
           ex_wb_pipe.illegal_insn && !ctrl_debug_mode_n) begin
         first_illegal_found   <= 1'b1;
         expected_illegal_mepc <= ex_wb_pipe.pc;
       end
       if (!first_ecall_found && ex_wb_pipe.instr_valid && !irq_ack_o && !(ctrl_pending_debug && ctrl_debug_allowed) &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn) &&
+        !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&
           ex_wb_pipe.ecall_insn && !ctrl_debug_mode_n) begin
         first_ecall_found   <= 1'b1;
         expected_ecall_mepc <= ex_wb_pipe.pc;
       end
       if (!first_ebrk_found && ex_wb_pipe.instr_valid && !irq_ack_o && !(ctrl_pending_debug && ctrl_debug_allowed) &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn || ex_wb_pipe.ecall_insn) &&
+        !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&
           ex_wb_pipe.ebrk_insn) begin
         first_ebrk_found   <= 1'b1;
         expected_ebrk_mepc <= ex_wb_pipe.pc;
       end
       
       if (!first_instr_err_found && (ex_wb_pipe.instr.mpu_status == MPU_OK) && !irq_ack_o && !(ctrl_pending_debug && ctrl_debug_allowed) &&
+         !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&
           ex_wb_pipe.instr_valid && ex_wb_pipe.instr.bus_resp.err && !ctrl_debug_mode_n ) begin
         first_instr_err_found   <= 1'b1;
         expected_instr_err_mepc <= ex_wb_pipe.pc;
       end
       
       if (!first_instr_mpuerr_found && ex_wb_pipe.instr_valid && !irq_ack_o && !(ctrl_pending_debug && ctrl_debug_allowed) &&
+         !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&
           (ex_wb_pipe.instr.mpu_status != MPU_OK) && !ctrl_debug_mode_n) begin
         first_instr_mpuerr_found   <= 1'b1;
         expected_instr_mpuerr_mepc <= ex_wb_pipe.pc;
@@ -263,26 +268,26 @@ always_ff @(posedge clk , negedge rst_ni)
   // Should issue exactly one instruction from ID before entering debug_mode
   a_single_step_no_irq :
     assert property (@(posedge clk) disable iff (!rst_ni || interrupt_taken)
-                     (inst_taken && debug_single_step && !ctrl_fsm.debug_mode)
+                     (inst_taken && dcsr.step && !ctrl_fsm.debug_mode)
                      ##1 inst_taken [->1]
-                     |-> (ctrl_fsm.debug_mode && debug_single_step))
+                     |-> (ctrl_fsm.debug_mode && dcsr.step))
       else `uvm_error("core", "Assertion a_single_step_no_irq failed")
 
   // Single step with interrupt taken may issue up to two instructions
   // before entering debug mode
   a_single_step_with_irq :
     assert property (@(posedge clk) disable iff (!rst_ni)
-                      (inst_taken && debug_single_step && !ctrl_fsm.debug_mode && interrupt_taken) [*1:2]
+                      (inst_taken && dcsr.step && !ctrl_fsm.debug_mode && interrupt_taken) [*1:2]
                       ##1 inst_taken [->1]
-                      |-> (ctrl_fsm.debug_mode && debug_single_step))
+                      |-> (ctrl_fsm.debug_mode && dcsr.step))
       else `uvm_error("core", "Assertion a_single_step_with_irq failed")
 
   // Check that only a single instruction can retire during single step
   a_single_step_retire :
     assert property (@(posedge clk) disable iff (!rst_ni)
-                      (wb_valid && debug_single_step && !ctrl_fsm.debug_mode)
+                      (wb_valid && dcsr.step && !ctrl_fsm.debug_mode)
                       ##1 wb_valid [->1]
-                      |-> (ctrl_fsm.debug_mode && debug_single_step))
+                      |-> (ctrl_fsm.debug_mode && dcsr.step))
       else `uvm_error("core", "Multiple instructions retired during single stepping")
   
 endmodule // cv32e40s_core_sva

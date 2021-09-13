@@ -87,8 +87,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // debug
   output logic [31:0]     dpc_o,
-  output logic            debug_single_step_o,
-  output logic            debug_ebreakm_o,
+  output Dcsr_t           dcsr_o,
   output logic            debug_trigger_match_o,
 
   output PrivLvl_t        priv_lvl_o,
@@ -96,7 +95,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   input  logic [31:0]     pc_if_i
 );
-
   
   localparam logic [31:0] MISA_VALUE =
   (32'(A_EXTENSION)                     <<  0)  // A - Atomic Instructions extension
@@ -473,7 +471,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mstatus_we    = 1'b0;
     mcause_n      = '{
                       interrupt:      csr_wdata_int[31],
-                      exception_code: csr_wdata_int[5:0],
+                      exception_code: csr_wdata_int[7:0],
                       default: 'b0
                       };
     mcause_we     = 1'b0;
@@ -496,6 +494,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     pmp_addr_we    = {PMP_MAX_REGIONS{1'b0}};
     pmp_mseccfg_we = 1'b0;
       
+
     if (csr_we_int) begin
       case (csr_waddr)
         // mstatus: IE bit
@@ -817,10 +816,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign mtvec_mode_o    = mtvec_q.mode;
   
   assign mepc_o          = mepc_q;
-  assign dpc_o          = dpc_q;
-
-  assign debug_single_step_o  = dcsr_q.step;
-  assign debug_ebreakm_o      = dcsr_q.ebreakm;
+  assign dpc_o           = dpc_q;
+  assign dcsr_o          = dcsr_q;
 
   assign mie_o = mie_q;
 
