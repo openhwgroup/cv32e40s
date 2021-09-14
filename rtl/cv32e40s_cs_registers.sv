@@ -166,24 +166,27 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic mie_we;
   logic mie_rd_error;
 
-  pmp_cfg_t     pmp_cfg_q[PMP_MAX_REGIONS];
-  logic [PMP_CFG_W-1:0]   pmp_cfg_rdata[PMP_MAX_REGIONS];
-  logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_q[PMP_MAX_REGIONS];
-  logic [31:0]  pmp_addr_rdata[PMP_MAX_REGIONS];
-  pmp_mseccfg_t pmp_mseccfg_q;
-  logic [31:0]  pmp_mseccfg0_rdata;
-
-  logic [PMP_MAX_REGIONS-1:0] pmp_cfg_we;
-  logic [PMP_MAX_REGIONS-1:0] pmp_addr_we;
-  logic                       pmp_mseccfg_we;
-
+  pmp_cfg_t                   pmp_cfg_n[PMP_NUM_REGIONS];  
+  pmp_cfg_t                   pmp_cfg_q[PMP_MAX_REGIONS];
+  logic [PMP_MAX_REGIONS-1:0] pmp_cfg_we_int;
+  logic [PMP_NUM_REGIONS-1:0] pmp_cfg_we;
   logic [PMP_NUM_REGIONS-1:0] pmp_cfg_locked;
-  logic [PMP_NUM_REGIONS-1:0] pmp_cfg_we_qual;
-  logic [PMP_NUM_REGIONS-1:0] pmp_addr_we_qual;
-  
+  logic [PMP_CFG_W-1:0]       pmp_cfg_rdata[PMP_MAX_REGIONS];
   logic [PMP_NUM_REGIONS-1:0] pmp_cfg_rd_error;
+ 
+  logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_n;
+  logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_q[PMP_MAX_REGIONS];
+  logic [PMP_MAX_REGIONS-1:0] pmp_addr_we_int;
+  logic [PMP_NUM_REGIONS-1:0] pmp_addr_we;
+  logic [31:0]                pmp_addr_rdata[PMP_MAX_REGIONS];
   logic [PMP_NUM_REGIONS-1:0] pmp_addr_rd_error;
+  
+  pmp_mseccfg_t               pmp_mseccfg_n;
+  pmp_mseccfg_t               pmp_mseccfg_q;
+  logic                       pmp_mseccfg_we;
+  logic [31:0]                pmp_mseccfg0_rdata;
   logic                       pmp_mseccfg_rd_error;
+
   logic                       pmp_rd_error;
   
   PrivLvl_t                   priv_lvl_n, priv_lvl_q;
@@ -490,10 +493,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mie_n         = csr_wdata_int & IRQ_MASK;
     mie_we        = 1'b0;
 
-    pmp_cfg_we     = {PMP_MAX_REGIONS{1'b0}};
-    pmp_addr_we    = {PMP_MAX_REGIONS{1'b0}};
-    pmp_mseccfg_we = 1'b0;
-      
+    pmp_cfg_we_int  = {PMP_MAX_REGIONS{1'b0}};
+    pmp_addr_n      = csr_wdata_int[31-:PMP_ADDR_WIDTH];
+    pmp_addr_we_int = {PMP_MAX_REGIONS{1'b0}};
+    pmp_mseccfg_we  = 1'b0;
 
     if (csr_we_int) begin
       case (csr_waddr)
@@ -538,22 +541,22 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                 dscratch1_we = 1'b1;
         end
         CSR_PMPCFG0: begin
-          pmp_cfg_we[3:0]   = 4'hF;
+          pmp_cfg_we_int[3:0] = 4'hF;
         end
         CSR_PMPCFG1: begin
-          pmp_cfg_we[7:4]   = 4'hF;
+          pmp_cfg_we_int[7:4] = 4'hF;
         end
         CSR_PMPCFG2: begin
-          pmp_cfg_we[11:8]  = 4'hF;
+          pmp_cfg_we_int[11:8] = 4'hF;
         end
         CSR_PMPCFG3: begin
-          pmp_cfg_we[15:12] = 4'hF;
+          pmp_cfg_we_int[15:12] = 4'hF;
         end
         CSR_PMPADDR0, CSR_PMPADDR1, CSR_PMPADDR2, CSR_PMPADDR3,
         CSR_PMPADDR4, CSR_PMPADDR5, CSR_PMPADDR6, CSR_PMPADDR7,
         CSR_PMPADDR8, CSR_PMPADDR9, CSR_PMPADDR10, CSR_PMPADDR11,
         CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15: begin
-          pmp_addr_we[csr_waddr[3:0]] = 1'b1;
+          pmp_addr_we_int[csr_waddr[3:0]] = 1'b1;
         end
         CSR_PMPMSECCFG0: begin
           pmp_mseccfg_we = 1'b1;
@@ -820,39 +823,39 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign dcsr_o          = dcsr_q;
 
   assign mie_o = mie_q;
-
+  
   generate
     if(PMP_NUM_REGIONS > 0) begin: csr_pmp
       for(genvar i=0; i < PMP_MAX_REGIONS; i++)  begin: gen_pmp_csr
 
         if(i < PMP_NUM_REGIONS) begin: pmp_region
           
-          pmp_cfg_t pmp_cfg_wdata;
+          
           
           // MSECCFG.RLB allows the lock bit to be bypassed
           assign pmp_cfg_locked[i] = pmp_cfg_q[i].lock && !pmp_mseccfg_q.rlb;
 
           // Qualify PMPCFG write strobe with lock status
-          assign pmp_cfg_we_qual[i] = pmp_cfg_we[i] && !pmp_cfg_locked[i];
+          assign pmp_cfg_we[i] = pmp_cfg_we_int[i] && !pmp_cfg_locked[i];
 
           // Extract PMPCFGi bits from wdata
-          assign pmp_cfg_wdata.lock = csr_wdata_int[(i%4)*PMP_CFG_W+7];
+          assign pmp_cfg_n[i].lock = csr_wdata_int[(i%4)*PMP_CFG_W+7];
           
           // NA4 mode is not selectable when G > 0, mode is treated as OFF
           always_comb begin
             unique case (csr_wdata_int[(i%4)*PMP_CFG_W+3+:2])
-              PMP_MODE_OFF   : pmp_cfg_wdata.mode = PMP_MODE_OFF;
-              PMP_MODE_TOR   : pmp_cfg_wdata.mode = PMP_MODE_TOR;
-              PMP_MODE_NA4   : pmp_cfg_wdata.mode = (PMP_GRANULARITY == 0) ? PMP_MODE_NA4 :
+              PMP_MODE_OFF   : pmp_cfg_n[i].mode = PMP_MODE_OFF;
+              PMP_MODE_TOR   : pmp_cfg_n[i].mode = PMP_MODE_TOR;
+              PMP_MODE_NA4   : pmp_cfg_n[i].mode = (PMP_GRANULARITY == 0) ? PMP_MODE_NA4 :
                                                     PMP_MODE_OFF;
-              PMP_MODE_NAPOT : pmp_cfg_wdata.mode = PMP_MODE_NAPOT;
-              default : pmp_cfg_wdata.mode = PMP_MODE_OFF;
+              PMP_MODE_NAPOT : pmp_cfg_n[i].mode = PMP_MODE_NAPOT;
+              default : pmp_cfg_n[i].mode = PMP_MODE_OFF;
             endcase
           end
           
-          assign pmp_cfg_wdata.exec  = csr_wdata_int[(i%4)*PMP_CFG_W+2];
-          assign pmp_cfg_wdata.write = csr_wdata_int[(i%4)*PMP_CFG_W+1];
-          assign pmp_cfg_wdata.read  = csr_wdata_int[(i%4)*PMP_CFG_W+0];
+          assign pmp_cfg_n[i].exec  = csr_wdata_int[(i%4)*PMP_CFG_W+2];
+          assign pmp_cfg_n[i].write = csr_wdata_int[(i%4)*PMP_CFG_W+1];
+          assign pmp_cfg_n[i].read  = csr_wdata_int[(i%4)*PMP_CFG_W+0];
           
           cv32e40s_csr #(
                          .WIDTH      ($bits(pmp_cfg_t)),
@@ -861,8 +864,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           pmp_cfg_csr_i 
             (.clk        (clk),
              .rst_n      (rst_n),
-             .wr_data_i  (pmp_cfg_wdata),
-             .wr_en_i    (pmp_cfg_we_qual[i]),
+             .wr_data_i  (pmp_cfg_n[i]),
+             .wr_en_i    (pmp_cfg_we[i]),
              .rd_data_o  (pmp_cfg_q[i]),
              .rd_error_o (pmp_cfg_rd_error[i]));
 
@@ -873,14 +876,14 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign csr_pmp_o.cfg[i] = pmp_cfg_q[i];
 
           if (i == PMP_NUM_REGIONS-1) begin: pmp_addr_qual_upper
-            assign pmp_addr_we_qual[i] = pmp_addr_we[i]     && 
-                                         !pmp_cfg_locked[i];
+            assign pmp_addr_we[i] = pmp_addr_we_int[i] && 
+                                    !pmp_cfg_locked[i];
           end
           else begin: pmp_addr_qual_other
             // If the region at the next index is configured as TOR, this region's address register is locked
-            assign pmp_addr_we_qual[i] = pmp_addr_we[i]     && 
-                                         !pmp_cfg_locked[i] &&
-                                         (!pmp_cfg_locked[i+1] || pmp_cfg_q[i+1].mode != PMP_MODE_TOR);
+            assign pmp_addr_we[i] = pmp_addr_we_int[i] && 
+                                    !pmp_cfg_locked[i] &&
+                                    (!pmp_cfg_locked[i+1] || pmp_cfg_q[i+1].mode != PMP_MODE_TOR);
           end
           
           cv32e40s_csr #(
@@ -890,8 +893,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           pmp_addr_csr_i 
             (.clk        (clk),
              .rst_n      (rst_n),
-             .wr_data_i  (csr_wdata_int[31-:PMP_ADDR_WIDTH]),
-             .wr_en_i    (pmp_addr_we_qual[i]),
+             .wr_data_i  (pmp_addr_n),
+             .wr_en_i    (pmp_addr_we[i]),
              .rd_data_o  (pmp_addr_q[i]),
              .rd_error_o (pmp_addr_rd_error[i]));
 
@@ -941,19 +944,18 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
       end
      
-      pmp_mseccfg_t pmp_mseccfg_wdata;
 
       // MSECCFG.MML/MSECCFG.MMWP cannot be unset once set
-      assign pmp_mseccfg_wdata.mml  = csr_wdata_int[CSR_MSECCFG_MML_BIT]  || pmp_mseccfg_q.mml;
-      assign pmp_mseccfg_wdata.mmwp = csr_wdata_int[CSR_MSECCFG_MMWP_BIT] || pmp_mseccfg_q.mmwp;
+      assign pmp_mseccfg_n.mml  = csr_wdata_int[CSR_MSECCFG_MML_BIT]  || pmp_mseccfg_q.mml;
+      assign pmp_mseccfg_n.mmwp = csr_wdata_int[CSR_MSECCFG_MMWP_BIT] || pmp_mseccfg_q.mmwp;
 
       // MSECFG.RLB cannot be set if any PMP region is locked
       // TODO:OE Spec: When mseccfg.RLB is 0 and pmpcfg.L is 1 in any entry (including disabled entries), then mseccfg.RLB is locked and any further modifications to mseccfg.RLB are ignored (WARL). Ibex version would clear RLB upon MSECCFG write if any region is locked, even if RLB=1.
       
-      // Ibex version: assign pmp_mseccfg_wdata.rlb = csr_wdata_int[CSR_MSECCFG_RLB_BIT]  && !(|pmp_cfg_locked);
+      // Ibex version: assign pmp_mseccfg_n.rlb = csr_wdata_int[CSR_MSECCFG_RLB_BIT]  && !(|pmp_cfg_locked);
 
       // MSECCFG.RLB cannot be set if RLB=0 and any PMP region is locked
-      assign pmp_mseccfg_wdata.rlb  = pmp_mseccfg_q.rlb ? csr_wdata_int[CSR_MSECCFG_RLB_BIT] :
+      assign pmp_mseccfg_n.rlb  = pmp_mseccfg_q.rlb ? csr_wdata_int[CSR_MSECCFG_RLB_BIT] :
                                       csr_wdata_int[CSR_MSECCFG_RLB_BIT] && !(|pmp_cfg_locked);
         
       cv32e40s_csr #(
@@ -963,7 +965,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       pmp_mseccfg_csr_i 
         (.clk        (clk),
          .rst_n      (rst_n),
-         .wr_data_i  (pmp_mseccfg_wdata),
+         .wr_data_i  (pmp_mseccfg_n),
          .wr_en_i    (pmp_mseccfg_we),
          .rd_data_o  (pmp_mseccfg_q),
          .rd_error_o (pmp_mseccfg_rd_error));

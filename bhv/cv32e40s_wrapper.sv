@@ -389,14 +389,14 @@ bind cv32e40s_sleep_unit:
          .csr_mcounteren_n_i       ( core_i.cs_registers_i.mcounteren_n                                   ),
          .csr_mcounteren_q_i       ( core_i.cs_registers_i.mcounteren_q                                   ),
          .csr_mcounteren_we_i      ( core_i.cs_registers_i.mcounteren_we                                  ),
-         // todo:oe: Update pmp register signal names to follow cs_registers naming cnventions
-         .csr_pmpcfg_n_i           ( core_i.cs_registers_i.pmp_cfg_wdata                                  ),
+         
+         .csr_pmpcfg_n_i           ( core_i.cs_registers_i.pmp_cfg_n                                      ),
          .csr_pmpcfg_q_i           ( core_i.cs_registers_i.pmp_cfg_q                                      ),
-         .csr_pmpcfg_we_i          ( core_i.cs_registers_i.pmp_cfg_we_qual                                ),
-         .csr_pmpaddr_n_i          ( core_i.cs_registers_i.csr_wdata_int[31-:PMP_ADDR_WIDTH]              ),
+         .csr_pmpcfg_we_i          ( core_i.cs_registers_i.pmp_cfg_we                                     ),
+         .csr_pmpaddr_n_i          ( core_i.cs_registers_i.pmp_addr_n                                     ),
          .csr_pmpaddr_q_i          ( core_i.cs_registers_i.pmp_addr_q[i]                                  ),
-         .csr_pmpaddr_we_i         ( core_i.cs_registers_i.pmp_addr_we_qual[i]                            ),
-         .csr_pmpmseccfg_n_i       ( core_i.cs_registers_i.pmp_mseccfg_wdata                              ),
+         .csr_pmpaddr_we_i         ( core_i.cs_registers_i.pmp_addr_we[i]                                 ),
+         .csr_pmpmseccfg_n_i       ( core_i.cs_registers_i.pmp_mseccfg_n                                  ),
          .csr_pmpmseccfg_q_i       ( core_i.cs_registers_i.pmp_mseccfg_q                                  ),
          .csr_pmpmseccfg_we_i      ( core_i.cs_registers_i.pmp_mseccfg_we                                 )
 
