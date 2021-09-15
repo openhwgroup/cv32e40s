@@ -44,6 +44,8 @@ module cv32e40s_wrapper
 #(
   parameter NUM_MHPMCOUNTERS             =  1,
   parameter b_ext_e      B_EXT           = NONE,
+  parameter int          PMP_GRANULARITY =  0,
+  parameter int          PMP_NUM_REGIONS =  0,
   parameter int          PMA_NUM_REGIONS =  0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
@@ -259,6 +261,7 @@ bind cv32e40s_sleep_unit:
       );
 
     cv32e40s_rvfi
+      #(.PMP_NUM_REGIONS(PMP_NUM_REGIONS))
       rvfi_i
         (.clk_i                    ( clk_i                                                                ),
          .rst_ni                   ( rst_ni                                                               ),
@@ -389,13 +392,14 @@ bind cv32e40s_sleep_unit:
          .csr_mcounteren_n_i       ( core_i.cs_registers_i.mcounteren_n                                   ),
          .csr_mcounteren_q_i       ( core_i.cs_registers_i.mcounteren_q                                   ),
          .csr_mcounteren_we_i      ( core_i.cs_registers_i.mcounteren_we                                  ),
-         
+
          .csr_pmpcfg_n_i           ( core_i.cs_registers_i.pmp_cfg_n                                      ),
          .csr_pmpcfg_q_i           ( core_i.cs_registers_i.pmp_cfg_q                                      ),
          .csr_pmpcfg_we_i          ( core_i.cs_registers_i.pmp_cfg_we                                     ),
          .csr_pmpaddr_n_i          ( core_i.cs_registers_i.pmp_addr_n                                     ),
-         .csr_pmpaddr_q_i          ( core_i.cs_registers_i.pmp_addr_q[i]                                  ),
-         .csr_pmpaddr_we_i         ( core_i.cs_registers_i.pmp_addr_we[i]                                 ),
+         // Using rdata for pmp address to include read logic
+         .csr_pmpaddr_q_i          ( core_i.cs_registers_i.pmp_addr_rdata                                 ),
+         .csr_pmpaddr_we_i         ( core_i.cs_registers_i.pmp_addr_we                                    ),
          .csr_pmpmseccfg_n_i       ( core_i.cs_registers_i.pmp_mseccfg_n                                  ),
          .csr_pmpmseccfg_q_i       ( core_i.cs_registers_i.pmp_mseccfg_q                                  ),
          .csr_pmpmseccfg_we_i      ( core_i.cs_registers_i.pmp_mseccfg_we                                 )
@@ -414,6 +418,8 @@ bind cv32e40s_sleep_unit:
         #(
           .NUM_MHPMCOUNTERS      ( NUM_MHPMCOUNTERS      ),
           .B_EXT                 ( B_EXT                 ),
+          .PMP_GRANULARITY       ( PMP_GRANULARITY       ),
+          .PMP_NUM_REGIONS       ( PMP_NUM_REGIONS       ),
           .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),
           .PMA_CFG               ( PMA_CFG               ))
     core_i (.*);
