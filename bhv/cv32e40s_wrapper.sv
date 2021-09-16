@@ -261,7 +261,6 @@ bind cv32e40s_sleep_unit:
       );
 
     cv32e40s_rvfi
-      #(.PMP_NUM_REGIONS(PMP_NUM_REGIONS))
       rvfi_i
         (.clk_i                    ( clk_i                                                                ),
          .rst_ni                   ( rst_ni                                                               ),

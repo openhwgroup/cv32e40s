@@ -21,7 +21,6 @@
 module cv32e40s_rvfi
   import cv32e40s_pkg::*;
   import cv32e40s_rvfi_pkg::*;
-  #(parameter PMP_NUM_REGIONS = 0)
   (
    input logic                                clk_i,
    input logic                                rst_ni,
@@ -159,12 +158,12 @@ module cv32e40s_rvfi
    input logic [31:0]                         csr_mcounteren_q_i,
    input logic                                csr_mcounteren_we_i,
 
-   input pmp_cfg_t                            csr_pmpcfg_n_i[PMP_NUM_REGIONS],
+   input pmp_cfg_t                            csr_pmpcfg_n_i[PMP_MAX_REGIONS],
    input pmp_cfg_t                            csr_pmpcfg_q_i[PMP_MAX_REGIONS],
-   input logic [PMP_NUM_REGIONS-1:0]          csr_pmpcfg_we_i,
+   input logic [PMP_MAX_REGIONS-1:0]          csr_pmpcfg_we_i,
    input logic [31:0]                         csr_pmpaddr_n_i, // PMP address input shared for all pmpaddr registers
    input logic [31:0]                         csr_pmpaddr_q_i[PMP_MAX_REGIONS],
-   input logic [PMP_NUM_REGIONS-1:0]          csr_pmpaddr_we_i,
+   input logic [PMP_MAX_REGIONS-1:0]          csr_pmpaddr_we_i,
    input pmp_mseccfg_t                        csr_pmpmseccfg_n_i,
    input pmp_mseccfg_t                        csr_pmpmseccfg_q_i,
    input logic                                csr_pmpmseccfg_we_i,
@@ -867,33 +866,23 @@ module cv32e40s_rvfi
   assign rvfi_csr_wmask_d.mcounteren         = csr_mcounteren_we_i ? '1 : '0;
 
   // PMP
-  // Special case for the PMP registers because they are split by pmp region and not by register
+  // Special case for the PMP cfg registers because they are split by pmp region and not by register
   generate
     for (genvar i = 0; i < PMP_MAX_REGIONS; i++ ) begin
       // 4 regions in each register
-      if (i < PMP_NUM_REGIONS) begin
-        assign rvfi_csr_wdata_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_n_i[i];
-        assign rvfi_csr_rdata_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_q_i[i];
-        assign rvfi_csr_wmask_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_we_i[i] ? '1 : '0;
+      assign rvfi_csr_wdata_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_n_i[i];
+      assign rvfi_csr_rdata_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_q_i[i];
+      assign rvfi_csr_wmask_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_we_i[i] ? '1 : '0;
 
-        assign rvfi_csr_wdata_d.pmpaddr[i]          = csr_pmpaddr_n_i; // input shared between all registers
-        assign rvfi_csr_rdata_d.pmpaddr[i]          = csr_pmpaddr_q_i[i];
-        assign rvfi_csr_wmask_d.pmpaddr[i]          = csr_pmpaddr_we_i[i] ? '1 : '0;
-      end else begin
-        assign rvfi_csr_wdata_d.pmpcfg[i/4][i%4+:4] = '0;
-        assign rvfi_csr_rdata_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_q_i[i];
-        assign rvfi_csr_wmask_d.pmpcfg[i/4][i%4+:4] = '0;
-
-        assign rvfi_csr_wdata_d.pmpaddr[i]          = '0;
-        assign rvfi_csr_rdata_d.pmpaddr[i]          = csr_pmpaddr_q_i[i];
-        assign rvfi_csr_wmask_d.pmpaddr[i]          = '0;
-      end
+      assign rvfi_csr_wdata_d.pmpaddr[i]          = csr_pmpaddr_n_i; // input shared between all registers
+      assign rvfi_csr_rdata_d.pmpaddr[i]          = csr_pmpaddr_q_i[i];
+      assign rvfi_csr_wmask_d.pmpaddr[i]          = csr_pmpaddr_we_i[i] ? '1 : '0;
     end
   endgenerate
 
-  assign rvfi_csr_wdata_d.pmpmseccfg       = csr_pmpmseccfg_n_i;
-  assign rvfi_csr_rdata_d.pmpmseccfg       = csr_pmpmseccfg_q_i;
-  assign rvfi_csr_wmask_d.pmpmseccfg       = csr_pmpmseccfg_we_i ? '1 : '0;
+  assign rvfi_csr_wdata_d.pmpmseccfg[0]   = csr_pmpmseccfg_n_i;
+  assign rvfi_csr_rdata_d.pmpmseccfg[0]   = csr_pmpmseccfg_q_i;
+  assign rvfi_csr_wmask_d.pmpmseccfg[0]   = csr_pmpmseccfg_we_i ? '1 : '0;
 
   // CSR outputs //
   assign rvfi_csr_mstatus_rdata           = rvfi_csr_rdata.mstatus;

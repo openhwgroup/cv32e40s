@@ -169,14 +169,14 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   pmp_cfg_t                   pmp_cfg_n[PMP_MAX_REGIONS];
   pmp_cfg_t                   pmp_cfg_q[PMP_MAX_REGIONS];
   logic [PMP_MAX_REGIONS-1:0] pmp_cfg_we_int;
-  logic [PMP_NUM_REGIONS-1:0] pmp_cfg_we;
+  logic [PMP_MAX_REGIONS-1:0] pmp_cfg_we;
   logic [PMP_NUM_REGIONS-1:0] pmp_cfg_locked;
   logic [PMP_NUM_REGIONS-1:0] pmp_cfg_rd_error;
  
   logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_n;
   logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_q[PMP_MAX_REGIONS];
   logic [PMP_MAX_REGIONS-1:0] pmp_addr_we_int;
-  logic [PMP_NUM_REGIONS-1:0] pmp_addr_we;
+  logic [PMP_MAX_REGIONS-1:0] pmp_addr_we;
   logic [31:0]                pmp_addr_rdata[PMP_MAX_REGIONS];
   logic [PMP_NUM_REGIONS-1:0] pmp_addr_rd_error;
   
@@ -925,6 +925,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         else begin: no_pmp_region
 
           // Tie off outputs for unimplemeted regions
+          assign pmp_addr_we[i]    = 1'b0;
           assign pmp_addr_rdata[i] = '0;
 
           assign csr_pmp_o.addr[i] = '0;
@@ -933,6 +934,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign pmp_addr_q[i] = '0;
           assign pmp_cfg_q[i]  = pmp_cfg_t'('0);
           assign pmp_cfg_n[i]  = pmp_cfg_t'('0);
+          assign pmp_cfg_we[i] = 1'b0;
         end
       end
      
