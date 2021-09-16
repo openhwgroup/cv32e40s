@@ -166,7 +166,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic mie_we;
   logic mie_rd_error;
 
-  pmp_cfg_t                   pmp_cfg_n[PMP_NUM_REGIONS];  
+  pmp_cfg_t                   pmp_cfg_n[PMP_MAX_REGIONS];
   pmp_cfg_t                   pmp_cfg_q[PMP_MAX_REGIONS];
   logic [PMP_MAX_REGIONS-1:0] pmp_cfg_we_int;
   logic [PMP_NUM_REGIONS-1:0] pmp_cfg_we;
@@ -932,7 +932,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
           assign pmp_addr_q[i] = '0;
           assign pmp_cfg_q[i]  = pmp_cfg_t'('0);
-          
+          assign pmp_cfg_n[i]  = pmp_cfg_t'('0);
         end
       end
      
