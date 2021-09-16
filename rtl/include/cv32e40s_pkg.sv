@@ -898,6 +898,7 @@ typedef enum logic [1:0] {
 // PMP region config
 typedef struct packed {
   logic          lock;
+  logic [6:5]    zero0;
   pmp_cfg_mode_e mode;
   logic          exec;
   logic          write;
@@ -906,7 +907,8 @@ typedef struct packed {
 
 // Machine Security Configuration (ePMP)
 typedef struct packed {
-  logic rlb;  // Rule Locking Bypass
+  logic [31:3] zero0;
+  logic        rlb;  // Rule Locking Bypass
   logic mmwp; // Machine Mode Whitelist Policy
   logic mml;  // Machine Mode Lockdown
 } pmp_mseccfg_t;
