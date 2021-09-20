@@ -36,6 +36,7 @@ ${DESIGN_RTL_DIR}/cv32e40s_if_stage.sv
 ${DESIGN_RTL_DIR}/cv32e40s_csr.sv
 ${DESIGN_RTL_DIR}/cv32e40s_cs_registers.sv
 ${DESIGN_RTL_DIR}/cv32e40s_register_file.sv
+${DESIGN_RTL_DIR}/cv32e40s_register_file_ecc.sv
 ${DESIGN_RTL_DIR}/cv32e40s_register_file_wrapper.sv
 ${DESIGN_RTL_DIR}/cv32e40s_load_store_unit.sv
 ${DESIGN_RTL_DIR}/cv32e40s_id_stage.sv
@@ -63,6 +64,7 @@ ${DESIGN_RTL_DIR}/cv32e40s_instr_obi_interface.sv
 ${DESIGN_RTL_DIR}/cv32e40s_data_obi_interface.sv
 ${DESIGN_RTL_DIR}/cv32e40s_prefetcher.sv
 ${DESIGN_RTL_DIR}/cv32e40s_sleep_unit.sv
+${DESIGN_RTL_DIR}/cv32e40s_alert.sv
 ${DESIGN_RTL_DIR}/cv32e40s_core.sv
 ${DESIGN_RTL_DIR}/cv32e40s_mpu.sv
 ${DESIGN_RTL_DIR}/cv32e40s_pma.sv

@@ -607,6 +607,9 @@ parameter logic [31:0] TMATCH_CONTROL_RST_VAL = {
 //                              |___/        //
 ///////////////////////////////////////////////
 
+// Enable Security Features
+parameter SECURE = 1;
+
 // Register file read/write ports
 parameter REGFILE_NUM_READ_PORTS  = 2;
 parameter REGFILE_NUM_WRITE_PORTS = 1;
@@ -617,8 +620,11 @@ parameter REGFILE_ADDR_WIDTH = 5;
 // Data width of register file
 parameter REGFILE_DATA_WIDTH = 32;
 
+// Width of register file ECC
+parameter REGFILE_ECC_WIDTH = 6;
+
 // Word width of register file memory
-parameter REGFILE_WORD_WIDTH = REGFILE_DATA_WIDTH;
+parameter REGFILE_WORD_WIDTH = (SECURE) ? REGFILE_DATA_WIDTH + REGFILE_ECC_WIDTH : REGFILE_DATA_WIDTH;
 
 // Number of regfile integer registers
 parameter REGFILE_NUM_WORDS = 2**(REGFILE_ADDR_WIDTH);
@@ -1179,6 +1185,16 @@ typedef struct packed {
   //  \/    \/_|___/\___|  //
   //                       //
   ///////////////////////////
+
+  // Alert Trigger type
+  typedef struct packed {
+    // Minor Alert Triggers
+    // todo: add remaining minor alert triggers
+
+    // Major Alert Triggers
+    logic        rf_ecc_err; // Register File ECC Error
+    // todo: add remaining major alert triggers
+  } alert_trigger_t;
 
   // OBI interface FSM state encoding
   typedef enum logic {TRANSPARENT, REGISTERED} obi_if_state_e;

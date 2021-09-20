@@ -87,6 +87,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic        fencei_flush_req_o,
   input logic         fencei_flush_ack_i,       // TODO:OK:low use
 
+  // Security Alerts
+  output logic        alert_minor_o,
+  output logic        alert_major_o,
+
   // Debug Interface
   input  logic        debug_req_i,
   output logic        debug_havereset_o,
@@ -194,6 +198,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Signal from IF to init mtvec at boot time
   logic        csr_mtvec_init_if;
 
+  alert_trigger_t    alert_triggers;
+
   // debug mode and dcsr configuration
   // From cs_registers
   Dcsr_t       dcsr;
@@ -294,6 +300,28 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Inputs from controller (including busy)
     .ctrl_fsm_i                 ( ctrl_fsm             )
   );
+
+  /////////////////////////////////////
+  //      _    _           _         //
+  //     / \  | | ___ _ __| |_ ___   //
+  //    / _ \ | |/ _ \ '__| __/ __|  //
+  //   / ___ \| |  __/ |  | |_\__ \  //
+  //  /_/   \_\_|\___|_|   \__|___/  //
+  //                                 //
+  /////////////////////////////////////
+
+  cv32e40s_alert
+    alert_i
+      (.clk              ( clk            ),
+       .rst_n            ( rst_n          ),
+
+       // Alert Triggers
+       .alert_triggers_i ( alert_triggers ),
+
+       // Trigger Outputs
+       .alert_minor_o    ( alert_minor_o  ),
+       .alert_major_o    ( alert_major_o  )
+       );
 
 
   //////////////////////////////////////////////////
@@ -772,6 +800,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   (
     .clk                ( clk                ),
     .rst_n              ( rst_ni             ),
+
+    // ECC error output
+    .ecc_err_o          ( alert_triggers.rf_ecc_err ),
 
     // Read ports
     .raddr_i            ( rf_raddr_id        ),
