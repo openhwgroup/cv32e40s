@@ -43,27 +43,17 @@ module cv32e40s_alert
    output logic              alert_major_o
    );
 
-  logic         rf_ecc_err_q;
-
-  // Store alert input for signals that are not guaranteed to be single cycle
-  always_ff @(posedge clk, negedge rst_n) begin
-    if (!rst_n) begin
-      rf_ecc_err_q <= 1'b0;
-    end else begin
-      rf_ecc_err_q <= alert_triggers_i.rf_ecc_err;
-    end
-  end
-
-    // Alert Outputs
+  // Alert Outputs
   always_ff @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
       alert_minor_o <= 1'b0;
+      alert_major_o <= 1'b0;
     end else begin
       // Minor Alert
       alert_minor_o <= 1'b0; // todo: add minor alert inputs
 
       // Major Alert
-      alert_major_o <= alert_triggers_i.rf_ecc_err && !rf_ecc_err_q ||
+      alert_major_o <= alert_triggers_i.rf_ecc_err ||
                        1'b0; // todo: add major alert inputs
     end
   end
