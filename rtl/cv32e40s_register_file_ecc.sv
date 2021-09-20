@@ -130,6 +130,7 @@ module cv32e40s_register_file_ecc import cv32e40s_pkg::*;
       syndrome[i][5] = ^(rdata_i[i] & 38'b10_0000_1111_1100_0000_0000_0000_0000_0000_0000);
 
       // Using syndrome for 2-bit detection instead of 1-bit correction
+      // The Error Correcting Code for a 0-word is 6'h0, so all words will have a valid ECC out of reset.
       ecc_err_o |= |syndrome[i];
 
     end
