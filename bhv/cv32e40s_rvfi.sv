@@ -60,7 +60,7 @@ module cv32e40s_rvfi
 
    input logic [31:0]                         data_addr_ex_i,
    input logic [31:0]                         data_wdata_ex_i,
-   input logic                                lsu_misaligned_q_ex_i,
+   input logic                                lsu_split_q_ex_i,
 
    //// WB probes ////
    input logic [31:0]                         pc_wb_i,
@@ -158,14 +158,14 @@ module cv32e40s_rvfi
    input logic [31:0]                         csr_mcounteren_q_i,
    input logic                                csr_mcounteren_we_i,
 
-   input pmp_cfg_t                            csr_pmpcfg_n_i[PMP_MAX_REGIONS],
-   input pmp_cfg_t                            csr_pmpcfg_q_i[PMP_MAX_REGIONS],
-   input logic [PMP_MAX_REGIONS-1:0]          csr_pmpcfg_we_i,
+   input logic [ 7:0]                         csr_pmpcfg_n_i[16],
+   input logic [ 7:0]                         csr_pmpcfg_q_i[16],
+   input logic [15:0]                         csr_pmpcfg_we_i,
    input logic [31:0]                         csr_pmpaddr_n_i, // PMP address input shared for all pmpaddr registers
-   input logic [31:0]                         csr_pmpaddr_q_i[PMP_MAX_REGIONS],
-   input logic [PMP_MAX_REGIONS-1:0]          csr_pmpaddr_we_i,
-   input pmp_mseccfg_t                        csr_pmpmseccfg_n_i,
-   input pmp_mseccfg_t                        csr_pmpmseccfg_q_i,
+   input logic [31:0]                         csr_pmpaddr_q_i[16],
+   input logic [15:0]                         csr_pmpaddr_we_i,
+   input logic [31:0]                         csr_pmpmseccfg_n_i,
+   input logic [31:0]                         csr_pmpmseccfg_q_i,
    input logic                                csr_pmpmseccfg_we_i,
 
   // RISC-V Formal Interface
@@ -560,8 +560,8 @@ module cv32e40s_rvfi
         mem_wmask  [STAGE_EX] <= mem_wmask  [STAGE_ID];
         in_trap    [STAGE_EX] <= in_trap    [STAGE_ID];
 
-        if (!lsu_misaligned_q_ex_i) begin
-          // The second part of the misaligned acess is suppressed to keep
+        if (!lsu_split_q_ex_i) begin
+          // The second part of the split misaligned acess is suppressed to keep
           // the start address and data for the whole misaligned transfer
           ex_mem_addr         <= rvfi_mem_addr_d;
           ex_mem_wdata        <= rvfi_mem_wdata_d;
@@ -868,7 +868,7 @@ module cv32e40s_rvfi
   // PMP
   // Special case for the PMP cfg registers because they are split by pmp region and not by register
   generate
-    for (genvar i = 0; i < PMP_MAX_REGIONS; i++ ) begin
+    for (genvar i = 0; i < 16; i++ ) begin // Max 16 pmp regions
       // 4 regions in each register
       assign rvfi_csr_wdata_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_n_i[i];
       assign rvfi_csr_rdata_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_q_i[i];
