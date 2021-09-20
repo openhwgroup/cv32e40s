@@ -114,6 +114,7 @@ always_ff @(posedge clk , negedge rst_ni)
         first_illegal_found   <= 1'b1;
         expected_illegal_mepc <= ex_wb_pipe.pc;
       end
+      // todo: must check for M/U-mode as well, otherwise this will pick up both types of Ecalls
       if (!first_ecall_found && ex_wb_pipe.instr_valid && !irq_ack_o && !(ctrl_pending_debug && ctrl_debug_allowed) &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn) &&
         !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&

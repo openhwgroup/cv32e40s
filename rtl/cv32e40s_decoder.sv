@@ -77,6 +77,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   output logic        csr_en_o,                 // enable access to CSR
   output csr_opcode_e csr_op_o,                 // operation to perform on CSR
   input  PrivLvl_t    current_priv_lvl_i,       // The current privilege level // todo:AB:low proper name
+  input  Status_t     mstatus_i,                // Current mstatus
 
   // LSU
   output logic        lsu_en_o,                 // start transaction to data memory
@@ -118,6 +119,8 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
     i_decoder_i
       (.instr_rdata_i(instr_rdata_i),
        .ctrl_fsm_i (ctrl_fsm_i),
+       .current_priv_lvl_i (current_priv_lvl_i),
+       .mstatus_i (mstatus_i),
        .decoder_ctrl_o(decoder_i_ctrl));
   
   // RV32M extension decoder

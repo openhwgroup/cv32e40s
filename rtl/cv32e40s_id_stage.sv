@@ -57,6 +57,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   input  ctrl_fsm_t   ctrl_fsm_i,
 
   input  PrivLvl_t    current_priv_lvl_i,
+  input  Status_t     mstatus_i,
 
   // Debug Signal
   input  logic        debug_trigger_match_id_i,
@@ -399,6 +400,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     .csr_en_o                        ( csr_en                    ),
     .csr_op_o                        ( csr_op                    ),
     .current_priv_lvl_i              ( current_priv_lvl_i        ),
+    .mstatus_i                       ( mstatus_i                 ),
 
     // LSU interface
     .lsu_en_o                        ( lsu_en                    ),

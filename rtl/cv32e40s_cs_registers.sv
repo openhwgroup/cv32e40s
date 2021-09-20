@@ -93,6 +93,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output PrivLvl_t        priv_lvl_o,
   output PrivLvl_t        priv_lvl_lsu_o,
 
+  output Status_t         mstatus_o,
+
   input  logic [31:0]     pc_if_i
 );
   
@@ -812,6 +814,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign m_irq_enable_o  = mstatus_q.mie && !(dcsr_q.step && !dcsr_q.stepie);
   assign priv_lvl_o      = priv_lvl_q;
   assign priv_lvl_lsu_o  = mstatus_q.mprv ? PrivLvl_t'(mstatus_q.mpp) : priv_lvl_q;
+
+  assign mstatus_o       = mstatus_q;
 
   assign mtvec_addr_o    = mtvec_q.addr;
   assign mtvec_mode_o    = mtvec_q.mode;

@@ -61,4 +61,6 @@ a_split_rf_we:
   assert property (@(posedge clk) disable iff (!rst_n)
                     (ex_valid_o && wb_ready_i && id_ex_pipe_i.lsu_en && lsu_split_i)
                     |=> !ex_wb_pipe_o.rf_we);
+
+
 endmodule // cv32e40s_ex_stage_sva
