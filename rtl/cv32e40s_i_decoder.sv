@@ -312,7 +312,7 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
 
               12'h302:  // mret
               begin
-                // Mret will be stalled for any CSR writes in either EX or WB,
+                // Mret will be stalled for any CSR writes (including priv level changes) in either EX or WB,
                 // curent priv_lvl from cs_registers may be used
                 if (current_priv_lvl_i != PRIV_LVL_M) begin
                   decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
@@ -340,6 +340,8 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
                 // sleeping when not allowed to.
                 // If in user mode, WFI is treated like an illegal instruction
                 // if mstatus.tw == 1
+                // WFI in ID is stalled if CSR writes (including priv level) is present in EX or WB.
+                // - Safe to use current_priv_lvl_i and mstatus_i.tw
                 if((current_priv_lvl_i == PRIV_LVL_U) && mstatus_i.tw) begin
                   decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
                 end else begin

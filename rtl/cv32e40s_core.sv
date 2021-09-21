@@ -212,6 +212,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Controller <-> decoder 
   logic       mret_insn_id;
   logic       dret_insn_id;
+  logic       wfi_insn_id;
   logic [1:0] ctrl_transfer_insn_id;
   logic [1:0] ctrl_transfer_insn_raw_id;
  
@@ -440,6 +441,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     .mret_insn_o                  ( mret_insn_id              ),
     .dret_insn_o                  ( dret_insn_id              ),
+    .wfi_insn_o                   ( wfi_insn_id               ),
 
     .csr_en_o                     ( csr_en_id                 ),
     .csr_op_o                     ( csr_op_id                 ),
@@ -707,6 +709,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .dret_id_i                      ( dret_insn_id           ),
     .csr_en_id_i                    ( csr_en_id              ),
     .csr_op_id_i                    ( csr_op_id              ),
+    .wfi_id_i                       ( wfi_insn_id            ),
                                                                  
     // LSU
     .lsu_split_ex_i                 ( lsu_split_ex           ),

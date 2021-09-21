@@ -49,6 +49,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   input  logic        dret_id_i,                  // dret in ID
   input  logic        csr_en_id_i,                // CSR in ID
   input  csr_opcode_e csr_op_id_i,                // CSR opcode (ID)
+  input  logic        wfi_id_i,                   // WFI instruction in ID
 
   // From cs_registers
   input  logic        debug_trigger_match_id_i,         // Trigger match in ID
@@ -111,13 +112,13 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   //TODO:OK:low This CSR stall check is very restrictive
   //         Should only check EX vs WB, and also CSR/rd addr
   //         Also consider whether ID or EX should be stalled
-  // Detect when a CSR insn is in ID
+  // Detect when a CSR insn is in ID (including WFI which reads mstatus.tw and priv level)
   // Note that hazard detection uses the registered instr_valid signals. Usage of the local
   // instr_valid signals would lead to a combinatorial loop via the halt signal.
 
   // todo:low:Above loop reasoning only applies to halt_id; for other pipeline stages a local instr_valid signal can maybe be used.
 
-  assign csr_read_in_id = (csr_en_id_i || mret_id_i) && if_id_pipe_i.instr_valid;
+  assign csr_read_in_id = (csr_en_id_i || mret_id_i || wfi_id_i) && if_id_pipe_i.instr_valid;
 
   // Detect when a CSR insn  in in EX or WB
   // mret and dret implicitly writes to CSR. (dret is killing IF/ID/EX once it

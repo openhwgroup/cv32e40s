@@ -41,6 +41,7 @@ module cv32e40s_controller_fsm_sva
   input logic [1:0]     lsu_outstanding_cnt,
   input mpu_status_e    lsu_mpu_status_wb_i,
   input logic           if_valid_i,
+  input logic           id_valid_i,
   input if_id_pipe_t    if_id_pipe_i,
   input id_ex_pipe_t    id_ex_pipe_i,
   input ex_wb_pipe_t    ex_wb_pipe_i,
@@ -61,6 +62,7 @@ module cv32e40s_controller_fsm_sva
   input logic           pending_nmi,
   input logic           fencei_ready,
   input PrivLvl_t       current_priv_lvl_i,
+  input PrivLvl_t       priv_lvl_n,
   input Status_t        mstatus_i,
   input logic           wfi_insn_id_i,
   input logic [7:0]     exception_cause_wb,
@@ -256,6 +258,13 @@ module cv32e40s_controller_fsm_sva
                       (id_ex_pipe_i.wfi_insn && id_ex_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_U))
                       |=> !$changed(mstatus_i.tw))
       else `uvm_error("controller", "mstatus.tw written while WFI in user-mode is in EX")
+
+  // Check that priv level is not changed when WFI is in ID
+  a_wfi_id_priv :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (wfi_insn_id_i && if_id_pipe_i.instr_valid && id_valid_i)
+                      |-> (current_priv_lvl_i == priv_lvl_n))
+      else `uvm_error("controller", "Priviledge level changed while WFI valid out of ID")
 
   // mret in User mode must result in illegal instruction
   a_mret_umode :
