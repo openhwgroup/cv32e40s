@@ -59,9 +59,6 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // From WB
   input  logic        wb_ready_i,                 // WB stage is ready
 
-  // From LSU
-  input  logic        lsu_misaligned_ex_i,           // LSU detected a misaligned load/store instruction
-
   // Controller Bypass outputs
   output ctrl_byp_t     ctrl_byp_o
 );
@@ -123,9 +120,12 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   assign csr_read_in_id = (csr_en_id_i || mret_id_i) && if_id_pipe_i.instr_valid;
 
   // Detect when a CSR insn  in in EX or WB
-  assign csr_write_in_ex_wb = ((id_ex_pipe_i.instr_valid && id_ex_pipe_i.csr_en) ||
-                              (ex_wb_pipe_i.csr_en || ex_wb_pipe_i.mret_insn || ex_wb_pipe_i.dret_insn) &&
-                              ex_wb_pipe_i.instr_valid);
+  // mret and dret implicitly writes to CSR. (dret is killing IF/ID/EX once it
+  // is in WB and can be disregarded here.
+  assign csr_write_in_ex_wb = (
+                              (id_ex_pipe_i.instr_valid && (id_ex_pipe_i.csr_en || id_ex_pipe_i.mret_insn)) ||
+                              (ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || ex_wb_pipe_i.mret_insn))
+                              );
 
   // minstret/minstreh is read in EX
   assign minstret_read_in_ex =  ((id_ex_pipe_i.instr_valid && id_ex_pipe_i.csr_en) &&
@@ -156,14 +156,13 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   begin
     ctrl_byp_o.load_stall          = 1'b0;
     ctrl_byp_o.deassert_we         = 1'b0;
-    ctrl_byp_o.deassert_we_special = 1'b0;
     ctrl_byp_o.csr_stall           = 1'b0;
     ctrl_byp_o.minstret_stall      = 1'b0;
 
     // deassert WE when the core has an exception in ID (ins converted to nop and propagated to WB)
     // Also deassert for trigger match, as with dcsr.timing==0 we do not execute before entering debug mode
     if (if_id_pipe_i.instr.bus_resp.err || !(if_id_pipe_i.instr.mpu_status == MPU_OK) || debug_trigger_match_id_i) begin
-      ctrl_byp_o.deassert_we_special = 1'b1;
+      ctrl_byp_o.deassert_we = 1'b1;
     end
 
     // Stall because of load operation
@@ -172,21 +171,18 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
         (!wb_ready_i         && rf_we_wb && |rf_rd_wb_hz)    // load-use hazard (WB during wait-state)
        )
     begin
-      ctrl_byp_o.deassert_we = 1'b1;
       ctrl_byp_o.load_stall  = 1'b1;
     end
 
     // Stall because of jr path
     // - Stall if a result is to be forwarded to the PC
     // except if result from WB is an ALU result
-    // we don't care about in which state the ctrl_fsm is as we deassert_we
-    // anyway when we are not in DECODE
+    // No need to deassert anything in ID,a s ID stage is stalled anyway
     if ((ctrl_transfer_insn_raw_i == BRANCH_JALR) &&
         ((rf_we_wb && rf_rd_wb_match[0] && lsu_en_wb) ||
          (rf_we_ex && rf_rd_ex_match[0])))
     begin
       ctrl_byp_o.jr_stall    = 1'b1;
-      ctrl_byp_o.deassert_we = 1'b1;
     end
     else
     begin

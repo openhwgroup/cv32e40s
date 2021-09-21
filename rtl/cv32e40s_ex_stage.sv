@@ -59,7 +59,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   output logic        lsu_ready_o,
   output logic        lsu_valid_o,
   input  logic        lsu_ready_i,
-  input  logic        lsu_misaligned_i,       // LSU is performing first part of a misaligned instruction
+  input  logic        lsu_split_i,      // LSU is performing first part of a misaligned/split instruction
 
   // Stage ready/valid
   output logic        ex_ready_o,       // EX stage is ready for new data
@@ -86,6 +86,9 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   logic           lsu_en_gated;
   logic           previous_exception;
 
+  // div_en not affected by kill/halt
+  logic           div_en;
+
   // Divider signals
   logic           div_ready;
   logic           div_valid;
@@ -104,6 +107,8 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   assign mul_en_gated = id_ex_pipe_i.mul_en && instr_valid; // Factoring in instr_valid to kill mul instructions on kill/halt
   assign div_en_gated = id_ex_pipe_i.div_en && instr_valid; // Factoring in instr_valid to kill div instructions on kill/halt
   assign lsu_en_gated = id_ex_pipe_i.lsu_en && instr_valid; // Factoring in instr_valid to suppress bus transactions on kill/halt
+
+  assign div_en = id_ex_pipe_i.div_en && id_ex_pipe_i.instr_valid; // Valid DIV in EX, not affected by kill/halt
 
 
   // Exception happened during IF or ID, or trigger match in ID (converted to NOP).
@@ -196,6 +201,9 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
     // Result
     .result_o           ( div_result                 ),
 
+    // divider enable, not affected by kill/halt
+    .div_en_i           ( div_en                     ),
+
     // Handshakes
     .valid_i            ( div_en_gated               ),
     .ready_o            ( div_ready                  ),
@@ -264,9 +272,9 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
       if (ex_valid_o && wb_ready_i) begin
         ex_wb_pipe_o.instr_valid <= 1'b1;
         // Deassert rf_we in case of illegal csr instruction or
-        // when the first half of a misaligned LSU goes to WB.
-        ex_wb_pipe_o.rf_we       <= (csr_illegal_i               ||
-                                    lsu_misaligned_i)             ? 1'b0 : id_ex_pipe_i.rf_we;
+        // when the first half of a misaligned/split LSU goes to WB.
+        ex_wb_pipe_o.rf_we       <= (csr_illegal_i     ||
+                                    lsu_split_i)       ? 1'b0 : id_ex_pipe_i.rf_we;
         ex_wb_pipe_o.lsu_en      <= id_ex_pipe_i.lsu_en;
           
         if (id_ex_pipe_i.rf_we) begin

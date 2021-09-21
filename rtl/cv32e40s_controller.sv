@@ -50,7 +50,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  ex_wb_pipe_t ex_wb_pipe_i,
 
   // LSU
-  input  logic        lsu_misaligned_ex_i,        // LSU is misaligned
+  input  logic        lsu_split_ex_i,             // LSU is splitting misaligned
   input  mpu_status_e lsu_mpu_status_wb_i,        // MPU status (WB stage)
   input  logic        lsu_err_wb_i,               // LSU bus error in WB stage
   input  logic [31:0] lsu_addr_wb_i,              // LSU address in WB stage
@@ -92,7 +92,11 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   // Outputs
   output ctrl_byp_t   ctrl_byp_o,
-  output ctrl_fsm_t   ctrl_fsm_o                // FSM outputs
+  output ctrl_fsm_t   ctrl_fsm_o,               // FSM outputs
+
+  // Fencei flush handshake
+  output logic        fencei_flush_req_o,
+  input logic         fencei_flush_ack_i
 );
 
   // Main FSM and debug FSM
@@ -144,6 +148,10 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .dcsr_i                      ( dcsr_i                   ),
     .debug_trigger_match_id_i    ( debug_trigger_match_id_i ),
 
+    // Fencei flush handshake
+    .fencei_flush_ack_i          ( fencei_flush_ack_i       ),
+    .fencei_flush_req_o          ( fencei_flush_req_o       ),
+   
     // Outputs
     .ctrl_fsm_o                  ( ctrl_fsm_o               )
   );
@@ -175,9 +183,6 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
     // From WB
     .wb_ready_i                 ( wb_ready_i               ),
-
-    // From LSU
-    .lsu_misaligned_ex_i        ( lsu_misaligned_ex_i      ),
 
     // Outputs
     .ctrl_byp_o                 ( ctrl_byp_o               )
