@@ -276,5 +276,26 @@ module cv32e40s_controller_fsm_sva
                       |-> (exception_in_wb && (exception_cause_wb == EXC_CAUSE_ILLEGAL_INSN) && !ex_wb_pipe_i.mret_insn))
       else `uvm_error("controller", "mret in U-mode not flagged as illegal")
 
+  // WFI in User mode with mstatus.tw==1 must result in illegal instruction
+  a_wfi_tw_set_umode :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      // Disregard higher priority exceptions and trigger match
+                      !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
+                      // Check for wfi in instruction word and user mode
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h10500073) && ex_wb_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_U) && mstatus_i.tw)
+                      |-> (exception_in_wb && (exception_cause_wb == EXC_CAUSE_ILLEGAL_INSN) && !ex_wb_pipe_i.wfi_insn))
+      else `uvm_error("controller", "WFI in U-mode with mstatus.tw set not flagged as illegal")
+
+  // WFI in User mode with mstatus.tw==0 must not result in illegal instruction
+  a_wfi_tw_clear_umode :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      // Disregard higher priority exceptions and trigger match, and debug as WFI masked during debug
+                      !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
+                      !ctrl_fsm_o.debug_wfi_no_sleep &&
+                      // Check for wfi in instruction word and user mode
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h10500073) && ex_wb_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_U) && !mstatus_i.tw)
+                      |-> (!exception_in_wb && ex_wb_pipe_i.wfi_insn))
+      else `uvm_error("controller", "WFI in U-mode with mstatus.tw set not flagged as illegal")
+
 endmodule // cv32e40s_controller_fsm_sva
 
