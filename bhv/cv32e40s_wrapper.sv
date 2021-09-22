@@ -173,6 +173,7 @@ module cv32e40s_wrapper
                               .current_priv_lvl_i  (core_i.cs_registers_i.priv_lvl_o),
                               .priv_lvl_n          (core_i.cs_registers_i.priv_lvl_n),
                               .wfi_insn_id_i       (core_i.id_stage_i.wfi_insn),
+                              .mret_insn_id_i      (core_i.id_stage_i.mret_insn),
                               .id_valid_i          (core_i.id_stage_i.id_valid),
                               .*);
   bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
