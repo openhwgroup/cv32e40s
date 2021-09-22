@@ -162,6 +162,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   PrivLvl_t    current_priv_lvl, current_priv_lvl_lsu;
 
+  Status_t     mstatus;
+
   // LSU
   logic        lsu_split_ex;
   mpu_status_e lsu_mpu_status_wb;
@@ -210,6 +212,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Controller <-> decoder 
   logic       mret_insn_id;
   logic       dret_insn_id;
+  logic       wfi_insn_id;
   logic [1:0] ctrl_transfer_insn_id;
   logic [1:0] ctrl_transfer_insn_raw_id;
  
@@ -427,6 +430,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR ID/EX
     .current_priv_lvl_i           ( current_priv_lvl          ),
+    .mstatus_i                    ( mstatus                   ),
 
     // Debug Signals
     .debug_trigger_match_id_i     ( debug_trigger_match_id    ),       // from cs_registers (ID timing)
@@ -437,6 +441,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     .mret_insn_o                  ( mret_insn_id              ),
     .dret_insn_o                  ( dret_insn_id              ),
+    .wfi_insn_o                   ( wfi_insn_id               ),
 
     .csr_en_o                     ( csr_en_id                 ),
     .csr_op_o                     ( csr_op_id                 ),
@@ -656,6 +661,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mip_i                      ( mip                    ),
     .m_irq_enable_o             ( m_irq_enable           ),
     .mepc_o                     ( mepc                   ),
+    .mstatus_o                  ( mstatus                ),
  
     // PMP CSR's    
     .csr_pmp_o                  ( csr_pmp                ),
@@ -703,6 +709,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .dret_id_i                      ( dret_insn_id           ),
     .csr_en_id_i                    ( csr_en_id              ),
     .csr_op_id_i                    ( csr_op_id              ),
+    .wfi_id_i                       ( wfi_insn_id            ),
                                                                  
     // LSU
     .lsu_split_ex_i                 ( lsu_split_ex           ),

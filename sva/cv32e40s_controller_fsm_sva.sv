@@ -41,6 +41,7 @@ module cv32e40s_controller_fsm_sva
   input logic [1:0]     lsu_outstanding_cnt,
   input mpu_status_e    lsu_mpu_status_wb_i,
   input logic           if_valid_i,
+  input logic           id_valid_i,
   input if_id_pipe_t    if_id_pipe_i,
   input id_ex_pipe_t    id_ex_pipe_i,
   input ex_wb_pipe_t    ex_wb_pipe_i,
@@ -59,7 +60,14 @@ module cv32e40s_controller_fsm_sva
   input logic           pending_interrupt,
   input logic           interrupt_allowed,
   input logic           pending_nmi,
-  input logic           fencei_ready
+  input logic           fencei_ready,
+  input PrivLvl_t       current_priv_lvl_i,
+  input PrivLvl_t       priv_lvl_n,
+  input Status_t        mstatus_i,
+  input logic           wfi_insn_id_i,
+  input logic           mret_insn_id_i,
+  input logic [7:0]     exception_cause_wb,
+  input logic           exception_in_wb
 );
 
 
@@ -237,7 +245,71 @@ module cv32e40s_controller_fsm_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      fencei_flush_req_o |-> fencei_ready)
       else `uvm_error("controller", "Fencei handshake active while fencei_ready = 0")
-    
+
+  // Helper logic to make assertion look cleaner
+  // Same logic as in the bypass module, but duplicated here to catch any changes in bypass
+  // that could lead to undetected errors
+  logic csrw_ex_wb;
+  assign csrw_ex_wb = (
+                        ((id_ex_pipe_i.csr_en || id_ex_pipe_i.mret_insn) && id_ex_pipe_i.instr_valid) ||
+                        ((ex_wb_pipe_i.csr_en || ex_wb_pipe_i.mret_insn) && ex_wb_pipe_i.instr_valid)
+                      );
+  // Check that WFI is stalled in ID if CSR writes (explicit and implicit)
+  // are present in EX or WB
+  a_wfi_id_halt :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (wfi_insn_id_i && if_id_pipe_i.instr_valid && csrw_ex_wb)
+                      |-> (!id_valid_i && ctrl_fsm_o.halt_id))
+      else `uvm_error("controller", "WFI not halted in ID when CSR write is present in EX or WB")
+
+  // Check that mret is stalled in ID if CSR writes (explicit and implicit)
+  // are present in EX or WB
+  a_mret_id_halt :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (mret_insn_id_i && if_id_pipe_i.instr_valid && csrw_ex_wb)
+                      |-> (!id_valid_i && ctrl_fsm_o.halt_id))
+      else `uvm_error("controller", "mret not halted in ID when CSR write is present in EX or WB")
+
+  // mret in User mode must result in illegal instruction
+  a_mret_umode :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      // Disregard higher priority exceptions and trigger match
+                      !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
+                      // Check for mret in instruction word and user mode
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h30200073) && ex_wb_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_U))
+                      |-> (exception_in_wb && (exception_cause_wb == EXC_CAUSE_ILLEGAL_INSN) && !ex_wb_pipe_i.mret_insn))
+      else `uvm_error("controller", "mret in U-mode not flagged as illegal")
+
+  // mret in machine mode must not result in illegal instruction
+  a_mret_mmode :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      // Disregard higher priority exceptions and trigger match
+                      !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
+                      // Check for mret in instruction word and user mode
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h30200073) && ex_wb_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_M))
+                      |-> (!exception_in_wb && ex_wb_pipe_i.mret_insn))
+      else `uvm_error("controller", "mret in M-mode flagged as illegal")
+
+  // WFI in User mode with mstatus.tw==1 must result in illegal instruction
+  a_wfi_tw_set_umode :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      // Disregard higher priority exceptions and trigger match
+                      !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
+                      // Check for wfi in instruction word and user mode
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h10500073) && ex_wb_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_U) && mstatus_i.tw)
+                      |-> (exception_in_wb && (exception_cause_wb == EXC_CAUSE_ILLEGAL_INSN) && !ex_wb_pipe_i.wfi_insn))
+      else `uvm_error("controller", "WFI in U-mode with mstatus.tw set not flagged as illegal")
+
+  // WFI in User mode with mstatus.tw==0 must not result in illegal instruction
+  a_wfi_tw_clear_umode :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      // Disregard higher priority exceptions and trigger match, and debug as WFI masked during debug
+                      !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
+                      !ctrl_fsm_o.debug_wfi_no_sleep &&
+                      // Check for wfi in instruction word and user mode
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h10500073) && ex_wb_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_U) && !mstatus_i.tw)
+                      |-> (!exception_in_wb && ex_wb_pipe_i.wfi_insn))
+      else `uvm_error("controller", "WFI in U-mode with mstatus.tw set not flagged as illegal")
 
 endmodule // cv32e40s_controller_fsm_sva
 
