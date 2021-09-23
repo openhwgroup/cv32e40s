@@ -270,6 +270,13 @@ module cv32e40s_controller_fsm_sva
                       |-> (!id_valid_i && ctrl_fsm_o.halt_id))
       else `uvm_error("controller", "mret not halted in ID when CSR write is present in EX or WB")
 
+  // mret_jump_id is used to update the priviledge level for the IF stage to mstatus.mpp, this check asserts
+  // that there are no updates to mstatus.mpp (or any other CSR) in EX or WB
+  a_mret_jump_id_csrw :
+   assert property (@(posedge clk) disable iff (!rst_n)
+                    ctrl_fsm_o.mret_jump_id |-> !csrw_ex_wb)
+     else `uvm_error("controller", "Priviledge level updated by MRET in ID while CSR write is present in EX or WB")
+    
   // mret in User mode must result in illegal instruction
   a_mret_umode :
     assert property (@(posedge clk) disable iff (!rst_n)

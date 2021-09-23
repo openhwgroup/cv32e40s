@@ -47,8 +47,8 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   output logic        fencei_insn_o,            // fence.i instruction
 
   // from IF/ID pipeline
+  input  if_id_pipe_t if_id_pipe_i,  
   input  logic [31:0] instr_rdata_i,            // instruction read from instr memory/cache
-  input  logic        illegal_c_insn_i,         // compressed instruction decode failed
 
   // ALU signals
   output logic          alu_en_o,               // ALU enable
@@ -76,7 +76,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   // CSR
   output logic        csr_en_o,                 // enable access to CSR
   output csr_opcode_e csr_op_o,                 // operation to perform on CSR
-  input  PrivLvl_t    current_priv_lvl_i,       // The current privilege level // todo:AB:low proper name
   input  Status_t     mstatus_i,                // Current mstatus
 
   // LSU
@@ -119,7 +118,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
     i_decoder_i
       (.instr_rdata_i(instr_rdata_i),
        .ctrl_fsm_i (ctrl_fsm_i),
-       .current_priv_lvl_i (current_priv_lvl_i),
+       .id_priv_lvl_i (if_id_pipe_i.priv_lvl),
        .mstatus_i (mstatus_i),
        .decoder_ctrl_o(decoder_i_ctrl));
   
@@ -169,7 +168,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
 
   // Take illegal compressed instruction into account
   always_comb begin
-    if (illegal_c_insn_i) begin
+    if (if_id_pipe_i.illegal_c_insn) begin
       decoder_ctrl_mux = DECODER_CTRL_ILLEGAL_INSN;
     end
     else begin

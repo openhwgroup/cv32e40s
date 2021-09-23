@@ -189,7 +189,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   assign core_trans.addr = prefetch_trans_addr;
   assign core_trans.prot[0]   = 1'b0;  // Transfers from IF stage are instruction transfers
-  assign core_trans.prot[2:1] = PRIV_LVL_M; // Machine mode.
+  assign core_trans.prot[2:1] = PRIV_LVL_M; // Machine mode. TODO: connect to priv_lvl
   assign core_trans.memtype   = 2'b00; // memtype is assigned in the MPU, tie off.
 
   cv32e40s_mpu
@@ -268,9 +268,11 @@ instruction_obi_i
       if_id_pipe_o.is_compressed    <= 1'b0;
       if_id_pipe_o.illegal_c_insn   <= 1'b0;
       if_id_pipe_o.compressed_instr <= '0;
+      if_id_pipe_o.priv_lvl         <= PRIV_LVL_M;
     end
     else
     begin
+      
       // Valid pipeline output if we are valid AND the
       // alignment buffer has a valid instruction
       if (if_valid_o && id_ready_i)
@@ -281,6 +283,7 @@ instruction_obi_i
         if_id_pipe_o.illegal_c_insn   <= illegal_c_insn;
         if_id_pipe_o.pc               <= pc_if_o;
         if_id_pipe_o.compressed_instr <= prefetch_instr.bus_resp.rdata[15:0];
+        if_id_pipe_o.priv_lvl         <= priv_lvl_i;
       end else if (id_ready_i) begin
         if_id_pipe_o.instr_valid      <= 1'b0;
       end

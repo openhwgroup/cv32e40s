@@ -56,6 +56,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // IF/ID pipeline
   input if_id_pipe_t      if_id_pipe_i,
+  input logic             mret_id_i,
 
   // ID/EX pipeline 
   input id_ex_pipe_t      id_ex_pipe_i,
@@ -90,8 +91,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output Dcsr_t           dcsr_o,
   output logic            debug_trigger_match_o,
 
-  output PrivLvl_t        priv_lvl_o,
+  output PrivLvl_t        priv_lvl_if_o,
   output PrivLvl_t        priv_lvl_lsu_o,
+  output PrivLvl_t        current_priv_lvl_o,
 
   output Status_t         mstatus_o,
 
@@ -250,8 +252,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // Bits [9:8] in csr_addr indicate priviledge level needed to access CSR's.
   // The exception is access to perfomance counters from user mode, which is configured through mcounteren.
-  assign illegal_csr_write_priv =  csr_raddr[9:8] > priv_lvl_q;
-  assign illegal_csr_read_priv  = (csr_raddr[9:8] > priv_lvl_q) || umode_mcounteren_illegal_read;
+  assign illegal_csr_write_priv =  csr_raddr[9:8] > id_ex_pipe_i.priv_lvl;
+  assign illegal_csr_read_priv  = (csr_raddr[9:8] > id_ex_pipe_i.priv_lvl) || umode_mcounteren_illegal_read;
   
   assign illegal_csr_write = (id_ex_pipe_i.csr_op != CSR_OP_READ) &&
                              (id_ex_pipe_i.csr_en) &&
@@ -362,7 +364,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
       CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31: begin
         csr_rdata_int = mhpmcounter_q[csr_raddr[4:0]][31:0];
-        umode_mcounteren_illegal_read = !mcounteren_q[csr_raddr[4:0]] && (priv_lvl_q == PRIV_LVL_U);
+        umode_mcounteren_illegal_read = !mcounteren_q[csr_raddr[4:0]] && (id_ex_pipe_i.priv_lvl == PRIV_LVL_U);
       end
       
       CSR_MCYCLEH,
@@ -386,7 +388,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
       CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H: begin
         csr_rdata_int = (MHPMCOUNTER_WIDTH == 64) ? mhpmcounter_q[csr_raddr[4:0]][63:32] : '0;
-        umode_mcounteren_illegal_read = !mcounteren_q[csr_raddr[4:0]] && (priv_lvl_q == PRIV_LVL_U);
+        umode_mcounteren_illegal_read = !mcounteren_q[csr_raddr[4:0]] && (id_ex_pipe_i.priv_lvl == PRIV_LVL_U);
       end
         
       CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
@@ -428,7 +430,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       end
     endcase
   end
-
 
 
   // write logic
@@ -616,7 +617,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           mcause_we      = 1'b1;
         end
       end //ctrl_fsm_i.csr_save_cause
-
       ctrl_fsm_i.csr_restore_mret: begin //MRET
         priv_lvl_n     = PrivLvl_t'(mstatus_q.mpp);
         priv_lvl_we    = 1'b1;
@@ -626,7 +626,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         mstatus_n.mpp  = PRIV_LVL_U;
         mstatus_we     = 1'b1;
       end //ctrl_fsm_i.csr_restore_mret
-
       ctrl_fsm_i.csr_restore_dret: begin //DRET
           // Restore to the recorded privilege level
           priv_lvl_n = dcsr_q.prv;
@@ -810,10 +809,64 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign priv_lvl_q = PrivLvl_t'(priv_lvl_q_int);
 
+  PrivLvl_t priv_lvl_if_q, priv_lvl_if_n;
+  
+  // TODO: use cv32e40s_csr here? cv32e40s_csr will add support for glitch protection. 
+  // If glitch protection is needed, we should also glitch protect the privilege levels in the pipeline
+  always_ff @(posedge clk, negedge rst_n) begin
+    if (!rst_n) begin
+      priv_lvl_if_q <= PRIV_LVL_M;
+    end
+    else begin
+      priv_lvl_if_q <= priv_lvl_if_n;
+    end
+  end
+
+  // Generate priviledge level for the IF stage
+  // Since MRET may change the priviledge level and can is taken from ID,
+  // the priviledge level for the IF stage needs to be predictive
+  always_comb begin
+    priv_lvl_if_n = priv_lvl_if_q;
+
+    if (priv_lvl_we) begin
+      // Priviledge level updated by MRET in WB or exception
+      priv_lvl_if_n = priv_lvl_n;
+    end
+    else if (ctrl_fsm_i.mret_jump_id) begin
+      // MRET in ID. Set IF stage priviledge level to mstatus.mpp
+      // Using mstatus_q.mpp is safe since a write to mstatus.mpp in EX or WB it will cause a stall
+      priv_lvl_if_n = PrivLvl_t'(mstatus_q.mpp);
+      
+    end
+    else if ((id_ex_pipe_i.mret_insn && ctrl_fsm_i.kill_ex) || 
+             (ex_wb_pipe_i.mret_insn && ctrl_fsm_i.kill_wb) ||
+             (mret_id_i && ctrl_fsm_i.kill_id)) begin
+      // MRET got killed before retiring in the WB stage. Restore IF priviledge level
+      // In most cases, the logic behind priv_lvl_we and priv_lvl_n will take care of this.
+      // The exception is if debug mode is entered after MRET jump from ID is taken, and the MRET is killed.
+      // TODO: revisit this when implementing the debug related parts of user mode
+      priv_lvl_if_n = priv_lvl_q;
+    end
+  end
+
+  // IF stage priviledge level needs to be updated immediatly to make sure IF stage sees the correct priviledge level
+  assign priv_lvl_if_o = priv_lvl_if_n;
+  
+  // Lookahead for priv_lvl_lsu_o. Updates to MPRV or MPP in WB needs to take effect for load/stores in EX
+  always_comb begin
+    if (mstatus_we) begin
+      priv_lvl_lsu_o = mstatus_n.mprv ? PrivLvl_t'(mstatus_n.mpp) : id_ex_pipe_i.priv_lvl;
+    end
+    else begin
+      priv_lvl_lsu_o = mstatus_q.mprv ? PrivLvl_t'(mstatus_q.mpp) : id_ex_pipe_i.priv_lvl;
+    end
+  end
+
+  // current_priv_lvl_o indicates the currently active priviledge level (updated when taking an exception, and when MRET is in WB)
+  assign current_priv_lvl_o = priv_lvl_q;
+  
   // directly output some registers
   assign m_irq_enable_o  = mstatus_q.mie && !(dcsr_q.step && !dcsr_q.stepie);
-  assign priv_lvl_o      = priv_lvl_q;
-  assign priv_lvl_lsu_o  = mstatus_q.mprv ? PrivLvl_t'(mstatus_q.mpp) : priv_lvl_q;
 
   assign mstatus_o       = mstatus_q;
 
@@ -1316,7 +1369,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   endgenerate
 
   //  Counter enable register: mcounteren
-  localparam logic [31:0] MCOUNTEREN_MASK = {{(29-NUM_MHPMCOUNTERS){1'b0}},{(NUM_MHPMCOUNTERS){1'b1}},3'b111};
+  //  mcounteren[2:0] = {IR, TM, CY}. time (TM) is not implemented
+  localparam logic [31:0] MCOUNTEREN_MASK = {{(29-NUM_MHPMCOUNTERS){1'b0}},{(NUM_MHPMCOUNTERS){1'b1}},3'b101};
+
   
   cv32e40s_csr #(
     .WIDTH      (32),

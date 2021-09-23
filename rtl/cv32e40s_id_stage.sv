@@ -56,7 +56,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   input  ctrl_byp_t   ctrl_byp_i,
   input  ctrl_fsm_t   ctrl_fsm_i,
 
-  input  PrivLvl_t    current_priv_lvl_i,
   input  Status_t     mstatus_i,
 
   // Debug Signal
@@ -372,7 +371,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     
     // from IF/ID pipeline
     .instr_rdata_i                   ( instr                     ),
-    .illegal_c_insn_i                ( if_id_pipe_i.illegal_c_insn ),
+    .if_id_pipe_i                    ( if_id_pipe_i              ),
 
     // ALU signals
     .alu_en_o                        ( alu_en                    ),
@@ -401,7 +400,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     // CSR interface
     .csr_en_o                        ( csr_en                    ),
     .csr_op_o                        ( csr_op                    ),
-    .current_priv_lvl_i              ( current_priv_lvl_i        ),
     .mstatus_i                       ( mstatus_i                 ),
 
     // LSU interface
@@ -486,9 +484,11 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.mret_insn              <= 1'b0;
       id_ex_pipe_o.dret_insn              <= 1'b0;
 
+      id_ex_pipe_o.priv_lvl               <= PRIV_LVL_M;
     end else begin
       // normal pipeline unstall case
       if (id_valid && ex_ready_i) begin
+        id_ex_pipe_o.priv_lvl     <= if_id_pipe_i.priv_lvl;
         id_ex_pipe_o.instr_valid  <= 1'b1;
         
         id_ex_pipe_o.alu_en                 <= alu_en;

@@ -39,9 +39,15 @@ module cv32e40s_core_sva
   input logic        ex_ready,
   input logic        irq_ack_o, // irq ack output
   input ex_wb_pipe_t ex_wb_pipe,
+  input id_ex_pipe_t id_ex_pipe,
+  input logic        mret_insn_id, 
   input logic        wb_valid,
   input logic        branch_taken_in_ex,
   
+  input PrivLvl_t    current_priv_lvl,
+  input PrivLvl_t    priv_lvl_if,
+  input PrivLvl_t    priv_lvl_if_q,
+
    // probed controller signals
   input logic        ctrl_debug_mode_n,
   input logic        ctrl_pending_debug,
@@ -285,11 +291,51 @@ always_ff @(posedge clk , negedge rst_ni)
 
   // Check that only a single instruction can retire during single step
   a_single_step_retire :
-    assert property (@(posedge clk) disable iff (!rst_ni)
-                      (wb_valid && dcsr.step && !ctrl_fsm.debug_mode)
-                      ##1 wb_valid [->1]
-                      |-> (ctrl_fsm.debug_mode && dcsr.step))
-      else `uvm_error("core", "Multiple instructions retired during single stepping")
+  assert property (@(posedge clk) disable iff (!rst_ni)
+                    (wb_valid && dcsr.step && !ctrl_fsm.debug_mode)
+                    ##1 wb_valid [->1]
+                    |-> (ctrl_fsm.debug_mode && dcsr.step))
+    else `uvm_error("core", "Multiple instructions retired during single stepping")
+
   
+  // Check priviledge level consistency accross the pipeline. 
+  // The only scenario where priv_lvl_if_q and current_priv_lvl are allowed to differ is when there's an MRET in the pipe
+  // MRET in ID will immediatly update the priviledge level for the IF stage, but current_priv_lvl won't be updated until the MRET retires in the WB stage
+  a_priv_lvl_consistency : 
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                     (priv_lvl_if_q != current_priv_lvl) |-> (mret_insn_id || id_ex_pipe.mret_insn || ex_wb_pipe.mret_insn))
+    else `uvm_error("core", "IF priviledge level not consistent with current priviledge level")
+  
+  // Assert that change to user mode only happens when and MRET is in ID and mstatus.mpp == PRIV_LVL_U
+  a_priv_lvl_u_mode_mret:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                     $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_U) |-> 
+                     (mret_insn_id && if_id_pipe.instr_valid && (cs_registers_mstatus_q.mpp == PRIV_LVL_U)))
+    else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
+
+  // Assert that change to machine mode only happens upon an exception
+  // If IF is killed (for instance due to a fencei), priviledege level can be restored to PRIV_LVL_M without jumping to an exception
+  // ##1 is to avoid trigging the assertion in cycle 1
+  a_priv_lvl_m_mode_exception:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                     ##1 $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_M) |-> 
+                     (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_EXCEPTION) || ctrl_fsm.kill_if))
+    else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
+    
+  // Assert that all exceptions trap to machine mode, except when in debug mode (todo: revisit when debug related part of user mode is implemented)
+  a_priv_lvl_exception :
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                      (!(ctrl_fsm.debug_mode || ctrl_fsm.debug_csr_save) && ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_EXCEPTION))
+                      |-> (priv_lvl_if == PRIV_LVL_M))
+    else `uvm_error("core", "Exception not trapping to machine mode")
+
+  // Assert that jumps to mepc is done with priviledge level from mstatus.mpp
+  a_priv_lvl_mepc :
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                      (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_MRET))
+                      |-> (priv_lvl_if == cs_registers_mstatus_q.mpp))
+    else `uvm_error("core", "MEPC fetch not performed with priviledge level from mstatus.mpp")
+        
+      
 endmodule // cv32e40s_core_sva
 

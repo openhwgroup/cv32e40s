@@ -35,7 +35,7 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
    input logic [31:0] instr_rdata_i,
 
    input  ctrl_fsm_t     ctrl_fsm_i,         // todo:low each use of this signal needs a comment explaining why the signal from the controller is safe to be used with ID timing (probably add comment in FSM)
-   input  PrivLvl_t      current_priv_lvl_i, // current priviledge level
+   input  PrivLvl_t      id_priv_lvl_i, // Priviledge level for ID stage
    input  Status_t       mstatus_i,
    output decoder_ctrl_t decoder_ctrl_o
    );
@@ -314,7 +314,7 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
               begin
                 // Mret will be stalled for any CSR writes (including priv level changes) in either EX or WB,
                 // curent priv_lvl from cs_registers may be used
-                if (current_priv_lvl_i != PRIV_LVL_M) begin
+                if (id_priv_lvl_i != PRIV_LVL_M) begin
                   decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
                 end else begin
                   decoder_ctrl_o.mret_insn = 1'b1;
@@ -341,8 +341,8 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
                 // If in user mode, WFI is treated like an illegal instruction
                 // if mstatus.tw == 1
                 // WFI in ID is stalled if CSR writes (including priv level) is present in EX or WB.
-                // - Safe to use current_priv_lvl_i and mstatus_i.tw
-                if((current_priv_lvl_i == PRIV_LVL_U) && mstatus_i.tw) begin
+                // - Safe to use id_priv_lvl_i and mstatus_i.tw
+                if((id_priv_lvl_i == PRIV_LVL_U) && mstatus_i.tw) begin
                   decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
                 end else begin
                   decoder_ctrl_o.wfi_insn = ctrl_fsm_i.debug_wfi_no_sleep ? 1'b0 : 1'b1;

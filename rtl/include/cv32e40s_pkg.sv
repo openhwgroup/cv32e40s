@@ -1005,6 +1005,7 @@ typedef struct packed {
   logic        is_compressed;
   logic [15:0] compressed_instr;
   logic        illegal_c_insn;
+  PrivLvl_t    priv_lvl;
 } if_id_pipe_t;
 
 // ID/EX pipeline
@@ -1062,6 +1063,9 @@ typedef struct packed {
   logic         fencei_insn;
   logic         mret_insn;
   logic         dret_insn;
+
+  // Priviledge level
+  PrivLvl_t    priv_lvl;
 } id_ex_pipe_t;
 
 // EX/WB pipeline
@@ -1160,6 +1164,8 @@ typedef struct packed {
   logic        csr_restore_dret; // Restore CSR due to dret
   logic        csr_save_cause;      // Update CSRs
 
+  logic        mret_jump_id;        // Jump from ID stage due to MRET
+  
   // Performance counter events
   mhpmevent_t  mhpmevent;
 

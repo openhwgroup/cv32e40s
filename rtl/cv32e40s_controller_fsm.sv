@@ -396,6 +396,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     ctrl_fsm_o.csr_save_cause      = 1'b0;
     ctrl_fsm_o.csr_cause           = 32'h0;
 
+    ctrl_fsm_o.mret_jump_id        = 1'b0;
+    
     ctrl_fsm_o.exc_pc_mux          = EXC_PC_IRQ;
     exc_cause                      = 5'b0;
 
@@ -576,9 +578,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
             // Jumps in ID (JAL, JALR, mret, uret, dret)
             if (mret_id_i) begin
-              ctrl_fsm_o.pc_mux     = debug_mode_q ? PC_EXCEPTION : PC_MRET;
-              ctrl_fsm_o.pc_set     = 1'b1;
-              ctrl_fsm_o.exc_pc_mux = EXC_PC_DBE; // Only used in debug mode
+              ctrl_fsm_o.pc_mux       = debug_mode_q ? PC_EXCEPTION : PC_MRET;
+              ctrl_fsm_o.pc_set       = 1'b1;
+              ctrl_fsm_o.exc_pc_mux   = EXC_PC_DBE; // Only used in debug mode
+              ctrl_fsm_o.mret_jump_id = !debug_mode_q;
             end else begin
               ctrl_fsm_o.pc_mux = PC_JUMP;
               ctrl_fsm_o.pc_set = 1'b1;
