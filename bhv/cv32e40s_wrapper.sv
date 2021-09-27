@@ -170,7 +170,7 @@ module cv32e40s_wrapper
                               .rf_we_wb_i          (core_i.wb_stage_i.rf_we_wb_o  ),
                               .csr_we_i            (core_i.cs_registers_i.csr_we_int  ),
                               .mstatus_i           (core_i.mstatus),
-                              .current_priv_lvl_i  (core_i.current_priv_lvl),
+                              .priv_lvl_i          (core_i.priv_lvl),
                               .priv_lvl_n          (core_i.cs_registers_i.priv_lvl_n),
                               .wfi_insn_id_i       (core_i.id_stage_i.wfi_insn),
                               .mret_insn_id_i      (core_i.id_stage_i.mret_insn),
@@ -331,7 +331,7 @@ bind cv32e40s_sleep_unit:
 
          .exc_pc_i                 ( core_i.if_stage_i.exc_pc                                             ),
 
-         .priv_lvl_i               ( core_i.current_priv_lvl                                              ),
+         .priv_lvl_i               ( core_i.priv_lvl                                                      ),
          .priv_lvl_lsu_i           ( core_i.priv_lvl_lsu                                                  ),
          .debug_mode_i             ( core_i.ctrl_fsm.debug_mode                                           ),
          .debug_cause_i            ( core_i.ctrl_fsm.debug_cause                                          ),

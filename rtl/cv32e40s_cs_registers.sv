@@ -93,7 +93,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   output PrivLvl_t        priv_lvl_if_o,
   output PrivLvl_t        priv_lvl_lsu_o,
-  output PrivLvl_t        current_priv_lvl_o,
+  output PrivLvl_t        priv_lvl_o,
 
   output Status_t         mstatus_o,
 
@@ -862,8 +862,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     end
   end
 
-  // current_priv_lvl_o indicates the currently active priviledge level (updated when taking an exception, and when MRET is in WB)
-  assign current_priv_lvl_o = priv_lvl_q;
+  // priv_lvl_o indicates the currently active priviledge level (updated when taking an exception, and when MRET is in WB)
+  assign priv_lvl_o = priv_lvl_q;
   
   // directly output some registers
   assign m_irq_enable_o  = mstatus_q.mie && !(dcsr_q.step && !dcsr_q.stepie);

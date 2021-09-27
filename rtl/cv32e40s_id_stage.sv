@@ -370,7 +370,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     .fencei_insn_o                   ( fencei_insn               ),
     
     // from IF/ID pipeline
-    .instr_rdata_i                   ( instr                     ),
     .if_id_pipe_i                    ( if_id_pipe_i              ),
 
     // ALU signals

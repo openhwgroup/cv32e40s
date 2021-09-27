@@ -61,7 +61,7 @@ module cv32e40s_controller_fsm_sva
   input logic           interrupt_allowed,
   input logic           pending_nmi,
   input logic           fencei_ready,
-  input PrivLvl_t       current_priv_lvl_i,
+  input PrivLvl_t       priv_lvl_i,
   input PrivLvl_t       priv_lvl_n,
   input Status_t        mstatus_i,
   input logic           wfi_insn_id_i,
@@ -283,7 +283,7 @@ module cv32e40s_controller_fsm_sva
                       // Disregard higher priority exceptions and trigger match
                       !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
                       // Check for mret in instruction word and user mode
-                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h30200073) && ex_wb_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_U))
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h30200073) && ex_wb_pipe_i.instr_valid && (priv_lvl_i == PRIV_LVL_U))
                       |-> (exception_in_wb && (exception_cause_wb == EXC_CAUSE_ILLEGAL_INSN) && !ex_wb_pipe_i.mret_insn))
       else `uvm_error("controller", "mret in U-mode not flagged as illegal")
 
@@ -293,7 +293,7 @@ module cv32e40s_controller_fsm_sva
                       // Disregard higher priority exceptions and trigger match
                       !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
                       // Check for mret in instruction word and user mode
-                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h30200073) && ex_wb_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_M))
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h30200073) && ex_wb_pipe_i.instr_valid && (priv_lvl_i == PRIV_LVL_M))
                       |-> (!exception_in_wb && ex_wb_pipe_i.mret_insn))
       else `uvm_error("controller", "mret in M-mode flagged as illegal")
 
@@ -303,7 +303,7 @@ module cv32e40s_controller_fsm_sva
                       // Disregard higher priority exceptions and trigger match
                       !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
                       // Check for wfi in instruction word and user mode
-                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h10500073) && ex_wb_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_U) && mstatus_i.tw)
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h10500073) && ex_wb_pipe_i.instr_valid && (priv_lvl_i == PRIV_LVL_U) && mstatus_i.tw)
                       |-> (exception_in_wb && (exception_cause_wb == EXC_CAUSE_ILLEGAL_INSN) && !ex_wb_pipe_i.wfi_insn))
       else `uvm_error("controller", "WFI in U-mode with mstatus.tw set not flagged as illegal")
 
@@ -314,7 +314,7 @@ module cv32e40s_controller_fsm_sva
                       !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
                       !ctrl_fsm_o.debug_wfi_no_sleep &&
                       // Check for wfi in instruction word and user mode
-                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h10500073) && ex_wb_pipe_i.instr_valid && (current_priv_lvl_i == PRIV_LVL_U) && !mstatus_i.tw)
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h10500073) && ex_wb_pipe_i.instr_valid && (priv_lvl_i == PRIV_LVL_U) && !mstatus_i.tw)
                       |-> (!exception_in_wb && ex_wb_pipe_i.wfi_insn))
       else `uvm_error("controller", "WFI in U-mode with mstatus.tw set not flagged as illegal")
 

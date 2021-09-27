@@ -44,7 +44,7 @@ module cv32e40s_core_sva
   input logic        wb_valid,
   input logic        branch_taken_in_ex,
   
-  input PrivLvl_t    current_priv_lvl,
+  input PrivLvl_t    priv_lvl,
   input PrivLvl_t    priv_lvl_if,
   input PrivLvl_t    priv_lvl_if_q,
 
@@ -299,11 +299,11 @@ always_ff @(posedge clk , negedge rst_ni)
 
   
   // Check priviledge level consistency accross the pipeline. 
-  // The only scenario where priv_lvl_if_q and current_priv_lvl are allowed to differ is when there's an MRET in the pipe
-  // MRET in ID will immediatly update the priviledge level for the IF stage, but current_priv_lvl won't be updated until the MRET retires in the WB stage
+  // The only scenario where priv_lvl_if_q and priv_lvl are allowed to differ is when there's an MRET in the pipe
+  // MRET in ID will immediatly update the priviledge level for the IF stage, but priv_lvl won't be updated until the MRET retires in the WB stage
   a_priv_lvl_consistency : 
     assert property (@(posedge clk) disable iff (!rst_ni)
-                     (priv_lvl_if_q != current_priv_lvl) |-> (mret_insn_id || id_ex_pipe.mret_insn || ex_wb_pipe.mret_insn))
+                     (priv_lvl_if_q != priv_lvl) |-> (mret_insn_id || id_ex_pipe.mret_insn || ex_wb_pipe.mret_insn))
     else `uvm_error("core", "IF priviledge level not consistent with current priviledge level")
   
   // Assert that change to user mode only happens when and MRET is in ID and mstatus.mpp == PRIV_LVL_U
