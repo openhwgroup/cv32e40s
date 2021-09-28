@@ -411,10 +411,12 @@ bind cv32e40s_sleep_unit:
          // Using rdata for pmp address to include read logic
          .csr_pmpaddr_q_i          ( core_i.cs_registers_i.pmp_addr_rdata                                 ),
          .csr_pmpaddr_we_i         ( core_i.cs_registers_i.pmp_addr_we                                    ),
-         .csr_pmpmseccfg_n_i       ( core_i.cs_registers_i.pmp_mseccfg_n                                  ),
-         .csr_pmpmseccfg_q_i       ( core_i.cs_registers_i.pmp_mseccfg_q                                  ),
-         .csr_pmpmseccfg_we_i      ( core_i.cs_registers_i.pmp_mseccfg_we                                 )
-
+         .csr_mseccfg_n_i          ( core_i.cs_registers_i.pmp_mseccfg_n                                  ),
+         .csr_mseccfg_q_i          ( core_i.cs_registers_i.pmp_mseccfg_q                                  ),
+         .csr_mseccfg_we_i         ( core_i.cs_registers_i.pmp_mseccfg_we                                 ),
+         .csr_mseccfgh_n_i         ( '0                                                                   ),
+         .csr_mseccfgh_q_i         ( '0                                                                   ),
+         .csr_mseccfgh_we_i        ( '0                                                                   )
 
 `ifdef RISCV_FORMAL
          ,`RVFI_CONN

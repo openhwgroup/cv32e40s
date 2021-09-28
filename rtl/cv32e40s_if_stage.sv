@@ -90,7 +90,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   // prefetch buffer related signals
   logic              prefetch_busy;
-  
+
   logic       [31:0] branch_addr_n;
 
   logic       [31:0] exc_pc;
@@ -109,7 +109,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic              prefetch_trans_ready;
   logic [31:0]       prefetch_trans_addr;
   inst_resp_t        prefetch_inst_resp;
-  logic              prefetch_one_txn_pend_n;  
+  logic              prefetch_one_txn_pend_n;
 
   logic              bus_resp_valid;
   obi_inst_resp_t    bus_resp;
@@ -162,7 +162,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .rst_n             ( rst_n                       ),
 
     .ctrl_fsm_i        ( ctrl_fsm_i                  ),
-    
+
     .branch_addr_i     ( {branch_addr_n[31:1], 1'b0} ),
 
     .prefetch_ready_i  ( if_ready                    ),
@@ -211,14 +211,13 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
                                       // Misaligned access to main is allowed, and accesses outside main will result in instruction access fault (which will have priority over misaligned from I/O fault)
      .priv_lvl_i           ( priv_lvl_i ),
      .csr_pmp_i            ( csr_pmp_i  ),
-     
      .core_one_txn_pend_n  ( prefetch_one_txn_pend_n ),
      .core_trans_valid_i   ( prefetch_trans_valid    ),
      .core_trans_ready_o   ( prefetch_trans_ready    ),
      .core_trans_i         ( core_trans              ),
      .core_resp_valid_o    ( prefetch_resp_valid     ),
      .core_resp_o          ( prefetch_inst_resp      ),
-     
+
      .bus_trans_valid_o    ( bus_trans_valid ),
      .bus_trans_ready_i    ( bus_trans_ready ),
      .bus_trans_o          ( bus_trans       ),

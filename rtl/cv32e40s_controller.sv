@@ -38,7 +38,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        fetch_enable_i,             // Start the decoding
 
   input  logic        if_valid_i,
-  
+
   // from IF/ID pipeline
   input  if_id_pipe_t if_id_pipe_i,
   input  logic        mret_id_i,
@@ -107,13 +107,13 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .clk                         ( clk                      ),
     .clk_ungated_i               ( clk_ungated_i            ),
     .rst_n                       ( rst_n                    ),
-  
+
     .fetch_enable_i              ( fetch_enable_i           ),
 
     .ctrl_byp_i                  ( ctrl_byp_o               ),
 
     .if_valid_i                  ( if_valid_i               ),
-  
+
     // From ID stage
     .id_ready_i                  ( id_ready_i               ),
     .if_id_pipe_i                ( if_id_pipe_i             ),
@@ -140,10 +140,9 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .irq_req_ctrl_i              ( irq_req_ctrl_i           ),
     .irq_id_ctrl_i               ( irq_id_ctrl_i            ),
     .irq_wu_ctrl_i               ( irq_wu_ctrl_i            ),
-    .priv_lvl_i                  ( priv_lvl_i               ),
-  
+    .priv_lvl_i                  ( priv_lvl_i               ), 
     .mtvec_mode_i                ( mtvec_mode_i             ),
-  
+
     // Debug Signal
     .debug_req_i                 ( debug_req_i              ),
     .dcsr_i                      ( dcsr_i                   ),
@@ -156,7 +155,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     // Outputs
     .ctrl_fsm_o                  ( ctrl_fsm_o               )
   );
-  
+
 
   // Hazard/bypass/stall control instance
   cv32e40s_controller_bypass bypass_i

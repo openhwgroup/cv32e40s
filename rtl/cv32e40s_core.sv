@@ -101,7 +101,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   input  logic        fetch_enable_i,
   output logic        core_sleep_o
 );
-  
+
   // Unused parameters and signals (left in code for future design extensions)
   localparam A_EXTENSION         =  0;
 
@@ -129,7 +129,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Controller
   ctrl_byp_t   ctrl_byp;
   ctrl_fsm_t   ctrl_fsm;
-  
+
   // Register File Write Back
   logic        rf_we_wb;
   rf_addr_t    rf_waddr_wb;
@@ -194,7 +194,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Interrupts
   logic        m_irq_enable; // interrupt_controller
   logic [31:0] mepc, dpc;    // from cs_registers
-  logic [31:0] mie;          // from cs_registers 
+  logic [31:0] mie;          // from cs_registers
   logic [31:0] mip;          // from cs_registers
 
   // Signal from IF to init mtvec at boot time
@@ -209,13 +209,13 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // trigger match detected in cs_registers (using ID timing)
   logic        debug_trigger_match_id;
 
-  // Controller <-> decoder 
+  // Controller <-> decoder
   logic       mret_insn_id;
   logic       dret_insn_id;
   logic       wfi_insn_id;
   logic [1:0] ctrl_transfer_insn_id;
   logic [1:0] ctrl_transfer_insn_raw_id;
- 
+
   logic        csr_en_id;
   csr_opcode_e csr_op_id;
   csr_num_e    csr_raddr_ex;
@@ -243,7 +243,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign m_c_obi_instr_if.s_rvalid.rvalid    = instr_rvalid_i;
   assign m_c_obi_instr_if.resp_payload.rdata = instr_rdata_i;
   assign m_c_obi_instr_if.resp_payload.err   = instr_err_i;
-  
+
   assign data_req_o                          = m_c_obi_data_if.s_req.req;
   assign data_we_o                           = m_c_obi_data_if.req_payload.we;
   assign data_be_o                           = m_c_obi_data_if.req_payload.be;
@@ -297,7 +297,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Core status
     .if_busy_i                  ( if_busy              ),
     .lsu_busy_i                 ( lsu_busy             ),
-  
+
     // Inputs from controller (including busy)
     .ctrl_fsm_i                 ( ctrl_fsm             )
   );
@@ -370,7 +370,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .if_id_pipe_o        ( if_id_pipe                ),
 
     .ex_wb_pipe_i        ( ex_wb_pipe                ),
-    
+
     .ctrl_fsm_i          ( ctrl_fsm                  ),
 
     .mepc_i              ( mepc                      ), // exception return address
@@ -597,7 +597,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lsu_ready_o                ( lsu_ready_wb                 ),
     .lsu_valid_o                ( lsu_valid_wb                 ),
     .lsu_ready_i                ( lsu_ready_1                  ),
-  
+
     // Valid/ready
     .wb_ready_o                 ( wb_ready                     ),
     .wb_valid_o                 ( wb_valid                     )
@@ -664,7 +664,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
  
     // PMP CSR's    
     .csr_pmp_o                  ( csr_pmp                ),
-   
+
     // debug
     .dpc_o                      ( dpc                    ),
     .dcsr_o                     ( dcsr                   ),
@@ -710,13 +710,13 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_en_id_i                    ( csr_en_id              ),
     .csr_op_id_i                    ( csr_op_id              ),
     .wfi_id_i                       ( wfi_insn_id            ),
-                                                                 
+
     // LSU
     .lsu_split_ex_i                 ( lsu_split_ex           ),
     .lsu_mpu_status_wb_i            ( lsu_mpu_status_wb      ),
     .lsu_addr_wb_i                  ( lsu_addr_wb            ),
     .lsu_err_wb_i                   ( lsu_err_wb             ),
-  
+
     // jump/branch control
     .branch_decision_ex_i           ( branch_decision_ex     ),
     .ctrl_transfer_insn_i           ( ctrl_transfer_insn_id  ),
@@ -726,7 +726,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .irq_wu_ctrl_i                  ( irq_wu_ctrl            ),
     .irq_req_ctrl_i                 ( irq_req_ctrl           ),
     .irq_id_ctrl_i                  ( irq_id_ctrl            ),
-    
+
     // Priviledge level
     .priv_lvl_i                     ( priv_lvl               ),
 
@@ -734,12 +734,12 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mtvec_mode_i                   ( mtvec_mode             ),
 
     // Debug signals
-    .debug_req_i                    ( debug_req_i            ), 
+    .debug_req_i                    ( debug_req_i            ),
     .dcsr_i                         ( dcsr                   ),
     .debug_trigger_match_id_i       ( debug_trigger_match_id ),
-    
+
     // Register File read, write back and forwards
-    .rf_re_i                        ( rf_re_id               ),       
+    .rf_re_i                        ( rf_re_id               ),
     .rf_raddr_i                     ( rf_raddr_id            ),
     .rf_waddr_i                     ( rf_waddr_id            ),
 
@@ -770,7 +770,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 //  \___/_| |_|\__(_)  \____/\___/|_| |_|\__|_|  \___/|_|_|\___|_|    //
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
-  
+
+
   cv32e40s_int_controller
   int_controller_i
   (

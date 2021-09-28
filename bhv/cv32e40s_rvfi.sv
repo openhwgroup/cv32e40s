@@ -164,9 +164,12 @@ module cv32e40s_rvfi
    input logic [31:0]                         csr_pmpaddr_n_i, // PMP address input shared for all pmpaddr registers
    input logic [31:0]                         csr_pmpaddr_q_i[16],
    input logic [15:0]                         csr_pmpaddr_we_i,
-   input logic [31:0]                         csr_pmpmseccfg_n_i,
-   input logic [31:0]                         csr_pmpmseccfg_q_i,
-   input logic                                csr_pmpmseccfg_we_i,
+   input logic [31:0]                         csr_mseccfg_n_i,
+   input logic [31:0]                         csr_mseccfg_q_i,
+   input logic                                csr_mseccfg_we_i,
+   input logic [31:0]                         csr_mseccfgh_n_i,
+   input logic [31:0]                         csr_mseccfgh_q_i,
+   input logic                                csr_mseccfgh_we_i,
 
   // RISC-V Formal Interface
   // Does not comply with the coding standards of _i/_o suffixes, but follow,
@@ -354,23 +357,27 @@ module cv32e40s_rvfi
    output logic [15:0] [31:0]                 rvfi_csr_pmpaddr_wmask,
    output logic [15:0] [31:0]                 rvfi_csr_pmpaddr_rdata,
    output logic [15:0] [31:0]                 rvfi_csr_pmpaddr_wdata,
-   output logic [ 1:0] [31:0]                 rvfi_csr_pmpmseccfg_rmask,
-   output logic [ 1:0] [31:0]                 rvfi_csr_pmpmseccfg_wmask,
-   output logic [ 1:0] [31:0]                 rvfi_csr_pmpmseccfg_rdata,
-   output logic [ 1:0] [31:0]                 rvfi_csr_pmpmseccfg_wdata
+   output logic        [31:0]                 rvfi_csr_mseccfg_rmask,
+   output logic        [31:0]                 rvfi_csr_mseccfg_wmask,
+   output logic        [31:0]                 rvfi_csr_mseccfg_rdata,
+   output logic        [31:0]                 rvfi_csr_mseccfg_wdata,
+   output logic        [31:0]                 rvfi_csr_mseccfgh_rmask,
+   output logic        [31:0]                 rvfi_csr_mseccfgh_wmask,
+   output logic        [31:0]                 rvfi_csr_mseccfgh_rdata,
+   output logic        [31:0]                 rvfi_csr_mseccfgh_wdata
 );
 
   // Propagating from ID stage
   logic [2:0] [31:0] pc_wdata;
   logic [2:0]        debug_mode;
-  logic [2:0] [2:0]  debug_cause;
+  logic [2:0] [ 2:0] debug_cause;
   logic [2:0]        in_trap;
   logic [2:0] [ 4:0] rs1_addr;
   logic [2:0] [ 4:0] rs2_addr;
   logic [2:0] [31:0] rs1_rdata;
   logic [2:0] [31:0] rs2_rdata;
-  logic [2:0] [31:0] mem_rmask;
-  logic [2:0] [31:0] mem_wmask;
+  logic [2:0] [ 3:0] mem_rmask;
+  logic [2:0] [ 3:0] mem_wmask;
 
   //Propagating from EX stage
   logic [31:0]       ex_mem_addr;
@@ -382,11 +389,11 @@ module cv32e40s_rvfi
   logic [31:0] rvfi_mem_addr_d;
 
 
-  logic [31:0] rd_addr_wb;
+  logic [ 4:0] rd_addr_wb;
   logic [31:0] rd_wdata_wb;
 
-  logic [31:0] rs1_addr_id;
-  logic [31:0] rs2_addr_id;
+  logic [ 4:0] rs1_addr_id;
+  logic [ 4:0] rs2_addr_id;
   logic [31:0] rs1_rdata_id;
   logic [31:0] rs2_rdata_id;
 
@@ -568,13 +575,13 @@ module cv32e40s_rvfi
         end
 
         // Read autonomuos CSRs from EX perspective
-        ex_csr_rdata        <= ex_csr_rdata_d;
+        ex_csr_rdata          <= ex_csr_rdata_d;
 
       end
 
 
       //// WB Stage ////
-      rvfi_valid      <= wb_valid_i;
+      rvfi_valid <= wb_valid_i;
       if (wb_valid_i) begin
         rvfi_order      <= rvfi_order + 64'b1;
         rvfi_pc_rdata   <= pc_wb_i;
@@ -870,9 +877,9 @@ module cv32e40s_rvfi
   generate
     for (genvar i = 0; i < 16; i++ ) begin // Max 16 pmp regions
       // 4 regions in each register
-      assign rvfi_csr_wdata_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_n_i[i];
-      assign rvfi_csr_rdata_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_q_i[i];
-      assign rvfi_csr_wmask_d.pmpcfg[i/4][i%4+:4] = csr_pmpcfg_we_i[i] ? '1 : '0;
+      assign rvfi_csr_wdata_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpcfg_n_i[i];
+      assign rvfi_csr_rdata_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpcfg_q_i[i];
+      assign rvfi_csr_wmask_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpcfg_we_i[i] ? '1 : '0;
 
       assign rvfi_csr_wdata_d.pmpaddr[i]          = csr_pmpaddr_n_i; // input shared between all registers
       assign rvfi_csr_rdata_d.pmpaddr[i]          = csr_pmpaddr_q_i[i];
@@ -880,9 +887,12 @@ module cv32e40s_rvfi
     end
   endgenerate
 
-  assign rvfi_csr_wdata_d.pmpmseccfg[0]   = csr_pmpmseccfg_n_i;
-  assign rvfi_csr_rdata_d.pmpmseccfg[0]   = csr_pmpmseccfg_q_i;
-  assign rvfi_csr_wmask_d.pmpmseccfg[0]   = csr_pmpmseccfg_we_i ? '1 : '0;
+  assign rvfi_csr_wdata_d.mseccfg  = csr_mseccfg_n_i;
+  assign rvfi_csr_rdata_d.mseccfg  = csr_mseccfg_q_i;
+  assign rvfi_csr_wmask_d.mseccfg  = csr_mseccfg_we_i ? '1 : '0;
+  assign rvfi_csr_wdata_d.mseccfgh = csr_mseccfgh_n_i;
+  assign rvfi_csr_rdata_d.mseccfgh = csr_mseccfgh_q_i;
+  assign rvfi_csr_wmask_d.mseccfgh = csr_mseccfgh_we_i ? '1 : '0;
 
   // CSR outputs //
   assign rvfi_csr_mstatus_rdata           = rvfi_csr_rdata.mstatus;
@@ -1043,10 +1053,14 @@ module cv32e40s_rvfi
   assign rvfi_csr_pmpaddr_rmask           = '1;
   assign rvfi_csr_pmpaddr_wdata           = rvfi_csr_wdata.pmpaddr;
   assign rvfi_csr_pmpaddr_wmask           = rvfi_csr_wmask.pmpaddr;
-  assign rvfi_csr_pmpmseccfg_rdata        = rvfi_csr_rdata.pmpmseccfg;
-  assign rvfi_csr_pmpmseccfg_rmask        = '1;
-  assign rvfi_csr_pmpmseccfg_wdata        = rvfi_csr_wdata.pmpmseccfg;
-  assign rvfi_csr_pmpmseccfg_wmask        = rvfi_csr_wmask.pmpmseccfg;
+  assign rvfi_csr_mseccfg_rdata           = rvfi_csr_rdata.mseccfg;
+  assign rvfi_csr_mseccfg_rmask           = '1;
+  assign rvfi_csr_mseccfg_wdata           = rvfi_csr_wdata.mseccfg;
+  assign rvfi_csr_mseccfg_wmask           = rvfi_csr_wmask.mseccfg;
+  assign rvfi_csr_mseccfgh_rdata          = rvfi_csr_rdata.mseccfgh;
+  assign rvfi_csr_mseccfgh_rmask          = '1;
+  assign rvfi_csr_mseccfgh_wdata          = rvfi_csr_wdata.mseccfgh;
+  assign rvfi_csr_mseccfgh_wmask          = rvfi_csr_wmask.mseccfgh;
 
 endmodule // cv32e40s_rvfi
 
