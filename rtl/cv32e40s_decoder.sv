@@ -47,8 +47,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   output logic        fencei_insn_o,            // fence.i instruction
 
   // from IF/ID pipeline
-  input  logic [31:0] instr_rdata_i,            // instruction read from instr memory/cache
-  input  logic        illegal_c_insn_i,         // compressed instruction decode failed
+  input  if_id_pipe_t if_id_pipe_i,  
 
   // ALU signals
   output logic          alu_en_o,               // ALU enable
@@ -76,7 +75,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   // CSR
   output logic        csr_en_o,                 // enable access to CSR
   output csr_opcode_e csr_op_o,                 // operation to perform on CSR
-  input  PrivLvl_t    current_priv_lvl_i,       // The current privilege level // todo:AB:low proper name
   input  Status_t     mstatus_i,                // Current mstatus
 
   // LSU
@@ -100,7 +98,8 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   logic       rf_we;
   logic       lsu_en;
   logic [1:0] ctrl_transfer_insn;
-
+  logic [31:0] instr_rdata;
+  
   csr_opcode_e csr_op;
 
   logic       alu_en;
@@ -114,19 +113,21 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   decoder_ctrl_t decoder_ctrl_mux_subdec;
   decoder_ctrl_t decoder_ctrl_mux;
 
+  assign instr_rdata = if_id_pipe_i.instr.bus_resp.rdata;
+  
   // RV32I Base instruction set decoder
   cv32e40s_i_decoder #(.DEBUG_TRIGGER_EN(DEBUG_TRIGGER_EN))
     i_decoder_i
-      (.instr_rdata_i(instr_rdata_i),
+      (.instr_rdata_i(instr_rdata),
        .ctrl_fsm_i (ctrl_fsm_i),
-       .current_priv_lvl_i (current_priv_lvl_i),
+       .priv_lvl_i (if_id_pipe_i.priv_lvl),
        .mstatus_i (mstatus_i),
        .decoder_ctrl_o(decoder_i_ctrl));
   
   // RV32M extension decoder
   cv32e40s_m_decoder
     m_decoder_i
-      (.instr_rdata_i(instr_rdata_i),
+      (.instr_rdata_i(instr_rdata),
        .decoder_ctrl_o(decoder_m_ctrl));
 
   generate
@@ -134,7 +135,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
       // RV32A extension decoder
       cv32e40s_a_decoder
         a_decoder_i
-          (.instr_rdata_i(instr_rdata_i),
+          (.instr_rdata_i(instr_rdata),
            .decoder_ctrl_o(decoder_a_ctrl));
     end
     else begin: no_a_decoder
@@ -146,7 +147,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
       cv32e40s_b_decoder
         #(.B_EXT(B_EXT))
       b_decoder_i
-        (.instr_rdata_i(instr_rdata_i),
+        (.instr_rdata_i(instr_rdata),
          .decoder_ctrl_o(decoder_b_ctrl));
     end
     else begin: no_b_decoder
@@ -169,7 +170,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
 
   // Take illegal compressed instruction into account
   always_comb begin
-    if (illegal_c_insn_i) begin
+    if (if_id_pipe_i.illegal_c_insn) begin
       decoder_ctrl_mux = DECODER_CTRL_ILLEGAL_INSN;
     end
     else begin

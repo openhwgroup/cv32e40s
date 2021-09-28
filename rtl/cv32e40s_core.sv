@@ -160,7 +160,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   logic [31:0] csr_rdata;
 
-  PrivLvl_t    current_priv_lvl, current_priv_lvl_lsu;
+  PrivLvl_t    priv_lvl_if, priv_lvl_lsu, priv_lvl;
 
   Status_t     mstatus;
 
@@ -364,7 +364,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_pmp_i            ( csr_pmp                  ),
 
     // Privilege level
-    .priv_lvl_i           ( current_priv_lvl   ),
+    .priv_lvl_i           ( priv_lvl_if              ),
 
     // IF/ID pipeline
     .if_id_pipe_o        ( if_id_pipe                ),
@@ -429,7 +429,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ctrl_fsm_i                   ( ctrl_fsm                  ),
 
     // CSR ID/EX
-    .current_priv_lvl_i           ( current_priv_lvl          ),
     .mstatus_i                    ( mstatus                   ),
 
     // Debug Signals
@@ -554,7 +553,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_pmp_i             ( csr_pmp            ),
 
     // Privilege level
-    .priv_lvl_i            ( current_priv_lvl_lsu ),
+    .priv_lvl_lsu_i        ( priv_lvl_lsu       ),
 
     // Valid/ready
     .valid_0_i             ( lsu_valid_ex       ), // First LSU stage (EX)
@@ -638,7 +637,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // IF/ID pipeline
     .if_id_pipe_i               ( if_id_pipe             ),
-
+    .mret_id_i                  ( mret_insn_id           ),
     // ID/EX pipeline
     .id_ex_pipe_i               ( id_ex_pipe             ),
 
@@ -671,9 +670,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .dcsr_o                     ( dcsr                   ),
     .debug_trigger_match_o      ( debug_trigger_match_id ),
 
-    .priv_lvl_o                 ( current_priv_lvl       ),
-    .priv_lvl_lsu_o             ( current_priv_lvl_lsu   ),
-
+    .priv_lvl_if_o              ( priv_lvl_if            ),
+    .priv_lvl_lsu_o             ( priv_lvl_lsu           ),    
+    .priv_lvl_o                 ( priv_lvl               ),
+   
     .pc_if_i                    ( pc_if                  )
   );
 
@@ -726,7 +726,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .irq_wu_ctrl_i                  ( irq_wu_ctrl            ),
     .irq_req_ctrl_i                 ( irq_req_ctrl           ),
     .irq_id_ctrl_i                  ( irq_id_ctrl            ),
-    .current_priv_lvl_i             ( current_priv_lvl       ), // TODO:OK:low Needs bypass for 40S?
+
+    // Priviledge level
+    .priv_lvl_i                     ( priv_lvl               ),
 
     // From CSR registers
     .mtvec_mode_i                   ( mtvec_mode             ),
@@ -787,8 +789,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // To/from with cv32e40s_cs_registers
     .mie_i                ( mie                ),
     .mip_o                ( mip                ),
-    .m_ie_i               ( m_irq_enable       ),
-    .current_priv_lvl_i   ( current_priv_lvl   )
+    .m_ie_i               ( m_irq_enable       )
   );
 
     /////////////////////////////////////////////////////////

@@ -49,7 +49,6 @@ module cv32e40s_id_stage_sva
   input logic           id_ready_o,
   input logic           id_valid,
   input ctrl_fsm_t      ctrl_fsm_i,
-  input PrivLvl_t       current_priv_lvl_i,
   input Status_t        mstatus_i
 );
 

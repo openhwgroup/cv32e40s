@@ -59,7 +59,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   input               pmp_csr_t csr_pmp_i,
 
   // Privilege mode
-  input              PrivLvl_t priv_lvl_i,
+  input              PrivLvl_t priv_lvl_lsu_i,
 
   // Handshakes
   input  logic        valid_0_i,        // Handshakes for first LSU stage (EX)
@@ -571,7 +571,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   //////////////////////////////////////////////////////////////////////////////
 
   assign trans.prot[0]   = 1'b1;  // Transfers from LSU are data transfers
-  assign trans.prot[2:1] = PRIV_LVL_M; // Machine mode
+  assign trans.prot[2:1] = PRIV_LVL_M; // Machine mode TODO: connect to priv_lvl
   assign trans.memtype   = 2'b00; // memtype is assigned in the MPU, tie off.
   
   cv32e40s_mpu
@@ -591,7 +591,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
      .atomic_access_i      ( 1'b0              ), // TODO:OE update to support atomic PMA checks
      .misaligned_access_i  ( misaligned_access ),
 
-     .priv_lvl_i           ( priv_lvl_i        ),
+     .priv_lvl_i           ( priv_lvl_lsu_i    ),
      .csr_pmp_i            ( csr_pmp_i         ),
                                                
      .core_one_txn_pend_n  ( cnt_is_one_next   ),

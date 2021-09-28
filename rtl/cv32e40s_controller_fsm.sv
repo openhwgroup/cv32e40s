@@ -67,7 +67,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  logic        irq_req_ctrl_i,             // irq requst
   input  logic [4:0]  irq_id_ctrl_i,              // irq id
   input  logic        irq_wu_ctrl_i,              // irq wakeup control
-  input  PrivLvl_t    current_priv_lvl_i,         // Current running priviledge level
+  input  PrivLvl_t    priv_lvl_i,                 // Current running priviledge level
 
   // From cs_registers
   input  logic  [1:0] mtvec_mode_i,
@@ -204,7 +204,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign exception_cause_wb = ex_wb_pipe_i.instr.mpu_status != MPU_OK       ? EXC_CAUSE_INSTR_FAULT     :
                               ex_wb_pipe_i.instr.bus_resp.err               ? EXC_CAUSE_INSTR_BUS_FAULT :
                               ex_wb_pipe_i.illegal_insn                     ? EXC_CAUSE_ILLEGAL_INSN    :
-                              ex_wb_pipe_i.ecall_insn                       ? (current_priv_lvl_i==PRIV_LVL_M ? 
+                              ex_wb_pipe_i.ecall_insn                       ? (priv_lvl_i==PRIV_LVL_M ? 
                                                                                EXC_CAUSE_ECALL_MMODE : 
                                                                                EXC_CAUSE_ECALL_UMODE )  :
                               ex_wb_pipe_i.ebrk_insn                        ? EXC_CAUSE_BREAKPOINT      :
@@ -396,6 +396,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     ctrl_fsm_o.csr_save_cause      = 1'b0;
     ctrl_fsm_o.csr_cause           = 32'h0;
 
+    ctrl_fsm_o.mret_jump_id        = 1'b0;
+    
     ctrl_fsm_o.exc_pc_mux          = EXC_PC_IRQ;
     exc_cause                      = 5'b0;
 
@@ -576,9 +578,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
             // Jumps in ID (JAL, JALR, mret, uret, dret)
             if (mret_id_i) begin
-              ctrl_fsm_o.pc_mux     = debug_mode_q ? PC_EXCEPTION : PC_MRET;
-              ctrl_fsm_o.pc_set     = 1'b1;
-              ctrl_fsm_o.exc_pc_mux = EXC_PC_DBE; // Only used in debug mode
+              ctrl_fsm_o.pc_mux       = debug_mode_q ? PC_EXCEPTION : PC_MRET;
+              ctrl_fsm_o.pc_set       = 1'b1;
+              ctrl_fsm_o.exc_pc_mux   = EXC_PC_DBE; // Only used in debug mode
+              ctrl_fsm_o.mret_jump_id = !debug_mode_q;
             end else begin
               ctrl_fsm_o.pc_mux = PC_JUMP;
               ctrl_fsm_o.pc_set = 1'b1;

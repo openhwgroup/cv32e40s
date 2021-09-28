@@ -170,7 +170,7 @@ module cv32e40s_wrapper
                               .rf_we_wb_i          (core_i.wb_stage_i.rf_we_wb_o  ),
                               .csr_we_i            (core_i.cs_registers_i.csr_we_int  ),
                               .mstatus_i           (core_i.mstatus),
-                              .current_priv_lvl_i  (core_i.cs_registers_i.priv_lvl_o),
+                              .priv_lvl_i          (core_i.priv_lvl),
                               .priv_lvl_n          (core_i.cs_registers_i.priv_lvl_n),
                               .wfi_insn_id_i       (core_i.id_stage_i.wfi_insn),
                               .mret_insn_id_i      (core_i.id_stage_i.mret_insn),
@@ -217,6 +217,7 @@ module cv32e40s_wrapper
                 .ctrl_debug_allowed               (core_i.controller_i.controller_fsm_i.debug_allowed),
                 .id_stage_multi_cycle_id_stall    (core_i.id_stage_i.multi_cycle_id_stall),
                 .id_stage_id_valid                (core_i.id_stage_i.id_valid),
+                .priv_lvl_if_q                    (core_i.cs_registers_i.priv_lvl_if_q),
                 .*);
 
 bind cv32e40s_sleep_unit:
@@ -330,8 +331,8 @@ bind cv32e40s_sleep_unit:
 
          .exc_pc_i                 ( core_i.if_stage_i.exc_pc                                             ),
 
-         .priv_lvl_i               ( core_i.cs_registers_i.priv_lvl_o                                     ),
-         .priv_lvl_lsu_i           ( core_i.cs_registers_i.priv_lvl_lsu_o                                 ),
+         .priv_lvl_i               ( core_i.priv_lvl                                                      ),
+         .priv_lvl_lsu_i           ( core_i.priv_lvl_lsu                                                  ),
          .debug_mode_i             ( core_i.ctrl_fsm.debug_mode                                           ),
          .debug_cause_i            ( core_i.ctrl_fsm.debug_cause                                          ),
 
