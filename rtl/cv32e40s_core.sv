@@ -200,7 +200,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Signal from IF to init mtvec at boot time
   logic        csr_mtvec_init_if;
 
-  alert_trigger_t    alert_triggers;
+  // Major Alert Triggers
+  logic        rf_ecc_err;
+  logic        pc_err;
+  logic        csr_err;
+  logic        if_int_err;
 
   // debug mode and dcsr configuration
   // From cs_registers
@@ -311,17 +315,25 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //                                 //
   /////////////////////////////////////
 
+  assign pc_err          = 1'b0; // todo: connect when hardened pc implemented
+  assign if_int_err      = 1'b0; // todo: connect when interface integrity implemented
+
   cv32e40s_alert
     alert_i
-      (.clk              ( clk            ),
-       .rst_n            ( rst_n          ),
+      (.clk                 ( clk               ),
+       .rst_n               ( rst_ni            ),
 
        // Alert Triggers
-       .alert_triggers_i ( alert_triggers ),
+       .ex_wb_pipe_i        ( ex_wb_pipe        ),
+       .lsu_mpu_status_wb_i ( lsu_mpu_status_wb ),
+       .rf_ecc_err_i        ( rf_ecc_err        ),
+       .pc_err_i            ( pc_err            ),
+       .csr_err_i           ( csr_err           ),
+       .if_int_err_i        ( if_int_err        ),
 
        // Trigger Outputs
-       .alert_minor_o    ( alert_minor_o  ),
-       .alert_major_o    ( alert_major_o  )
+       .alert_minor_o       ( alert_minor_o     ),
+       .alert_major_o       ( alert_major_o     )
        );
 
 
@@ -361,10 +373,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .m_c_obi_instr_if    ( m_c_obi_instr_if          ),
 
     // CSR registers
-    .csr_pmp_i            ( csr_pmp                  ),
+    .csr_pmp_i           ( csr_pmp                   ),
 
     // Privilege level
-    .priv_lvl_i           ( priv_lvl_if              ),
+    .priv_lvl_i          ( priv_lvl_if               ),
 
     // IF/ID pipeline
     .if_id_pipe_o        ( if_id_pipe                ),
@@ -665,6 +677,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // PMP CSR's    
     .csr_pmp_o                  ( csr_pmp                ),
 
+    // CSR Parity Error
+    .csr_err_o                  ( csr_err                ),
+
     // debug
     .dpc_o                      ( dpc                    ),
     .dcsr_o                     ( dcsr                   ),
@@ -813,16 +828,16 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .rst_n              ( rst_ni             ),
 
     // ECC error output
-    .ecc_err_o          ( alert_triggers.rf_ecc_err ),
+    .ecc_err_o          ( rf_ecc_err         ),
 
     // Read ports
     .raddr_i            ( rf_raddr_id        ),
     .rdata_o            ( regfile_rdata_id   ), // todo:AB get consistent naming
 
     // Write ports
-    .waddr_i            ( regfile_waddr_wb      ),
-    .wdata_i            ( regfile_wdata_wb      ),
-    .we_i               ( regfile_we_wb         )
+    .waddr_i            ( regfile_waddr_wb   ),
+    .wdata_i            ( regfile_wdata_wb   ),
+    .we_i               ( regfile_we_wb      )
   );
 
 endmodule

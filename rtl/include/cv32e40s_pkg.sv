@@ -1191,16 +1191,6 @@ typedef struct packed {
   //                       //
   ///////////////////////////
 
-  // Alert Trigger type
-  typedef struct packed {
-    // Minor Alert Triggers
-    // todo: add remaining minor alert triggers
-
-    // Major Alert Triggers
-    logic        rf_ecc_err; // Register File ECC Error
-    // todo: add remaining major alert triggers
-  } alert_trigger_t;
-
   // OBI interface FSM state encoding
   typedef enum logic {TRANSPARENT, REGISTERED} obi_if_state_e;
 

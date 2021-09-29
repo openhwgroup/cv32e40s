@@ -32,15 +32,21 @@
 
 module cv32e40s_alert
   import cv32e40s_pkg::*;
-  (input logic               clk,
-   input logic               rst_n,
+  (input logic          clk,
+   input logic          rst_n,
 
-   // Alert Trigger inputs
-   input  alert_trigger_t    alert_triggers_i,
+   // Alert Trigger input Signals
+   input  ex_wb_pipe_t  ex_wb_pipe_i,
+   input  mpu_status_e  lsu_mpu_status_wb_i,
+
+   input  logic         rf_ecc_err_i,
+   input  logic         pc_err_i,
+   input  logic         csr_err_i,
+   input  logic         if_int_err_i,
 
    // Alert outputs
-   output logic              alert_minor_o,
-   output logic              alert_major_o
+   output logic         alert_minor_o,
+   output logic         alert_major_o
    );
 
   // Alert Outputs
@@ -49,12 +55,20 @@ module cv32e40s_alert
       alert_minor_o <= 1'b0;
       alert_major_o <= 1'b0;
     end else begin
+
       // Minor Alert
-      alert_minor_o <= 1'b0; // todo: add minor alert inputs
+      alert_minor_o <= ex_wb_pipe_i.instr.mpu_status != MPU_OK || // Instruction Access fault
+                       ex_wb_pipe_i.instr.bus_resp.err         || // Instruction Bus Fault
+                       ex_wb_pipe_i.illegal_insn               || // Illegal Instruction
+                       (lsu_mpu_status_wb_i == MPU_RE_FAULT)   || // Load Access Fault
+                       (lsu_mpu_status_wb_i == MPU_WR_FAULT)   ;  // Store / AMO Access Fault
 
       // Major Alert
-      alert_major_o <= alert_triggers_i.rf_ecc_err ||
-                       1'b0; // todo: add major alert inputs
+      alert_major_o <= rf_ecc_err_i || // Register File ECC Error
+                       pc_err_i     || // Program Counter Error
+                       csr_err_i    || // Control ans Status Register Parity Error
+                       if_int_err_i;   // Interface Integrity Error
+
     end
   end
 
