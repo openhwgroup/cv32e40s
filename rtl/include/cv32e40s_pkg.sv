@@ -1151,6 +1151,9 @@ typedef struct packed {
   logic        debug_running;        // Signal to external debugger that we are running (not in debug)
   logic        debug_halted;         // Signal to external debugger that we are halted (in debug mode)
 
+  // Alert Trigger
+  logic        exception_alert;
+
   // Wakeup Signal to sleep unit
   logic        wake_from_sleep;       // Wakeup (due to irq or debug)
 
@@ -1190,16 +1193,6 @@ typedef struct packed {
   //  \/    \/_|___/\___|  //
   //                       //
   ///////////////////////////
-
-  // Alert Trigger type
-  typedef struct packed {
-    // Minor Alert Triggers
-    // todo: add remaining minor alert triggers
-
-    // Major Alert Triggers
-    logic        rf_ecc_err; // Register File ECC Error
-    // todo: add remaining major alert triggers
-  } alert_trigger_t;
 
   // OBI interface FSM state encoding
   typedef enum logic {TRANSPARENT, REGISTERED} obi_if_state_e;

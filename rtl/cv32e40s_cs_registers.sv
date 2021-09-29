@@ -48,21 +48,21 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Hart ID
   input  logic [31:0]     hart_id_i,
   output logic [23:0]     mtvec_addr_o,
-  output logic  [1:0]     mtvec_mode_o,
+  output logic [ 1:0]     mtvec_mode_o,
   
   // Used for mtvec address
   input  logic [31:0]     mtvec_addr_i,
   input  logic            csr_mtvec_init_i,
 
   // IF/ID pipeline
-  input if_id_pipe_t      if_id_pipe_i,
-  input logic             mret_id_i,
+  input  if_id_pipe_t     if_id_pipe_i,
+  input  logic            mret_id_i,
 
   // ID/EX pipeline 
-  input id_ex_pipe_t      id_ex_pipe_i,
+  input  id_ex_pipe_t     id_ex_pipe_i,
 
   // EX/WB pipeline
-  input ex_wb_pipe_t      ex_wb_pipe_i,
+  input  ex_wb_pipe_t     ex_wb_pipe_i,
 
   // From controller FSM
   input  ctrl_fsm_t       ctrl_fsm_i,
@@ -85,6 +85,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // PMP CSR's
   output pmp_csr_t        csr_pmp_o,
+
+  // Read Error
+  output logic            csr_err_o,
 
   // debug
   output logic [31:0]     dpc_o,
@@ -198,6 +201,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                       umode_mcounteren_illegal_read;  
   logic                       illegal_csr_write_priv, illegal_csr_read_priv;
 
+  logic                       cpuctrl_rd_error;
+
   // Performance Counter Signals
   logic [31:0] [MHPMCOUNTER_WIDTH-1:0] mhpmcounter_q;                    // performance counters
   logic [31:0] [MHPMCOUNTER_WIDTH-1:0] mhpmcounter_n;                    // performance counters next value
@@ -241,6 +246,17 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     
   // mip CSR
   assign mip = mip_i;
+
+  // Combine all CSR Read error outputs
+  assign csr_err_o = mstatus_rd_error ||
+                     mtvec_rd_error   ||
+                     pmp_rd_error     ||
+                     cpuctrl_rd_error ||
+                     dcsr_rd_error    ||
+                     mie_rd_error     ||
+                     mepc_rd_error;
+
+  assign cpuctrl_rd_error = 1'b0; // todo: Connect to cpuctrl CSR (w/ SHADOWCOPY==SECURE) when implemented
 
   ////////////////////////////////////////
   // Determine if CSR access is illegal //
@@ -687,7 +703,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
  cv32e40s_csr #(
     .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
+    .SHADOWCOPY (SECURE),
     .RESETVALUE (DCSR_RESET_VAL)
   ) dcsr_csr_i (
     .clk      (clk),
@@ -713,7 +729,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_csr #(
     .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
+    .SHADOWCOPY (SECURE),
     .RESETVALUE (32'd0)
   ) mepc_csr_i (
     .clk      (clk),
@@ -739,7 +755,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_csr #(
     .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
+    .SHADOWCOPY (SECURE),
     .RESETVALUE (32'd0)
   ) mie_csr_i (
     .clk      (clk),
@@ -752,7 +768,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_csr #(
     .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
+    .SHADOWCOPY (SECURE),
     .RESETVALUE (MSTATUS_RESET_VAL)
   ) mstatus_csr_i (
     .clk      (clk),
@@ -780,7 +796,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_csr #(
     .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
+    .SHADOWCOPY (SECURE),
     .RESETVALUE (MTVEC_RESET_VAL)
   ) mtvec_csr_i (
     .clk      (clk),
@@ -912,7 +928,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           
           cv32e40s_csr #(
                          .WIDTH      ($bits(pmp_cfg_t)),
-                         .SHADOWCOPY (1'b0),
+                         .SHADOWCOPY (SECURE),
                          .RESETVALUE ('0))
           pmp_cfg_csr_i 
             (.clk        (clk),
@@ -937,7 +953,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           
           cv32e40s_csr #(
                          .WIDTH      (PMP_ADDR_WIDTH),
-                         .SHADOWCOPY (1'b0),
+                         .SHADOWCOPY (SECURE),
                          .RESETVALUE ('0))
           pmp_addr_csr_i 
             (.clk        (clk),
@@ -1013,7 +1029,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       
       cv32e40s_csr #(
                      .WIDTH      ($bits(pmp_mseccfg_t)),
-                     .SHADOWCOPY (1'b0),
+                     .SHADOWCOPY (SECURE),
                      .RESETVALUE ('0))
       pmp_mseccfg_csr_i 
         (.clk        (clk),

@@ -128,6 +128,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   
   // Events in WB
   logic exception_in_wb;
+  logic exception_alert_wb;
   logic [7:0] exception_cause_wb;
   logic wfi_in_wb;
   logic fencei_in_wb;
@@ -191,6 +192,12 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // Blocking on branch_taken_q, as a branch ha already been taken
   assign branch_taken_ex = branch_in_ex && !branch_taken_q;
+
+  // Exception should trigger minor alert if the following evaluates to 1
+  assign exception_alert_wb  = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK) ||
+                                ex_wb_pipe_i.instr.bus_resp.err           ||
+                                ex_wb_pipe_i.illegal_insn                 ||
+                                (lsu_mpu_status_wb_i != MPU_OK))          && ex_wb_pipe_i.instr_valid;
 
   // Exception in WB if the following evaluates to 1
   assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK) ||
@@ -396,6 +403,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     ctrl_fsm_o.csr_save_cause      = 1'b0;
     ctrl_fsm_o.csr_cause           = 32'h0;
 
+    ctrl_fsm_o.exception_alert     = 1'b0;
+
     ctrl_fsm_o.mret_jump_id        = 1'b0;
     
     ctrl_fsm_o.exc_pc_mux          = EXC_PC_IRQ;
@@ -520,6 +529,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             ctrl_fsm_o.csr_save_wb     = 1'b1;
             ctrl_fsm_o.csr_save_cause  = !debug_mode_q; // Do not update CSRs if in debug mode
             ctrl_fsm_o.csr_cause.exception_code = exception_cause_wb;
+
+            // Trigger Minor Alert
+            ctrl_fsm_o.exception_alert = exception_alert_wb;
           // Special insn
           end else if (wfi_in_wb) begin
             // Not halting EX/WB to allow insn (interruptible bubble) in EX to pass to WB before sleeping
