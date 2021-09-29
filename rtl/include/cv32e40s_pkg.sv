@@ -1151,6 +1151,9 @@ typedef struct packed {
   logic        debug_running;        // Signal to external debugger that we are running (not in debug)
   logic        debug_halted;         // Signal to external debugger that we are halted (in debug mode)
 
+  // Alert Trigger
+  logic        exception_alert;
+
   // Wakeup Signal to sleep unit
   logic        wake_from_sleep;       // Wakeup (due to irq or debug)
 

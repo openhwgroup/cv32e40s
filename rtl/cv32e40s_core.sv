@@ -204,7 +204,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        rf_ecc_err;
   logic        pc_err;
   logic        csr_err;
-  logic        if_int_err;
+  logic        itf_int_err;
 
   // debug mode and dcsr configuration
   // From cs_registers
@@ -316,7 +316,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   /////////////////////////////////////
 
   assign pc_err          = 1'b0; // todo: connect when hardened pc implemented
-  assign if_int_err      = 1'b0; // todo: connect when interface integrity implemented
+  assign itf_int_err     = 1'b0; // todo: connect when interface integrity implemented
 
   cv32e40s_alert
     alert_i
@@ -324,12 +324,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
        .rst_n               ( rst_ni            ),
 
        // Alert Triggers
-       .ex_wb_pipe_i        ( ex_wb_pipe        ),
-       .lsu_mpu_status_wb_i ( lsu_mpu_status_wb ),
+       .ctrl_fsm_i          ( ctrl_fsm          ),
        .rf_ecc_err_i        ( rf_ecc_err        ),
        .pc_err_i            ( pc_err            ),
        .csr_err_i           ( csr_err           ),
-       .if_int_err_i        ( if_int_err        ),
+       .itf_int_err_i       ( itf_int_err       ),
 
        // Trigger Outputs
        .alert_minor_o       ( alert_minor_o     ),
