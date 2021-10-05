@@ -889,10 +889,14 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // priv_lvl_o indicates the currently active priviledge level (updated when taking an exception, and when MRET is in WB)
   assign priv_lvl_o = priv_lvl_q;
+
+  // Global machine mode interrupt enable
+  // Machine mode interrupts are always enabled when in a lower privilege mode
+  // When single stepping, interrupt enable is gated by dcsr.stepie
+  assign m_irq_enable_o  = (mstatus_q.mie || (priv_lvl_q < PRIV_LVL_M)) &&
+                           !(dcsr_q.step && !dcsr_q.stepie);
   
   // directly output some registers
-  assign m_irq_enable_o  = mstatus_q.mie && !(dcsr_q.step && !dcsr_q.stepie);
-
   assign mstatus_o       = mstatus_q;
 
   assign mtvec_addr_o    = mtvec_q.addr;

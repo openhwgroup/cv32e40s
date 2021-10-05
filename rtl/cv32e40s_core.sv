@@ -818,7 +818,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // To/from with cv32e40s_cs_registers
     .mie_i                ( mie                ),
     .mip_o                ( mip                ),
-    .m_ie_i               ( m_irq_enable       )
+    .m_irq_enable_i       ( m_irq_enable       )
   );
 
     /////////////////////////////////////////////////////////
