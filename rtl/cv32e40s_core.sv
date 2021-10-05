@@ -80,8 +80,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
-  output logic        irq_ack_o,
-  output logic [4:0]  irq_id_o,
 
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
@@ -159,6 +157,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic [1:0]  mtvec_mode;
 
   logic [31:0] csr_rdata;
+  logic csr_counter_read;
 
   PrivLvl_t    priv_lvl_if, priv_lvl_lsu, priv_lvl;
 
@@ -181,6 +180,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        lsu_valid_wb;
   logic        lsu_ready_1;
 
+  logic        data_stall_wb;
+
   // Stage ready signals
   logic        id_ready;
   logic        ex_ready;
@@ -188,6 +189,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Stage valid signals
   logic        if_valid;
+  logic        id_valid;
   logic        ex_valid;
   logic        wb_valid;
 
@@ -222,7 +224,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   logic        csr_en_id;
   csr_opcode_e csr_op_id;
-  csr_num_e    csr_raddr_ex;
   logic        csr_illegal;
 
   // irq signals
@@ -234,6 +235,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // PMP CSR's
   pmp_csr_t csr_pmp;
 
+  // Used (only) by verification environment
+  logic        irq_ack;
+  logic [4:0]  irq_id;
+  logic        dbg_ack;
+  
   // Internal OBI interfaces
   if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
   if_c_obi #(.REQ_TYPE(obi_data_req_t), .RESP_TYPE(obi_data_resp_t))  m_c_obi_data_if();
@@ -266,8 +272,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign debug_halted_o    = ctrl_fsm.debug_halted;
   assign debug_running_o   = ctrl_fsm.debug_running;
 
-  assign irq_ack_o         = ctrl_fsm.irq_ack;
-  assign irq_id_o          = ctrl_fsm.irq_id;
+  // Used (only) by verification environment
+  assign irq_ack = ctrl_fsm.irq_ack;
+  assign irq_id  = ctrl_fsm.irq_id;
+  assign dbg_ack = ctrl_fsm.dbg_ack;
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -468,6 +476,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Pipeline handshakes
     .id_ready_o                   ( id_ready                  ),
+    .id_valid_o                   ( id_valid                  ),
     .ex_ready_i                   ( ex_ready                  )
   );
 
@@ -609,6 +618,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lsu_valid_o                ( lsu_valid_wb                 ),
     .lsu_ready_i                ( lsu_ready_1                  ),
 
+    .data_stall_o               ( data_stall_wb                ),
+
     // Valid/ready
     .wb_ready_o                 ( wb_ready                     ),
     .wb_valid_o                 ( wb_valid                     )
@@ -664,7 +675,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_illegal_o              (csr_illegal             ),
 
     // Raddr from first stage (EX)
-    .csr_raddr_o                ( csr_raddr_ex           ),
+    .csr_counter_read_o         ( csr_counter_read       ),
 
     // Interrupt related control signals
     .mie_o                      ( mie                    ),
@@ -710,7 +721,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // From ID/EX pipeline
     .id_ex_pipe_i                   ( id_ex_pipe             ),
 
-    .csr_raddr_ex_i                 ( csr_raddr_ex           ),
+    .csr_counter_read_i             ( csr_counter_read       ),
 
     // From EX/WB pipeline
     .ex_wb_pipe_i                   ( ex_wb_pipe             ),
@@ -728,6 +739,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // LSU
     .lsu_split_ex_i                 ( lsu_split_ex           ),
     .lsu_mpu_status_wb_i            ( lsu_mpu_status_wb      ),
+    .data_stall_wb_i                ( data_stall_wb          ),
     .lsu_addr_wb_i                  ( lsu_addr_wb            ),
     .lsu_err_wb_i                   ( lsu_err_wb             ),
 
@@ -763,13 +775,16 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Fencei flush handshake
     .fencei_flush_ack_i             ( fencei_flush_ack_i     ),
     .fencei_flush_req_o             ( fencei_flush_req_o     ),
-   
+
+    // Data OBI interface
+    .m_c_obi_data_if                ( m_c_obi_data_if        ),
+
     .id_ready_i                     ( id_ready               ),
+    .id_valid_i                     ( id_valid               ),
+    .ex_ready_i                     ( ex_ready               ),
     .ex_valid_i                     ( ex_valid               ),
     .wb_ready_i                     ( wb_ready               ),
     .wb_valid_i                     ( wb_valid               ),
-
-    .obi_data_req_i                 ( data_req_o             ),
 
     .ctrl_byp_o                     ( ctrl_byp               ),
     .ctrl_fsm_o                     ( ctrl_fsm               )

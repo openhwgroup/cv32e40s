@@ -55,7 +55,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   input  logic        debug_trigger_match_id_i,         // Trigger match in ID
 
   // From EX
-  input  csr_num_e    csr_raddr_ex_i,             // CSR read address (EX)
+  input  logic        csr_counter_read_i,         // CSR is reading a counter (EX).
 
   // From WB
   input  logic        wb_ready_i,                 // WB stage is ready
@@ -65,7 +65,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 );
 
   logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_ex_match;
+  logic                              rf_rd_ex_jr_match;
   logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_wb_match;
+  logic                              rf_rd_wb_jr_match;
   logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_ex_hz;
   logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_wb_hz;
 
@@ -74,9 +76,6 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
   // Detect CSR write in EX or WB (implicit and explicit)
   logic csr_write_in_ex_wb;
-
-  // Detect minstret/minstreth read in EX.
-  logic minstret_read_in_ex;
 
   // EX register file write enable
   logic rf_we_ex;
@@ -128,11 +127,6 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
                               (ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || ex_wb_pipe_i.mret_insn))
                               );
 
-  // minstret/minstreh is read in EX
-  assign minstret_read_in_ex =  ((id_ex_pipe_i.instr_valid && id_ex_pipe_i.csr_en) &&
-                                ((csr_raddr_ex_i  == CSR_MINSTRET) || (csr_raddr_ex_i == CSR_MINSTRETH)));
-
-
   // Stall ID when WFI is active in EX.
   // Used to create an interruptible bubble after WFI // todo:low only needed for load/store following WFI; should actually halt EX when WFI in WB
   assign ctrl_byp_o.wfi_stall = (id_ex_pipe_i.wfi_insn && id_ex_pipe_i.instr_valid);
@@ -152,6 +146,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     end
   endgenerate
 
+  // JR will always read rs1, no need to check rf_re[0]
+  assign rf_rd_ex_jr_match = (rf_waddr_ex == rf_raddr_i[0]) && |rf_raddr_i[0];
+  assign rf_rd_wb_jr_match = (rf_waddr_wb == rf_raddr_i[0]) && |rf_raddr_i[0];
 
   always_comb
   begin
@@ -180,8 +177,8 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     // except if result from WB is an ALU result
     // No need to deassert anything in ID,a s ID stage is stalled anyway
     if ((ctrl_transfer_insn_raw_i == BRANCH_JALR) &&
-        ((rf_we_wb && rf_rd_wb_match[0] && lsu_en_wb) ||
-         (rf_we_ex && rf_rd_ex_match[0])))
+        ((rf_we_wb && rf_rd_wb_jr_match && lsu_en_wb) ||
+         (rf_we_ex && rf_rd_ex_jr_match)))
     begin
       ctrl_byp_o.jr_stall    = 1'b1;
     end
@@ -195,8 +192,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
       ctrl_byp_o.csr_stall = 1'b1;
     end
 
-    // Stall (EX) due to minstret read
-    if (minstret_read_in_ex && ex_wb_pipe_i.instr_valid) begin
+    // Stall (EX) due to performance counter read
+    // csr_counter_read_i is derived from csr_raddr, which is gated with id_ex_pipe.csr_en and id_ex_pipe.instr_valid
+    if (csr_counter_read_i && ex_wb_pipe_i.instr_valid) begin
       ctrl_byp_o.minstret_stall = 1'b1;
     end
   end
@@ -232,7 +230,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     // Forwarding WB->ID for the jump register path
     // Only allowed if WB is writing back an ALU result; no forwarding for load result because of timing reasons
     if (rf_we_wb) begin
-      if (rf_rd_wb_match[0] && !lsu_en_wb) begin
+      if (rf_rd_wb_jr_match && !lsu_en_wb) begin
         ctrl_byp_o.jalr_fw_mux_sel = SELJ_FW_WB;
       end
     end

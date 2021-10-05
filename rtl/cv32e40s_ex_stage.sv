@@ -241,6 +241,13 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
     .ready_i         ( wb_ready_i                    )
   );
 
+  // Populate instruction meta data
+  instr_meta_t instr_meta_n; 
+  always_comb begin
+    instr_meta_n              = id_ex_pipe_i.instr_meta;
+    instr_meta_n.branch_taken = branch_decision_o;
+  end
+  
   ///////////////////////////////////////
   // EX/WB Pipeline Register           //
   ///////////////////////////////////////
@@ -254,6 +261,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
       ex_wb_pipe_o.rf_wdata       <= 32'b0;
       ex_wb_pipe_o.pc             <= 32'h0;
       ex_wb_pipe_o.instr          <= INST_RESP_RESET_VAL;
+      ex_wb_pipe_o.instr_meta     <= '0;
       ex_wb_pipe_o.illegal_insn   <= 1'b0;
       ex_wb_pipe_o.ebrk_insn      <= 1'b0;
       ex_wb_pipe_o.wfi_insn       <= 1'b0;
@@ -299,6 +307,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
         //          and LSU it not in use
         ex_wb_pipe_o.pc             <= id_ex_pipe_i.pc;
         ex_wb_pipe_o.instr          <= id_ex_pipe_i.instr;
+        ex_wb_pipe_o.instr_meta     <= instr_meta_n;
 
         // CSR illegal instruction detected in this stage, OR'ing in the status
         ex_wb_pipe_o.illegal_insn   <= id_ex_pipe_i.illegal_insn || csr_illegal_i;

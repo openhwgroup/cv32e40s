@@ -997,12 +997,22 @@ typedef struct packed {
   mpu_status_e                mpu_status;
 } data_resp_t;
 
+// Instruction meta data
+// TODO: consider moving other instruction meta data to this struct. e.g. xxx_insn, pc, etc
+typedef struct packed
+{
+  logic        jump;
+  logic        branch;
+  logic        branch_taken;
+  logic        compressed;
+} instr_meta_t;
+  
 // IF/ID pipeline
 typedef struct packed {
   logic        instr_valid;
   inst_resp_t  instr;
+  instr_meta_t instr_meta;
   logic [31:0] pc;
-  logic        is_compressed;
   logic [15:0] compressed_instr;
   logic        illegal_c_insn;
   PrivLvl_t    priv_lvl;
@@ -1055,6 +1065,7 @@ typedef struct packed {
   // Signals for exception handling etc passed on for evaluation in WB stage
   logic [31:0]  pc;
   inst_resp_t   instr;            // Contains instruction word (may be compressed),bus error status and MPU status
+  instr_meta_t  instr_meta;
   logic         instr_valid;      // instruction in EX is valid
   logic         illegal_insn;
   logic         ebrk_insn;
@@ -1089,6 +1100,7 @@ typedef struct packed {
   // Signals for exception handling etc
   logic [31:0]  pc;
   inst_resp_t   instr;            // Contains instruction word (may be compressed), bus error status and MPU status
+  instr_meta_t  instr_meta;
   logic         instr_valid;      // instruction in WB is valid
   logic         illegal_insn;
   logic         ebrk_insn;
@@ -1102,17 +1114,23 @@ typedef struct packed {
 // Performance counter events
 typedef struct packed {
   logic                              minstret;
-  logic                              load;
-  logic                              store;
+  logic                              compressed;
   logic                              jump;
   logic                              branch;
   logic                              branch_taken;
-  logic                              compressed;
-  logic                              jr_stall;
-  logic                              imiss;
-  logic                              ld_stall;
+  logic                              intr_taken;
+  logic                              data_read;
+  logic                              data_write;
+  logic                              if_invalid;
+  logic                              id_invalid;
+  logic                              ex_invalid;
+  logic                              wb_invalid;
+  logic                              id_ld_stall;
+  logic                              id_jr_stall;
+  logic                              wb_data_stall;
 } mhpmevent_t;
 
+  
 // Controller Bypass outputs
 typedef struct packed {
   op_fw_mux_e  operand_a_fw_mux_sel;  // Operand A forward mux sel
@@ -1138,9 +1156,11 @@ typedef struct packed {
 
   // To WB stage
   logic        block_data_addr;       // To LSU to prevent data_addr_wb_i updates between error and taken NMI
-  logic        irq_ack;               // irq has been taken
-  logic [4:0]  irq_id;                // id of taken irq (to toplevel pins)
   logic [4:0]  m_exc_vec_pc_mux;      // id of taken irq (to IF, EXC_PC_MUX, zeroed if mtvec_mode==0)
+
+  logic        irq_ack;               // irq has been taken
+  logic [4:0]  irq_id;                // id of taken irq
+  logic        dbg_ack;               // debug has been taken
 
   // Debug outputs
   logic        debug_mode;           // Flag signalling we are in debug mode
@@ -1163,9 +1183,10 @@ typedef struct packed {
   logic        csr_save_ex;         // Save PC from EX stage (currently unused)
   logic        csr_save_wb;         // Save PC from WB stage
   Mcause_t     csr_cause;           // CSR cause (saves to mcause CSR)
-  logic        csr_restore_mret; // Restore CSR due to mret
-  logic        csr_restore_dret; // Restore CSR due to dret
+  logic        csr_restore_mret;    // Restore CSR due to mret
+  logic        csr_restore_dret;    // Restore CSR due to dret
   logic        csr_save_cause;      // Update CSRs
+  logic        pending_nmi;         // An NMI is pending (for dcsr.nmip)
 
   logic        mret_jump_id;        // Jump from ID stage due to MRET
   
