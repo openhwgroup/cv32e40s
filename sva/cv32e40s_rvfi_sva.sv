@@ -23,10 +23,10 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_rvfi_sva
+module cv32e40s_rvfi_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
-  import cv32e40x_rvfi_pkg::*;
+  import cv32e40s_pkg::*;
+  import cv32e40s_rvfi_pkg::*;
   (
    input logic             clk_i,
    input logic             rst_ni,
@@ -96,6 +96,6 @@ module cv32e40x_rvfi_sva
                      (rvfi_dbg_ack |-> (dbg_ack_cnt != 0)))
       else `uvm_error("rvfi", "rvfi_dbg not preceeded by dbg_ack")
     
-endmodule : cv32e40x_rvfi_sva
+endmodule : cv32e40s_rvfi_sva
 
 
