@@ -29,6 +29,7 @@
   `include "cv32e40s_prefetcher_sva.sv"
   `include "cv32e40s_prefetch_unit_sva.sv"
   `include "cv32e40s_sleep_unit_sva.sv"
+  `include "cv32e40s_rvfi_sva.sv"
 `endif
 
 `include "cv32e40s_wrapper.vh"
@@ -91,8 +92,6 @@ module cv32e40s_wrapper
 
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
-  output logic        irq_ack_o,
-  output logic [4:0]  irq_id_o,
 
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
@@ -152,7 +151,7 @@ module cv32e40s_wrapper
   bind cv32e40s_id_stage:
     core_i.id_stage_i
     cv32e40s_dbg_helper
-      dbg_help_i(.is_compressed(if_id_pipe_i.is_compressed),
+      dbg_help_i(.is_compressed(if_id_pipe_i.instr_meta.compressed),
                  .rf_re    (core_i.rf_re_id               ),
                  .rf_raddr (core_i.rf_raddr_id            ),
                  .rf_we    (core_i.id_stage_i.rf_we       ),
@@ -216,8 +215,9 @@ module cv32e40s_wrapper
                 .ctrl_pending_debug               (core_i.controller_i.controller_fsm_i.pending_debug),
                 .ctrl_debug_allowed               (core_i.controller_i.controller_fsm_i.debug_allowed),
                 .id_stage_multi_cycle_id_stall    (core_i.id_stage_i.multi_cycle_id_stall),
-                .id_stage_id_valid                (core_i.id_stage_i.id_valid),
+                .id_stage_id_valid                (core_i.id_stage_i.id_valid_o),
                 .priv_lvl_if_q                    (core_i.cs_registers_i.priv_lvl_if_q),
+                .irq_ack                          (core_i.irq_ack),
                 .*);
 
 bind cv32e40s_sleep_unit:
@@ -260,6 +260,16 @@ bind cv32e40s_sleep_unit:
              .obi_req    (core_i.data_req_o),
              .obi_gnt    (core_i.data_gnt_i),
              .*);
+
+  bind cv32e40x_rvfi:
+    rvfi_i
+    cv32e40x_rvfi_sva
+      rvfi_sva(.irq_ack(core_i.irq_ack),
+               .dbg_ack(core_i.dbg_ack),
+               .ctrl_fsm_debug_cause(core_i.ctrl_fsm.debug_cause),
+               .ebreak_in_wb_i(core_i.controller_i.controller_fsm_i.ebreak_in_wb),
+               .*);
+  
 `endif //  `ifndef COREV_ASSERT_OFF
   
     cv32e40s_core_log
@@ -278,7 +288,7 @@ bind cv32e40s_sleep_unit:
          .rst_ni                   ( rst_ni                                                               ),
 
          .if_valid_i               ( core_i.if_stage_i.if_valid_o                                         ),
-         .id_valid_i               ( core_i.id_stage_i.id_valid                                           ),
+         .id_valid_i               ( core_i.id_stage_i.id_valid_o                                         ),
          .id_ready_i               ( core_i.id_stage_i.id_ready_o                                         ),
 
          .wb_valid_i               ( core_i.wb_stage_i.wb_valid_o                                         ),
@@ -299,7 +309,7 @@ bind cv32e40s_sleep_unit:
          .mret_insn_id_i           ( core_i.id_stage_i.mret_insn_o                                        ),
          .jump_in_id_i             ( core_i.controller_i.controller_fsm_i.jump_in_id                      ),
          .jump_target_id_i         ( core_i.id_stage_i.jmp_target_o                                       ),
-         .is_compressed_id_i       ( core_i.id_stage_i.if_id_pipe_i.is_compressed                         ),
+         .is_compressed_id_i       ( core_i.id_stage_i.if_id_pipe_i.instr_meta.compressed                 ),
 
          .pc_set_i                 ( core_i.if_stage_i.ctrl_fsm_i.pc_set                                  ),
          .pc_mux_i                 ( core_i.if_stage_i.ctrl_fsm_i.pc_mux                                  ),

@@ -53,6 +53,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   // LSU
   input  logic        lsu_split_ex_i,             // LSU is splitting misaligned
   input  mpu_status_e lsu_mpu_status_wb_i,        // MPU status (WB stage)
+  input  logic        data_stall_wb_i,            // WB stalled by LSU
   input  logic        lsu_err_wb_i,               // LSU bus error in WB stage
   input  logic [31:0] lsu_addr_wb_i,              // LSU address in WB stage
 
@@ -78,18 +79,21 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic         regfile_alu_we_id_i,        // currently decoded we enable
 
   // CSR raddr in ex
-  input  csr_num_e     csr_raddr_ex_i,
+  input  logic         csr_counter_read_i,         // A performance counter is read in CSR (EX)
 
   input logic [REGFILE_NUM_READ_PORTS-1:0]         rf_re_i,
   input rf_addr_t     rf_raddr_i[REGFILE_NUM_READ_PORTS],
   input rf_addr_t     rf_waddr_i,
 
   input  logic        id_ready_i,               // ID stage is ready
+  input  logic        id_valid_i,               // ID stage is done
+  input  logic        ex_ready_i,               // EX stage is ready
   input  logic        ex_valid_i,               // EX stage is done
   input  logic        wb_ready_i,               // WB stage is ready
-  input  logic        wb_valid_i,                // WB stage is done
+  input  logic        wb_valid_i,               // WB stage is done
 
-  input  logic        obi_data_req_i,           // OBI bus data request (EX) // todo: Should look at 'trans' (goal (please check if true) it to not break a multicycle LSU instruction or already committed load/store; that cannot be judged by only looking at the OBI signals)
+  // Data OBI interface monitor
+  if_c_obi.monitor    m_c_obi_data_if,
 
   // Outputs
   output ctrl_byp_t   ctrl_byp_o,
@@ -116,6 +120,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
     // From ID stage
     .id_ready_i                  ( id_ready_i               ),
+    .id_valid_i                  ( id_valid_i               ),
     .if_id_pipe_i                ( if_id_pipe_i             ),
     .mret_id_i                   ( mret_id_i                ),
     .dret_id_i                   ( dret_id_i                ),
@@ -126,13 +131,15 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     // From EX stage
     .id_ex_pipe_i                ( id_ex_pipe_i             ),
     .branch_decision_ex_i        ( branch_decision_ex_i     ),
+    .ex_ready_i                  ( ex_ready_i               ),
     .ex_valid_i                  ( ex_valid_i               ),
-    .obi_data_req_i              ( obi_data_req_i           ),
+    .lsu_split_ex_i              ( lsu_split_ex_i           ),
 
     // From WB stage
     .lsu_err_wb_i                ( lsu_err_wb_i             ),
     .lsu_addr_wb_i               ( lsu_addr_wb_i            ),
     .lsu_mpu_status_wb_i         ( lsu_mpu_status_wb_i      ),
+    .data_stall_wb_i             ( data_stall_wb_i          ),
     .wb_ready_i                  ( wb_ready_i               ),
     .wb_valid_i                  ( wb_valid_i               ),
 
@@ -151,6 +158,9 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     // Fencei flush handshake
     .fencei_flush_ack_i          ( fencei_flush_ack_i       ),
     .fencei_flush_req_o          ( fencei_flush_req_o       ),
+
+   // Data OBI interface monitor 
+    .m_c_obi_data_if             ( m_c_obi_data_if          ),
    
     // Outputs
     .ctrl_fsm_o                  ( ctrl_fsm_o               )
@@ -180,7 +190,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .wfi_id_i                   ( wfi_id_i                 ),
 
     // From EX
-    .csr_raddr_ex_i             ( csr_raddr_ex_i           ),
+    .csr_counter_read_i         ( csr_counter_read_i       ),
 
     // From WB
     .wb_ready_i                 ( wb_ready_i               ),
