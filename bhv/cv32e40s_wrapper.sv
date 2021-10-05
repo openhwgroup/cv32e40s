@@ -173,7 +173,7 @@ module cv32e40s_wrapper
                               .priv_lvl_n          (core_i.cs_registers_i.priv_lvl_n),
                               .wfi_insn_id_i       (core_i.id_stage_i.wfi_insn),
                               .mret_insn_id_i      (core_i.id_stage_i.mret_insn),
-                              .id_valid_i          (core_i.id_stage_i.id_valid),
+                              .id_valid_i          (core_i.id_stage_i.id_valid_o),
                               .*);
   bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
 
@@ -261,9 +261,9 @@ bind cv32e40s_sleep_unit:
              .obi_gnt    (core_i.data_gnt_i),
              .*);
 
-  bind cv32e40x_rvfi:
+  bind cv32e40s_rvfi:
     rvfi_i
-    cv32e40x_rvfi_sva
+    cv32e40s_rvfi_sva
       rvfi_sva(.irq_ack(core_i.irq_ack),
                .dbg_ack(core_i.dbg_ack),
                .ctrl_fsm_debug_cause(core_i.ctrl_fsm.debug_cause),
