@@ -37,7 +37,7 @@ module cv32e40s_int_controller import cv32e40s_pkg::*;
   // To/from cv32e40s_cs_registers
   input  logic [31:0] mie_i,             // MIE CSR (bypass)
   output logic [31:0] mip_o,             // MIP CSR
-  input  logic        m_irq_enable_i     // Interrupt enable bit from CSR (M mode)
+  input  logic        m_irq_enable_i     // Global interrupt enable (M mode)
 );
 
   logic        global_irq_enable;
