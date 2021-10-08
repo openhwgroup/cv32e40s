@@ -29,6 +29,9 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // Controller fsm inputs
   input  ctrl_fsm_t      ctrl_fsm_i,
 
+  // Privilige level control
+  input PrivLvlCtrl_t    priv_lvl_ctrl_i,
+
   // Branch control
   input  logic [31:0]    branch_addr_i,
   output logic           prefetch_busy_o,
@@ -49,7 +52,8 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   output logic           instr_valid_o,
   input  logic           instr_ready_i,
   output inst_resp_t     instr_instr_o,
-  output logic [31:0]    instr_addr_o
+  output logic [31:0]    instr_addr_o,
+  output PrivLvl_t       instr_priv_lvl_o
 
 );
 
@@ -99,6 +103,9 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // resp_valid gated while flushing
   logic resp_valid_gated;
 
+  // Privilege level for the IF stage
+  PrivLvl_t instr_priv_lvl_q;
+  
   assign resp_valid_gated = (n_flush_q > 0) ? 1'b0 : resp_valid_i;
 
   // Assume we always push all instructions to FIFO
@@ -535,4 +542,20 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // Output instruction address to if_stage
   assign instr_addr_o = addr_q;
 
+  // Privilege level must be updated immediatly to allow the
+  // IF stage to do PMP checks with the correct privilege level
+  assign instr_priv_lvl_o = priv_lvl_ctrl_i.priv_lvl_set ? priv_lvl_ctrl_i.priv_lvl:
+                            instr_priv_lvl_q;
+
+  always_ff @(posedge clk, negedge rst_n) begin
+    if (!rst_n) begin
+      instr_priv_lvl_q <= PRIV_LVL_M;
+    end
+    else begin
+      if (priv_lvl_ctrl_i.priv_lvl_set) begin
+        instr_priv_lvl_q <= priv_lvl_ctrl_i.priv_lvl;
+      end
+    end
+  end
+    
 endmodule

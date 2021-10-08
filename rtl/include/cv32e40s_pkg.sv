@@ -455,6 +455,12 @@ typedef enum logic[1:0] {
   PRIV_LVL_U = 2'b00
 } PrivLvl_t;
 
+// Struct used for setting privilege lelve
+typedef struct packed {
+  logic        priv_lvl_set;
+  PrivLvl_t    priv_lvl;
+} PrivLvlCtrl_t;
+  
 // Machine Vendor ID - OpenHW JEDEC ID is '2 decimal (bank 13)'
 parameter MVENDORID_OFFSET = 7'h2;      // Final byte without parity bit
 parameter MVENDORID_BANK = 25'hC;       // Number of continuation codes
