@@ -78,7 +78,7 @@ module cv32e40s_if_stage_sva
     end
   end
 
-  // Assert that upon a privilege level change, the next instruciton passed to ID has the correct privilege level
+  // Assert that upon a privilege level change, the next instruction passed to ID has the correct privilege level
   a_priv_lvl_change :
     assert property (@(posedge clk) disable iff (!rst_n)
                      priv_lvl_change && if_id_pipe_o.instr_valid |-> 
