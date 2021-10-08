@@ -39,7 +39,8 @@ module cv32e40s_alignment_buffer_sva
    input logic [1:0]               n_flush_q,
    input inst_resp_t               resp_i,
    input logic [1:0]               wptr,
-   input logic                     pop_q
+   input logic                     pop_q,
+   input PrivLvl_t                 instr_priv_lvl_o
    );
 
 
@@ -214,7 +215,33 @@ module cv32e40s_alignment_buffer_sva
       `uvm_error("Alignment buffer SVA",
                 $sformatf("Illegal resp_i.mpu_status"))
 
+  // Check that the buffer does not signal instruction valid when the privilege level is updated
+  // Updates to the privilege level shall also clear the buffer
+  property p_priv_lvl_change_clear_buf;
+    @(posedge clk) disable iff (!rst_n) 
+      ($changed(instr_priv_lvl_o) |-> !instr_valid_o ##1 (valid_q == '0));
+  endproperty
+
+  a_priv_lvl_change_clear_buf:
+    assert property(p_priv_lvl_change_clear_buf)
+    else
+      `uvm_error("Alignment buffer SVA",
+                $sformatf("Change in privilege level did not clear the alignment buffer"))
 
 
+  // Assert that a privilege level change is always accompanied by pc_set or killing of IF (which will happen upon fence.i)
+  // ##1 is to avoid trigging in the first cycle
+  property p_priv_lvl_change_pc_set;
+    @(posedge clk) disable iff (!rst_n) 
+      (##1 $changed(instr_priv_lvl_o) |-> ctrl_fsm_i.pc_set || ctrl_fsm_i.kill_if);
+  endproperty
+
+  a_priv_lvl_change_pc_set:
+    assert property(p_priv_lvl_change_pc_set)
+    else
+      `uvm_error("Alignment buffer SVA",
+                $sformatf("Change in privilege level not accompanied by pc_set"))
+
+      
 endmodule // cv32e40s_alignment_buffer_sva
 

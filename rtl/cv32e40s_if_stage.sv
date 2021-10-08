@@ -76,7 +76,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     input pmp_csr_t     csr_pmp_i,
 
     // Privilege mode
-    input              PrivLvl_t priv_lvl_i,
+    input PrivLvlCtrl_t priv_lvl_ctrl_i,
 
     // misc signals
     output logic        if_busy_o,             // Is the IF stage busy fetching instructions?
@@ -97,6 +97,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   logic              prefetch_valid;
   inst_resp_t        prefetch_instr;
+  PrivLvl_t          prefetch_priv_lvl;
 
   logic              illegal_c_insn;
 
@@ -158,28 +159,30 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // prefetch buffer, caches a fixed number of instructions
   cv32e40s_prefetch_unit prefetch_unit_i
   (
-    .clk               ( clk                         ),
-    .rst_n             ( rst_n                       ),
+    .clk                 ( clk                         ),
+    .rst_n               ( rst_n                       ),
 
-    .ctrl_fsm_i        ( ctrl_fsm_i                  ),
+    .ctrl_fsm_i          ( ctrl_fsm_i                  ),
+    .priv_lvl_ctrl_i     ( priv_lvl_ctrl_i             ),
 
-    .branch_addr_i     ( {branch_addr_n[31:1], 1'b0} ),
+    .branch_addr_i       ( {branch_addr_n[31:1], 1'b0} ),
 
-    .prefetch_ready_i  ( if_ready                    ),
-    .prefetch_valid_o  ( prefetch_valid              ),
-    .prefetch_instr_o  ( prefetch_instr              ),
-    .prefetch_addr_o   ( pc_if_o                     ),
+    .prefetch_ready_i    ( if_ready                    ),
+    .prefetch_valid_o    ( prefetch_valid              ),
+    .prefetch_instr_o    ( prefetch_instr              ),
+    .prefetch_addr_o     ( pc_if_o                     ),
+    .prefetch_priv_lvl_o ( prefetch_priv_lvl           ),
 
-    .trans_valid_o     ( prefetch_trans_valid        ),
-    .trans_ready_i     ( prefetch_trans_ready        ),
-    .trans_addr_o      ( prefetch_trans_addr         ),
+    .trans_valid_o       ( prefetch_trans_valid        ),
+    .trans_ready_i       ( prefetch_trans_ready        ),
+    .trans_addr_o        ( prefetch_trans_addr         ),
 
-    .resp_valid_i      ( prefetch_resp_valid         ),
-    .resp_i            ( prefetch_inst_resp          ),
+    .resp_valid_i        ( prefetch_resp_valid         ),
+    .resp_i              ( prefetch_inst_resp          ),
 
     // Prefetch Buffer Status
-    .prefetch_busy_o   ( prefetch_busy               ),
-    .one_txn_pend_n    ( prefetch_one_txn_pend_n     )
+    .prefetch_busy_o     ( prefetch_busy               ),
+    .one_txn_pend_n      ( prefetch_one_txn_pend_n     )
 );
 
 
@@ -209,7 +212,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
      .atomic_access_i      ( 1'b0  ), // No atomic transfers on instruction side
      .misaligned_access_i  ( 1'b0  ), // MPU on instruction side will not issue misaligned access fault
                                       // Misaligned access to main is allowed, and accesses outside main will result in instruction access fault (which will have priority over misaligned from I/O fault)
-     .priv_lvl_i           ( priv_lvl_i ),
+     .priv_lvl_i           ( prefetch_priv_lvl ),
      .csr_pmp_i            ( csr_pmp_i  ),
      .core_one_txn_pend_n  ( prefetch_one_txn_pend_n ),
      .core_trans_valid_i   ( prefetch_trans_valid    ),
@@ -288,7 +291,7 @@ instruction_obi_i
         if_id_pipe_o.illegal_c_insn   <= illegal_c_insn;
         if_id_pipe_o.pc               <= pc_if_o;
         if_id_pipe_o.compressed_instr <= prefetch_instr.bus_resp.rdata[15:0];
-        if_id_pipe_o.priv_lvl         <= priv_lvl_i;
+        if_id_pipe_o.priv_lvl         <= prefetch_priv_lvl;
       end else if (id_ready_i) begin
         if_id_pipe_o.instr_valid      <= 1'b0;
       end

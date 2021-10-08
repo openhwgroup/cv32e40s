@@ -216,7 +216,8 @@ module cv32e40s_wrapper
                 .ctrl_debug_allowed               (core_i.controller_i.controller_fsm_i.debug_allowed),
                 .id_stage_multi_cycle_id_stall    (core_i.id_stage_i.multi_cycle_id_stall),
                 .id_stage_id_valid                (core_i.id_stage_i.id_valid_o),
-                .priv_lvl_if_q                    (core_i.cs_registers_i.priv_lvl_if_q),
+                .priv_lvl_if                      (core_i.if_stage_i.prefetch_priv_lvl),
+                .priv_lvl_if_q                    (core_i.if_stage_i.prefetch_unit_i.alignment_buffer_i.instr_priv_lvl_q),
                 .irq_ack                          (core_i.irq_ack),
                 .*);
 

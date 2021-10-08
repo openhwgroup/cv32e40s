@@ -94,7 +94,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output Dcsr_t           dcsr_o,
   output logic            debug_trigger_match_o,
 
-  output PrivLvl_t        priv_lvl_if_o,
+  output PrivLvlCtrl_t    priv_lvl_if_ctrl_o,
   output PrivLvl_t        priv_lvl_lsu_o,
   output PrivLvl_t        priv_lvl_o,
 
@@ -833,35 +833,24 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
   assign priv_lvl_q = PrivLvl_t'(priv_lvl_q_int);
-
-  PrivLvl_t priv_lvl_if_q, priv_lvl_if_n;
   
-  // TODO: use cv32e40s_csr here? cv32e40s_csr will add support for glitch protection. 
-  // If glitch protection is needed, we should also glitch protect the privilege levels in the pipeline
-  always_ff @(posedge clk, negedge rst_n) begin
-    if (!rst_n) begin
-      priv_lvl_if_q <= PRIV_LVL_M;
-    end
-    else begin
-      priv_lvl_if_q <= priv_lvl_if_n;
-    end
-  end
-
   // Generate priviledge level for the IF stage
   // Since MRET may change the priviledge level and can is taken from ID,
   // the priviledge level for the IF stage needs to be predictive
   always_comb begin
-    priv_lvl_if_n = priv_lvl_if_q;
+    priv_lvl_if_ctrl_o.priv_lvl     = priv_lvl_q;
+    priv_lvl_if_ctrl_o.priv_lvl_set = 1'b0;
 
     if (priv_lvl_we) begin
       // Priviledge level updated by MRET in WB or exception
-      priv_lvl_if_n = priv_lvl_n;
+      priv_lvl_if_ctrl_o.priv_lvl     = priv_lvl_n;
+      priv_lvl_if_ctrl_o.priv_lvl_set = 1'b1;
     end
     else if (ctrl_fsm_i.mret_jump_id) begin
       // MRET in ID. Set IF stage priviledge level to mstatus.mpp
       // Using mstatus_q.mpp is safe since a write to mstatus.mpp in EX or WB it will cause a stall
-      priv_lvl_if_n = PrivLvl_t'(mstatus_q.mpp);
-      
+      priv_lvl_if_ctrl_o.priv_lvl     = PrivLvl_t'(mstatus_q.mpp);
+      priv_lvl_if_ctrl_o.priv_lvl_set = 1'b1;
     end
     else if ((id_ex_pipe_i.mret_insn && ctrl_fsm_i.kill_ex) || 
              (ex_wb_pipe_i.mret_insn && ctrl_fsm_i.kill_wb) ||
@@ -870,12 +859,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       // In most cases, the logic behind priv_lvl_we and priv_lvl_n will take care of this.
       // The exception is if debug mode is entered after MRET jump from ID is taken, and the MRET is killed.
       // TODO: revisit this when implementing the debug related parts of user mode
-      priv_lvl_if_n = priv_lvl_q;
+      priv_lvl_if_ctrl_o.priv_lvl     = priv_lvl_q;
+      priv_lvl_if_ctrl_o.priv_lvl_set = 1'b1;
     end
   end
-
-  // IF stage priviledge level needs to be updated immediatly to make sure IF stage sees the correct priviledge level
-  assign priv_lvl_if_o = priv_lvl_if_n;
   
   // Lookahead for priv_lvl_lsu_o. Updates to MPRV or MPP in WB needs to take effect for load/stores in EX
   always_comb begin

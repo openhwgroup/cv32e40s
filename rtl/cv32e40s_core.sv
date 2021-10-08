@@ -159,7 +159,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic [31:0] csr_rdata;
   logic csr_counter_read;
 
-  PrivLvl_t    priv_lvl_if, priv_lvl_lsu, priv_lvl;
+  PrivLvl_t     priv_lvl_lsu, priv_lvl;
+  PrivLvlCtrl_t priv_lvl_if_ctrl;
 
   Status_t     mstatus;
 
@@ -383,7 +384,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_pmp_i           ( csr_pmp                   ),
 
     // Privilege level
-    .priv_lvl_i          ( priv_lvl_if               ),
+    .priv_lvl_ctrl_i     ( priv_lvl_if_ctrl          ),
 
     // IF/ID pipeline
     .if_id_pipe_o        ( if_id_pipe                ),
@@ -695,7 +696,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .dcsr_o                     ( dcsr                   ),
     .debug_trigger_match_o      ( debug_trigger_match_id ),
 
-    .priv_lvl_if_o              ( priv_lvl_if            ),
+    .priv_lvl_if_ctrl_o         ( priv_lvl_if_ctrl       ),
     .priv_lvl_lsu_o             ( priv_lvl_lsu           ),    
     .priv_lvl_o                 ( priv_lvl               ),
    

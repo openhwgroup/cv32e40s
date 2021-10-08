@@ -32,6 +32,7 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   input  logic        rst_n,
 
   input  ctrl_fsm_t   ctrl_fsm_i, 
+  input  PrivLvlCtrl_t priv_lvl_ctrl_i,
 
   input  logic [31:0] branch_addr_i,
   
@@ -39,6 +40,7 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   output logic        prefetch_valid_o,
   output inst_resp_t  prefetch_instr_o,
   output logic [31:0] prefetch_addr_o,
+  output PrivLvl_t    prefetch_priv_lvl_o,
 
   // Transaction interface to obi interface
   output logic        trans_valid_o,
@@ -92,6 +94,7 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
     .rst_n                ( rst_n                  ),
 
     .ctrl_fsm_i           ( ctrl_fsm_i             ),
+    .priv_lvl_ctrl_i      ( priv_lvl_ctrl_i        ),
     
     .branch_addr_i        ( branch_addr_i          ),
     .prefetch_busy_o      ( prefetch_busy_o        ),
@@ -109,8 +112,8 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
     .instr_valid_o        ( prefetch_valid_o       ),
     .instr_ready_i        ( prefetch_ready_i       ),
     .instr_instr_o        ( prefetch_instr_o       ),
-    .instr_addr_o         ( prefetch_addr_o        )
-
+    .instr_addr_o         ( prefetch_addr_o        ),
+    .instr_priv_lvl_o     ( prefetch_priv_lvl_o    )
   );
 
 endmodule // cv32e40s_prefetch_unit

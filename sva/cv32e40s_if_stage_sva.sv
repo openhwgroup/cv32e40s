@@ -30,6 +30,8 @@ module cv32e40s_if_stage_sva
   input logic           if_ready,
   input logic           if_valid_o,  
   input  ctrl_fsm_t     ctrl_fsm_i,
+  input PrivLvl_t       prefetch_priv_lvl,
+  input if_id_pipe_t    if_id_pipe_o,
   if_c_obi.monitor      m_c_obi_instr_if
 );
 
@@ -56,6 +58,32 @@ module cv32e40s_if_stage_sva
       else `uvm_error("if_stage", "Kill should imply ready and not valid")
 
 
+  // Helper logic for a_priv_lvl_change
+  logic priv_lvl_change;
+  PrivLvl_t new_priv_lvl;
+    
+  always_ff @(posedge clk, negedge rst_n) begin
+    if (!rst_n) begin
+      priv_lvl_change <= 1'b0;
+      new_priv_lvl    <= PRIV_LVL_M;
+    end
+    else begin
+      if ($changed(prefetch_priv_lvl)) begin
+        priv_lvl_change <= 1'b1;
+        new_priv_lvl    <= prefetch_priv_lvl;
+      end
+      if (if_id_pipe_o.instr_valid) begin
+        priv_lvl_change <= 1'b0;
+      end
+    end
+  end
+
+  // Assert that upon a privilege level change, the next instruciton passed to ID has the correct privilege level
+  a_priv_lvl_change :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     priv_lvl_change && if_id_pipe_o.instr_valid |-> 
+                     if_id_pipe_o.priv_lvl == new_priv_lvl)
+    else `uvm_error("if_stage", "Wrong privilege level sent to ID stage")
 
 endmodule // cv32e40s_if_stage
 
