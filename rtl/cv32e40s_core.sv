@@ -19,6 +19,7 @@
 //                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                 Halfdan Bechmann - halfdan.bechmann@silabs.com             //
 //                 Øystein Knauserud - oystein.knauserud@silabs.com           //
+//                 Michael Platzer - michael.platzer@tuwien.ac.at             //
 //                                                                            //
 // Design Name:    Top level module                                           //
 // Project Name:   RI5CY                                                      //
@@ -77,6 +78,14 @@ module cv32e40s_core import cv32e40s_pkg::*;
   input  logic        data_err_i,
   output logic [5:0]  data_atop_o,
   input  logic        data_exokay_i,
+
+  // eXtension interface
+  if_xif.cpu_compressed xif_compressed_if,
+  if_xif.cpu_issue      xif_issue_if,
+  if_xif.cpu_commit     xif_commit_if,
+  if_xif.cpu_mem        xif_mem_if,
+  if_xif.cpu_mem_result xif_mem_result_if,
+  if_xif.cpu_result     xif_result_if,
 
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
@@ -409,7 +418,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Pipeline handshakes
     .if_valid_o          ( if_valid                  ),
-    .id_ready_i          ( id_ready                  )
+    .id_ready_i          ( id_ready                  ),
+
+    // eXtension interface
+    .xif_compressed_if   ( xif_compressed_if         )
   );
 
 
@@ -478,7 +490,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Pipeline handshakes
     .id_ready_o                   ( id_ready                  ),
     .id_valid_o                   ( id_valid                  ),
-    .ex_ready_i                   ( ex_ready                  )
+    .ex_ready_i                   ( ex_ready                  ),
+
+    // eXtension interface
+    .xif_issue_if                 ( xif_issue_if              )
   );
 
 
@@ -585,7 +600,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .valid_1_i             ( lsu_valid_wb       ), // Second LSU stage (WB)
     .ready_1_o             ( lsu_ready_1        ),
     .valid_1_o             ( lsu_valid_1        ),
-    .ready_1_i             ( lsu_ready_wb       )
+    .ready_1_i             ( lsu_ready_wb       ),
+
+    // eXtension interface
+    .xif_mem_if            ( xif_mem_if         ),
+    .xif_mem_result_if     ( xif_mem_result_if  )
   );
 
   ////////////////////////////////////////////////////////////////////////////////////////
@@ -623,7 +642,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Valid/ready
     .wb_ready_o                 ( wb_ready                     ),
-    .wb_valid_o                 ( wb_valid                     )
+    .wb_valid_o                 ( wb_valid                     ),
+
+    // eXtension interface
+    .xif_result_if              ( xif_result_if                )
   );
 
   //////////////////////////////////////
@@ -788,7 +810,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .wb_valid_i                     ( wb_valid               ),
 
     .ctrl_byp_o                     ( ctrl_byp               ),
-    .ctrl_fsm_o                     ( ctrl_fsm               )
+    .ctrl_fsm_o                     ( ctrl_fsm               ),
+
+    // eXtension interface
+    .xif_commit_if                  ( xif_commit_if          )
  );
 
 ////////////////////////////////////////////////////////////////////////

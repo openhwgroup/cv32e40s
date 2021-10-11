@@ -90,6 +90,14 @@ module cv32e40s_wrapper
   output logic [5:0]  data_atop_o,
   input  logic        data_exokay_i,
 
+  // eXtension interface
+  if_xif.cpu_compressed xif_compressed_if,
+  if_xif.cpu_issue      xif_issue_if,
+  if_xif.cpu_commit     xif_commit_if,
+  if_xif.cpu_mem        xif_mem_if,
+  if_xif.cpu_mem_result xif_mem_result_if,
+  if_xif.cpu_result     xif_result_if,
+
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
 

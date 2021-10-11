@@ -15,6 +15,7 @@
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
+//                 Michael Platzer - michael.platzer@tuwien.ac.at             //
 //                                                                            //
 // Design Name:    Instruction Fetch Stage                                    //
 // Project Name:   RI5CY                                                      //
@@ -83,7 +84,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
     // Pipeline handshakes
     output logic        if_valid_o,
-    input  logic        id_ready_i
+    input  logic        id_ready_i,
+
+    // eXtension interface
+    if_xif.cpu_compressed xif_compressed_if
 );
 
   logic              if_ready;
@@ -306,5 +310,9 @@ instruction_obi_i
     .is_compressed_o ( instr_compressed_int    ),
     .illegal_instr_o ( illegal_c_insn          )
   );
+
+  // Drive eXtension interface outputs to 0 for now
+  assign xif_compressed_if.x_compressed_valid = '0;
+  assign xif_compressed_if.x_compressed_req   = '0;
 
 endmodule // cv32e40s_if_stage

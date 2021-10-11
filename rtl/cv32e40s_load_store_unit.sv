@@ -14,6 +14,7 @@
 // Additional contributions by:                                               //
 //                 Andreas Traber - atraber@iis.ee.ethz.ch                    //
 //                 Øystein Knauserud - oystein.knauserud@silabs.com           //
+//                 Michael Platzer - michael.platzer@tuwien.ac.at             //
 //                                                                            //
 // Design Name:    Load Store Unit                                            //
 // Project Name:   RI5CY                                                      //
@@ -70,7 +71,11 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   input  logic        valid_1_i,        // Handshakes for second LSU stage (WB)
   output logic        ready_1_o,        // LSU ready for new data in WB stage
   output logic        valid_1_o,
-  input  logic        ready_1_i
+  input  logic        ready_1_i,
+
+  // eXtension interface
+  if_xif.cpu_mem        xif_mem_if,
+  if_xif.cpu_mem_result xif_mem_result_if
 );
 
   localparam DEPTH = 2;                 // Maximum number of outstanding transactions
@@ -630,5 +635,11 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
     .m_c_obi_data_if       ( m_c_obi_data_if   )
   );
+
+  // Drive eXtension interface outputs to 0 for now
+  assign xif_mem_if.x_mem_ready               = '0;
+  assign xif_mem_if.x_mem_resp                = '0;
+  assign xif_mem_result_if.x_mem_result_valid = '0;
+  assign xif_mem_result_if.x_mem_result       = '0;
 
 endmodule // cv32e40s_load_store_unit
