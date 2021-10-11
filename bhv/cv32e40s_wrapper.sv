@@ -90,14 +90,6 @@ module cv32e40s_wrapper
   output logic [5:0]  data_atop_o,
   input  logic        data_exokay_i,
 
-  // eXtension interface
-  if_xif.cpu_compressed xif_compressed_if,
-  if_xif.cpu_issue      xif_issue_if,
-  if_xif.cpu_commit     xif_commit_if,
-  if_xif.cpu_mem        xif_mem_if,
-  if_xif.cpu_mem_result xif_mem_result_if,
-  if_xif.cpu_result     xif_result_if,
-
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
 
@@ -125,6 +117,20 @@ module cv32e40s_wrapper
 );
 
 
+  // eXtension interface
+  if_xif xif();
+
+  // Tie off cpu xif inputs. CV32E40S does not support xif
+  assign xif.x_compressed_ready = '0;
+  assign xif.x_compressed_resp  = '0;
+  assign xif.x_issue_ready      = '0;
+  assign xif.x_issue_resp       = '0;
+  assign xif.x_mem_valid        = '0;
+  assign xif.x_mem_req          = '0;
+  assign xif.x_result_valid     = '0;
+  assign xif.x_result           = '0;
+  
+  
 `ifndef COREV_ASSERT_OFF
 
   // RTL Assertions
@@ -454,6 +460,12 @@ bind cv32e40s_sleep_unit:
           .PMP_NUM_REGIONS       ( PMP_NUM_REGIONS       ),
           .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),
           .PMA_CFG               ( PMA_CFG               ))
-    core_i (.*);
+    core_i (.xif_compressed_if(xif.cpu_compressed),
+            .xif_issue_if(xif.cpu_issue),
+            .xif_commit_if(xif.cpu_commit),
+            .xif_mem_if(xif.cpu_mem),
+            .xif_mem_result_if(xif.cpu_mem_result),
+            .xif_result_if(xif.cpu_result),
+            .*);
 
 endmodule
