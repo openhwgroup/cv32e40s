@@ -101,7 +101,10 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
-  input logic         fencei_flush_ack_i
+  input logic         fencei_flush_ack_i,
+
+  // eXtension interface
+  if_xif.cpu_commit   xif_commit_if
 );
 
   // Main FSM and debug FSM
@@ -163,7 +166,10 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .m_c_obi_data_if             ( m_c_obi_data_if          ),
    
     // Outputs
-    .ctrl_fsm_o                  ( ctrl_fsm_o               )
+    .ctrl_fsm_o                  ( ctrl_fsm_o               ),
+    
+    // eXtension interface
+    .xif_commit_if               ( xif_commit_if            )
   );
 
 
