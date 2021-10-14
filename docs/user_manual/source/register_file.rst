@@ -21,4 +21,4 @@ Error Detection
 ---------------
 
 The register file of |corev| has integrated error detection logic and a 6-bit hamming code for each word.
-This ensures detection of up to two errors in each register file word.
+This ensures detection of up to two errors in each register file word. Detected errors trigger the core major alert output.

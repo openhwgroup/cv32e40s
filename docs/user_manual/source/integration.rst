@@ -13,7 +13,7 @@ Synthesis Optimization
 The |corev| has security features that are logically redundant and likely to be optimised away in synthesis.
 Special care is therefore needed in synthesis scripts to ensure these features are preserved in the implemented netlist.
 
-The following features are affected:
+The implementaion of following features should be checked:
 - CSR shadow registers
 - Register file ECC
 
