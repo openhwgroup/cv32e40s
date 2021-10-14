@@ -1328,3 +1328,20 @@ Reset Value: Defined
 
   Read-only unprivileged shadow of the upper 32 bits of the 64 bit machine mode
   performance counter. Non implemented counters always return a read value of 0.
+
+
+Hardened CSRs
+--------------
+
+Some CSRs have been implemeted with error detection using an inverted shadow copy. If an attack is successful in altering the register value, the error detection logic will trigger a major alert.
+
+This applies to the following registers:
+ - ``mstatus``
+ - ``mtvec``
+ - ``pmpcfg``
+ - ``pmpaddr*``
+ - ``mseccfg*``
+ - ``cpuctrl``
+ - ``dcsr``
+ - ``mie``
+ - ``mepc``

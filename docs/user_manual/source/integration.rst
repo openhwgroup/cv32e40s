@@ -6,6 +6,20 @@ Core Integration
 The main module is named ``cv32e40s_core`` and can be found in ``cv32e40s_core.sv``.
 Below, the instantiation template is given and the parameters and interfaces are described.
 
+Synthesis Optimization
+----------------------
+
+``*Important*``
+The |corev| has security features that are logically redundant and likely to be optimised away in synthesis.
+Special care is therefore needed in synthesis scripts to ensure these features are preserved in the implemented netlist.
+
+The implementaion of following features should be checked:
+- CSR shadow registers
+- Register file ECC
+
+Implementing a netlist test verifying these features on the final netlist is recommended.
+
+
 Instantiation Template
 ----------------------
 
