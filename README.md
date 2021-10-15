@@ -3,7 +3,7 @@
 # OpenHW Group CORE-V CV32E40S RISC-V IP
 
 CV32E40S is a small and efficient, 32-bit, in-order RISC-V core with a 4-stage pipeline that implements
-the RV32IMCXsecureZce_Zicsr_Zifencei instruction set architecture. The CV32E40S core is aimed
+the RV32IMCXsecure[Zba_Zbb_Zbs]Zceb_Zcee_Zces_Zicsr_Zifencei instruction set architecture. The CV32E40S core is aimed
 at security applications and offers both Machine mode and User mode, an enhanced PMP, as well as
 various anti-tampering features.
 
