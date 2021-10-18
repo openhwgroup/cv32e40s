@@ -30,7 +30,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   input  ctrl_fsm_t      ctrl_fsm_i,
 
   // Privilige level control
-  input PrivLvlCtrl_t    priv_lvl_ctrl_i,
+  input privlvlctrl_t    priv_lvl_ctrl_i,
 
   // Branch control
   input  logic [31:0]    branch_addr_i,

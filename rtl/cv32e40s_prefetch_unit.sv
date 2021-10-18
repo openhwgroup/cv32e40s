@@ -32,7 +32,7 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   input  logic        rst_n,
 
   input  ctrl_fsm_t   ctrl_fsm_i, 
-  input  PrivLvlCtrl_t priv_lvl_ctrl_i,
+  input  privlvlctrl_t priv_lvl_ctrl_i,
 
   input  logic [31:0] branch_addr_i,
   

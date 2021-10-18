@@ -94,7 +94,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output dcsr_t           dcsr_o,
   output logic            trigger_match_o,
 
-  output PrivLvlCtrl_t    priv_lvl_if_ctrl_o,
+  output privlvlctrl_t    priv_lvl_if_ctrl_o,
   output privlvl_t        priv_lvl_lsu_o,
   output privlvl_t        priv_lvl_o,
 

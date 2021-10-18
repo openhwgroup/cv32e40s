@@ -80,7 +80,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     input pmp_csr_t     csr_pmp_i,
 
     // Privilege mode
-    input PrivLvlCtrl_t priv_lvl_ctrl_i,
+    input privlvlctrl_t priv_lvl_ctrl_i,
 
     // misc signals
     output logic        if_busy_o,             // Is the IF stage busy fetching instructions?

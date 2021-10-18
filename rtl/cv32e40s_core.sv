@@ -170,7 +170,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic csr_counter_read;
 
   privlvl_t     priv_lvl_lsu, priv_lvl;
-  PrivLvlCtrl_t priv_lvl_if_ctrl;
+  privlvlctrl_t priv_lvl_if_ctrl;
 
   mstatus_t     mstatus;
 
