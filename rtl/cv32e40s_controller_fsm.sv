@@ -30,6 +30,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_controller_fsm import cv32e40s_pkg::*;
+#(
+  parameter bit       X_EXT           = 0
+)
 (
   // Clocks and reset
   input  logic        clk,                        // Gated clock
@@ -68,12 +71,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  logic        irq_req_ctrl_i,             // irq requst
   input  logic [4:0]  irq_id_ctrl_i,              // irq id
   input  logic        irq_wu_ctrl_i,              // irq wakeup control
-  input  PrivLvl_t    priv_lvl_i,                 // Current running priviledge level
+  input  privlvl_t    priv_lvl_i,                 // Current running priviledge level
 
   // From cs_registers
   input  logic  [1:0] mtvec_mode_i,
-  input  Dcsr_t       dcsr_i,
-  input  logic        debug_trigger_match_id_i,   // Trigger match from cs_registers
+  input  dcsr_t       dcsr_i,
 
   // Toplevel input
   input  logic        debug_req_i,                // External debug request
@@ -276,8 +278,22 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // - no other instructions should be in the pipeline.
   assign single_step_allowed = 1'b1;
                              
-  // Single step are mutually exclusive from any other reason to enter debug
-  assign pending_single_step = (!debug_mode_q && dcsr_i.step && wb_valid_i) && !pending_debug;
+  /*
+  Debug spec 1.0.0 (unratified as of Aug 9th '21)
+  "If control is transferred to a trap handler while executing the instruction, then Debug Mode is
+  re-entered immediately after the PC is changed to the trap handler, and the appropriate tval and
+  cause registers are updated. In this case none of the trap handler is executed, and if the cause was
+  a pending interrupt no instructions might be executed at all."
+
+  Hence, a pending_single_step is asserted if we take an interrupt when we should be stepping.
+  For any interruptible instructions (non-LSU), at any stage, we would kill the instruction and jump
+  to debug mode without executing any instructions. Interrupt handler's first instruction will be in dpc.
+  
+  For LSU instructions that may not be killed (if they reach WB of stay in EX for >1 cycles),
+  we are not allowed to take interrupts, and we will re-enter debug mode after finishing the LSU.
+  Interrupt will then be taken when we enter the next step.
+  */
+  assign pending_single_step = (!debug_mode_q && dcsr_i.step && (wb_valid_i || ctrl_fsm_o.irq_ack)) && !pending_debug;
 
   // Regular debug will kill insn in WB, do not allow for LSU in WB as insn must finish with rvalid
   // or for any case where a LSU in EX has asserted its obi data_req for at least one cycle.
@@ -495,10 +511,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             ctrl_fsm_o.csr_save_if = 1'b1;
           end
 
-          // Unstall IF in case of single stepping
-          if (dcsr_i.step) begin
-            single_step_halt_if_n = 1'b0;
-          end
         end else begin
           if (exception_in_wb) begin
             // TODO:OK:low Must check if we are allowed to take exceptions
@@ -878,8 +890,35 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign ctrl_fsm_o.debug_running   = debug_fsm_cs[RUNNING_INDEX];
   assign ctrl_fsm_o.debug_halted    = debug_fsm_cs[HALTED_INDEX];
 
-  // Drive eXtension interface outputs to 0 for now
-  assign xif_commit_if.x_commit_valid = '0;
-  assign xif_commit_if.x_commit       = '0;
+
+  //---------------------------------------------------------------------------
+  // eXtension interface
+  //---------------------------------------------------------------------------
+
+  generate
+    if (X_EXT) begin : x_ext
+
+      // TODO: Add assertion to check the following:
+      // Every issue interface transaction (whether accepted or not) has an associated commit interface
+      // transaction and both interfaces use a matching transaction ordering.
+      
+      // TODO: check if id_ex_pipe_i.xif_insn needs to be validated with instr_valid of the EX stage
+      
+      // commit an offloaded instruction in the cycle before it proceeds to the WB stage
+      // (i.e., as soon as the instruction has progressed to the EX stage and WB is ready,
+      // which ensures that only one offloaded instruction is committed at a time and
+      // thus the coprocessor is forced to return results in order)
+      assign xif_commit_if.commit_valid       = ex_valid_i && wb_ready_i && id_ex_pipe_i.xif_en;
+      assign xif_commit_if.commit.id          = id_ex_pipe_i.xif_id;
+      assign xif_commit_if.commit.commit_kill = 1'b0; // TODO: when should the offloaded instr be killed?
+
+    end else begin : no_x_ext
+
+      assign xif_commit_if.commit_valid       = '0;
+      assign xif_commit_if.commit.id          = '0;
+      assign xif_commit_if.commit.commit_kill = '0;
+
+    end
+  endgenerate
 
 endmodule //cv32e40s_controller_fsm

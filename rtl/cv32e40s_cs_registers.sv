@@ -91,12 +91,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // debug
   output logic [31:0]     dpc_o,
-  output Dcsr_t           dcsr_o,
-  output logic            debug_trigger_match_o,
+  output dcsr_t           dcsr_o,
+  output logic            trigger_match_o,
 
   output PrivLvlCtrl_t    priv_lvl_if_ctrl_o,
-  output PrivLvl_t        priv_lvl_lsu_o,
-  output PrivLvl_t        priv_lvl_o,
+  output privlvl_t        priv_lvl_lsu_o,
+  output privlvl_t        priv_lvl_o,
 
   output Status_t         mstatus_o,
 
@@ -140,7 +140,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic tmatch_control_rd_error;
   logic tmatch_value_rd_error;
   // Debug
-  Dcsr_t       dcsr_q, dcsr_n;
+  dcsr_t       dcsr_q, dcsr_n;
   logic dcsr_we;
   logic dcsr_rd_error;
   logic [31:0] dcsr_rdata;
@@ -158,15 +158,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic mscratch_rd_error;
 
   logic [31:0] exception_pc;
-  Status_t mstatus_q, mstatus_n;
+  mstatus_t mstatus_q, mstatus_n;
   logic mstatus_we;
   logic mstatus_rd_error;
 
-  Mcause_t mcause_q, mcause_n;
+  mcause_t mcause_q, mcause_n;
   logic mcause_we;
   logic mcause_rd_error;
 
-  Mtvec_t mtvec_n, mtvec_q;
+  mtvec_t mtvec_n, mtvec_q;
   logic mtvec_we;
   logic mtvec_rd_error;
 
@@ -200,7 +200,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   logic                       pmp_rd_error;
   
-  PrivLvl_t                   priv_lvl_n, priv_lvl_q;
+  privlvl_t                   priv_lvl_n, priv_lvl_q;
   logic                       priv_lvl_we;
   logic                       priv_lvl_error;
   logic [1:0]                 priv_lvl_q_int;
@@ -1136,8 +1136,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // We match against the next address, as the breakpoint must be taken before execution
   // Matching is disabled when ctrl_fsm_i.debug_mode == 1'b1
   // todo: Need to explain why this does not require hazard detection (ie csr write to tdata2 before the matched instruction)
-  assign debug_trigger_match_o = tmatch_control_q[2] && !ctrl_fsm_i.debug_mode &&
-                                 (if_id_pipe_i.pc[31:0] == tmatch_value_q[31:0]);
+  assign trigger_match_o = tmatch_control_q[2] && !ctrl_fsm_i.debug_mode &&
+                           (pc_if_i[31:0] == tmatch_value_q[31:0]);
 
 
   /////////////////////////////////////////////////////////////////

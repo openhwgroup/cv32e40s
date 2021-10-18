@@ -36,6 +36,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter int PMP_GRANULARITY =  0,
   parameter int PMP_NUM_REGIONS =  0,
   parameter b_ext_e B_EXT                =  NONE,
+  parameter bit     X_EXT                =  0,
   parameter int          PMA_NUM_REGIONS =  0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
@@ -220,10 +221,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // debug mode and dcsr configuration
   // From cs_registers
-  Dcsr_t       dcsr;
+  dcsr_t       dcsr;
 
   // trigger match detected in cs_registers (using ID timing)
-  logic        debug_trigger_match_id;
+  logic        trigger_match_if;
 
   // Controller <-> decoder
   logic       mret_insn_id;
@@ -366,6 +367,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     #(.A_EXTENSION(A_EXTENSION),
       .PMP_GRANULARITY(PMP_GRANULARITY),
       .PMP_NUM_REGIONS(PMP_NUM_REGIONS),
+      .X_EXT      ( X_EXT ),
       .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
       .PMA_CFG(PMA_CFG))
   if_stage_i
@@ -406,6 +408,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     .dpc_i               ( dpc                       ), // debug return address
 
+    .trigger_match_i     ( trigger_match_if          ),
+
     .pc_if_o             ( pc_if                     ),
 
     .csr_mtvec_init_o    ( csr_mtvec_init_if         ),
@@ -421,7 +425,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .id_ready_i          ( id_ready                  ),
 
     // eXtension interface
-    .xif_compressed_if   ( xif_compressed_if         )
+    .xif_compressed_if   ( xif_compressed_if         ),
+    .xif_issue_valid_i   ( xif_issue_if.issue_valid  )
   );
 
 
@@ -436,7 +441,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   cv32e40s_id_stage
   #(
     .A_EXTENSION                  ( A_EXTENSION               ),
-    .B_EXT                        ( B_EXT                     )
+    .B_EXT                        ( B_EXT                     ),
+    .X_EXT                        ( X_EXT                     )
   )
   id_stage_i
   (
@@ -462,9 +468,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR ID/EX
     .mstatus_i                    ( mstatus                   ),
-
-    // Debug Signals
-    .debug_trigger_match_id_i     ( debug_trigger_match_id    ),       // from cs_registers (ID timing)
 
     // Register file write back and forwards
     .rf_wdata_ex_i                ( rf_wdata_ex               ),
@@ -716,7 +719,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // debug
     .dpc_o                      ( dpc                    ),
     .dcsr_o                     ( dcsr                   ),
-    .debug_trigger_match_o      ( debug_trigger_match_id ),
+    .trigger_match_o      ( trigger_match_if       ),
 
     .priv_lvl_if_ctrl_o         ( priv_lvl_if_ctrl       ),
     .priv_lvl_lsu_o             ( priv_lvl_lsu           ),    
@@ -733,7 +736,12 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //   \____\___/|_| \_| |_| |_| \_\\___/|_____|_____|_____|_| \_\  //
   //                                                                //
   ////////////////////////////////////////////////////////////////////
-  cv32e40s_controller controller_i
+
+  cv32e40s_controller
+  #(
+    .X_EXT                          ( X_EXT                  )
+  )
+  controller_i
   (
     .clk                            ( clk                    ),         // Gated clock
     .clk_ungated_i                  ( clk_i                  ),         // Ungated clock
@@ -785,7 +793,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Debug signals
     .debug_req_i                    ( debug_req_i            ),
     .dcsr_i                         ( dcsr                   ),
-    .debug_trigger_match_id_i       ( debug_trigger_match_id ),
 
     // Register File read, write back and forwards
     .rf_re_i                        ( rf_re_id               ),

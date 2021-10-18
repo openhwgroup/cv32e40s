@@ -51,9 +51,6 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   input  csr_opcode_e csr_op_id_i,                // CSR opcode (ID)
   input  logic        wfi_id_i,                   // WFI instruction in ID
 
-  // From cs_registers
-  input  logic        debug_trigger_match_id_i,         // Trigger match in ID
-
   // From EX
   input  logic        csr_counter_read_i,         // CSR is reading a counter (EX).
 
@@ -159,14 +156,14 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
     // deassert WE when the core has an exception in ID (ins converted to nop and propagated to WB)
     // Also deassert for trigger match, as with dcsr.timing==0 we do not execute before entering debug mode
-    if (if_id_pipe_i.instr.bus_resp.err || !(if_id_pipe_i.instr.mpu_status == MPU_OK) || debug_trigger_match_id_i) begin
+    if (if_id_pipe_i.instr.bus_resp.err || !(if_id_pipe_i.instr.mpu_status == MPU_OK) || if_id_pipe_i.trigger_match) begin
       ctrl_byp_o.deassert_we = 1'b1;
     end
 
-    // Stall because of load operation
+    // Stall because of load or XIF operation
     if (
-        (id_ex_pipe_i.lsu_en && rf_we_ex && |rf_rd_ex_hz) || // load-use hazard (EX)
-        (!wb_ready_i         && rf_we_wb && |rf_rd_wb_hz)    // load-use hazard (WB during wait-state)
+        ((id_ex_pipe_i.lsu_en || id_ex_pipe_i.xif_en) && rf_we_ex && |rf_rd_ex_hz) || // load-use hazard (EX)
+        (!wb_ready_i                                  && rf_we_wb && |rf_rd_wb_hz)    // load-use hazard (WB during wait-state)
        )
     begin
       ctrl_byp_o.load_stall  = 1'b1;
