@@ -40,7 +40,7 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   output logic        prefetch_valid_o,
   output inst_resp_t  prefetch_instr_o,
   output logic [31:0] prefetch_addr_o,
-  output PrivLvl_t    prefetch_priv_lvl_o,
+  output privlvl_t    prefetch_priv_lvl_o,
 
   // Transaction interface to obi interface
   output logic        trans_valid_o,

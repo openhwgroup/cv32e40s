@@ -53,7 +53,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   input  logic           instr_ready_i,
   output inst_resp_t     instr_instr_o,
   output logic [31:0]    instr_addr_o,
-  output PrivLvl_t       instr_priv_lvl_o
+  output privlvl_t       instr_priv_lvl_o
 
 );
 
@@ -104,7 +104,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   logic resp_valid_gated;
 
   // Privilege level for the IF stage
-  PrivLvl_t instr_priv_lvl_q;
+  privlvl_t instr_priv_lvl_q;
   
   assign resp_valid_gated = (n_flush_q > 0) ? 1'b0 : resp_valid_i;
 

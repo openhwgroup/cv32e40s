@@ -60,7 +60,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    input        pmp_csr_t csr_pmp_i,
 
    // Privilege mode
-   input              PrivLvl_t priv_lvl_i,
+   input              privlvl_t priv_lvl_i,
    
    // Indication from the core that there will be one pending transaction in the next cycle
    input logic  core_one_txn_pend_n

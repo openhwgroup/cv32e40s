@@ -60,7 +60,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   input               pmp_csr_t csr_pmp_i,
 
   // Privilege mode
-  input              PrivLvl_t priv_lvl_lsu_i,
+  input              privlvl_t priv_lvl_lsu_i,
 
   // Handshakes
   input  logic        valid_0_i,        // Handshakes for first LSU stage (EX)

@@ -459,7 +459,7 @@ typedef enum logic[1:0] {
 // Struct used for setting privilege lelve
 typedef struct packed {
   logic        priv_lvl_set;
-  PrivLvl_t    priv_lvl;
+  privlvl_t    priv_lvl;
 } PrivLvlCtrl_t;
   
 // Machine Vendor ID - OpenHW JEDEC ID is '2 decimal (bank 13)'

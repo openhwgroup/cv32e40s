@@ -30,7 +30,7 @@ module cv32e40s_if_stage_sva
   input logic           if_ready,
   input logic           if_valid_o,  
   input  ctrl_fsm_t     ctrl_fsm_i,
-  input PrivLvl_t       prefetch_priv_lvl,
+  input privlvl_t       prefetch_priv_lvl,
   input if_id_pipe_t    if_id_pipe_o,
   if_c_obi.monitor      m_c_obi_instr_if
 );
@@ -60,7 +60,7 @@ module cv32e40s_if_stage_sva
 
   // Helper logic for a_priv_lvl_change
   logic priv_lvl_change;
-  PrivLvl_t new_priv_lvl;
+  privlvl_t new_priv_lvl;
     
   always_ff @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin

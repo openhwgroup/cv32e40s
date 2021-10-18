@@ -121,14 +121,14 @@ module cv32e40s_wrapper
   if_xif xif();
 
   // Tie off cpu xif inputs. CV32E40S does not support xif
-  assign xif.x_compressed_ready = '0;
-  assign xif.x_compressed_resp  = '0;
-  assign xif.x_issue_ready      = '0;
-  assign xif.x_issue_resp       = '0;
-  assign xif.x_mem_valid        = '0;
-  assign xif.x_mem_req          = '0;
-  assign xif.x_result_valid     = '0;
-  assign xif.x_result           = '0;
+  assign xif.compressed_ready = '0;
+  assign xif.compressed_resp  = '0;
+  assign xif.issue_ready      = '0;
+  assign xif.issue_resp       = '0;
+  assign xif.mem_valid        = '0;
+  assign xif.mem_req          = '0;
+  assign xif.result_valid     = '0;
+  assign xif.result           = '0;
   
   
 `ifndef COREV_ASSERT_OFF

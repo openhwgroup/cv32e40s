@@ -105,7 +105,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   logic              prefetch_valid;
   inst_resp_t        prefetch_instr;
-  PrivLvl_t          prefetch_priv_lvl;
+  privlvl_t          prefetch_priv_lvl;
 
   logic              illegal_c_insn;
 

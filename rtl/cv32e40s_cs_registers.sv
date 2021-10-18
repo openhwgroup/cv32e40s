@@ -98,7 +98,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output privlvl_t        priv_lvl_lsu_o,
   output privlvl_t        priv_lvl_o,
 
-  output Status_t         mstatus_o,
+  output mstatus_t        mstatus_o,
 
   input  logic [31:0]     pc_if_i
 );
@@ -643,7 +643,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
       end //ctrl_fsm_i.csr_save_cause
       ctrl_fsm_i.csr_restore_mret: begin //MRET
-        priv_lvl_n     = PrivLvl_t'(mstatus_q.mpp);
+        priv_lvl_n     = privlvl_t'(mstatus_q.mpp);
         priv_lvl_we    = 1'b1;
         mstatus_n      = mstatus_q;
         mstatus_n.mie  = mstatus_q.mpie;
@@ -820,7 +820,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // Privledge level register
   cv32e40s_csr #(
-    .WIDTH      ($bits(PrivLvl_t)),
+    .WIDTH      ($bits(privlvl_t)),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (PRIV_LVL_M)
   ) priv_lvl_i (
@@ -832,7 +832,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     .rd_error_o (priv_lvl_error)
   );
 
-  assign priv_lvl_q = PrivLvl_t'(priv_lvl_q_int);
+  assign priv_lvl_q = privlvl_t'(priv_lvl_q_int);
   
   // Generate priviledge level for the IF stage
   // Since MRET may change the priviledge level and can is taken from ID,
@@ -849,7 +849,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     else if (ctrl_fsm_i.mret_jump_id) begin
       // MRET in ID. Set IF stage priviledge level to mstatus.mpp
       // Using mstatus_q.mpp is safe since a write to mstatus.mpp in EX or WB it will cause a stall
-      priv_lvl_if_ctrl_o.priv_lvl     = PrivLvl_t'(mstatus_q.mpp);
+      priv_lvl_if_ctrl_o.priv_lvl     = privlvl_t'(mstatus_q.mpp);
       priv_lvl_if_ctrl_o.priv_lvl_set = 1'b1;
     end
     else if ((id_ex_pipe_i.mret_insn && ctrl_fsm_i.kill_ex) || 
@@ -867,10 +867,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Lookahead for priv_lvl_lsu_o. Updates to MPRV or MPP in WB needs to take effect for load/stores in EX
   always_comb begin
     if (mstatus_we) begin
-      priv_lvl_lsu_o = mstatus_n.mprv ? PrivLvl_t'(mstatus_n.mpp) : id_ex_pipe_i.priv_lvl;
+      priv_lvl_lsu_o = mstatus_n.mprv ? privlvl_t'(mstatus_n.mpp) : id_ex_pipe_i.priv_lvl;
     end
     else begin
-      priv_lvl_lsu_o = mstatus_q.mprv ? PrivLvl_t'(mstatus_q.mpp) : id_ex_pipe_i.priv_lvl;
+      priv_lvl_lsu_o = mstatus_q.mprv ? privlvl_t'(mstatus_q.mpp) : id_ex_pipe_i.priv_lvl;
     end
   end
 

@@ -44,9 +44,9 @@ module cv32e40s_core_sva
   input logic        wb_valid,
   input logic        branch_taken_in_ex,
   
-  input PrivLvl_t    priv_lvl,
-  input PrivLvl_t    priv_lvl_if,
-  input PrivLvl_t    priv_lvl_if_q,
+  input privlvl_t    priv_lvl,
+  input privlvl_t    priv_lvl_if,
+  input privlvl_t    priv_lvl_if_q,
 
    // probed controller signals
   input logic        ctrl_debug_mode_n,

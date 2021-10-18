@@ -169,10 +169,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic [31:0] csr_rdata;
   logic csr_counter_read;
 
-  PrivLvl_t     priv_lvl_lsu, priv_lvl;
+  privlvl_t     priv_lvl_lsu, priv_lvl;
   PrivLvlCtrl_t priv_lvl_if_ctrl;
 
-  Status_t     mstatus;
+  mstatus_t     mstatus;
 
   // LSU
   logic        lsu_split_ex;

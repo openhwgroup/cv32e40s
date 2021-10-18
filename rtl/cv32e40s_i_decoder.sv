@@ -35,8 +35,8 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
    input logic [31:0] instr_rdata_i,
 
    input  ctrl_fsm_t     ctrl_fsm_i,         // todo:low each use of this signal needs a comment explaining why the signal from the controller is safe to be used with ID timing (probably add comment in FSM)
-   input  PrivLvl_t      priv_lvl_i, // Priviledge level for ID stage
-   input  Status_t       mstatus_i,
+   input  privlvl_t      priv_lvl_i, // Priviledge level for ID stage
+   input  mstatus_t      mstatus_i,
    output decoder_ctrl_t decoder_ctrl_o
    );
 

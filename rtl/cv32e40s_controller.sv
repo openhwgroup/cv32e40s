@@ -69,7 +69,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        irq_req_ctrl_i,
   input  logic [4:0]  irq_id_ctrl_i,
   input  logic        irq_wu_ctrl_i,
-  input  PrivLvl_t    priv_lvl_i,
+  input  privlvl_t    priv_lvl_i,
 
   input logic  [1:0]     mtvec_mode_i,
 
