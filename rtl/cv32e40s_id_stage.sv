@@ -34,6 +34,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 #(
   parameter A_EXTENSION             =  0,
   parameter b_ext_e B_EXT           =  NONE,
+  parameter bit     X_EXT           =  0,
   parameter DEBUG_TRIGGER_EN        =  1
 )
 (
@@ -57,10 +58,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   input  ctrl_byp_t   ctrl_byp_i,
   input  ctrl_fsm_t   ctrl_fsm_i,
 
-  input  Status_t     mstatus_i,
-
-  // Debug Signal
-  input  logic        debug_trigger_match_id_i,
+  input  mstatus_t    mstatus_i,
 
   // Register file write data from WB stage
   input  logic [31:0]    rf_wdata_wb_i,
@@ -123,8 +121,10 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   logic [31:0] imm_a;           // contains the immediate for operand b
   logic [31:0] imm_b;           // contains the immediate for operand b
 
-  // Register Write Control
+  // Register Read/Write Control
+  logic [REGFILE_NUM_READ_PORTS-1:0] rf_re;
   logic        rf_we;
+  logic        rf_we_dec;
   logic        rf_we_raw;
   
   // ALU Control
@@ -188,6 +188,12 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   // Local instruction valid qualifier
   logic        instr_valid;
+
+  // eXtension interface signals
+  logic        xif_waiting;
+  logic        xif_insn_accept;
+  logic        xif_insn_reject;
+  logic        xif_we;
 
   assign instr_valid = if_id_pipe_i.instr_valid && !ctrl_fsm_i.kill_id && !ctrl_fsm_i.halt_id;
 
@@ -395,8 +401,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     .div_operator_o                  ( div_operator              ),
 
     // Register file control signals
-    .rf_re_o                         ( rf_re_o                   ),
-    .rf_we_o                         ( rf_we                     ),
+    .rf_re_o                         ( rf_re                     ),
+    .rf_we_o                         ( rf_we_dec                 ),
     .rf_we_raw_o                     ( rf_we_raw                 ),
 
     // CSR interface
@@ -422,6 +428,12 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     .ctrl_transfer_insn_raw_o        ( ctrl_transfer_insn_raw_o  ),
     .ctrl_transfer_target_mux_sel_o  ( ctrl_transfer_target_mux_sel )
   );
+
+  // Speculatively read all source registers for illegal instr, might be required by coprocessor
+  assign rf_re_o             = illegal_insn ? '1 : rf_re;
+
+  // Register writeback is enabled either by the decoder or by the XIF
+  assign rf_we               = rf_we_dec || xif_we;
 
   assign regfile_alu_we_id_o = rf_we_raw && !lsu_en_raw;
 
@@ -495,6 +507,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.fencei_insn            <= 1'b0;
       id_ex_pipe_o.mret_insn              <= 1'b0;
       id_ex_pipe_o.dret_insn              <= 1'b0;
+      id_ex_pipe_o.xif_en                 <= 1'b0;
+      id_ex_pipe_o.xif_id                 <= '0;
 
       id_ex_pipe_o.priv_lvl               <= PRIV_LVL_M;
     end else begin
@@ -569,7 +583,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
         id_ex_pipe_o.instr_meta             <= instr_meta_n;
 
         // Exceptions and special instructions
-        id_ex_pipe_o.illegal_insn           <= illegal_insn;
+        id_ex_pipe_o.illegal_insn           <= illegal_insn && !xif_insn_accept;
         id_ex_pipe_o.ebrk_insn              <= ebrk_insn;
         id_ex_pipe_o.wfi_insn               <= wfi_insn;
         id_ex_pipe_o.ecall_insn             <= ecall_insn;
@@ -577,7 +591,12 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
         id_ex_pipe_o.mret_insn              <= mret_insn;
         id_ex_pipe_o.dret_insn              <= dret_insn;
 
-        id_ex_pipe_o.trigger_match          <= debug_trigger_match_id_i;
+        // eXtension interface
+        id_ex_pipe_o.xif_en                 <= xif_insn_accept;
+        id_ex_pipe_o.xif_id                 <= if_id_pipe_i.xif_id;
+
+        id_ex_pipe_o.trigger_match          <= if_id_pipe_i.trigger_match;
+
       end else if (ex_ready_i) begin
         id_ex_pipe_o.instr_valid            <= 1'b0;
       end
@@ -598,13 +617,88 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   // contains the instruction following the multicycle instruction.
   // todo: update when Zce is included. Currently, no multi cycle ID stalls are possible.
 
-  assign id_ready_o = ctrl_fsm_i.kill_id || (!multi_cycle_id_stall && ex_ready_i && !ctrl_fsm_i.halt_id);
+  assign id_ready_o = ctrl_fsm_i.kill_id || (!multi_cycle_id_stall && ex_ready_i && !ctrl_fsm_i.halt_id && !xif_waiting);
 
   // multi_cycle_id_stall is currently tied to 1'b0. Will be used for Zce push/pop instructions.
-  assign id_valid_o = instr_valid || (multi_cycle_id_stall && !ctrl_fsm_i.kill_id && !ctrl_fsm_i.halt_id);
+  assign id_valid_o = (instr_valid && !xif_waiting) || (multi_cycle_id_stall && !ctrl_fsm_i.kill_id && !ctrl_fsm_i.halt_id);
 
-  // Drive eXtension interface outputs to 0 for now
-  assign xif_issue_if.x_issue_valid   = '0;
-  assign xif_issue_if.x_issue_req     = '0;
+
+  //---------------------------------------------------------------------------
+  // eXtension interface
+  //---------------------------------------------------------------------------
+
+  generate
+    if (X_EXT) begin : x_ext
+
+      // remember whether an instruction was accepted or rejected (required if EX stage is not ready)
+      // TODO: check whether this state machine should be put back in its initial state when the instruction in ID gets killed
+      logic xif_accepted_q, xif_rejected_q;
+
+      always_ff @(posedge clk, negedge rst_n) begin : ID_XIF_STATE_REGISTERS
+        if (rst_n == 1'b0) begin
+          xif_accepted_q <= 1'b0;
+          xif_rejected_q <= 1'b0;
+        end else begin
+          xif_accepted_q <= !(id_valid_o && ex_ready_i) && xif_insn_accept;
+          xif_rejected_q <= !(id_valid_o && ex_ready_i) && xif_insn_reject;
+        end
+      end
+
+      // attempt to offload every valid instruction that is considered illegal by the decoder
+      assign xif_issue_if.issue_valid     = instr_valid && illegal_insn && !xif_accepted_q && !xif_rejected_q;
+
+      assign xif_issue_if.issue_req.instr = instr;
+      assign xif_issue_if.issue_req.mode  = PRIV_LVL_M;
+      assign xif_issue_if.issue_req.id    = if_id_pipe_i.xif_id;
+
+      always_comb begin
+        xif_issue_if.issue_req.rs       = '0;
+        xif_issue_if.issue_req.rs_valid = '0;
+        if (xif_issue_if.X_NUM_RS > 0) begin
+          xif_issue_if.issue_req.rs      [0] = operand_a_fw;
+          xif_issue_if.issue_req.rs_valid[0] = 1'b1;
+        end
+        if (xif_issue_if.X_NUM_RS > 1) begin
+          xif_issue_if.issue_req.rs      [1] = operand_b_fw;
+          xif_issue_if.issue_req.rs_valid[1] = 1'b1;
+        end
+        // TODO: implement forwarding for other operands than rs1 and rs2
+        for (integer i = 2; i < xif_issue_if.X_NUM_RS && i < REGFILE_NUM_READ_PORTS; i++) begin
+          xif_issue_if.issue_req.rs      [i] = regfile_rdata_i[i];
+          xif_issue_if.issue_req.rs_valid[i] = 1'b1;
+        end
+      end
+
+      assign xif_issue_if.issue_req.frs       = '{default: '0};
+      assign xif_issue_if.issue_req.frs_valid = '0;
+
+      // need to wait if the coprocessor is not ready and has not already accepted or rejected the instruction
+      assign xif_waiting = xif_issue_if.issue_valid && !xif_issue_if.issue_ready && !xif_accepted_q && !xif_rejected_q;
+
+      // an instruction was offloaded successfully if the coprocessor accepts it (or has accepted it)
+      assign xif_insn_accept = (xif_issue_if.issue_valid && xif_issue_if.issue_ready &&  xif_issue_if.issue_resp.accept) || xif_accepted_q;
+      assign xif_insn_reject = (xif_issue_if.issue_valid && xif_issue_if.issue_ready && !xif_issue_if.issue_resp.accept) || xif_rejected_q;
+
+      assign xif_we = xif_issue_if.issue_valid && xif_issue_if.issue_resp.writeback;
+
+    end else begin : no_x_ext
+
+      // Drive all eXtension interface signals and outputs low if X_EXT == 0
+      assign xif_waiting                        = '0;
+      assign xif_insn_accept                    = '0;
+      assign xif_insn_reject                    = '0;
+      assign xif_we                             = '0;
+
+      assign xif_issue_if.issue_valid         = '0;
+      assign xif_issue_if.issue_req.instr     = '0;
+      assign xif_issue_if.issue_req.mode      = '0;
+      assign xif_issue_if.issue_req.id        = '0;
+      assign xif_issue_if.issue_req.frs       = '0;
+      assign xif_issue_if.issue_req.rs        = '0;
+      assign xif_issue_if.issue_req.rs_valid  = '0;
+      assign xif_issue_if.issue_req.frs_valid = '0;
+
+    end
+  endgenerate
 
 endmodule // cv32e40s_id_stage

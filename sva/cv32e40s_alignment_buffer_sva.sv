@@ -42,7 +42,7 @@ module cv32e40s_alignment_buffer_sva
    input logic [1:0]               rptr,
    input logic [1:0]               rptr2,
    input logic                     pop_q,
-   input PrivLvl_t                 instr_priv_lvl_o
+   input privlvl_t                 instr_priv_lvl_o
    );
 
 

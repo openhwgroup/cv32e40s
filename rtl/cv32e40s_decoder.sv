@@ -75,7 +75,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   // CSR
   output logic        csr_en_o,                 // enable access to CSR
   output csr_opcode_e csr_op_o,                 // operation to perform on CSR
-  input  Status_t     mstatus_i,                // Current mstatus
+  input  mstatus_t    mstatus_i,                // Current mstatus
 
   // LSU
   output logic        lsu_en_o,                 // start transaction to data memory

@@ -45,7 +45,7 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
    input pmp_csr_t    csr_pmp_i,
 
    // Privilege mode
-   input              PrivLvl_t priv_lvl_i,
+   input              privlvl_t priv_lvl_i,
    // Access checking
    input logic [33:0] pmp_req_addr_i,
    input              pmp_req_e pmp_req_type_i,

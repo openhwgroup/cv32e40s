@@ -30,6 +30,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_controller import cv32e40s_pkg::*;
+#(
+  parameter bit       X_EXT           = 0
+)
 (
   input  logic        clk,                        // Gated clock
   input  logic        clk_ungated_i,              // Ungated clock
@@ -66,14 +69,13 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        irq_req_ctrl_i,
   input  logic [4:0]  irq_id_ctrl_i,
   input  logic        irq_wu_ctrl_i,
-  input  PrivLvl_t    priv_lvl_i,
+  input  privlvl_t    priv_lvl_i,
 
   input logic  [1:0]     mtvec_mode_i,
 
   // Debug Signal
   input  logic         debug_req_i,
-  input  Dcsr_t        dcsr_i,
-  input  logic         debug_trigger_match_id_i,
+  input  dcsr_t        dcsr_i,
 
   // Regfile target
   input  logic         regfile_alu_we_id_i,        // currently decoded we enable
@@ -108,7 +110,11 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 );
 
   // Main FSM and debug FSM
-  cv32e40s_controller_fsm controller_fsm_i
+  cv32e40s_controller_fsm
+  #(
+    .X_EXT                       ( X_EXT                    )
+  )
+  controller_fsm_i
   (
     // Clocks and reset
     .clk                         ( clk                      ),
@@ -156,7 +162,6 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     // Debug Signal
     .debug_req_i                 ( debug_req_i              ),
     .dcsr_i                      ( dcsr_i                   ),
-    .debug_trigger_match_id_i    ( debug_trigger_match_id_i ),
 
     // Fencei flush handshake
     .fencei_flush_ack_i          ( fencei_flush_ack_i       ),
@@ -192,7 +197,6 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .dret_id_i                  ( dret_id_i                ),
     .csr_en_id_i                ( csr_en_id_i              ),
     .csr_op_id_i                ( csr_op_id_i              ),
-    .debug_trigger_match_id_i   ( debug_trigger_match_id_i ),
     .wfi_id_i                   ( wfi_id_i                 ),
 
     // From EX

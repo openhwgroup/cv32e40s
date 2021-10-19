@@ -454,13 +454,13 @@ typedef enum logic[1:0] {
   PRIV_LVL_H = 2'b10,
   PRIV_LVL_S = 2'b01,
   PRIV_LVL_U = 2'b00
-} PrivLvl_t;
+} privlvl_t;
 
 // Struct used for setting privilege lelve
 typedef struct packed {
   logic        priv_lvl_set;
-  PrivLvl_t    priv_lvl;
-} PrivLvlCtrl_t;
+  privlvl_t    priv_lvl;
+} privlvlctrl_t;
   
 // Machine Vendor ID - OpenHW JEDEC ID is '2 decimal (bank 13)'
 parameter MVENDORID_OFFSET = 7'h2;      // Final byte without parity bit
@@ -502,7 +502,7 @@ typedef struct packed {
   logic         mie;
   logic [2:1]   zero0; // Unimplemented, hardwired zero
   logic         uie; // Tie to zero when user mode is not enabled
-} Status_t;
+} mstatus_t;
 
 // Debug Cause
 parameter DBG_CAUSE_NONE       = 3'h0;
@@ -542,34 +542,34 @@ typedef struct packed{
     logic         mprven;
     logic         nmip;
     logic         step;
-    PrivLvl_t     prv;
-} Dcsr_t;
+    privlvl_t     prv;
+} dcsr_t;
 
 typedef struct packed {
   logic           interrupt;
   logic [30:8]    zero0;
   logic [7:0]     exception_code;
-} Mcause_t;
+} mcause_t;
 
 typedef struct packed {
   logic [31:8] addr;
   logic [7:2]  zero0;
   logic [1:0]  mode;
-} Mtvec_t;
+} mtvec_t;
 
 
-parameter Dcsr_t DCSR_RESET_VAL = '{
+parameter dcsr_t DCSR_RESET_VAL = '{
   xdebugver : XDEBUGVER_STD,
   cause:      DBG_CAUSE_NONE,
   prv:        PRIV_LVL_M,
   default:    '0};
 
-parameter Mtvec_t MTVEC_RESET_VAL = '{
+parameter mtvec_t MTVEC_RESET_VAL = '{
   addr: 'd0,
   zero0: 'd0,
   mode:  MTVEC_MODE};
 
-parameter Status_t MSTATUS_RESET_VAL = '{
+parameter mstatus_t MSTATUS_RESET_VAL = '{
   zero5: 'b0,
   tw : 1'b0,
   zero4: 'b0, // Reserved, hardwired zero
@@ -604,6 +604,10 @@ parameter logic [31:0] TMATCH_CONTROL_RST_VAL = {
   1'b0,                  // store   : not supported
   1'b0};                 // load    : not supported
 
+// eXtension Interface constant parameters
+parameter int X_DATAWIDTH = 32;  // Width of an integer register in bits. Must be equal to XLEN
+parameter int X_NUM_FRS   = 2;   // Number of floating-point register file read ports that can be used by the eXtension interface
+parameter int X_ID_WIDTH  = 3;   // Identification width for the eXtension interface
 
 ///////////////////////////////////////////////
 //   ___ ____    ____  _                     //
@@ -1022,7 +1026,9 @@ typedef struct packed {
   logic [31:0] pc;
   logic [15:0] compressed_instr;
   logic        illegal_c_insn;
-  PrivLvl_t    priv_lvl;
+  privlvl_t    priv_lvl;
+  logic        trigger_match;
+  logic [X_ID_WIDTH-1:0] xif_id;  // ID of offloaded instruction
 } if_id_pipe_t;
 
 // ID/EX pipeline
@@ -1083,7 +1089,11 @@ typedef struct packed {
   logic         dret_insn;
 
   // Priviledge level
-  PrivLvl_t    priv_lvl;
+  privlvl_t    priv_lvl;
+
+  // eXtension interface
+  logic         xif_en;           // Instruction has been offloaded via eXtension interface
+  logic [X_ID_WIDTH-1:0] xif_id;  // ID of offloaded instruction
 } id_ex_pipe_t;
 
 // EX/WB pipeline
@@ -1116,6 +1126,10 @@ typedef struct packed {
   logic         fencei_insn;
   logic         mret_insn;
   logic         dret_insn;
+
+  // eXtension interface
+  logic         xif_en;           // Instruction has been offloaded via eXtension interface
+  logic [X_ID_WIDTH-1:0] xif_id;  // ID of offloaded instruction
 } ex_wb_pipe_t;
 
 // Performance counter events
@@ -1189,7 +1203,7 @@ typedef struct packed {
   logic        csr_save_id;         // Save PC from ID stage
   logic        csr_save_ex;         // Save PC from EX stage (currently unused)
   logic        csr_save_wb;         // Save PC from WB stage
-  Mcause_t     csr_cause;           // CSR cause (saves to mcause CSR)
+  mcause_t     csr_cause;           // CSR cause (saves to mcause CSR)
   logic        csr_restore_mret;    // Restore CSR due to mret
   logic        csr_restore_dret;    // Restore CSR due to dret
   logic        csr_save_cause;      // Update CSRs
@@ -1228,8 +1242,4 @@ typedef struct packed {
   // Enum used for configuration of B extension
   typedef enum logic [1:0] {NONE, ZBA_ZBB_ZBS, ZBA_ZBB_ZBC_ZBS} b_ext_e;
 
-  // eXtension Interface constant parameters
-  parameter int X_DATAWIDTH = 32;  // Width of an integer register in bits. Must be equal to XLEN
-  parameter int X_NUM_FRS   = 2;   // Number of floating-point register file read ports that can be used by the eXtension interface
-  parameter int X_ID_WIDTH  = 3;   // Identification width for the eXtension interface
 endpackage
