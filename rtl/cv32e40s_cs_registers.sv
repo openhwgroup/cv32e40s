@@ -305,6 +305,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     case (csr_raddr)
       // mstatus: always M-mode, contains IE bit
       CSR_MSTATUS: csr_rdata_int = mstatus_q;
+      // mstatush: All bits hardwired to 0
+      CSR_MSTATUSH: csr_rdata_int = 'b0;
       // misa: machine isa register
       CSR_MISA: csr_rdata_int = MISA_VALUE;
       // mie: machine interrupt enable
@@ -323,7 +325,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MIP: csr_rdata_int = mip;
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
-
+      // mconfigptr: Pointer to configuration data structure. Read only, hardwired to 0
+      CSR_MCONFIGPTR: csr_rdata_int = 'b0;
       // mvendorid: Machine Vendor ID
       CSR_MVENDORID: csr_rdata_int = {MVENDORID_BANK, MVENDORID_OFFSET};
 
@@ -442,12 +445,18 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15:
         csr_rdata_int = pmp_addr_rdata[csr_raddr[3:0]];
 
-      CSR_PMPMSECCFG0:
+      CSR_MSECCFG:
         csr_rdata_int = pmp_mseccfg_q;
 
-      CSR_PMPMSECCFG1:
+      CSR_MSECCFGH:
         csr_rdata_int = '0;
         
+      CSR_MENVCFG:
+        csr_rdata_int = '0;
+
+      CSR_MENVCFGH:
+        csr_rdata_int = '0;
+
       default: begin
         csr_rdata_int = '0;
         illegal_csr_read = 1'b1;
@@ -529,6 +538,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_MSTATUS: begin
           mstatus_we = 1'b1;
         end
+        CSR_MSTATUSH: begin
+          // No bits implemented in MSTATUSH, do nothing
+        end
         // mie: machine interrupt enable
         CSR_MIE: begin
               mie_we = 1'b1;
@@ -583,11 +595,17 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15: begin
           pmp_addr_we_int[csr_waddr[3:0]] = 1'b1;
         end
-        CSR_PMPMSECCFG0: begin
+        CSR_MSECCFG: begin
           pmp_mseccfg_we = 1'b1;
         end
-        CSR_PMPMSECCFG1: begin
-          // No bits implemented in MSECCFG1, do nothing
+        CSR_MSECCFGH: begin
+          // No bits implemented in MSECCFGH, do nothing
+        end
+        CSR_MENVCFG: begin
+          // No bits implemented in MENVCFG, do nothing
+        end
+        CSR_MENVCFGH: begin
+          // No bits implemented in MENVCFGH, do nothing
         end
       endcase
     end
@@ -649,6 +667,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         mstatus_n.mie  = mstatus_q.mpie;
         mstatus_n.mpie = 1'b1;
         mstatus_n.mpp  = PRIV_LVL_U;
+        mstatus_n.mprv = (privlvl_t'(mstatus_q.mpp) == PRIV_LVL_M) ? mstatus_q.mprv : 1'b0;
         mstatus_we     = 1'b1;
       end //ctrl_fsm_i.csr_restore_mret
       ctrl_fsm_i.csr_restore_dret: begin //DRET
