@@ -48,7 +48,14 @@ module cv32e40s_core_sva
   input privlvl_t    priv_lvl_if,
   input privlvl_t    priv_lvl_if_q,
 
-   // probed controller signals
+  // probed OBI signals
+  input logic [1:0]  instr_memtype_o,
+  input logic [1:0]  data_memtype_o,
+  input logic        data_req_o,
+  input logic        data_we_o,
+  input logic [5:0]  data_atop_o,
+
+  // probed controller signals
   input logic        ctrl_debug_mode_n,
   input logic        ctrl_pending_debug,
   input logic        ctrl_debug_allowed,
@@ -336,6 +343,23 @@ always_ff @(posedge clk , negedge rst_ni)
                       |-> (priv_lvl_if == cs_registers_mstatus_q.mpp))
     else `uvm_error("core", "MEPC fetch not performed with priviledge level from mstatus.mpp")
         
-      
+  // Check that instruction fetches are always non-bufferable
+  a_instr_non_bufferable :
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                     (!instr_memtype_o[0]))
+      else `uvm_error("core", "Instruction fetch classified as bufferable")
+
+  // Check that loads are always non-bufferable
+  a_load_non_bufferable :
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                     (data_req_o && !data_we_o |-> !data_memtype_o[0]))
+      else `uvm_error("core", "Load instruction classified as bufferable")
+
+  // Check that atomic operations are always non-bufferable
+  a_atomic_non_bufferable :
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                     (data_req_o && |data_atop_o |-> !data_memtype_o[0]))
+      else `uvm_error("core", "Atomic operation classified as bufferable")
+    
 endmodule // cv32e40s_core_sva
 
