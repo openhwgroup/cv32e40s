@@ -23,8 +23,8 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_write_buffer_sva
-  import cv32e40x_pkg::*;
+module cv32e40s_write_buffer_sva
+  import cv32e40s_pkg::*;
   import uvm_pkg::*;
   (input logic          clk,
    input logic          rst_n,
@@ -159,4 +159,4 @@ module cv32e40x_write_buffer_sva
   a_trans_o_empty: assert property (p_trans_o_empty)
     else `uvm_error("write_buffer", "When state is EMPTY, trans_o should come from trans_i");
 
-endmodule : cv32e40x_write_buffer_sva
+endmodule : cv32e40s_write_buffer_sva

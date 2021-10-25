@@ -621,7 +621,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   // Write Buffer
   //////////////////////////////////////////////////////////////////////////////
 
-  cv32e40x_write_buffer
+  cv32e40s_write_buffer
   write_buffer_i
     (.clk          ( clk                ),
      .rst_n        ( rst_n              ),

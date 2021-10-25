@@ -22,15 +22,15 @@
 // Engineer:       Halfdan Bechmann  -  halfdan.bechmann@silabs.com           //
 //                                                                            //
 // Design Name:    Write Buffer                                               //
-// Project Name:   CV32E40X                                                   //
+// Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Single word write buffer                                   //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_write_buffer
-  import cv32e40x_pkg::*;
+module cv32e40s_write_buffer
+  import cv32e40s_pkg::*;
   (
    // clock and reset
    input logic           clk,
@@ -110,5 +110,5 @@ module cv32e40x_write_buffer
   assign valid_o = (state == WBUF_FULL) || valid_i;
   assign trans_o = (state == WBUF_FULL) ? trans_q : trans_i;
 
-endmodule : cv32e40x_write_buffer
+endmodule : cv32e40s_write_buffer
 
