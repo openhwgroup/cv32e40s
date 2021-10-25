@@ -719,7 +719,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // debug
     .dpc_o                      ( dpc                    ),
     .dcsr_o                     ( dcsr                   ),
-    .trigger_match_o      ( trigger_match_if       ),
+    .trigger_match_o            ( trigger_match_if       ),
 
     .priv_lvl_if_ctrl_o         ( priv_lvl_if_ctrl       ),
     .priv_lvl_lsu_o             ( priv_lvl_lsu           ),    

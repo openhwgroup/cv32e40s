@@ -615,7 +615,26 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   // Extract rdata and err from response struct
   assign resp_rdata = resp.bus_resp.rdata;
   assign resp_err   = resp.bus_resp.err;
-  
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Write Buffer
+  //////////////////////////////////////////////////////////////////////////////
+
+  cv32e40x_write_buffer
+  write_buffer_i
+    (.clk          ( clk                ),
+     .rst_n        ( rst_n              ),
+
+     .valid_i      ( buffer_trans_valid ),
+     .ready_o      ( buffer_trans_ready ),
+     .trans_i      ( buffer_trans       ),
+
+     .valid_o      ( bus_trans_valid    ),
+     .ready_i      ( bus_trans_ready    ),
+     .trans_o      ( bus_trans          )
+     );
+
   //////////////////////////////////////////////////////////////////////////////
   // OBI interface
   //////////////////////////////////////////////////////////////////////////////
