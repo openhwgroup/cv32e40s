@@ -432,7 +432,13 @@ typedef enum logic[11:0] {
   CSR_MARCHID        = 12'hF12,
   CSR_MIMPID         = 12'hF13,
   CSR_MHARTID        = 12'hF14,
-  CSR_MCONFIGPTR     = 12'hF15
+  CSR_MCONFIGPTR     = 12'hF15,
+
+  // Xsecure custom CSRs
+  CSR_CPUCTRL        = 12'hBF0,
+  CSR_SECURESEED0    = 12'hBF9,
+  CSR_SECURESEED1    = 12'hBFA,
+  CSR_SECURESEED2    = 12'hBFC
 } csr_num_e;
 
 // CSR operations
@@ -453,6 +459,21 @@ parameter int unsigned CSR_MTIX_BIT      = 7;
 parameter int unsigned CSR_MEIX_BIT      = 11;
 parameter int unsigned CSR_MFIX_BIT_LOW  = 16;
 parameter int unsigned CSR_MFIX_BIT_HIGH = 31;
+
+// CPUCTRL
+typedef struct packed {
+  logic [31:5] zero0;
+  logic [4:2]  dummyfreq;
+  logic        dummyen;
+  logic        dataindtiming;
+} cpuctrl_t;
+
+typedef struct packed {
+  logic [31:0] lfsr2;
+  logic [31:0] lfsr1;
+  logic [31:0] lfsr0;
+  cpuctrl_t    cpuctrl;
+} xsecure_ctrl_t;
 
 // Privileged mode
 typedef enum logic[1:0] {

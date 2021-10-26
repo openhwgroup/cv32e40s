@@ -39,7 +39,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter b_ext_e B_EXT                =  NONE,
   parameter bit     X_EXT                =  0,
   parameter int          PMA_NUM_REGIONS =  0,
-  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
+  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
+  parameter logic [31:0] LFSR0_COEFFS    = 32'h8000_0AC4, // TODO:OE these should be 0, and required to be set on integration level
+  parameter logic [31:0] LFSR1_COEFFS    = 32'h8000_0CEC,
+  parameter logic [31:0] LFSR2_COEFFS    = 32'h8000_0EA6
 )
 (
   // Clock and Reset
@@ -247,6 +250,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        irq_ack;
   logic [4:0]  irq_id;
   logic        dbg_ack;
+
+  // Xsecure control
+  xsecure_ctrl_t xsecure_ctrl;
   
   // Internal OBI interfaces
   if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
@@ -665,7 +671,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .A_EXT            ( A_EXT                 ),
     .PMP_NUM_REGIONS  ( PMP_NUM_REGIONS       ),
     .PMP_GRANULARITY  ( PMP_GRANULARITY       ),
-    .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      )
+    .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
+    .LFSR0_COEFFS     ( LFSR0_COEFFS          ),
+    .LFSR1_COEFFS     ( LFSR1_COEFFS          ),
+    .LFSR2_COEFFS     ( LFSR2_COEFFS          )
   )
   cs_registers_i
   (
@@ -714,6 +723,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR Parity Error
     .csr_err_o                  ( csr_err                ),
+
+    // Xsecure control
+    .xsecure_ctrl_o             ( xsecure_ctrl           ),
 
     // debug
     .dpc_o                      ( dpc                    ),
