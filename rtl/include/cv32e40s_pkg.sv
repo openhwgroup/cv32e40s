@@ -212,6 +212,7 @@ typedef enum logic[11:0] {
   CSR_MIE            = 12'h304,
   CSR_MTVEC          = 12'h305,
   CSR_MCOUNTEREN     = 12'h306,
+  CSR_MSTATUSH       = 12'h310,
 
   // Performance counters
   CSR_MCOUNTINHIBIT  = 12'h320,
@@ -273,8 +274,12 @@ typedef enum logic[11:0] {
   CSR_PMPADDR13      = 12'h3BD,
   CSR_PMPADDR14      = 12'h3BE,
   CSR_PMPADDR15      = 12'h3BF,
-  CSR_PMPMSECCFG0    = 12'h747,
-  CSR_PMPMSECCFG1    = 12'h757,
+
+  // Machine configuration
+  CSR_MENVCFG        = 12'h30A,
+  CSR_MENVCFGH       = 12'h31A,
+  CSR_MSECCFG        = 12'h747,
+  CSR_MSECCFGH       = 12'h757,
 
   // Trigger
   CSR_TSELECT        = 12'h7A0,
@@ -426,7 +431,8 @@ typedef enum logic[11:0] {
   CSR_MVENDORID      = 12'hF11,
   CSR_MARCHID        = 12'hF12,
   CSR_MIMPID         = 12'hF13,
-  CSR_MHARTID        = 12'hF14
+  CSR_MHARTID        = 12'hF14,
+  CSR_MCONFIGPTR     = 12'hF15
 } csr_num_e;
 
 // CSR operations
