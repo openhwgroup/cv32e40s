@@ -27,9 +27,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_if_stage import cv32e40s_pkg::*;
-  #(parameter bit          A_EXTENSION     = 0,
-    parameter int          PMP_GRANULARITY = 0,
+  #(parameter int          PMP_GRANULARITY = 0,
     parameter int          PMP_NUM_REGIONS = 0,
+    parameter bit          A_EXT           = 0,
     parameter bit          X_EXT           = 0,
     parameter int          PMA_NUM_REGIONS = 0,
     parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT})
@@ -202,60 +202,66 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   //////////////////////////////////////////////////////////////////////////////
 
   assign core_trans.addr = prefetch_trans_addr;
-  assign core_trans.prot[0]   = 1'b0;  // Transfers from IF stage are instruction transfers
-  assign core_trans.prot[2:1] = PRIV_LVL_M; // Machine mode. TODO: connect to priv_lvl
-  assign core_trans.memtype   = 2'b00; // memtype is assigned in the MPU, tie off.
+  assign core_trans.prot[0] = 1'b0;                     // Transfers from IF stage are instruction transfers
+  assign core_trans.prot[2:1] = PRIV_LVL_M;             // Machine mode. TODO: connect to priv_lvl
+  assign core_trans.memtype = 2'b00;                    // memtype is assigned in the MPU, tie off.
 
   cv32e40s_mpu
-    #(.IF_STAGE(1),
-      .A_EXTENSION(A_EXTENSION),
-      .CORE_REQ_TYPE(obi_inst_req_t),
-      .CORE_RESP_TYPE(inst_resp_t),
-      .BUS_RESP_TYPE(obi_inst_resp_t),
-      .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
-      .PMA_CFG(PMA_CFG),
-      .PMP_GRANULARITY(PMP_GRANULARITY),
-      .PMP_NUM_REGIONS(PMP_NUM_REGIONS))
+  #(
+    .IF_STAGE             ( 1                       ),
+    .A_EXT                ( A_EXT                   ),
+    .CORE_REQ_TYPE        ( obi_inst_req_t          ),
+    .CORE_RESP_TYPE       ( inst_resp_t             ),
+    .BUS_RESP_TYPE        ( obi_inst_resp_t         ),
+    .PMA_NUM_REGIONS      ( PMA_NUM_REGIONS         ),
+    .PMA_CFG              ( PMA_CFG                 ),
+    .PMP_GRANULARITY      ( PMP_GRANULARITY         ),
+    .PMP_NUM_REGIONS      ( PMP_NUM_REGIONS         )
+  )
   mpu_i
-    (
-     .clk                  ( clk   ),
-     .rst_n                ( rst_n ),
-     .atomic_access_i      ( 1'b0  ), // No atomic transfers on instruction side
-     .misaligned_access_i  ( 1'b0  ), // MPU on instruction side will not issue misaligned access fault
-                                      // Misaligned access to main is allowed, and accesses outside main will result in instruction access fault (which will have priority over misaligned from I/O fault)
-     .priv_lvl_i           ( prefetch_priv_lvl ),
-     .csr_pmp_i            ( csr_pmp_i  ),
-     .core_one_txn_pend_n  ( prefetch_one_txn_pend_n ),
-     .core_trans_valid_i   ( prefetch_trans_valid    ),
-     .core_trans_ready_o   ( prefetch_trans_ready    ),
-     .core_trans_i         ( core_trans              ),
-     .core_resp_valid_o    ( prefetch_resp_valid     ),
-     .core_resp_o          ( prefetch_inst_resp      ),
+  (
+    .clk                  ( clk                     ),
+    .rst_n                ( rst_n                   ),
+    .atomic_access_i      ( 1'b0                    ), // No atomic transfers on instruction side
+    .misaligned_access_i  ( 1'b0                    ), // MPU on instruction side will not issue misaligned access fault
+                                                       // Misaligned access to main is allowed, and accesses outside main will
+                                                       // result in instruction access fault (which will have priority over
+                                                       //  misaligned from I/O fault)
+    .priv_lvl_i           ( prefetch_priv_lvl       ),
+    .csr_pmp_i            ( csr_pmp_i               ),
 
-     .bus_trans_valid_o    ( bus_trans_valid ),
-     .bus_trans_ready_i    ( bus_trans_ready ),
-     .bus_trans_o          ( bus_trans       ),
-     .bus_resp_valid_i     ( bus_resp_valid  ),
-     .bus_resp_i           ( bus_resp        ));
+    .core_one_txn_pend_n  ( prefetch_one_txn_pend_n ),
+    .core_trans_valid_i   ( prefetch_trans_valid    ),
+    .core_trans_ready_o   ( prefetch_trans_ready    ),
+    .core_trans_i         ( core_trans              ),
+    .core_resp_valid_o    ( prefetch_resp_valid     ),
+    .core_resp_o          ( prefetch_inst_resp      ),
 
-//////////////////////////////////////////////////////////////////////////////
-// OBI interface
-//////////////////////////////////////////////////////////////////////////////
+    .bus_trans_valid_o    ( bus_trans_valid         ),
+    .bus_trans_ready_i    ( bus_trans_ready         ),
+    .bus_trans_o          ( bus_trans               ),
+    .bus_resp_valid_i     ( bus_resp_valid          ),
+    .bus_resp_i           ( bus_resp                )
+  );
 
-cv32e40s_instr_obi_interface
-instruction_obi_i
-(
-  .clk                   ( clk               ),
-  .rst_n                 ( rst_n             ),
+  //////////////////////////////////////////////////////////////////////////////
+  // OBI interface
+  //////////////////////////////////////////////////////////////////////////////
 
-  .trans_valid_i         ( bus_trans_valid   ),
-  .trans_ready_o         ( bus_trans_ready   ),
-  .trans_i               ( bus_trans         ),
+  cv32e40s_instr_obi_interface
+  instruction_obi_i
+  (
+    .clk                  ( clk              ),
+    .rst_n                ( rst_n            ),
 
-  .resp_valid_o          ( bus_resp_valid    ),
-  .resp_o                ( bus_resp          ),
-  .m_c_obi_instr_if      ( m_c_obi_instr_if  )
-);
+    .trans_valid_i        ( bus_trans_valid  ),
+    .trans_ready_o        ( bus_trans_ready  ),
+    .trans_i              ( bus_trans        ),
+
+    .resp_valid_o         ( bus_resp_valid   ),
+    .resp_o               ( bus_resp         ),
+    .m_c_obi_instr_if     ( m_c_obi_instr_if )
+  );
 
   // Local instr_valid when we have valid output from prefetcher
   // and IF is not halted or killed

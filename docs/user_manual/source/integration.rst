@@ -112,7 +112,7 @@ Parameters
 +==============================+================+===============+====================================================================+
 | ``LIB``                      | int            | 0             | Standard cell library (semantics defined by integrator)            |
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``B_EXT``                    | b_ext_e        | NONE          | Enable Bit Manipulation (B) support. ``B_EXT`` = NONE: no Bit      |
+| ``B_EXT``                    | b_ext_e        | NONE          | Enable Bit Manipulation support. ``B_EXT`` = NONE: no Bit          |
 |                              |                |               | Manipulation instructions are supported, ``B_EXT`` = ZBA_ZBB_ZBS:  |
 |                              |                |               | Zba, Zbb and Zbs are supported.                                    |
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+

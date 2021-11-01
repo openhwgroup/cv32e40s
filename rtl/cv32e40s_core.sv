@@ -33,8 +33,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
 #(
   parameter NUM_MHPMCOUNTERS             =  1,
   parameter LIB                          =  0,
-  parameter int PMP_GRANULARITY =  0,
-  parameter int PMP_NUM_REGIONS =  0,
+  parameter int PMP_GRANULARITY          =  0,
+  parameter int PMP_NUM_REGIONS          =  0,
+  parameter bit     A_EXT                =  0,
   parameter b_ext_e B_EXT                =  NONE,
   parameter bit     X_EXT                =  0,
   parameter int          PMA_NUM_REGIONS =  0,
@@ -110,11 +111,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic        core_sleep_o
 );
 
-  // Unused parameters and signals (left in code for future design extensions)
-  localparam A_EXTENSION         =  0;
-
   logic [31:0]       pc_if;             // Program counter in IF stage
-
 
   // Jump and branch target and decision (EX->IF)
   logic [31:0] jump_target_id;
@@ -301,7 +298,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        fetch_enable;
 
   cv32e40s_sleep_unit
-    #(.LIB (LIB))
+  #(
+    .LIB                        ( LIB                  )
+  )
   sleep_unit_i
   (
     // Clock, reset interface
@@ -364,7 +363,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //                                              //
   //////////////////////////////////////////////////
   cv32e40s_if_stage
-    #(.A_EXTENSION(A_EXTENSION),
+    #(.A_EXT(A_EXT),
       .PMP_GRANULARITY(PMP_GRANULARITY),
       .PMP_NUM_REGIONS(PMP_NUM_REGIONS),
       .X_EXT      ( X_EXT ),
@@ -440,7 +439,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   /////////////////////////////////////////////////
   cv32e40s_id_stage
   #(
-    .A_EXTENSION                  ( A_EXTENSION               ),
+    .A_EXT                        ( A_EXT                     ),
     .B_EXT                        ( B_EXT                     ),
     .X_EXT                        ( X_EXT                     )
   )
@@ -557,7 +556,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   ////////////////////////////////////////////////////////////////////////////////////////
 
   cv32e40s_load_store_unit
-    #(.A_EXTENSION(A_EXTENSION),
+    #(.A_EXT(A_EXT),
       .PMP_GRANULARITY(PMP_GRANULARITY),
       .PMP_NUM_REGIONS(PMP_NUM_REGIONS),
       .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
@@ -663,7 +662,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   cv32e40s_cs_registers
   #(
-    .A_EXTENSION      ( A_EXTENSION           ),
+    .A_EXT            ( A_EXT                 ),
     .PMP_NUM_REGIONS  ( PMP_NUM_REGIONS       ),
     .PMP_GRANULARITY  ( PMP_GRANULARITY       ),
     .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      )

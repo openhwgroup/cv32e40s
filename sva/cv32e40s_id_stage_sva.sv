@@ -91,7 +91,7 @@ module cv32e40s_id_stage_sva
 
 /* todo: fix
       generate
-        if (!A_EXTENSION) begin : gen_no_a_extension_assertions
+        if (!A_EXT) begin : gen_no_a_extension_assertions
 
           // Check that A extension opcodes are decoded as illegal when A extension not enabled
           property p_illegal_0;
