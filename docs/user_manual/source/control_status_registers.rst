@@ -398,7 +398,7 @@ Detailed:
 +-------------+------------+------------------------------------------------------------------------+
 | 16          | RO   (0x0) | **Q** (Quad-precision floating-point extension).                       |
 +-------------+------------+------------------------------------------------------------------------+
-| 15          | RO   (0x0) | **P** (Tentatively reserved for Packed-SIMD extension).                |
+| 15          | RO   (0x0) | **P** (Packed-SIMD extension).                                         |
 +-------------+------------+------------------------------------------------------------------------+
 | 14          | RO   (0x0) | **O** (Reserved).                                                      |
 +-------------+------------+------------------------------------------------------------------------+
@@ -666,9 +666,10 @@ Reset Value: 0x0000_0000
 | 7:0         |  RW       | **Exception Code**   (See note below)                                            |
 +-------------+-----------+----------------------------------------------------------------------------------+
 
-**NOTE**: software accesses to `mcause[7:0]` must be sensitive to the WLRL field specification of this CSR.  For example,
-when `mcause[31]` is set, writing 0x1 to `mcause[1]` (Supervisor software interrupt) will result in UNDEFINED behavior.
+.. note::
 
+   Software accesses to `mcause[7:0]` must be sensitive to the WLRL field specification of this CSR.  For example,
+   when `mcause[31]` is set, writing 0x1 to `mcause[1]` (Supervisor software interrupt) will result in UNDEFINED behavior.
 
 Machine Trap Value (``mtval``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

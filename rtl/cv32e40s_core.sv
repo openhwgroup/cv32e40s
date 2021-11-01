@@ -110,11 +110,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic        core_sleep_o
 );
 
-  // Unused parameters and signals (left in code for future design extensions)
-  localparam A_EXTENSION         =  0;
-
   logic [31:0]       pc_if;             // Program counter in IF stage
-
 
   // Jump and branch target and decision (EX->IF)
   logic [31:0] jump_target_id;
@@ -301,7 +297,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        fetch_enable;
 
   cv32e40s_sleep_unit
-    #(.LIB (LIB))
+  #(
+    .LIB                        ( LIB                  )
+  )
   sleep_unit_i
   (
     // Clock, reset interface
@@ -440,7 +438,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   /////////////////////////////////////////////////
   cv32e40s_id_stage
   #(
-    .A_EXTENSION                  ( A_EXTENSION               ),
+    .A_EXT                        ( A_EXT                     ),
     .B_EXT                        ( B_EXT                     ),
     .X_EXT                        ( X_EXT                     )
   )

@@ -24,20 +24,21 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_pma import cv32e40s_pkg::*;
-  #(  
-      parameter bit          A_EXTENSION = 0,
-      parameter int          PMA_NUM_REGIONS = 0,
-      parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT})
-  (
-   input logic [31:0] trans_addr_i,
-   input logic        instr_fetch_access_i, // Indicate that ongoing access is an instruction fetch
-   input logic        atomic_access_i,      // Indicate that ongoing access is atomic
-   input logic        misaligned_access_i,  // Indicate that ongoing access is part of a misaligned access
-   input logic        load_access_i,        // Indicate that ongoing access is a load
-   output logic       pma_err_o,
-   output logic       pma_bufferable_o,
-   output logic       pma_cacheable_o
-   );
+#(  
+  parameter bit          A_EXTENSION = 0,
+  parameter int          PMA_NUM_REGIONS = 0,
+  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
+)
+(
+  input  logic [31:0] trans_addr_i,
+  input  logic        instr_fetch_access_i, // Indicate that ongoing access is an instruction fetch
+  input  logic        atomic_access_i,      // Indicate that ongoing access is atomic
+  input  logic        misaligned_access_i,  // Indicate that ongoing access is part of a misaligned access
+  input  logic        load_access_i,        // Indicate that ongoing access is a load
+  output logic        pma_err_o,
+  output logic        pma_bufferable_o,
+  output logic        pma_cacheable_o
+);
   
   parameter PMA_ADDR_LSB = 0; // TODO:OE experiment and see if this makes a difference
   

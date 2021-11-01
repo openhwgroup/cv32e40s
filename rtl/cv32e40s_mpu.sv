@@ -178,18 +178,21 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
 
   // PMA - Physical Memory Attribution
   cv32e40s_pma
-    #(.A_EXTENSION(A_EXTENSION),
-      .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
-      .PMA_CFG(PMA_CFG))
+    #(.A_EXTENSION              ( A_EXTENSION          ),
+      .PMA_NUM_REGIONS          ( PMA_NUM_REGIONS      ),
+      .PMA_CFG                  ( PMA_CFG              )
+  )
   pma_i
-    (.trans_addr_i(core_trans_i.addr),
-     .instr_fetch_access_i(instr_fetch_access),
-     .atomic_access_i(atomic_access_i),
-     .misaligned_access_i(misaligned_access_i),
-     .load_access_i(load_access),
-     .pma_err_o(pma_err),
-     .pma_bufferable_o(bus_trans_bufferable),
-     .pma_cacheable_o(bus_trans_cacheable));
+    (
+    .trans_addr_i               ( core_trans_i.addr    ),
+    .instr_fetch_access_i       ( instr_fetch_access   ),
+    .atomic_access_i            ( atomic_access_i      ),
+    .misaligned_access_i        ( misaligned_access_i  ),
+    .load_access_i              ( load_access          ),
+    .pma_err_o                  ( pma_err              ),
+    .pma_bufferable_o           ( bus_trans_bufferable ),
+    .pma_cacheable_o            ( bus_trans_cacheable  )
+  );
   
   assign pmp_req_addr = {2'b00, core_trans_i.addr};
   

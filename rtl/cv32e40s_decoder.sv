@@ -27,9 +27,9 @@
 
 module cv32e40s_decoder import cv32e40s_pkg::*;
 #(
-  parameter A_EXTENSION       = 0,
-  parameter b_ext_e B_EXT     = NONE,
-  parameter DEBUG_TRIGGER_EN  = 1
+  parameter bit A_EXT        = 0,
+  parameter b_ext_e B_EXT    = NONE,
+  parameter DEBUG_TRIGGER_EN = 1
 )
 (
   // singals running to/from controller
@@ -131,7 +131,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
        .decoder_ctrl_o(decoder_m_ctrl));
 
   generate
-    if (A_EXTENSION) begin: a_decoder
+    if (A_EXT) begin: a_decoder
       // RV32A extension decoder
       cv32e40s_a_decoder
         a_decoder_i

@@ -586,37 +586,39 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   assign trans.memtype   = 2'b00; // memtype is assigned in the MPU, tie off.
   
   cv32e40s_mpu
-    #(.IF_STAGE        (0              ),
-      .A_EXTENSION     (A_EXTENSION    ),
-      .CORE_RESP_TYPE  (data_resp_t    ),
-      .BUS_RESP_TYPE   (obi_data_resp_t),
-      .CORE_REQ_TYPE   (obi_data_req_t ),
-      .PMA_NUM_REGIONS (PMA_NUM_REGIONS),
-      .PMA_CFG         (PMA_CFG        ),
-      .PMP_GRANULARITY(PMP_GRANULARITY),
-      .PMP_NUM_REGIONS(PMP_NUM_REGIONS))
+  #(
+    .IF_STAGE           ( 0                    ),
+    .A_EXTENSION        ( A_EXTENSION          ),
+    .CORE_RESP_TYPE     ( data_resp_t          ),
+    .BUS_RESP_TYPE      ( obi_data_resp_t      ),
+    .CORE_REQ_TYPE      ( obi_data_req_t       ),
+    .PMA_NUM_REGIONS    ( PMA_NUM_REGIONS      ),
+    .PMA_CFG            ( PMA_CFG              ),
+    .PMP_GRANULARITY    ( PMP_GRANULARITY      ),
+    .PMP_NUM_REGIONS    ( PMP_NUM_REGIONS      )
+  )
   mpu_i
-    (
-     .clk                  ( clk                ),
-     .rst_n                ( rst_n              ),
-     .atomic_access_i      ( 1'b0               ), // TODO:OE update to support atomic PMA checks
-     .misaligned_access_i  ( misaligned_access  ),
+  (
+    .clk                  ( clk                ),
+    .rst_n                ( rst_n              ),
+    .atomic_access_i      ( 1'b0               ), // TODO:OE update to support atomic PMA checks
+    .misaligned_access_i  ( misaligned_access  ),
+    .priv_lvl_i           ( priv_lvl_lsu_i     ),
+    .csr_pmp_i            ( csr_pmp_i          ),
 
-     .priv_lvl_i           ( priv_lvl_lsu_i     ),
-     .csr_pmp_i            ( csr_pmp_i          ),
+    .core_one_txn_pend_n  ( cnt_is_one_next    ),
+    .core_trans_valid_i   ( trans_valid        ),
+    .core_trans_ready_o   ( trans_ready        ),
+    .core_trans_i         ( trans              ),
+    .core_resp_valid_o    ( resp_valid         ),
+    .core_resp_o          ( resp               ),
 
-     .core_one_txn_pend_n  ( cnt_is_one_next    ),
-     .core_trans_valid_i   ( trans_valid        ),
-     .core_trans_ready_o   ( trans_ready        ),
-     .core_trans_i         ( trans              ),
-     .core_resp_valid_o    ( resp_valid         ),
-     .core_resp_o          ( resp               ),
-
-     .bus_trans_valid_o    ( buffer_trans_valid ),
-     .bus_trans_ready_i    ( buffer_trans_ready ),
-     .bus_trans_o          ( buffer_trans       ),
-     .bus_resp_valid_i     ( bus_resp_valid     ),
-     .bus_resp_i           ( bus_resp           ));
+    .bus_trans_valid_o    ( buffer_trans_valid ),
+    .bus_trans_ready_i    ( buffer_trans_ready ),
+    .bus_trans_o          ( buffer_trans       ),
+    .bus_resp_valid_i     ( bus_resp_valid     ),
+    .bus_resp_i           ( bus_resp           )
+  );
 
   // Extract rdata and err from response struct
   assign resp_rdata = resp.bus_resp.rdata;
@@ -629,17 +631,18 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   cv32e40s_write_buffer
   write_buffer_i
-    (.clk          ( clk                ),
-     .rst_n        ( rst_n              ),
+  (
+    .clk                ( clk                ),
+    .rst_n              ( rst_n              ),
 
-     .valid_i      ( buffer_trans_valid ),
-     .ready_o      ( buffer_trans_ready ),
-     .trans_i      ( buffer_trans       ),
+    .valid_i            ( buffer_trans_valid ),
+    .ready_o            ( buffer_trans_ready ),
+    .trans_i            ( buffer_trans       ),
 
-     .valid_o      ( bus_trans_valid    ),
-     .ready_i      ( bus_trans_ready    ),
-     .trans_o      ( bus_trans          )
-     );
+    .valid_o            ( bus_trans_valid    ),
+    .ready_i            ( bus_trans_ready    ),
+    .trans_o            ( bus_trans          )
+  );
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI interface
@@ -648,17 +651,17 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   cv32e40s_data_obi_interface
   data_obi_i
   (
-    .clk                   ( clk               ),
-    .rst_n                 ( rst_n             ),
+    .clk                ( clk             ),
+    .rst_n              ( rst_n           ),
 
-    .trans_valid_i         ( bus_trans_valid   ),
-    .trans_ready_o         ( bus_trans_ready   ),
-    .trans_i               ( bus_trans         ),
+    .trans_valid_i      ( bus_trans_valid ),
+    .trans_ready_o      ( bus_trans_ready ),
+    .trans_i            ( bus_trans       ),
 
-    .resp_valid_o          ( bus_resp_valid    ),
-    .resp_o                ( bus_resp          ),
+    .resp_valid_o       ( bus_resp_valid  ),
+    .resp_o             ( bus_resp        ),
 
-    .m_c_obi_data_if       ( m_c_obi_data_if   )
+    .m_c_obi_data_if    ( m_c_obi_data_if )
   );
 
   // Drive eXtension interface outputs to 0 for now
