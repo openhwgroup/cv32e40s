@@ -26,7 +26,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_load_store_unit import cv32e40s_pkg::*;
-  #(parameter bit          A_EXTENSION = 0,
+  #(parameter bit          A_EXT           = 0,
     parameter int          PMP_GRANULARITY = 0,
     parameter int          PMP_NUM_REGIONS = 0,
     parameter int          PMA_NUM_REGIONS = 0,
@@ -588,7 +588,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   cv32e40s_mpu
   #(
     .IF_STAGE           ( 0                    ),
-    .A_EXTENSION        ( A_EXTENSION          ),
+    .A_EXT              ( A_EXT                ),
     .CORE_RESP_TYPE     ( data_resp_t          ),
     .BUS_RESP_TYPE      ( obi_data_resp_t      ),
     .CORE_REQ_TYPE      ( obi_data_req_t       ),

@@ -25,7 +25,7 @@
 
 module cv32e40s_pma import cv32e40s_pkg::*;
 #(  
-  parameter bit          A_EXTENSION = 0,
+  parameter bit          A_EXT = 0,
   parameter int          PMA_NUM_REGIONS = 0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
@@ -76,9 +76,9 @@ module cv32e40s_pma import cv32e40s_pkg::*;
 
   endgenerate
 
-  // Tie of atomic attribute if A_EXTENSION=0
+  // Tie of atomic attribute if A_EXT=0
   generate
-    if (A_EXTENSION) begin: pma_atomic
+    if (A_EXT) begin: pma_atomic
       assign pma_cfg_atomic = pma_cfg.atomic;
     end
     else begin: pma_no_atomic

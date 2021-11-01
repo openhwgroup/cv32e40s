@@ -25,7 +25,7 @@
 
 module cv32e40s_mpu import cv32e40s_pkg::*;
   #(  parameter bit          IF_STAGE                     = 1,
-      parameter bit          A_EXTENSION                  = 0,
+      parameter bit          A_EXT                        = 0,
       parameter type         CORE_REQ_TYPE                = obi_inst_req_t,
       parameter type         CORE_RESP_TYPE               = inst_resp_t,
       parameter type         BUS_RESP_TYPE                = obi_inst_resp_t,
@@ -178,7 +178,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
 
   // PMA - Physical Memory Attribution
   cv32e40s_pma
-    #(.A_EXTENSION              ( A_EXTENSION          ),
+    #(.A_EXT                    ( A_EXT                ),
       .PMA_NUM_REGIONS          ( PMA_NUM_REGIONS      ),
       .PMA_CFG                  ( PMA_CFG              )
   )

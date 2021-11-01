@@ -35,7 +35,7 @@
 
 module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
-  parameter A_EXTENSION      = 0,
+  parameter bit A_EXT            = 0,
   parameter int PMP_NUM_REGIONS  = 0,
   parameter int PMP_GRANULARITY  = 0,
   parameter NUM_MHPMCOUNTERS = 1

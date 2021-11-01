@@ -27,9 +27,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_if_stage import cv32e40s_pkg::*;
-  #(parameter bit          A_EXTENSION     = 0,
-    parameter int          PMP_GRANULARITY = 0,
+  #(parameter int          PMP_GRANULARITY = 0,
     parameter int          PMP_NUM_REGIONS = 0,
+    parameter bit          A_EXT           = 0,
     parameter bit          X_EXT           = 0,
     parameter int          PMA_NUM_REGIONS = 0,
     parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT})
@@ -209,7 +209,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   cv32e40s_mpu
   #(
     .IF_STAGE             ( 1                       ),
-    .A_EXTENSION          ( A_EXTENSION             ),
+    .A_EXT                ( A_EXT                   ),
     .CORE_REQ_TYPE        ( obi_inst_req_t          ),
     .CORE_RESP_TYPE       ( inst_resp_t             ),
     .BUS_RESP_TYPE        ( obi_inst_resp_t         ),
