@@ -335,7 +335,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_TSELECT,
         CSR_TDATA3,
         CSR_MCONTEXT,
-        CSR_SCONTEXT:
+        CSR_MSCONTEXT:
               csr_rdata_int = 'b0; // Always read 0
       CSR_TDATA1:
               csr_rdata_int = tmatch_control_q;
