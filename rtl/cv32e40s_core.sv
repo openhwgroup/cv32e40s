@@ -40,9 +40,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter bit     X_EXT                =  0,
   parameter int          PMA_NUM_REGIONS =  0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
-  parameter logic [31:0] LFSR0_COEFFS    = 32'h8000_0AC4, // TODO:OE these should be 0, and required to be set on integration level
-  parameter logic [31:0] LFSR1_COEFFS    = 32'h8000_0CEC,
-  parameter logic [31:0] LFSR2_COEFFS    = 32'h8000_0EA6
+  parameter logic [31:0] LFSR0_COEFFS    = 32'h0,
+  parameter logic [31:0] LFSR1_COEFFS    = 32'h0,
+  parameter logic [31:0] LFSR2_COEFFS    = 32'h0
 )
 (
   // Clock and Reset

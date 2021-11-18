@@ -35,13 +35,13 @@
 
 module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
-  parameter bit A_EXT            = 0,
-  parameter int PMP_NUM_REGIONS  = 0,
-  parameter int PMP_GRANULARITY  = 0,
-  parameter NUM_MHPMCOUNTERS = 1,
-  parameter logic [31:0] LFSR0_COEFFS    = 32'h0,
-  parameter logic [31:0] LFSR1_COEFFS    = 32'h0,
-  parameter logic [31:0] LFSR2_COEFFS    = 32'h0
+  parameter bit A_EXT                 = 0,
+  parameter int PMP_NUM_REGIONS       = 0,
+  parameter int PMP_GRANULARITY       = 0,
+  parameter NUM_MHPMCOUNTERS          = 1,
+  parameter logic [31:0] LFSR0_COEFFS = 32'h0,
+  parameter logic [31:0] LFSR1_COEFFS = 32'h0,
+  parameter logic [31:0] LFSR2_COEFFS = 32'h0
 )
 (
   // Clock and Reset
