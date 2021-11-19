@@ -40,9 +40,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter bit     X_EXT                =  0,
   parameter int          PMA_NUM_REGIONS =  0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
-  parameter lfsr_cfg_t   LFSR0_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR coefficients
-  parameter lfsr_cfg_t   LFSR1_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR coefficients
-  parameter lfsr_cfg_t   LFSR2_CFG = LFSR_CFG_DEFAULT  // Do not use default value for LFSR coefficients
+  parameter lfsr_cfg_t   LFSR0_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR1_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR2_CFG = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
 )
 (
   // Clock and Reset
