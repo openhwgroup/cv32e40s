@@ -40,9 +40,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter bit     X_EXT                =  0,
   parameter int          PMA_NUM_REGIONS =  0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
-  parameter logic [31:0] LFSR0_COEFFS    = 32'h0,
-  parameter logic [31:0] LFSR1_COEFFS    = 32'h0,
-  parameter logic [31:0] LFSR2_COEFFS    = 32'h0
+  parameter lfsr_cfg_t   LFSR0_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR coefficients
+  parameter lfsr_cfg_t   LFSR1_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR coefficients
+  parameter lfsr_cfg_t   LFSR2_CFG = LFSR_CFG_DEFAULT  // Do not use default value for LFSR coefficients
 )
 (
   // Clock and Reset
@@ -219,6 +219,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        csr_err;
   logic        itf_int_err;
 
+  // Minor Alert Triggers
+  logic        lfsr_lockup;
+
   // debug mode and dcsr configuration
   // From cs_registers
   dcsr_t       dcsr;
@@ -353,6 +356,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
        .pc_err_i            ( pc_err            ),
        .csr_err_i           ( csr_err           ),
        .itf_int_err_i       ( itf_int_err       ),
+       .lfsr_lockup_i       ( lfsr_lockup       ),
 
        // Trigger Outputs
        .alert_minor_o       ( alert_minor_o     ),
@@ -672,9 +676,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .PMP_NUM_REGIONS  ( PMP_NUM_REGIONS       ),
     .PMP_GRANULARITY  ( PMP_GRANULARITY       ),
     .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
-    .LFSR0_COEFFS     ( LFSR0_COEFFS          ),
-    .LFSR1_COEFFS     ( LFSR1_COEFFS          ),
-    .LFSR2_COEFFS     ( LFSR2_COEFFS          )
+    .LFSR0_CFG        ( LFSR0_CFG             ),
+    .LFSR1_CFG        ( LFSR1_CFG             ),
+    .LFSR2_CFG        ( LFSR2_CFG             )
   )
   cs_registers_i
   (
@@ -723,6 +727,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR Parity Error
     .csr_err_o                  ( csr_err                ),
+
+    // LFSR lockup
+    .lfsr_lockup_o              ( lfsr_lockup            ),
 
     // Xsecure control
     .xsecure_ctrl_o             ( xsecure_ctrl           ),

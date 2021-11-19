@@ -30,8 +30,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_lfsr import cv32e40s_pkg::*;
-  #(parameter logic [31:0] COEFFS     = 32'h0,
-    parameter logic [31:0] RESETVALUE = {32{1'b1}}
+  #(parameter lfsr_cfg_t LFSR_CFG    = LFSR_CFG_DEFAULT
     )
   (input logic         clk,
    input logic         rst_n,
@@ -40,18 +39,19 @@ module cv32e40s_lfsr import cv32e40s_pkg::*;
    input logic [31:0]  seed_i,
    input logic         seed_we_i,
 
-   output logic [31:0] data_o
+   output logic [31:0] data_o,
+   output logic        lockup_o
    );
 
   logic [31:0]         lfsr_q, lfsr_n;
   logic                lockup;
 
   assign lfsr_n[31:1] = lfsr_q[30:0];
-  assign lfsr_n[0]    = ^(lfsr_q & COEFFS);
+  assign lfsr_n[0]    = ^(lfsr_q & LFSR_CFG.coeffs);
   
   always_ff @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
-      lfsr_q <= RESETVALUE;
+      lfsr_q <= LFSR_CFG.default_seed;
     end
     else begin
       if (enable_i) begin
@@ -59,9 +59,9 @@ module cv32e40s_lfsr import cv32e40s_pkg::*;
           // Write seed
           lfsr_q <= seed_i;
         end
-        else if (lockup) begin
+        else if (lockup_o) begin
           // Lockup detected, seed with reset value
-          lfsr_q <= RESETVALUE;
+          lfsr_q <= LFSR_CFG.default_seed;
         end
         else begin
           // Shift LFSR
@@ -72,7 +72,7 @@ module cv32e40s_lfsr import cv32e40s_pkg::*;
   end
 
   // Detect lockup (all 0's with XOR based feedback)
-  assign lockup = !(|lfsr_q);
+  assign lockup_o = !(|lfsr_q) && enable_i;
   
   assign data_o = lfsr_q;
  

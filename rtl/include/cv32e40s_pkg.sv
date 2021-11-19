@@ -1271,4 +1271,14 @@ typedef struct packed {
   // Enum used for configuration of B extension
   typedef enum logic [1:0] {NONE, ZBA_ZBB_ZBS, ZBA_ZBB_ZBC_ZBS} b_ext_e;
 
+  // LFSR configuration
+  typedef struct packed {
+    logic [31:0] coeffs;
+    logic [31:0] default_seed;
+  } lfsr_cfg_t;
+
+  // Defaults for LFSR configuration. Note that default setting should not be used.
+  parameter lfsr_cfg_t LFSR_CFG_DEFAULT = '{coeffs       : 32'h0,
+                                            default_seed : 32'h0};
+
 endpackage

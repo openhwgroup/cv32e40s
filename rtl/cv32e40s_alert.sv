@@ -42,6 +42,7 @@ module cv32e40s_alert
    input logic      pc_err_i,
    input logic      csr_err_i,
    input logic      itf_int_err_i,
+   input logic      lfsr_lockup_i,
 
    // Alert outputs
    output logic     alert_minor_o,
@@ -56,8 +57,8 @@ module cv32e40s_alert
     end else begin
 
       // Minor Alert
-      alert_minor_o <=  ctrl_fsm_i.exception_alert; // Trigger condtion constructed in controller FSM
-
+      alert_minor_o <=  ctrl_fsm_i.exception_alert || // Trigger condtion constructed in controller FSM
+                        lfsr_lockup_i;                // LFSR lockup
       // Major Alert
       alert_major_o <= rf_ecc_err_i || // Register File ECC Error
                        pc_err_i     || // Program Counter Error

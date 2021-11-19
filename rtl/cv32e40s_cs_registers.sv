@@ -39,9 +39,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter int PMP_NUM_REGIONS       = 0,
   parameter int PMP_GRANULARITY       = 0,
   parameter NUM_MHPMCOUNTERS          = 1,
-  parameter logic [31:0] LFSR0_COEFFS = 32'h0,
-  parameter logic [31:0] LFSR1_COEFFS = 32'h0,
-  parameter logic [31:0] LFSR2_COEFFS = 32'h0
+  parameter lfsr_cfg_t LFSR0_CFG      = LFSR_CFG_DEFAULT,
+  parameter lfsr_cfg_t LFSR1_CFG      = LFSR_CFG_DEFAULT,
+  parameter lfsr_cfg_t LFSR2_CFG      = LFSR_CFG_DEFAULT
 )
 (
   // Clock and Reset
@@ -91,6 +91,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // Read Error
   output logic            csr_err_o,
+
+  // LFSR lockup
+  output logic            lfsr_lockup_o,
 
   // Xsecure control
   output xsecure_ctrl_t   xsecure_ctrl_o,
@@ -460,8 +463,16 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MENVCFGH:
         csr_rdata_int = '0;
 
-      CSR_CPUCTRL, CSR_SECURESEED0, CSR_SECURESEED1, CSR_SECURESEED2:
-        csr_rdata_int = '0; // Read as 0
+      CSR_CPUCTRL, CSR_SECURESEED0, CSR_SECURESEED1, CSR_SECURESEED2: begin
+        if (SECURE) begin
+          csr_rdata_int = '0; // Read as 0
+        end
+        else begin
+          // Cause illegal CSR access
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
 
       default: begin
         csr_rdata_int = '0;
@@ -865,6 +876,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   generate
     if (SECURE) begin : xsecure
 
+      logic [2:0] lfsr_lockup;
+
       cv32e40s_csr #(
         .WIDTH      (32),
         .SHADOWCOPY (SECURE),
@@ -879,43 +892,46 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         );
 
       cv32e40s_lfsr #(
-        .COEFFS     (LFSR0_COEFFS),
-        .RESETVALUE (32'hDB1F_9A9E) // Random 32 bit value
+        .LFSR_CFG     (LFSR0_CFG)
         ) lfsr0_i (
           .clk        (clk),
           .rst_n      (rst_n),
           .seed_i     (secureseed0_n),
           .seed_we_i  (secureseed0_we),
           .enable_i   (cpuctrl_q.dummyen),
-          .data_o     (xsecure_ctrl_o.lfsr0)
+          .data_o     (xsecure_ctrl_o.lfsr0),
+          .lockup_o   (lfsr_lockup[0])
         );
 
       cv32e40s_lfsr #(
-        .COEFFS     (LFSR1_COEFFS),
-        .RESETVALUE (32'h276A_AEB8) // Random 32 bit value
+        .LFSR_CFG     (LFSR1_CFG)
         ) lfsr1_i (
           .clk        (clk),
           .rst_n      (rst_n),
           .seed_i     (secureseed1_n),
           .seed_we_i  (secureseed1_we),
           .enable_i   (cpuctrl_q.dummyen),
-          .data_o     (xsecure_ctrl_o.lfsr1)
+          .data_o     (xsecure_ctrl_o.lfsr1),
+          .lockup_o   (lfsr_lockup[1])
         );
 
       cv32e40s_lfsr #(
-        .COEFFS     (LFSR2_COEFFS),
-        .RESETVALUE (32'hD9A4_7394) // Random 32 bit value
+        .LFSR_CFG     (LFSR2_CFG)
         ) lfsr2_i (
           .clk        (clk),
           .rst_n      (rst_n),
           .seed_i     (secureseed2_n),
           .seed_we_i  (secureseed2_we),
           .enable_i   (cpuctrl_q.dummyen),
-          .data_o     (xsecure_ctrl_o.lfsr2)
+          .data_o     (xsecure_ctrl_o.lfsr2),
+          .lockup_o   (lfsr_lockup[2])
         );
 
       // Populate xsecure_ctrl
       assign xsecure_ctrl_o.cpuctrl = cpuctrl_t'(cpuctrl_q);
+
+      // Combine lockup singals for alert
+      assign lfsr_lockup_o = |lfsr_lockup;
 
     end // block: xsecure
     else begin : no_xsecure
@@ -926,6 +942,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign xsecure_ctrl_o.lfsr1   = '0;
       assign xsecure_ctrl_o.lfsr2   = '0;
       assign cpuctrl_rd_error       = 1'b0;
+      assign lfsr_lockup_o          = 1'b0;
 
     end
   endgenerate
