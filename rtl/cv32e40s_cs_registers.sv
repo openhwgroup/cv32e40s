@@ -35,10 +35,13 @@
 
 module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
-  parameter bit A_EXT            = 0,
-  parameter int PMP_NUM_REGIONS  = 0,
-  parameter int PMP_GRANULARITY  = 0,
-  parameter NUM_MHPMCOUNTERS = 1
+  parameter bit A_EXT                 = 0,
+  parameter int PMP_NUM_REGIONS       = 0,
+  parameter int PMP_GRANULARITY       = 0,
+  parameter NUM_MHPMCOUNTERS          = 1,
+  parameter lfsr_cfg_t LFSR0_CFG      = LFSR_CFG_DEFAULT,
+  parameter lfsr_cfg_t LFSR1_CFG      = LFSR_CFG_DEFAULT,
+  parameter lfsr_cfg_t LFSR2_CFG      = LFSR_CFG_DEFAULT
 )
 (
   // Clock and Reset
@@ -88,6 +91,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // Read Error
   output logic            csr_err_o,
+
+  // LFSR lockup
+  output logic            lfsr_lockup_o,
+
+  // Xsecure control
+  output xsecure_ctrl_t   xsecure_ctrl_o,
 
   // debug
   output logic [31:0]     dpc_o,
@@ -201,7 +210,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                       umode_mcounteren_illegal_read;  
   logic                       illegal_csr_write_priv, illegal_csr_read_priv;
 
+  cpuctrl_t                   cpuctrl_n, cpuctrl_q;
+  logic                       cpuctrl_we;
   logic                       cpuctrl_rd_error;
+
+  logic [31:0]                secureseed0_n, secureseed1_n, secureseed2_n;
+  logic                       secureseed0_we, secureseed1_we, secureseed2_we;
 
   // Performance Counter Signals
   logic [31:0] [MHPMCOUNTER_WIDTH-1:0] mhpmcounter_q;                    // performance counters
@@ -254,8 +268,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                      dcsr_rd_error    ||
                      mie_rd_error     ||
                      mepc_rd_error;
-
-  assign cpuctrl_rd_error = 1'b0; // todo: Connect to cpuctrl CSR (w/ SHADOWCOPY==SECURE) when implemented
 
   ////////////////////////////////////////
   // Determine if CSR access is illegal //
@@ -451,6 +463,17 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MENVCFGH:
         csr_rdata_int = '0;
 
+      CSR_CPUCTRL, CSR_SECURESEED0, CSR_SECURESEED1, CSR_SECURESEED2: begin
+        if (SECURE) begin
+          csr_rdata_int = '0; // Read as 0
+        end
+        else begin
+          // Cause illegal CSR access
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
+
       default: begin
         csr_rdata_int = '0;
         illegal_csr_read = 1'b1;
@@ -526,6 +549,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     pmp_addr_we_int = {PMP_MAX_REGIONS{1'b0}};
     pmp_mseccfg_we  = 1'b0;
 
+    cpuctrl_n       = csr_wdata_int;
+    cpuctrl_we      = 1'b0;
+    secureseed0_n   = csr_wdata_int;
+    secureseed0_we  = 1'b0;
+    secureseed1_n   = csr_wdata_int;
+    secureseed1_we  = 1'b0;
+    secureseed2_n   = csr_wdata_int;
+    secureseed2_we  = 1'b0;
+
     if (csr_we_int) begin
       case (csr_waddr)
         // mstatus: IE bit
@@ -600,6 +632,18 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
         CSR_MENVCFGH: begin
           // No bits implemented in MENVCFGH, do nothing
+        end
+        CSR_CPUCTRL: begin
+          cpuctrl_we = 1'b1;
+        end
+        CSR_SECURESEED0: begin
+          secureseed0_we = 1'b1;
+        end
+        CSR_SECURESEED1: begin
+          secureseed1_we = 1'b1;
+        end
+        CSR_SECURESEED2: begin
+          secureseed2_we = 1'b1;
         end
       endcase
     end
@@ -828,6 +872,81 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     .rd_data_o  (mtvec_q),
     .rd_error_o (mtvec_rd_error)
   );
+
+  generate
+    if (SECURE) begin : xsecure
+
+      logic [2:0] lfsr_lockup;
+
+      cv32e40s_csr #(
+        .WIDTH      (32),
+        .SHADOWCOPY (SECURE),
+        .RESETVALUE (32'd0)
+        ) cpuctrl_csr_i (
+          .clk        (clk),
+          .rst_n      (rst_n),
+          .wr_data_i  (cpuctrl_n),
+          .wr_en_i    (cpuctrl_we),
+          .rd_data_o  (cpuctrl_q),
+          .rd_error_o (cpuctrl_rd_error)
+        );
+
+      cv32e40s_lfsr #(
+        .LFSR_CFG     (LFSR0_CFG)
+        ) lfsr0_i (
+          .clk        (clk),
+          .rst_n      (rst_n),
+          .seed_i     (secureseed0_n),
+          .seed_we_i  (secureseed0_we),
+          .enable_i   (cpuctrl_q.dummyen),
+          .data_o     (xsecure_ctrl_o.lfsr0),
+          .lockup_o   (lfsr_lockup[0])
+        );
+
+      cv32e40s_lfsr #(
+        .LFSR_CFG     (LFSR1_CFG)
+        ) lfsr1_i (
+          .clk        (clk),
+          .rst_n      (rst_n),
+          .seed_i     (secureseed1_n),
+          .seed_we_i  (secureseed1_we),
+          .enable_i   (cpuctrl_q.dummyen),
+          .data_o     (xsecure_ctrl_o.lfsr1),
+          .lockup_o   (lfsr_lockup[1])
+        );
+
+      cv32e40s_lfsr #(
+        .LFSR_CFG     (LFSR2_CFG)
+        ) lfsr2_i (
+          .clk        (clk),
+          .rst_n      (rst_n),
+          .seed_i     (secureseed2_n),
+          .seed_we_i  (secureseed2_we),
+          .enable_i   (cpuctrl_q.dummyen),
+          .data_o     (xsecure_ctrl_o.lfsr2),
+          .lockup_o   (lfsr_lockup[2])
+        );
+
+      // Populate xsecure_ctrl
+      assign xsecure_ctrl_o.cpuctrl = cpuctrl_t'(cpuctrl_q);
+
+      // Combine lockup singals for alert
+      assign lfsr_lockup_o = |lfsr_lockup;
+
+    end // block: xsecure
+    else begin : no_xsecure
+
+      // Tie off
+      assign xsecure_ctrl_o.cpuctrl = cpuctrl_t'('0);
+      assign xsecure_ctrl_o.lfsr0   = '0;
+      assign xsecure_ctrl_o.lfsr1   = '0;
+      assign xsecure_ctrl_o.lfsr2   = '0;
+      assign cpuctrl_rd_error       = 1'b0;
+      assign lfsr_lockup_o          = 1'b0;
+
+    end
+  endgenerate
+
 
   assign csr_rdata_o = csr_rdata_int;
 

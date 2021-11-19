@@ -39,7 +39,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter b_ext_e B_EXT                =  NONE,
   parameter bit     X_EXT                =  0,
   parameter int          PMA_NUM_REGIONS =  0,
-  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
+  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
+  parameter lfsr_cfg_t   LFSR0_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR1_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR2_CFG = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
 )
 (
   // Clock and Reset
@@ -216,6 +219,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        csr_err;
   logic        itf_int_err;
 
+  // Minor Alert Triggers
+  logic        lfsr_lockup;
+
   // debug mode and dcsr configuration
   // From cs_registers
   dcsr_t       dcsr;
@@ -247,6 +253,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        irq_ack;
   logic [4:0]  irq_id;
   logic        dbg_ack;
+
+  // Xsecure control
+  xsecure_ctrl_t xsecure_ctrl;
   
   // Internal OBI interfaces
   if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
@@ -347,6 +356,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
        .pc_err_i            ( pc_err            ),
        .csr_err_i           ( csr_err           ),
        .itf_int_err_i       ( itf_int_err       ),
+       .lfsr_lockup_i       ( lfsr_lockup       ),
 
        // Trigger Outputs
        .alert_minor_o       ( alert_minor_o     ),
@@ -665,7 +675,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .A_EXT            ( A_EXT                 ),
     .PMP_NUM_REGIONS  ( PMP_NUM_REGIONS       ),
     .PMP_GRANULARITY  ( PMP_GRANULARITY       ),
-    .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      )
+    .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
+    .LFSR0_CFG        ( LFSR0_CFG             ),
+    .LFSR1_CFG        ( LFSR1_CFG             ),
+    .LFSR2_CFG        ( LFSR2_CFG             )
   )
   cs_registers_i
   (
@@ -714,6 +727,12 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR Parity Error
     .csr_err_o                  ( csr_err                ),
+
+    // LFSR lockup
+    .lfsr_lockup_o              ( lfsr_lockup            ),
+
+    // Xsecure control
+    .xsecure_ctrl_o             ( xsecure_ctrl           ),
 
     // debug
     .dpc_o                      ( dpc                    ),

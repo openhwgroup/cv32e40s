@@ -19,53 +19,62 @@
 // limitations under the License.
 
 ////////////////////////////////////////////////////////////////////////////////
-// Engineer:       Halfdan Bechmann  -  halfdan.bechmann@silabs.com           //
+// Engineer:       Oivind Ekelund  -  oivind.ekelund@silabs.com               //
 //                                                                            //
-// Design Name:    Alert                                                      //
+// Design Name:    cv32e40s_lfsr                                              //
 // Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
-// Description:    This module combines and flops the core alert outputs.     //
+// Description:    32 bit Fibonacci Linear Feedback Shift Register            //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+module cv32e40s_lfsr import cv32e40s_pkg::*;
+  #(parameter lfsr_cfg_t LFSR_CFG    = LFSR_CFG_DEFAULT
+    )
+  (input logic         clk,
+   input logic         rst_n,
 
-module cv32e40s_alert
-  import cv32e40s_pkg::*;
-  (input logic      clk,
-   input logic      rst_n,
+   input logic         enable_i,
+   input logic [31:0]  seed_i,
+   input logic         seed_we_i,
 
-   // Alert Trigger input Signals
-   input ctrl_fsm_t ctrl_fsm_i,
-
-   input logic      rf_ecc_err_i,
-   input logic      pc_err_i,
-   input logic      csr_err_i,
-   input logic      itf_int_err_i,
-   input logic      lfsr_lockup_i,
-
-   // Alert outputs
-   output logic     alert_minor_o,
-   output logic     alert_major_o
+   output logic [31:0] data_o,
+   output logic        lockup_o
    );
 
-  // Alert Outputs
+  logic [31:0]         lfsr_q, lfsr_n;
+  logic                lockup;
+
+  assign lfsr_n[31:1] = lfsr_q[30:0];
+  assign lfsr_n[0]    = ^(lfsr_q & LFSR_CFG.coeffs);
+  
   always_ff @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
-      alert_minor_o <= 1'b0;
-      alert_major_o <= 1'b0;
-    end else begin
-
-      // Minor Alert
-      alert_minor_o <=  ctrl_fsm_i.exception_alert || // Trigger condtion constructed in controller FSM
-                        lfsr_lockup_i;                // LFSR lockup
-      // Major Alert
-      alert_major_o <= rf_ecc_err_i || // Register File ECC Error
-                       pc_err_i     || // Program Counter Error
-                       csr_err_i    || // Control ans Status Register Parity Error
-                       itf_int_err_i;  // Interface Integrity Error
-
+      lfsr_q <= LFSR_CFG.default_seed;
+    end
+    else begin
+      if (enable_i) begin
+        if (seed_we_i) begin
+          // Write seed
+          lfsr_q <= seed_i;
+        end
+        else if (lockup_o) begin
+          // Lockup detected, seed with reset value
+          lfsr_q <= LFSR_CFG.default_seed;
+        end
+        else begin
+          // Shift LFSR
+          lfsr_q <= lfsr_n;
+        end
+      end
     end
   end
 
-endmodule // cv32e40s_alert
+  // Detect lockup (all 0's with XOR based feedback)
+  assign lockup_o = !(|lfsr_q) && enable_i;
+  
+  assign data_o = lfsr_q;
+ 
+endmodule // cv32e40s_lfsr
+
