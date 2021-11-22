@@ -550,7 +550,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // From controller FSM
     .ctrl_fsm_i                 ( ctrl_fsm                     ),
 
-    // CSR interface
+    // Xsecure control
+    .xsecure_ctrl_i             ( xsecure_ctrl                 ),
+
+   // CSR interface
     .csr_rdata_i                ( csr_rdata                    ),
     .csr_illegal_i              ( csr_illegal                  ),
 

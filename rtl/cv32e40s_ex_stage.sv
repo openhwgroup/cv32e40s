@@ -48,6 +48,9 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   // From controller FSM
   input  ctrl_fsm_t   ctrl_fsm_i,
 
+  // Xsecure control
+  input xsecure_ctrl_t xsecure_ctrl_i,
+
   // Register file forwarding signals (to ID)
   output logic [31:0] rf_wdata_o,
 
@@ -155,8 +158,35 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   end
 
   // Branch handling
-  assign branch_decision_o = alu_cmp_result;
-  assign branch_target_o   = id_ex_pipe_i.operand_c;
+  always_comb begin
+    if (xsecure_ctrl_i.cpuctrl.dataindtiming) begin
+      // Always "take" branch. 
+      branch_decision_o = 1'b1;
+
+      if (alu_cmp_result) begin
+        // Branch was taken
+        branch_target_o = id_ex_pipe_i.operand_c;
+      end
+      else begin
+        // Branch not taken, increment PC and jump
+        if (id_ex_pipe_i.instr_meta.compressed) begin
+          // Branch instruction was compressed, increment by 2
+          branch_target_o = id_ex_pipe_i.pc + 32'h2;
+        end
+        else begin
+          // Branch instruction was not compressed, increment by 4
+          branch_target_o = id_ex_pipe_i.pc + 32'h4;
+        end
+      end
+    end
+    else begin
+      // Data independent timing not enabled
+      branch_decision_o = alu_cmp_result;
+      branch_target_o   = id_ex_pipe_i.operand_c;
+    end
+  end
+  
+  // TODO:OE assert always 2 bubbles after branch, or always pc set when branch insn.
 
   ////////////////////////////
   //     _    _    _   _    //
@@ -206,10 +236,10 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
     .rst_n              ( rst_n                      ),
 
     // Input IF
-    .data_ind_timing_i  ( 1'b0                       ), // TODO:OE:low connect to CSR
-    .operator_i         ( id_ex_pipe_i.div_operator  ),
-    .op_a_i             ( id_ex_pipe_i.alu_operand_a ),
-    .op_b_i             ( id_ex_pipe_i.alu_operand_b ),
+    .data_ind_timing_i  ( xsecure_ctrl_i.cpuctrl.dataindtiming ),
+    .operator_i         ( id_ex_pipe_i.div_operator            ),
+    .op_a_i             ( id_ex_pipe_i.alu_operand_a           ),
+    .op_b_i             ( id_ex_pipe_i.alu_operand_b           ),
 
     // ALU CLZ interface
     .alu_clz_result_i   ( div_clz_result             ),
