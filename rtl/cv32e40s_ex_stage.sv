@@ -35,6 +35,11 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   input  logic        clk,
   input  logic        rst_n,
 
+  input  logic [31:0] pc_if_i,
+
+  // IF/ID pipeline
+  input if_id_pipe_t  if_id_pipe_i,
+
   // ID/EX pipeline
   input id_ex_pipe_t  id_ex_pipe_i,
 
@@ -160,7 +165,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   // Branch handling
   always_comb begin
     if (xsecure_ctrl_i.cpuctrl.dataindtiming) begin
-      // Always "take" branch. 
+      // Data independent timing enabled, always "take" branch. 
       branch_decision_o = 1'b1;
 
       if (alu_cmp_result) begin
@@ -168,14 +173,14 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
         branch_target_o = id_ex_pipe_i.operand_c;
       end
       else begin
-        // Branch not taken, increment PC and jump
-        if (id_ex_pipe_i.instr_meta.compressed) begin
-          // Branch instruction was compressed, increment by 2
-          branch_target_o = id_ex_pipe_i.pc + 32'h2;
+        // Branch not taken
+        if (if_id_pipe_i.instr_valid) begin
+          // Jump to PC from ID stage if valid
+          branch_target_o = if_id_pipe_i.pc;
         end
         else begin
-          // Branch instruction was not compressed, increment by 4
-          branch_target_o = id_ex_pipe_i.pc + 32'h4;
+          // PC in ID not valid, jump to PC from IF stage
+          branch_target_o = pc_if_i;
         end
       end
     end
@@ -185,8 +190,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
       branch_target_o   = id_ex_pipe_i.operand_c;
     end
   end
-  
-  // TODO:OE assert always 2 bubbles after branch, or always pc set when branch insn.
 
   ////////////////////////////
   //     _    _    _   _    //
