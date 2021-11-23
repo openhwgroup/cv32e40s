@@ -679,7 +679,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   // Response Filter
   //////////////////////////////////////////////////////////////////////////////
 
-  cv32e40x_lsu_response_filter
+  cv32e40s_lsu_response_filter
     response_filter_i
       (.clk          ( clk                ),
        .rst_n        ( rst_n              ),

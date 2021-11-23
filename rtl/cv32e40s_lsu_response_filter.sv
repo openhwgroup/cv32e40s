@@ -22,7 +22,7 @@
 // Engineer:       Halfdan Bechmann  -  halfdan.bechmann@silabs.com           //
 //                                                                            //
 // Design Name:    Response Filter                                            //
-// Project Name:   CV32E40X                                                   //
+// Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Response filter for the LSU. Used to return rvalid early   //
@@ -30,8 +30,8 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_lsu_response_filter
-  import cv32e40x_pkg::*;
+module cv32e40s_lsu_response_filter
+  import cv32e40s_pkg::*;
   #(parameter DEPTH = 2)
   (
    // clock and reset
@@ -161,4 +161,4 @@ module cv32e40x_lsu_response_filter
 
   assign trans_o      = trans_i;
 
-endmodule : cv32e40x_lsu_response_filter
+endmodule : cv32e40s_lsu_response_filter

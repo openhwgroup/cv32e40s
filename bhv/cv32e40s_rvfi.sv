@@ -464,7 +464,7 @@ module cv32e40s_rvfi
   assign is_dret_wb        = (ctrl_fsm_i.pc_mux == PC_DRET);
 
   // Assign rvfi channels
-  assign rvfi_halt              = 1'b0; // No intruction causing halt in cv32e40x
+  assign rvfi_halt              = 1'b0; // No intruction causing halt in cv32e40s
   assign rvfi_ixl               = 2'b01; // XLEN for current privilege level, must be 1(32) for RV32 systems
 
   logic         in_trap_clr;

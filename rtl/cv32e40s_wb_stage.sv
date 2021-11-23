@@ -164,7 +164,7 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   // TODO: Maybe do something when an exception occurs (other than just inhibiting writeback)
   assign xif_exception = ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.xif_en && xif_result_if.result_valid && xif_result_if.result.exc;
 
-  // CV32E40X is ready to receive the result as soon as an offloaded instruction has reached WB
+  // CV32E40S is ready to receive the result as soon as an offloaded instruction has reached WB
   assign xif_result_if.result_ready = ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.xif_en;
 
 endmodule // cv32e40s_wb_stage

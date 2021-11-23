@@ -71,8 +71,6 @@ module cv32e40s_controller_fsm_sva
   input mstatus_t       mstatus_i,
   input logic           wfi_insn_id_i,
   input logic           mret_insn_id_i,
-  input logic [7:0]     exception_cause_wb,
-  input logic           exception_in_wb,
   input logic           xif_commit_kill
 );
 

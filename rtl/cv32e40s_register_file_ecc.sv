@@ -77,6 +77,9 @@
  */
 
 module cv32e40s_register_file_ecc import cv32e40s_pkg::*;
+  #(
+    parameter int unsigned REGFILE_NUM_READ_PORTS = 2
+  )
   (// Clock and Reset
    input logic                           clk,
    input logic                           rst_n,

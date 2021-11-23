@@ -274,7 +274,7 @@ bind cv32e40s_sleep_unit:
              .obi_addr   (core_i.instr_addr_o),
              .obi_req    (core_i.instr_req_o),
              .obi_gnt    (core_i.instr_gnt_i),
-             .write_buffer_state(cv32e40x_pkg::WBUF_EMPTY),
+             .write_buffer_state(cv32e40s_pkg::WBUF_EMPTY),
              .write_buffer_valid_o('0),
              .write_buffer_txn_bufferable('0),
              .write_buffer_txn_cacheable('0),
@@ -496,7 +496,6 @@ bind cv32e40s_sleep_unit:
           .X_RFW_WIDTH           ( X_RFW_WIDTH           ),
           .X_MISA                ( X_MISA                ),
           .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),
-          .X_EXT                 ( X_EXT                 ),
           .PMA_CFG               ( PMA_CFG               ))
     core_i (.xif_compressed_if(xif.cpu_compressed),
             .xif_issue_if(xif.cpu_issue),

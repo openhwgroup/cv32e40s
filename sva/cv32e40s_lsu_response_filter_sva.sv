@@ -23,8 +23,8 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_lsu_response_filter_sva
-  import cv32e40x_pkg::*;
+module cv32e40s_lsu_response_filter_sva
+  import cv32e40s_pkg::*;
   import uvm_pkg::*;
   #(parameter DEPTH = 2)
   (input logic                       clk,
@@ -74,5 +74,5 @@ module cv32e40x_lsu_response_filter_sva
                      (1'b1) |-> (core_trans_accepted == bus_trans_accepted))
       else `uvm_error("Response Filter", "Mismatch between accepted transfers on core side and bus side");
 
-endmodule : cv32e40x_lsu_response_filter_sva
+endmodule : cv32e40s_lsu_response_filter_sva
 
