@@ -35,6 +35,7 @@ package cv32e40s_rvfi_pkg;
     logic [31:0] cycle;
     logic [31:0] cycleh;
     logic [31:0] mip;
+    logic        nmip;
   } rvfi_auto_csr_map_t;
 
   typedef struct packed {
@@ -82,7 +83,7 @@ package cv32e40s_rvfi_pkg;
   } rvfi_csr_map_t;
 
   typedef struct packed {
-    logic        rvfi_trap;
+    logic [11:0] rvfi_trap;
     logic        rvfi_halt;
     logic        rvfi_intr;
     logic        rvfi_dbg;

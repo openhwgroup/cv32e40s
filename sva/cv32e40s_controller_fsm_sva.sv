@@ -45,8 +45,13 @@ module cv32e40s_controller_fsm_sva
   input if_id_pipe_t    if_id_pipe_i,
   input id_ex_pipe_t    id_ex_pipe_i,
   input ex_wb_pipe_t    ex_wb_pipe_i,
+  input logic           ex_valid_i,
+  input logic           wb_ready_i,
+  input logic           exception_in_wb,
+  input logic [7:0]     exception_cause_wb,
   input logic           rf_we_wb_i,
   input logic           csr_we_i,
+  input logic           csr_illegal_i,
   input logic           pending_single_step,
   input logic           trigger_match_in_wb,
   input logic           lsu_err_wb_i,
@@ -66,8 +71,7 @@ module cv32e40s_controller_fsm_sva
   input mstatus_t       mstatus_i,
   input logic           wfi_insn_id_i,
   input logic           mret_insn_id_i,
-  input logic [7:0]     exception_cause_wb,
-  input logic           exception_in_wb
+  input logic           xif_commit_kill
 );
 
 
@@ -176,6 +180,7 @@ module cv32e40s_controller_fsm_sva
     else `uvm_error("controller", "LSU instruction follows WFI")
 
   // Check that no instructions are valid in ID or EX when a single step is taken
+  // In case of interrupt during step, the instruction being stepped could be in any stage, and will get killed.
   // Exception if first phase of a misaligned LSU gets an MPU error, then 
   // the controller will kill the pipeline and jump to debug with dpc set to exception handler,
   // while id_ex_pipe may still contain the valid last phase of the misaligned LSU
@@ -184,7 +189,8 @@ module cv32e40s_controller_fsm_sva
     assert property (@(posedge clk) disable iff (!rst_n)
             (pending_single_step && (ctrl_fsm_ns == DEBUG_TAKEN) &&
             (lsu_mpu_status_wb_i == MPU_OK))
-            |-> (!id_ex_pipe_i.instr_valid && !if_id_pipe_i.instr_valid))
+            |-> ((!id_ex_pipe_i.instr_valid && !if_id_pipe_i.instr_valid) ||
+                (ctrl_fsm_o.irq_ack && ctrl_fsm_o.kill_if && ctrl_fsm_o.kill_id && ctrl_fsm_o.kill_ex && ctrl_fsm_o.kill_wb)))
       else `uvm_error("controller", "ID and EX not empty when when single step is taken")
 
   // Check trigger match never happens during debug_mode
@@ -196,10 +202,11 @@ module cv32e40s_controller_fsm_sva
   // Check that lsu_err_wb_i can only be active when an LSU instruction is valid in WB
   // Not using wb_valid, as that is only active for the second half of misaligned.
   // bus error may also be active on the first half, thus checking only for active LSU in WB.
-  a_lsu_err_wb :
-    assert property (@(posedge clk) disable iff (!rst_n)
-            lsu_err_wb_i |-> ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en)
-      else `uvm_error("controller", "lsu_error in WB with no valid LSU instruction")
+  // Todo: Modify to account for response filter (bufferable writes)
+  //a_lsu_err_wb :
+  //  assert property (@(posedge clk) disable iff (!rst_n)
+  //          lsu_err_wb_i |-> ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en)
+  //    else `uvm_error("controller", "lsu_error in WB with no valid LSU instruction")
 
   // Check that fencei handshake is only exersiced when there's a fencei in the writeback stage
   a_fencei_hndshk_fencei_wb :
@@ -353,6 +360,40 @@ module cv32e40s_controller_fsm_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      ctrl_fsm_o.mhpmevent.wb_data_stall |-> ctrl_fsm_o.mhpmevent.wb_invalid)
       else `uvm_error("controller", "mhpmevent.wb_data_stall not a subset of mhpmevent.wb_invalid")
+
+  // Assert that interrupts are not allowed when WB stage has an LSU
+  // instruction (cnt_q != 0)
+  a_block_interrupts:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en) |-> !interrupt_allowed)
+      else `uvm_error("controller", "interrupt_allowed high while LSU is in WB")
     
+  // Assert that a CSR instruction that is accepted by both eXtension interface and pipeline is
+  // flagged as killed on the eXtension interface
+  a_duplicate_csr_kill:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  id_ex_pipe_i.xif_en && id_ex_pipe_i.csr_en && !csr_illegal_i &&
+                  (id_ex_pipe_i.instr_valid && !ctrl_fsm_o.halt_ex && !ctrl_fsm_o.kill_ex)
+                  |-> xif_commit_kill)
+    else `uvm_error("controller", "Duplicate CSR instruction not killed")
+
+  // Assert that a CSR instruction that is accepted by both eXtension interface and pipeline
+  // causes an illegal instruction
+  // TODO: The checks for mpu_status and bus_resp.err below can be removed once the
+  //       xif offload is fully implemented (no offload if mpu or bus error occured in IF)
+  a_duplicate_csr_illegal:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                    ex_valid_i && wb_ready_i && id_ex_pipe_i.xif_en && id_ex_pipe_i.csr_en && !csr_illegal_i &&
+                    !((id_ex_pipe_i.instr.mpu_status != MPU_OK) || (id_ex_pipe_i.instr.bus_resp.err))
+                    |=> exception_in_wb && (exception_cause_wb == EXC_CAUSE_ILLEGAL_INSN))
+      else `uvm_error("controller", "Duplicate CSR instruction not mardked as illegal")
+
+
+  // Assert that debug is not allowed when WB stage has an LSU
+  // instruction (cnt_q != 0)
+  a_block_debug:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en) |-> !debug_allowed)
+      else `uvm_error("controller", "debug_allowed high while LSU is in WB")
 endmodule // cv32e40s_controller_fsm_sva
 

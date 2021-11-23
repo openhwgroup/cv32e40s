@@ -66,30 +66,35 @@ The trap signal indicates that a synchronous trap has ocurred and side-effects c
 
 .. code-block:: verilog
 
-   output [NRET - 1 : 0] rvfi_trap
+   output [NRET * 12 - 1 : 0] rvfi_trap
 
-
-The ``rvfi_trap`` signal is high if the instruction causes an exception or debug entry. CSR side effects and a jump to a trap/debug handler in the next cycle can be expected.
+``rvfi_trap`` consists of 12 bits.
+``rvfi_trap[0]`` is asserted if an instruction causes an exception or debug entry.
+``rvfi_trap[2:1]`` indicate trap type. ``rvfi_trap[1]`` is set for synchronous traps that do not cause debug entry. ``rvfi_trap[2]`` is set for synchronous traps that do cause debug mode entry.
+``rvfi_trap[8:3]`` provide information about non-debug traps, while ``rvfi_trap[11:9]`` provide information about traps causing entry to debug mode.
+When an exception is caused by a single stepped instruction, both ``rvfi_trap[1]`` and ``rvfi_trap[2]`` will be set.
+When ``rvfi_trap`` signals a trap, CSR side effects and a jump to a trap/debug handler in the next cycle can be expected.
 The different trap scenarios, their expected side-effects and trap signalling are listed in the table below:
 
 .. table:: Table of synchronous trap types
   :name: Table of synchronous trap types
 
-  =============================== =========  =========  ================  ============================================================================================================
-  Trap type                       Trap Type  rvfi_trap  CSRs updated      Description
-  =============================== =========  =========  ================  ============================================================================================================
-  Instruction Access Fault        Exception     1       mcause, mepc      PMA detects instruction execution from non-executable memory
-  Illegal Instruction             Exception     1       mcause, mepc      Illegal instruction decode
-  Breakpoint                      Exception     1       mcause, mepc      EBREAK executed with dcsr.ebreakm == 0
-  Load Access Fault               Exception     1       mcause, mepc      Access fault during load
-  Store Access Fault              Exception     1       mcause, mepc      Access fault during store
-  ECALL                           Exception     1       mcause, mepc      ECALL executed
-  Instruction Bus Fault           Exception     1       mcause, mepc      OBI bus error on instruction fetch
-  Breakpoint to debug             Debug         1       dpc, dcsr         EBREAK from non-debug mode executed with  dcsr.ebreakm == 1
-  Breakpoint in debug             Debug         1       No CSRs updated   EBREAK in debug mode jumps to debug handler
-  Debug Trigger Match (timing==0) Debug         1       dpc, dcsr         Debug trigger address match, instruction is not executed. Timing parameter is forced to 0 for cv32e4* cores.
-  Debug Trigger Match (timing==1) Debug         1       dpc, dcsr         Debug trigger address match, instruction is executed. Timing==1 is not used for  cv32e4* cores.
-  =============================== =========  =========  ================  ============================================================================================================
+  =============================== =========  ==============  ============== =============== ================  ============================================================================================================
+  Trap type                       Trap Type  rvfi_trap[2:0]  rvfi_trap[8:3] rvfi_trap[11:9] CSRs updated      Description
+  =============================== =========  ==============  ============== =============== ================  ============================================================================================================
+  Instruction Access Fault        Exception  0bx11           0x1            X               mcause, mepc      PMA detects instruction execution from non-executable memory
+  Illegal Instruction             Exception  0bx11           0x2            X               mcause, mepc      Illegal instruction decode
+  Breakpoint                      Exception  0bx11           0x3            X               mcause, mepc      EBREAK executed with dcsr.ebreakm == 0
+  Load Access Fault               Exception  0bx11           0x5            X               mcause, mepc      Access fault during load
+  Store Access Fault              Exception  0bx11           0x7            X               mcause, mepc      Access fault during store
+  ECALL                           Exception  0bx11           0x8            X               mcause, mepc      ECALL executed from user mode
+  ECALL                           Exception  0bx11           0x11           X               mcause, mepc      ECALL executed from machine mode
+  Instruction Bus Fault           Exception  0bx11           0x48           X               mcause, mepc      OBI bus error on instruction fetch
+  Breakpoint to debug             Debug      0b101           0x0            0x1             dpc, dcsr         EBREAK from non-debug mode executed with  dcsr.ebreakm == 1
+  Breakpoint in debug             Debug      0b101           0x0            0x1             No CSRs updated   EBREAK in debug mode jumps to debug handler
+  Debug Trigger Match (timing==0) Debug      0b101           0x0            0x2             dpc, dcsr         Debug trigger address match, instruction is not executed. Timing parameter is forced to 0 for cv32e4* cores.
+  Single step                     Debug      0b1x1           X              0x4             dpc, dcsr         Single step
+  =============================== =========  ==============  ============== =============== ================  ============================================================================================================
 
 
 **Interrupts**
@@ -98,7 +103,7 @@ Interrupts are seen by rvfi as happening between instructions. This means that n
 
 
 The ``rvfi_intr`` signal is set for the first instruction of the trap handler when encountering an exception or interrupt.
-The signal is not set for debug traps unless a debug entry happens in the fist instruction of an interrupt handler (see rvfi_intr == X in the table below). In this case CSR side-effects (to mepc) can be expected.
+The signal is not set for debug traps unless a debug entry happens in the first instruction of an interrupt handler (see rvfi_intr == X in the table below). In this case CSR side-effects (to mepc) can be expected.
 
 .. table:: Table of scenarios for 1st instruction of exception/interrupt/debug handler
   :name: Table of scenarios for 1st instruction of exception/interrupt/debug handler
@@ -107,7 +112,7 @@ The signal is not set for debug traps unless a debug entry happens in the fist i
   Scenario                                        rvfi_trap  rvfi_intr  rvfi_dbg[2:0]  mcause[31]  dcsr[8:6] (cause)
   =============================================== =========  =========  =============  ==========  =================
   Synchronous trap                                X          1          0x0            0           X
-  Interrupt (includes NMAs from bus errors)       X          1          0x0            1           X
+  Interrupt (includes NMIs from bus errors)       X          1          0x0            1           X
   Debug entry due to EBREAK (from non-debug mode) X          0          0x1            X           0x1
   Debug entry due to EBREAK (from debug mode)     X          0          0x1            X           X
   Debug entry due to trigger match                X          0          0x2            X           0x2
@@ -166,8 +171,7 @@ The ``rvfi_halt`` signal was meant for liveness properties of cores that can hal
 
 **Mode Signal**
 
-The ``rvfi_mode`` signal shows which privilege level the instruction was executed with. For load and store instructions the privilege level will be set by mstatus.mpp when mstatus.mprv=1.
-
+The ``rvfi_mode`` signal shows the *current* privilege mode as opposed to the *effective* privilege mode of the instruction. I.e. for load and store instructions the reported privilege level will therefore not depend on ``mstatus.mpp`` and ``mstatus.mprv``.
 
 Trace output file
 -----------------

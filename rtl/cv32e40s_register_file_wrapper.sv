@@ -30,6 +30,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_register_file_wrapper import cv32e40s_pkg::*;
+  #(
+    parameter int unsigned REGFILE_NUM_READ_PORTS = 2
+  )
   (
    // Clock and Reset
    input logic      clk,
@@ -53,6 +56,9 @@ module cv32e40s_register_file_wrapper import cv32e40s_pkg::*;
   logic [REGFILE_WORD_WIDTH-1:0] rf_wdata[REGFILE_NUM_WRITE_PORTS];
 
   cv32e40s_register_file
+    #(
+      .REGFILE_NUM_READ_PORTS ( REGFILE_NUM_READ_PORTS )
+      )
     register_file_i
       (
        .clk                ( clk                ),
@@ -74,7 +80,11 @@ module cv32e40s_register_file_wrapper import cv32e40s_pkg::*;
 
   generate
     if (SECURE) begin
-      cv32e40s_register_file_ecc register_file_ecc
+      cv32e40s_register_file_ecc
+        #(
+          .REGFILE_NUM_READ_PORTS ( REGFILE_NUM_READ_PORTS )
+          )
+        register_file_ecc
         (
          .clk             ( clk                ),
          .rst_n           ( rst_n              ),

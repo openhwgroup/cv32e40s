@@ -25,6 +25,7 @@
   `include "cv32e40s_wb_stage_sva.sv"
   `include "cv32e40s_load_store_unit_sva.sv"
   `include "cv32e40s_write_buffer_sva.sv"
+  `include "cv32e40s_lsu_response_filter_sva.sv"
   `include "cv32e40s_mpu_sva.sv"
   `include "cv32e40s_mult_sva.sv"
   `include "cv32e40s_prefetcher_sva.sv"
@@ -51,6 +52,12 @@ module cv32e40s_wrapper
   parameter int          PMP_NUM_REGIONS =  0,
   parameter int          PMA_NUM_REGIONS =  0,
   parameter bit          X_EXT           =  0,
+  parameter int          X_NUM_RS        =  2,
+  parameter int          X_ID_WIDTH      =  4,
+  parameter int          X_MEM_WIDTH     =  32,
+  parameter int          X_RFR_WIDTH     =  32,
+  parameter int          X_RFW_WIDTH     =  32,
+  parameter int          X_MISA          =  32'h00000000,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
 (
@@ -191,6 +198,8 @@ module cv32e40s_wrapper
                               .wfi_insn_id_i       (core_i.id_stage_i.wfi_insn),
                               .mret_insn_id_i      (core_i.id_stage_i.mret_insn),
                               .id_valid_i          (core_i.id_stage_i.id_valid_o),
+                              .csr_illegal_i       (core_i.cs_registers_i.csr_illegal_o),
+                              .xif_commit_kill     (core_i.xif_commit_if.commit.commit_kill),
                               .*);
   bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
 
@@ -213,11 +222,13 @@ module cv32e40s_wrapper
 
   bind cv32e40s_prefetcher:
     core_i.if_stage_i.prefetch_unit_i.prefetcher_i
-      cv32e40s_prefetcher_sva  
+      cv32e40s_prefetcher_sva
         prefetcher_sva (.*);
 
   bind cv32e40s_core:
     core_i cv32e40s_core_sva
+      #(.A_EXT(A_EXT),
+        .PMA_NUM_REGIONS(PMA_NUM_REGIONS))
       core_sva (// probed cs_registers signals
                 .cs_registers_mie_q               (core_i.cs_registers_i.mie_q),
                 .cs_registers_mepc_n              (core_i.cs_registers_i.mepc_n),
@@ -263,6 +274,10 @@ bind cv32e40s_sleep_unit:
              .obi_addr   (core_i.instr_addr_o),
              .obi_req    (core_i.instr_req_o),
              .obi_gnt    (core_i.instr_gnt_i),
+             .write_buffer_state(cv32e40s_pkg::WBUF_EMPTY),
+             .write_buffer_valid_o('0),
+             .write_buffer_txn_bufferable('0),
+             .write_buffer_txn_cacheable('0),
              .*);
 
   bind cv32e40s_mpu:
@@ -277,22 +292,33 @@ bind cv32e40s_sleep_unit:
              .obi_addr   (core_i.data_addr_o),
              .obi_req    (core_i.data_req_o),
              .obi_gnt    (core_i.data_gnt_i),
+             .write_buffer_state(core_i.load_store_unit_i.write_buffer_i.state),
+             .write_buffer_valid_o(core_i.load_store_unit_i.write_buffer_i.valid_o),
+             .write_buffer_txn_bufferable(core_i.load_store_unit_i.write_buffer_i.trans_o.memtype[0]),
+             .write_buffer_txn_cacheable(core_i.load_store_unit_i.write_buffer_i.trans_o.memtype[1]),
              .*);
+
+  bind cv32e40s_lsu_response_filter :
+    core_i.load_store_unit_i.response_filter_i
+    cv32e40s_lsu_response_filter_sva #(.DEPTH(DEPTH))
+      lsu_response_filter_sva (.*);
 
   bind cv32e40s_write_buffer:
     core_i.load_store_unit_i.write_buffer_i
     cv32e40s_write_buffer_sva
-      write_buffer_sva (.*);
+             #(.PMA_NUM_REGIONS(PMA_NUM_REGIONS),
+               .PMA_CFG(PMA_CFG))
+      write_buffer_sva(.*);
 
   bind cv32e40s_rvfi:
     rvfi_i
     cv32e40s_rvfi_sva
       rvfi_sva(.irq_ack(core_i.irq_ack),
                .dbg_ack(core_i.dbg_ack),
-               .ctrl_fsm_debug_cause(core_i.ctrl_fsm.debug_cause),
                .ebreak_in_wb_i(core_i.controller_i.controller_fsm_i.ebreak_in_wb),
+               .nmi_addr_i(core_i.nmi_addr_i),
                .*);
-  
+
 `endif //  `ifndef COREV_ASSERT_OFF
   
     cv32e40s_core_log
@@ -302,7 +328,7 @@ bind cv32e40s_sleep_unit:
           .clk_i              ( core_i.id_stage_i.clk              ),
           .ex_wb_pipe_i       ( core_i.ex_wb_pipe                  ),
           .hart_id_i          ( core_i.hart_id_i                   )
-          
+
       );
 
     cv32e40s_rvfi
@@ -334,10 +360,6 @@ bind cv32e40s_sleep_unit:
          .jump_target_id_i         ( core_i.id_stage_i.jmp_target_o                                       ),
          .is_compressed_id_i       ( core_i.id_stage_i.if_id_pipe_i.instr_meta.compressed                 ),
 
-         .pc_set_i                 ( core_i.if_stage_i.ctrl_fsm_i.pc_set                                  ),
-         .pc_mux_i                 ( core_i.if_stage_i.ctrl_fsm_i.pc_mux                                  ),
-         .exc_pc_mux_i             ( core_i.if_stage_i.ctrl_fsm_i.exc_pc_mux                              ),
-
          .lsu_en_id_i              ( core_i.id_stage_i.lsu_en                                             ),
          .lsu_type_id_i            ( core_i.id_stage_i.lsu_type                                           ),
          .lsu_we_id_i              ( core_i.id_stage_i.lsu_we                                             ),
@@ -366,9 +388,9 @@ bind cv32e40s_sleep_unit:
 
          .priv_lvl_i               ( core_i.priv_lvl                                                      ),
          .priv_lvl_lsu_i           ( core_i.priv_lvl_lsu                                                  ),
-         .debug_mode_i             ( core_i.ctrl_fsm.debug_mode                                           ),
-         .debug_cause_i            ( core_i.ctrl_fsm.debug_cause                                          ),
-
+         .ctrl_fsm_i               ( core_i.ctrl_fsm                                                      ),
+         .pending_single_step_i    ( core_i.controller_i.controller_fsm_i.pending_single_step             ),
+         .single_step_allowed_i    ( core_i.controller_i.controller_fsm_i.single_step_allowed             ),
          // CSRs
          .csr_mstatus_n_i          ( core_i.cs_registers_i.mstatus_n                                      ),
          .csr_mstatus_q_i          ( core_i.cs_registers_i.mstatus_q                                      ),
@@ -413,10 +435,9 @@ bind cv32e40s_sleep_unit:
          .csr_tinfo_q_i            ( {16'h0, core_i.cs_registers_i.tinfo_types}                           ),
          .csr_tinfo_we_i           ( core_i.cs_registers_i.csr_we_int &&
                                      (core_i.cs_registers_i.csr_waddr == CSR_TINFO)                       ),
-         .csr_dcsr_q_i             ( core_i.cs_registers_i.dcsr_q                                         ),
+         .csr_dcsr_q_i             ( core_i.cs_registers_i.dcsr_rdata                                     ),
          .csr_dcsr_n_i             ( core_i.cs_registers_i.dcsr_n                                         ),
          .csr_dcsr_we_i            ( core_i.cs_registers_i.dcsr_we                                        ),
-         .csr_debug_csr_save_i     ( core_i.cs_registers_i.ctrl_fsm_i.debug_csr_save                      ),
          .csr_dpc_q_i              ( core_i.cs_registers_i.dpc_q                                          ),
          .csr_dpc_n_i              ( core_i.cs_registers_i.dpc_n                                          ),
          .csr_dpc_we_i             ( core_i.cs_registers_i.dpc_we                                         ),
@@ -467,8 +488,14 @@ bind cv32e40s_sleep_unit:
           .B_EXT                 ( B_EXT                 ),
           .PMP_GRANULARITY       ( PMP_GRANULARITY       ),
           .PMP_NUM_REGIONS       ( PMP_NUM_REGIONS       ),
-          .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),
           .X_EXT                 ( X_EXT                 ),
+          .X_NUM_RS              ( X_NUM_RS              ),
+          .X_ID_WIDTH            ( X_ID_WIDTH            ),
+          .X_MEM_WIDTH           ( X_MEM_WIDTH           ),
+          .X_RFR_WIDTH           ( X_RFR_WIDTH           ),
+          .X_RFW_WIDTH           ( X_RFW_WIDTH           ),
+          .X_MISA                ( X_MISA                ),
+          .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),
           .PMA_CFG               ( PMA_CFG               ))
     core_i (.xif_compressed_if(xif.cpu_compressed),
             .xif_issue_if(xif.cpu_issue),
