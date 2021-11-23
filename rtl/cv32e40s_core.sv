@@ -31,14 +31,20 @@
 
 module cv32e40s_core import cv32e40s_pkg::*;
 #(
-  parameter NUM_MHPMCOUNTERS             =  1,
-  parameter LIB                          =  0,
-  parameter int PMP_GRANULARITY          =  0,
-  parameter int PMP_NUM_REGIONS          =  0,
+  parameter         NUM_MHPMCOUNTERS     =  1,
+  parameter         LIB                  =  0,
+  parameter int     PMP_GRANULARITY      =  0,
+  parameter int     PMP_NUM_REGIONS      =  0,
   parameter bit     A_EXT                =  0,
   parameter b_ext_e B_EXT                =  NONE,
   parameter bit     X_EXT                =  0,
-  parameter int          PMA_NUM_REGIONS =  0,
+  parameter int     X_NUM_RS             =  2,
+  parameter int     X_ID_WIDTH           =  4,
+  parameter int     X_MEM_WIDTH          =  32,
+  parameter int     X_RFR_WIDTH          =  32,
+  parameter int     X_RFW_WIDTH          =  32,
+  parameter int     X_MISA               =  32'h00000000,
+  parameter int     PMA_NUM_REGIONS      =  0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
   parameter lfsr_cfg_t   LFSR0_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
   parameter lfsr_cfg_t   LFSR1_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
@@ -114,6 +120,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic        core_sleep_o
 );
 
+  // Number of register file read ports
+  // Core will only use two, but X_EXT may mandate 2 or 3
+  localparam int unsigned REGFILE_NUM_READ_PORTS = X_EXT ? X_NUM_RS : 2;
+
   logic [31:0]       pc_if;             // Program counter in IF stage
 
   // Jump and branch target and decision (EX->IF)
@@ -124,6 +134,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Busy signals
   logic        if_busy;
   logic        lsu_busy;
+  logic        lsu_interruptible;
 
   // ID/EX pipeline
   id_ex_pipe_t id_ex_pipe;
@@ -239,6 +250,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        csr_en_id;
   csr_opcode_e csr_op_id;
   logic        csr_illegal;
+
+  // CSR illegal in EX due to offloading and pipeline accept
+  logic        xif_csr_error_ex;
 
   // irq signals
   // TODO:AB Should find a proper suffix for signals from interrupt_controller
@@ -373,12 +387,15 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //                                              //
   //////////////////////////////////////////////////
   cv32e40s_if_stage
-    #(.A_EXT(A_EXT),
-      .PMP_GRANULARITY(PMP_GRANULARITY),
-      .PMP_NUM_REGIONS(PMP_NUM_REGIONS),
-      .X_EXT      ( X_EXT ),
-      .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
-      .PMA_CFG(PMA_CFG))
+  #(
+    .A_EXT               ( A_EXT                     ),
+    .X_EXT               ( X_EXT                     ),
+    .X_ID_WIDTH          ( X_ID_WIDTH                ),
+    .PMA_NUM_REGIONS     ( PMA_NUM_REGIONS           ),
+    .PMA_CFG             ( PMA_CFG                   ),
+    .PMP_GRANULARITY     ( PMP_GRANULARITY           ),
+    .PMP_NUM_REGIONS     ( PMP_NUM_REGIONS           )
+  )
   if_stage_i
   (
     .clk                 ( clk                       ),
@@ -451,7 +468,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   #(
     .A_EXT                        ( A_EXT                     ),
     .B_EXT                        ( B_EXT                     ),
-    .X_EXT                        ( X_EXT                     )
+    .X_EXT                        ( X_EXT                     ),
+    .REGFILE_NUM_READ_PORTS       ( REGFILE_NUM_READ_PORTS    )
   )
   id_stage_i
   (
@@ -540,6 +558,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .branch_decision_o          ( branch_decision_ex           ),
     .branch_target_o            ( branch_target_ex             ),
 
+    .xif_csr_error_o            ( xif_csr_error_ex             ),
+
     // Register file forwarding
     .rf_wdata_o                 ( rf_wdata_ex                  ),
 
@@ -587,6 +607,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Control signals
     .busy_o                ( lsu_busy           ),
+    .interruptible_o       ( lsu_interruptible  ),
 
     // Stage 0 outputs (EX)
     .lsu_split_0_o         ( lsu_split_ex       ),
@@ -757,7 +778,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   cv32e40s_controller
   #(
-    .X_EXT                          ( X_EXT                  )
+    .X_EXT                          ( X_EXT                  ),
+    .REGFILE_NUM_READ_PORTS         ( REGFILE_NUM_READ_PORTS )
   )
   controller_i
   (
@@ -791,6 +813,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .data_stall_wb_i                ( data_stall_wb          ),
     .lsu_addr_wb_i                  ( lsu_addr_wb            ),
     .lsu_err_wb_i                   ( lsu_err_wb             ),
+    .lsu_busy_i                     ( lsu_busy               ),
+    .lsu_interruptible_i            ( lsu_interruptible      ),
 
     // jump/branch control
     .branch_decision_ex_i           ( branch_decision_ex     ),
@@ -838,7 +862,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ctrl_fsm_o                     ( ctrl_fsm               ),
 
     // eXtension interface
-    .xif_commit_if                  ( xif_commit_if          )
+    .xif_commit_if                  ( xif_commit_if          ),
+    .xif_csr_error_i                ( xif_csr_error_ex       )
  );
 
 ////////////////////////////////////////////////////////////////////////
@@ -887,6 +912,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign regfile_wdata_wb[0] = rf_wdata_wb;
 
   cv32e40s_register_file_wrapper
+  #(
+    .REGFILE_NUM_READ_PORTS       ( REGFILE_NUM_READ_PORTS    )
+  )
   register_file_wrapper_i
   (
     .clk                ( clk                ),

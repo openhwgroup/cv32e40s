@@ -31,7 +31,8 @@
 
 module cv32e40s_controller import cv32e40s_pkg::*;
 #(
-  parameter bit       X_EXT           = 0
+  parameter bit          X_EXT                  = 0,
+  parameter int unsigned REGFILE_NUM_READ_PORTS = 2
 )
 (
   input  logic        clk,                        // Gated clock
@@ -59,6 +60,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        data_stall_wb_i,            // WB stalled by LSU
   input  logic        lsu_err_wb_i,               // LSU bus error in WB stage
   input  logic [31:0] lsu_addr_wb_i,              // LSU address in WB stage
+  input  logic        lsu_busy_i,                 // LSU is busy with outstanding transfers
+  input  logic        lsu_interruptible_i,        // LSU may be interrupted
 
   // jump/branch signals
   input  logic        branch_decision_ex_i,       // branch decision signal from EX ALU
@@ -106,7 +109,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input logic         fencei_flush_ack_i,
 
   // eXtension interface
-  if_xif.cpu_commit   xif_commit_if
+  if_xif.cpu_commit   xif_commit_if,
+  input               xif_csr_error_i
 );
 
   // Main FSM and debug FSM
@@ -152,6 +156,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .wb_ready_i                  ( wb_ready_i               ),
     .wb_valid_i                  ( wb_valid_i               ),
 
+    .lsu_interruptible_i         ( lsu_interruptible_i      ),
     // Interrupt Controller Signals
     .irq_req_ctrl_i              ( irq_req_ctrl_i           ),
     .irq_id_ctrl_i               ( irq_id_ctrl_i            ),
@@ -167,6 +172,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .fencei_flush_ack_i          ( fencei_flush_ack_i       ),
     .fencei_flush_req_o          ( fencei_flush_req_o       ),
 
+    .lsu_busy_i                  ( lsu_busy_i               ),
+
    // Data OBI interface monitor 
     .m_c_obi_data_if             ( m_c_obi_data_if          ),
    
@@ -174,12 +181,17 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .ctrl_fsm_o                  ( ctrl_fsm_o               ),
     
     // eXtension interface
-    .xif_commit_if               ( xif_commit_if            )
+    .xif_commit_if               ( xif_commit_if            ),
+    .xif_csr_error_i             ( xif_csr_error_i          )
   );
 
 
   // Hazard/bypass/stall control instance
-  cv32e40s_controller_bypass bypass_i
+  cv32e40s_controller_bypass
+  #(
+    .REGFILE_NUM_READ_PORTS     ( REGFILE_NUM_READ_PORTS   )
+  )
+  bypass_i
   (
     // From controller_fsm
     .if_id_pipe_i               ( if_id_pipe_i             ),

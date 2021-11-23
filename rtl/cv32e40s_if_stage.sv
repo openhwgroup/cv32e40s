@@ -27,12 +27,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_if_stage import cv32e40s_pkg::*;
-  #(parameter int          PMP_GRANULARITY = 0,
-    parameter int          PMP_NUM_REGIONS = 0,
-    parameter bit          A_EXT           = 0,
-    parameter bit          X_EXT           = 0,
-    parameter int          PMA_NUM_REGIONS = 0,
-    parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT})
+#(
+  parameter bit          A_EXT           = 0,
+  parameter bit          X_EXT           = 0,
+  parameter int          X_ID_WIDTH      = 4,
+  parameter int          PMA_NUM_REGIONS = 0,
+  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
+  parameter int          PMP_GRANULARITY = 0,
+  parameter int          PMP_NUM_REGIONS = 0
+)
 (
     input  logic        clk,
     input  logic        rst_n,

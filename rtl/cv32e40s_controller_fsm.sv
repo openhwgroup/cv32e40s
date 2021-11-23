@@ -67,6 +67,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  mpu_status_e lsu_mpu_status_wb_i,        // MPU status (WB timing)
   input  logic        data_stall_wb_i,            // WB stalled by LSU
 
+  input  logic        lsu_busy_i,                 // LSU is busy with outstanding transfers
+
+  input  logic        lsu_interruptible_i,        // LSU can be interrupted
   // Interrupt Controller Signals
   input  logic        irq_req_ctrl_i,             // irq requst
   input  logic [4:0]  irq_id_ctrl_i,              // irq id
@@ -100,7 +103,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   if_c_obi.monitor     m_c_obi_data_if,
 
   // eXtension interface
-  if_xif.cpu_commit    xif_commit_if
+  if_xif.cpu_commit    xif_commit_if,
+  input                xif_csr_error_i
 );
 
    // FSM state encoding
@@ -162,9 +166,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   logic [2:0] debug_cause_n;
   logic [2:0] debug_cause_q;
   
-// Data request has been clocked without insn moving to WB
-  logic obi_data_req_q; // todo: should really look at 'trans'; rename accordingly
-
   logic [4:0] exc_cause; // id of taken interrupt
 
   logic       fencei_ready;
@@ -181,7 +182,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Do not count if halted or killed
   logic       wb_counter_event_gated;
 
-  assign fencei_ready = 1'b1; // TODO: connect when write buffer is implemented
+  assign fencei_ready = !lsu_busy_i;
 
   // Once the fencei handshake is initiated, it must complete and the instruction must retire.
   // The instruction retires when fencei_req_and_ack_q = 1
@@ -295,14 +296,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   */
   assign pending_single_step = (!debug_mode_q && dcsr_i.step && (wb_valid_i || ctrl_fsm_o.irq_ack)) && !pending_debug;
 
-  // Regular debug will kill insn in WB, do not allow for LSU in WB as insn must finish with rvalid
-  // or for any case where a LSU in EX has asserted its obi data_req for at least one cycle.
-  // For misaligned LSU, if the first phase just arrived in EX, we may kill it and enter debug.
-  //  - If first phase stays in EX for more than one cycle, obi_data_req_q will be 1 and block debug.
-  //  - When first phase arrives in WB, we block debug. If first phase in WB finishes with rvalid
-  //    before second phase in EX gets grant, we block on obi_data_req_q
+  // Regular debug will kill insn in WB, do not allow if LSU is not interruptible or a fence.i handshake is taking place.
+  // LSU will not be interruptible if the outstanding counter != 0, or
+  // a trans_valid has been clocked without ex_valid && wb_ready handshake.
   // The cycle after fencei enters WB, the fencei handshake will be initiated. This must complete and the fencei instruction must retire before allowing debug.
-  assign debug_allowed = !(ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid) && !obi_data_req_q && !fencei_ongoing;
+  assign debug_allowed = lsu_interruptible_i && !fencei_ongoing;
 
   // Debug pending for any other reason than single step
   assign pending_debug = (trigger_match_in_wb) ||
@@ -327,14 +325,14 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign pending_interrupt = irq_req_ctrl_i && !debug_mode_q;
 
   // Allow interrupts to be taken only if there is no data request in WB, 
-  // and no data_req has been clocked from EX to environment.
+  // and no trans_valid has been clocked from EX to environment.
   // LSU instructions which were suppressed due to previous exceptions or trigger match
   // will be interruptable as they were convered to NOP in ID stage.
   // The cycle after fencei enters WB, the fencei handshake will be initiated. This must complete and the fencei instruction must retire before allowing interrupts.
   // TODO:OK:low May allow interuption of Zce to idempotent memories
 
   // todo: Factor in stepie here instead of gating mie in cs_registers
-  assign interrupt_allowed = !(ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid) && !obi_data_req_q && !debug_mode_q && !fencei_ongoing;
+  assign interrupt_allowed = lsu_interruptible_i && !debug_mode_q && !fencei_ongoing;
 
   assign nmi_allowed = interrupt_allowed;
 
@@ -625,7 +623,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       SLEEP: begin
         ctrl_fsm_o.ctrl_busy = 1'b0;
         ctrl_fsm_o.instr_req = 1'b0;
-
+        // TODO: Check that below statement is true by checking SEC when halting all stages.
         ctrl_fsm_o.halt_wb   = 1'b1; // implicitly halts earlier stages
         if(ctrl_fsm_o.wake_from_sleep) begin
           ctrl_fsm_ns = FUNCTIONAL;
@@ -740,20 +738,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   end
 
   assign ctrl_fsm_o.debug_mode = debug_mode_q;
-
-  // Detect when data_req has been clocked, and lsu insn is still in EX
-  // todo: Should look at 'trans' (goal (please check if true) it to not break a multicycle LSU instruction or already committed load/store; that cannot be judged by only looking at the OBI signals)
-  always_ff @(posedge clk, negedge rst_n) begin
-    if (rst_n == 1'b0) begin
-      obi_data_req_q <= 1'b0;
-    end else begin
-      if (m_c_obi_data_if.s_req.req && !(ex_valid_i && wb_ready_i)) begin
-        obi_data_req_q <= 1'b1;
-      end else if (ex_valid_i && wb_ready_i) begin
-        obi_data_req_q <= 1'b0;
-      end
-    end
-  end
 
   // sticky version of debug_req (must be on clk_ungated_i such that incoming pulse before core is enabled is not missed)
   always_ff @(posedge clk_ungated_i, negedge rst_n) begin
@@ -912,9 +896,12 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       //       Perhaps not factor in wb_ready_i and uncoditionally signal commit_valid, preventing
       //       to commit the same instruction multiple times
       // TODO: data_gnt_i currently fans into commit_valid below. Can this be removed?
+      // TODO: Can only allow commit when older instructions are guaranteed to complete without exceptions
+      // TODO: If kill_ex is 1 (for taking exceptions from WB for intance), ex_valid_i will be 0 and we
+      //       cannot signal commit_kill properly
       assign xif_commit_if.commit_valid       = ex_valid_i && wb_ready_i && id_ex_pipe_i.xif_en;
       assign xif_commit_if.commit.id          = id_ex_pipe_i.xif_id;
-      assign xif_commit_if.commit.commit_kill = 1'b0; // TODO: when should the offloaded instr be killed?
+      assign xif_commit_if.commit.commit_kill = xif_csr_error_i; // TODO: when should the offloaded instr be killed?
 
     end else begin : no_x_ext
 

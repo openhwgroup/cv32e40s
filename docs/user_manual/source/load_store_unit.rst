@@ -146,3 +146,19 @@ The |corev| implements interface integrity by the ``data_reqpar_o``, ``data_gntp
   store access executed in USER MODE are first filtered by the PMP unit
   which can possibly generated exceptions. For the moment, the MPRV bit in
   MSTATUS as well as the LOCK mechanism in the PMP are not supported.
+
+
+.. _write_buffer:
+
+Write buffer
+------------
+
+|corev| contains a a single entry write buffer that is used for bufferable transfers. A bufferable transfer is a write transfer originating from a store instruction, where the write address is inside a bufferable region defined by the PMA (:ref:`pma`).
+
+The write buffer (when not full) allows |corev| to proceed executing instructions without having to wait for ``data_gnt_i`` = 1 and ``data_rvalid_i`` = 1 for these bufferable transers.
+
+.. note::
+
+   On the OBI interface ``data_gnt_i`` = 1 and ``data_rvalid_i`` = 1 still need to be signaled for every transfer (as specified in [OPENHW-OBI]_), also for bufferable transfers.
+ 
+Bus transfers will occur in program order, no matter if transfers are bufferable and non-bufferable.
