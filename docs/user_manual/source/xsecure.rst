@@ -5,7 +5,7 @@ Xsecure extension
 
 .. note::
 
-   The Xsecure features have not been implemented yet.
+   Some Xsecure features have not been implemented yet.
 
 |corev| has a custom extension called Xsecure, which encompass the following categories of security related features:
 
@@ -24,7 +24,18 @@ reset or memory erase. See https://ibex-core.readthedocs.io/en/latest/03_referen
 
 Data independent timing
 -----------------------
-Branches and div/divu/rem/remu instructions are of fixed (data independent) latency. See https://ibex-core.readthedocs.io/en/latest/03_reference/security.html.
+Data independent timing is enabled by setting the **dataindtiming** bit in the **cpuctrl** CSR.
+This will make execution times of all instructions independent of the input data, making it more difficult for an external
+observer to extract data by observing power consumption or exploiting timing side-channels.
+When **dataindtiming** is set, div/divu/rem/remu instructions will have a fixed (data independent) latency.
+Branches will also have a fixed latency, regardless of the taken/not-taken status.
+See :ref:`pipeline-details` for details.
+
+Note that the following can still reveal information about the address:
+
+* Misaligned load and stores.
+* Instruction fetch of non-word-aligned non-RV32C instructions.
+* Stores to bufferable/non-bufferable address ranges.
 
 Dummy instruction insertion
 ---------------------------

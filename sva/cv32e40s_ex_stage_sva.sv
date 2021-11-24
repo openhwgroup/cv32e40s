@@ -34,6 +34,7 @@ module cv32e40s_ex_stage_sva
   input logic           ex_valid_o,
   input logic           wb_ready_i,
   input ctrl_fsm_t      ctrl_fsm_i,
+  input xsecure_ctrl_t  xsecure_ctrl_i,
 
   input id_ex_pipe_t    id_ex_pipe_i,
   input ex_wb_pipe_t    ex_wb_pipe_o,
@@ -93,11 +94,17 @@ module cv32e40s_ex_stage_sva
 
 
 
-// First access of split LSU instruction should have rf_we deasserted
-a_split_rf_we:
+  // First access of split LSU instruction should have rf_we deasserted
+  a_split_rf_we:
   assert property (@(posedge clk) disable iff (!rst_n)
                     (ex_valid_o && wb_ready_i && id_ex_pipe_i.lsu_en && lsu_split_i)
                     |=> !ex_wb_pipe_o.rf_we);
+
+  // Assert that branch instructions always result in bubbles when data independent timing is enabled
+  a_dataindtiming_branch_bubbles:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     (wb_ready_i && $rose(id_ex_pipe_i.instr_meta.branch) && xsecure_ctrl_i.cpuctrl.dataindtiming)
+                     |=> !ex_valid_o ##1 !ex_valid_o);
 
 
 endmodule // cv32e40s_ex_stage_sva
