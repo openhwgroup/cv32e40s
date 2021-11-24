@@ -39,7 +39,10 @@ module cv32e40s_ex_stage_sva
   input id_ex_pipe_t    id_ex_pipe_i,
   input ex_wb_pipe_t    ex_wb_pipe_o,
   input logic           lsu_split_i,
-  input logic           csr_illegal_i
+  input logic           csr_illegal_i,
+  input logic           alu_cmp_result,
+  input logic [31:0]    branch_target_o,
+  input logic           instr_valid
 );
 
   // Halt implies not ready and not valid
@@ -106,5 +109,14 @@ module cv32e40s_ex_stage_sva
                      (wb_ready_i && $rose(id_ex_pipe_i.instr_meta.branch) && xsecure_ctrl_i.cpuctrl.dataindtiming)
                      |=> !ex_valid_o ##1 !ex_valid_o);
 
+  // Assert that branch target for untaken branches with dataindtiming=1 match expected value.
+  // (+2 for compressed branch instructions, +4 for uncompressed branch instructions)
+  a_dataindtiming_branch_target:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     ((ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_mux == PC_BRANCH)) &&
+                      xsecure_ctrl_i.cpuctrl.dataindtiming &&
+                      !alu_cmp_result)
+                      |-> id_ex_pipe_i.instr_meta.compressed ? branch_target_o == (id_ex_pipe_i.pc + 2) :
+                                                               branch_target_o == (id_ex_pipe_i.pc + 4));
 
 endmodule // cv32e40s_ex_stage_sva
