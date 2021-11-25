@@ -179,6 +179,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   logic [31:0] csr_rdata;
   logic csr_counter_read;
+  logic csr_cpuctrl_we;
 
   privlvl_t     priv_lvl_lsu, priv_lvl;
   privlvlctrl_t priv_lvl_if_ctrl;
@@ -763,6 +764,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Xsecure control
     .xsecure_ctrl_o             ( xsecure_ctrl           ),
 
+    // CSR write strobes
+    .csr_cpuctrl_we_o           ( csr_cpuctrl_we         ),
+
     // debug
     .dpc_o                      ( dpc                    ),
     .dcsr_o                     ( dcsr                   ),
@@ -839,6 +843,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // From CSR registers
     .mtvec_mode_i                   ( mtvec_mode             ),
+
+    // CSR write strobes
+    .csr_cpuctrl_we_i               ( csr_cpuctrl_we         ),
 
     // Debug signals
     .debug_req_i                    ( debug_req_i            ),

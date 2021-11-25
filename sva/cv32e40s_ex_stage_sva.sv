@@ -106,7 +106,7 @@ module cv32e40s_ex_stage_sva
   // Assert that branch instructions always result in bubbles when data independent timing is enabled
   a_dataindtiming_branch_bubbles:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     (wb_ready_i && $rose(id_ex_pipe_i.instr_meta.branch) && xsecure_ctrl_i.cpuctrl.dataindtiming)
+                     (wb_ready_i && $rose(id_ex_pipe_i.instr_meta.branch) && instr_valid && xsecure_ctrl_i.cpuctrl.dataindtiming)
                      |=> !ex_valid_o ##1 !ex_valid_o);
 
   // Assert that branch target for untaken branches with dataindtiming=1 match expected value.
@@ -118,5 +118,10 @@ module cv32e40s_ex_stage_sva
                       !alu_cmp_result)
                       |-> id_ex_pipe_i.instr_meta.compressed ? branch_target_o == (id_ex_pipe_i.pc + 2) :
                                                                branch_target_o == (id_ex_pipe_i.pc + 4));
+
+  // Make sure cpuctrl is stable when the EX stage has a valid instruction (i.e. cpuctrl hazard is handled correctly)
+  a_cpuctrl_ex_hazard:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     (instr_valid |=> $stable(xsecure_ctrl_i.cpuctrl)));
 
 endmodule // cv32e40s_ex_stage_sva

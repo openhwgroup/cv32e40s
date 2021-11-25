@@ -98,6 +98,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Xsecure control
   output xsecure_ctrl_t   xsecure_ctrl_o,
 
+  // CSR write strobes
+  output logic            csr_cpuctrl_we_o,
+
   // debug
   output logic [31:0]     dpc_o,
   output dcsr_t           dcsr_o,
@@ -947,6 +950,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     end
   endgenerate
 
+  assign csr_cpuctrl_we_o = cpuctrl_we;
 
   assign csr_rdata_o = csr_rdata_int;
 
