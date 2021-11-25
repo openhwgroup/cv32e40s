@@ -31,11 +31,16 @@ When **dataindtiming** is set, div/divu/rem/remu instructions will have a fixed 
 Branches will also have a fixed latency, regardless of the taken/not-taken status.
 See :ref:`pipeline-details` for details.
 
-Note that the following can still reveal information about the address:
+Note that the addresses used by loads and stores will still provide a timing side-channel due to the following properties:
 
-* Misaligned load and stores.
-* Instruction fetch of non-word-aligned non-RV32C instructions.
-* Stores to bufferable/non-bufferable address ranges.
+* Misaligned loads and stores differ in cycle count from aligned loads and stores.
+* Stores to a bufferable address range react differently to wait states than stores to a non-bufferable address range.
+
+Similarly the target address of branches and jumps will still provide a timing side-channel due to the following property:
+
+* Branches and jumps to non-word-aligned non-RV32C instructions differ in cycle count from other branches and jumps.
+
+These timing side-channels can largely be mitigated by imposing (branch target and data) alignment restrictions on the used software.
 
 Dummy instruction insertion
 ---------------------------
