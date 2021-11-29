@@ -127,6 +127,8 @@ typedef enum logic [ALU_OP_WIDTH-1:0]
  ALU_B_SEXT_B = 6'b110000, // (funct3 = 001)
  ALU_B_SEXT_H = 6'b111000, // (funct3 = 001)
 
+ ALU_B_ZEXT_H = 6'b110011, // (funct3 = 100)
+
  ALU_B_REV8   = 6'b110100, // (funct3 = 101)
  ALU_B_ORC_B  = 6'b110010, // (funct3 = 101)
 
@@ -134,6 +136,13 @@ typedef enum logic [ALU_OP_WIDTH-1:0]
  ALU_B_CLMUL  = 6'b100111, // (funct3 = 001)
  ALU_B_CLMULH = 6'b101011, // funct3 = 011
  ALU_B_CLMULR = 6'b101010  // funct3 = 010
+
+ // Free encodings with bit 5 set (for B_EXT):
+ // 6'b101101
+ // 6'b110110
+ // 6'b111010
+ // 6'b111011
+ // 6'b111111
 
 } alu_opcode_e;
 
@@ -1039,6 +1048,16 @@ typedef struct packed
   logic        branch_taken;
   logic        compressed;
 } instr_meta_t;
+
+// Struct for carrying eXtension interface information
+typedef struct packed
+{
+  logic        exception;       // Can offloaded ins cause an exception?
+  logic        loadstore; // Is offloaded ins a load or store?
+  logic        dualwrite; // Will oflfoaded ins cause a dual writeback?
+  logic [31:0] id;        // ID of offloaded ins
+  logic        accepted;  // Was the offloaded instruction accepted or not?
+} xif_meta_t;
   
 // IF/ID pipeline
 typedef struct packed {
@@ -1115,7 +1134,8 @@ typedef struct packed {
 
   // eXtension interface
   logic         xif_en;           // Instruction has been offloaded via eXtension interface
-  logic [31:0] xif_id;  // ID of offloaded instruction
+  xif_meta_t    xif_meta;         // xif meta struct
+
 } id_ex_pipe_t;
 
 // EX/WB pipeline
@@ -1151,7 +1171,7 @@ typedef struct packed {
 
   // eXtension interface
   logic         xif_en;           // Instruction has been offloaded via eXtension interface
-  logic [31:0] xif_id;  // ID of offloaded instruction
+  xif_meta_t    xif_meta;         // xif meta struct
 } ex_wb_pipe_t;
 
 // Performance counter events
@@ -1184,7 +1204,8 @@ typedef struct packed {
   logic        csr_stall;
   logic        wfi_stall;
   logic        minstret_stall;        // Stall due to minstret/h read in EX
-  logic        deassert_we;   // Deassert write enable and special insn bits
+  logic        deassert_we;           // Deassert write enable and special insn bits
+  logic        xif_exception_stall;   // Stall (EX) if xif insn in WB can cause an exception
 } ctrl_byp_t;
 
 // Controller FSM outputs
@@ -1247,6 +1268,9 @@ typedef struct packed {
   logic        kill_id; // Kill ID stage
   logic        kill_ex; // Kill EX stage
   logic        kill_wb; // Kill WB stage
+
+  // Kill signal for xif_commit_if
+  logic        kill_xif; // Kill (attempted) offloaded instruction
 } ctrl_fsm_t;
 
   ///////////////////////////

@@ -161,7 +161,7 @@ module cv32e40s_wrapper
 
 
   bind cv32e40s_ex_stage:
-    core_i.ex_stage_i cv32e40s_ex_stage_sva ex_stage_sva
+    core_i.ex_stage_i cv32e40s_ex_stage_sva #(.X_EXT(X_EXT)) ex_stage_sva
     (
       .*
     );
@@ -188,6 +188,7 @@ module cv32e40s_wrapper
   bind cv32e40s_controller_fsm:
     core_i.controller_i.controller_fsm_i
       cv32e40s_controller_fsm_sva
+        #(.X_EXT(X_EXT))
         controller_fsm_sva   (
                               .lsu_outstanding_cnt (core_i.load_store_unit_i.cnt_q),
                               .rf_we_wb_i          (core_i.wb_stage_i.rf_we_wb_o  ),
@@ -200,6 +201,7 @@ module cv32e40s_wrapper
                               .id_valid_i          (core_i.id_stage_i.id_valid_o),
                               .csr_illegal_i       (core_i.cs_registers_i.csr_illegal_o),
                               .xif_commit_kill     (core_i.xif_commit_if.commit.commit_kill),
+                              .xif_commit_valid    (core_i.xif_commit_if.commit_valid),
                               .*);
   bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
 
@@ -349,8 +351,6 @@ bind cv32e40s_sleep_unit:
          .rs2_addr_id_i            ( core_i.register_file_wrapper_i.raddr_i[1]                            ),
          .operand_a_fw_id_i        ( core_i.id_stage_i.operand_a_fw                                       ),
          .operand_b_fw_id_i        ( core_i.id_stage_i.operand_b_fw                                       ),
-
-         .exception_in_wb_i        ( core_i.controller_i.controller_fsm_i.exception_in_wb                 ),
 
          .pc_if_i                  ( core_i.if_stage_i.pc_if_o                                            ),
          .pc_id_i                  ( core_i.id_stage_i.if_id_pipe_i.pc                                    ),
