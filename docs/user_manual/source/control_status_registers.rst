@@ -1178,6 +1178,8 @@ Detailed:
 |             |           | set based on the value written to this register where:                 |
 |             |           | 0x0 = 1-4, 0x3 = 1-8, 0x7 = 1-16, 0xF = 1-32, 0x1F = 1-64              |
 +-------------+-----------+------------------------------------------------------------------------+
+| 15:4        | RO (0x0)  | Reserved                                                               |
++-------------+-----------+------------------------------------------------------------------------+
 | 3           | RW        | **rnddata:** Feed random data to unused functional units. (1 = enable) |
 +-------------+-----------+------------------------------------------------------------------------+
 | 2           | RW        | **rndhint:** Replace SLT hint by a random instruction without register |
