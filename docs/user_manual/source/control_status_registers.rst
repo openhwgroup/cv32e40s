@@ -1171,19 +1171,21 @@ Detailed:
 +-------------+-----------+------------------------------------------------------------------------+
 |   Bit #     |   Mode    |   Description                                                          |
 +=============+===========+========================================================================+
-| 19:16       | RW        | Frequency control for dummy instruction insertion.                     |
+| 31:20       | RO (0x0)  | Reserved                                                               |
++-------------+-----------+------------------------------------------------------------------------+
+| 19:16       | RW        | **rnddummyfreq:** Frequency control for dummy instruction insertion.   |
 |             |           | Dummy instruction inserted every n instructions where n is a range     |
 |             |           | set based on the value written to this register where:                 |
 |             |           | 0x0 = 1-4, 0x3 = 1-8, 0x7 = 1-16, 0xF = 1-32, 0x1F = 1-64              |
 +-------------+-----------+------------------------------------------------------------------------+
-| 3           | RW        | Feed random data to unused functional units. (1 = enable)              |
+| 3           | RW        | **rnddata:** Feed random data to unused functional units. (1 = enable) |
 +-------------+-----------+------------------------------------------------------------------------+
-| 2           | RW        | Replace SLT hint by a random instruction without register file         |
-|             |           | side effects (1 = enable).                                             |
+| 2           | RW        | **rndhint:** Replace SLT hint by a random instruction without register |
+|             |           | fileside effects (1 = enable).                                         |
 +-------------+-----------+------------------------------------------------------------------------+
-| 1           | RW        | Dummy instruction insertion enable (1 = enable).                       |
+| 1           | RW        | **rnddummy:** Dummy instruction insertion enable (1 = enable).         |
 +-------------+-----------+------------------------------------------------------------------------+
-| 0           | RW        | Data independent timing enable (1 = enable).                           |
+| 0           | RW        | **dataindtiming:** Data independent timing enable (1 = enable).        |
 +-------------+-----------+------------------------------------------------------------------------+
 
 The ``cpuctrl`` register contains configuration registers for core security features. It will allways read as 0.
