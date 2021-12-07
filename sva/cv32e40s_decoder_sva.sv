@@ -32,7 +32,7 @@ module cv32e40s_decoder_sva
    input decoder_ctrl_t decoder_i_ctrl,
    input decoder_ctrl_t decoder_m_ctrl,
    input decoder_ctrl_t decoder_a_ctrl,
-   input logic [31:0] instr_rdata_i
+   input logic [31:0] instr_rdata
    );
 
   
@@ -50,7 +50,7 @@ module cv32e40s_decoder_sva
   // Predecoder should always emit uncompressed instructions
   property p_uncompressed_lsb;
     @(posedge clk) disable iff(!rst_n)
-      (instr_rdata_i[1:0] == 2'b11);
+      (instr_rdata[1:0] == 2'b11);
   endproperty
 
   a_uncompressed_lsb: assert property(p_uncompressed_lsb) else `uvm_error("decoder", "2LSB not 2'b11")
