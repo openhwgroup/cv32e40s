@@ -1182,7 +1182,6 @@ typedef struct packed {
   logic        jr_stall;              // Stall due to JR hazard (JR used result from EX or LSU result in WB)
   logic        load_stall;            // Stall due to load operation
   logic        csr_stall;
-  logic        csr_stall_cpuctrl;
   logic        wfi_stall;
   logic        minstret_stall;        // Stall due to minstret/h read in EX
   logic        deassert_we;   // Deassert write enable and special insn bits
