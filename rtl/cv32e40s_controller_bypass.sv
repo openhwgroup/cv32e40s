@@ -60,9 +60,6 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // From WB
   input  logic        wb_ready_i,                 // WB stage is ready
 
-  // CSR write stobes
-  input  logic        csr_cpuctrl_we_i,
-
   // Controller Bypass outputs
   output ctrl_byp_t     ctrl_byp_o
 );
@@ -165,11 +162,6 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     // Also deassert for trigger match, as with dcsr.timing==0 we do not execute before entering debug mode
     if (if_id_pipe_i.instr.bus_resp.err || !(if_id_pipe_i.instr.mpu_status == MPU_OK) || if_id_pipe_i.trigger_match) begin
       ctrl_byp_o.deassert_we = 1'b1;
-    end
-
-    // Stall because cpuctrl is being written
-    if (csr_cpuctrl_we_i) begin
-      ctrl_byp_o.csr_stall_cpuctrl = 1'b1;
     end
 
     // Stall because of load or XIF operation

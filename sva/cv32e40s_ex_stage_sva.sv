@@ -103,23 +103,27 @@ module cv32e40s_ex_stage_sva
                     (ex_valid_o && wb_ready_i && id_ex_pipe_i.lsu_en && lsu_split_i)
                     |=> !ex_wb_pipe_o.rf_we);
 
-  // Assert that branch instructions always result in bubbles when data independent timing is enabled
-  a_dataindtiming_branch_bubbles:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     (wb_ready_i && $rose(id_ex_pipe_i.instr_meta.branch) && instr_valid && xsecure_ctrl_i.cpuctrl.dataindtiming)
-                     |=> !ex_valid_o ##1 !ex_valid_o);
+  // Assert that branches are always taken when dataindtiming=1.
+  // Branch is taken the first cycle when the branch instruction enters EX
+  a_dataindtiming_branch_taken:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                   ($rose(id_ex_pipe_i.instr_meta.branch) && instr_valid && xsecure_ctrl_i.cpuctrl.dataindtiming)
+                   |-> ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_mux == PC_BRANCH) && 
+                   ctrl_fsm_i.kill_if &&
+                   ctrl_fsm_i.kill_id);
 
   // Assert that branch target for untaken branches with dataindtiming=1 match expected value.
   // (+2 for compressed branch instructions, +4 for uncompressed branch instructions)
   a_dataindtiming_branch_target:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ((ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_mux == PC_BRANCH)) &&
-                      xsecure_ctrl_i.cpuctrl.dataindtiming &&
-                      !alu_cmp_result)
-                      |-> id_ex_pipe_i.instr_meta.compressed ? branch_target_o == (id_ex_pipe_i.pc + 2) :
-                                                               branch_target_o == (id_ex_pipe_i.pc + 4));
-
+  assert property (@(posedge clk) disable iff (!rst_n)
+                   ((ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_mux == PC_BRANCH)) &&
+                    xsecure_ctrl_i.cpuctrl.dataindtiming &&
+                    !alu_cmp_result)
+                   |-> id_ex_pipe_i.instr_meta.compressed ? branch_target_o == (id_ex_pipe_i.pc + 2) :
+                   branch_target_o == (id_ex_pipe_i.pc + 4));
+    
   // Make sure cpuctrl is stable when the EX stage has a valid instruction (i.e. cpuctrl hazard is handled correctly)
+  // cpuctrl updates are treated similar to a fence instruction, so when a cpuctrl writes is in WB, IF, ID and EX should be killed
   a_cpuctrl_ex_hazard:
     assert property (@(posedge clk) disable iff (!rst_n)
                      (instr_valid |=> $stable(xsecure_ctrl_i.cpuctrl)));

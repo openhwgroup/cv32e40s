@@ -86,6 +86,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // All controller FSM outputs
   output ctrl_fsm_t   ctrl_fsm_o,
 
+  // CSR write strobes
+  input logic         cpuctrl_wr_in_wb_i,
+
   // Stage valid/ready signals
   input  logic        if_valid_i,       // IF stage has valid (non-bubble) data for next stage
   input  logic        id_ready_i,       // ID stage is ready for new data
@@ -389,7 +392,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                          (pending_nmi && !nmi_allowed);
     // Halting EX if minstret_stall occurs. Otherwise we would read the wrong minstret value
     // Also halt if cpuctrl is being written, since it will affect behavior of div/rem and branches in EX stage
-    ctrl_fsm_o.halt_ex = ctrl_byp_i.minstret_stall || ctrl_byp_i.csr_stall_cpuctrl;
+    ctrl_fsm_o.halt_ex = ctrl_byp_i.minstret_stall;
     ctrl_fsm_o.halt_wb = 1'b0;
 
     // By default no stages are killed
@@ -551,10 +554,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
               fencei_flush_req_set = 1'b1;
             end
             if(fencei_req_and_ack_q) begin
-              // fencei req and ack were set at in the same cycle, complete handshake and jump to PC_FENCEI
+              // fencei req and ack were set at in the same cycle, complete handshake and jump to PC_WB_PLUS4
               // Unhalt wb and jump to wb.pc + 4
               ctrl_fsm_o.pc_set    = 1'b1;
-              ctrl_fsm_o.pc_mux    = PC_FENCEI;
+              ctrl_fsm_o.pc_mux    = PC_WB_PLUS4;
               ctrl_fsm_o.halt_wb   = 1'b0;
               fencei_flush_req_set = 1'b0;
             end
@@ -572,7 +575,15 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
             single_step_halt_if_n = 1'b0;
             debug_mode_n  = 1'b0;
-          
+          end else if (cpuctrl_wr_in_wb_i) begin
+            // cpuctrl has impact on pipeline operation. When updated, clear pipeline.
+            // div/divu/rem/remu and branch decisions in EX stage depend on cpuctrl.dataindtiming
+            // Dummy instruction insertion depend on cpuctrl.dummyen/dummyfreq
+            ctrl_fsm_o.kill_if = 1'b1;
+            ctrl_fsm_o.kill_id = 1'b1;
+            ctrl_fsm_o.kill_ex = 1'b1;
+            ctrl_fsm_o.pc_set  = 1'b1;
+            ctrl_fsm_o.pc_mux  = PC_WB_PLUS4;
           end else if (branch_taken_ex) begin
             ctrl_fsm_o.kill_if = 1'b1;
             ctrl_fsm_o.kill_id = 1'b1;  
