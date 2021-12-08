@@ -391,7 +391,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                          (pending_debug && !debug_allowed) ||
                          (pending_nmi && !nmi_allowed);
     // Halting EX if minstret_stall occurs. Otherwise we would read the wrong minstret value
-    // Also halt if cpuctrl is being written, since it will affect behavior of div/rem and branches in EX stage
     ctrl_fsm_o.halt_ex = ctrl_byp_i.minstret_stall;
     ctrl_fsm_o.halt_wb = 1'b0;
 
