@@ -63,7 +63,8 @@ and zero stall on the data-side memory interface.
   |                       |                                      | (operand b), i.e. in the number of leading bits at 0.       |
   | Remainder             | 3 - 35                               | The minimum number of cycles is 3 when the divider has zero |
   |                       |                                      | leading bits at 0 (e.g., 0x8000000).                        |
-  |                       |                                      | The maximum number of cycles is 35 when the divider is 0    |
+  |                       | 35 (cpuctrl.dataindtiming is set)    | The maximum number of cycles is 35 when the divider is 0    |
+  |                       |                                      |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
   | Jump                  | 2                                    | Jumps are performed in the ID stage. Upon a jump the IF     |
   |                       |                                      | stage (including prefetch buffer) is flushed. The new PC    |
@@ -73,6 +74,11 @@ and zero stall on the data-side memory interface.
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
   | Branch (Not-Taken)    | 1                                    | Any branch where the condition is not met will              |
   |                       |                                      | not stall.                                                  |
+  |                       | 3 (cpuctrl.dataindtiming is set)     |                                                             |
+  |                       |                                      |                                                             |
+  |                       | 4 (cpuctrl.dataindtiming is set and  |                                                             |
+  |                       | target is a non-word-aligned         |                                                             |
+  |                       | non-RVC instruction)                 |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
   | Branch (Taken)        | 3                                    | The EX stage is used to compute the branch decision. Any    |
   |                       |                                      | branch where the condition is met will be taken from  the   |
