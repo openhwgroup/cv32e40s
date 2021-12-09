@@ -42,6 +42,7 @@ module cv32e40s_ex_stage_sva
   input logic           csr_illegal_i,
   input logic           alu_cmp_result,
   input logic [31:0]    branch_target_o,
+  input logic           branch_decision_o,
   input logic           instr_valid
 );
 
@@ -103,14 +104,11 @@ module cv32e40s_ex_stage_sva
                     (ex_valid_o && wb_ready_i && id_ex_pipe_i.lsu_en && lsu_split_i)
                     |=> !ex_wb_pipe_o.rf_we);
 
-  // Assert that branches are always taken when dataindtiming=1.
-  // Branch is taken the first cycle when the branch instruction enters EX
+  // Assert that branch decision is always 1 when dataindtiming=1
   a_dataindtiming_branch_taken:
   assert property (@(posedge clk) disable iff (!rst_n)
-                   ($rose(id_ex_pipe_i.instr_meta.branch) && instr_valid && xsecure_ctrl_i.cpuctrl.dataindtiming)
-                   |-> ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_mux == PC_BRANCH) && 
-                   ctrl_fsm_i.kill_if &&
-                   ctrl_fsm_i.kill_id);
+                   ($rose(id_ex_pipe_i.instr_meta.branch) && xsecure_ctrl_i.cpuctrl.dataindtiming)
+                   |-> branch_decision_o);
 
   // Assert that branch target for untaken branches with dataindtiming=1 match expected value.
   // (+2 for compressed branch instructions, +4 for uncompressed branch instructions)
@@ -123,7 +121,7 @@ module cv32e40s_ex_stage_sva
                    branch_target_o == (id_ex_pipe_i.pc + 4));
     
   // Make sure cpuctrl is stable when the EX stage has a valid instruction (i.e. cpuctrl hazard is handled correctly)
-  // cpuctrl updates are treated similar to a fence instruction, so when a cpuctrl writes is in WB, IF, ID and EX should be killed
+  // cpuctrl updates are treated similar to a fence instruction, so when a cpuctrl write is in WB, IF, ID and EX should be killed
   a_cpuctrl_ex_hazard:
     assert property (@(posedge clk) disable iff (!rst_n)
                      (instr_valid |=> $stable(xsecure_ctrl_i.cpuctrl)));

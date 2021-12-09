@@ -37,7 +37,6 @@ module cv32e40s_controller_fsm_sva
   input logic           branch_in_ex,
   input logic           branch_taken_ex,
   input logic           branch_decision_ex_i,
-  input logic           branch_taken_q,
   input ctrl_state_e    ctrl_fsm_cs,
   input ctrl_state_e    ctrl_fsm_ns,
   input logic [1:0]     lsu_outstanding_cnt,
@@ -397,5 +396,15 @@ module cv32e40s_controller_fsm_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en) |-> !debug_allowed)
       else `uvm_error("controller", "debug_allowed high while LSU is in WB")
+
+
+  // Assert that branches are always taken in the first cycle of EX, unless EX is killed or halted
+  a_branch_in_ex_taken_first_cycle:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     ($rose(branch_in_ex) && !(ctrl_fsm_o.halt_ex || ctrl_fsm_o.kill_ex) |->
+                      ctrl_fsm_o.pc_set && (ctrl_fsm_o.pc_mux == PC_BRANCH) &&
+                      ctrl_fsm_o.kill_if &&
+                      ctrl_fsm_o.kill_id));
+
 endmodule // cv32e40s_controller_fsm_sva
 
