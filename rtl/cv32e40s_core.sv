@@ -536,8 +536,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //  |_____/_/\_\ |____/ |_/_/   \_\____|_____|     //
   //                                                 //
   /////////////////////////////////////////////////////
-
-  cv32e40s_ex_stage ex_stage_i
+  cv32e40s_ex_stage
+  #(
+    .X_EXT                      ( X_EXT                        )
+  )
+  ex_stage_i
   (
     .clk                        ( clk                          ),
     .rst_n                      ( rst_ni                       ),

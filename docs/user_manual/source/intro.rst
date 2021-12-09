@@ -54,7 +54,7 @@ It follows these specifications:
 .. [RISC-V-ZCES] RISC-V Standard Extension for the **Zces** subset of **Zce**, v0.52 (not ratified yet),
    https://github.com/riscv/riscv-code-size-reduction/blob/master/Zce-release-candidate/Zces.pdf
 
-.. [RISC-V-SMEPMP] PMP Enhancements for memory access and execution prevention on Machine mode, version 0.9.4 (not ratified yet),
+.. [RISC-V-SMEPMP] PMP Enhancements for memory access and execution prevention on Machine mode, version 0.9.5 (not ratified yet),
    https://github.com/riscv/riscv-tee/blob/main/Smepmp/Smepmp.pdf
 
 .. [OPENHW-OBI] OpenHW Open Bus Interface (OBI) protocol, version 1.2,
