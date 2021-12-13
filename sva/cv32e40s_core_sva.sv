@@ -330,19 +330,27 @@ always_ff @(posedge clk , negedge rst_ni)
                      (mret_insn_id && if_id_pipe.instr_valid && (cs_registers_mstatus_q.mpp == PRIV_LVL_U)))
     else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
 
+  // Helper signal. Indicate that pc_mux is set to a trap
+  logic pc_mux_is_trap;
+  assign pc_mux_is_trap = (ctrl_fsm.pc_mux == PC_TRAP_EXC) ||
+                          (ctrl_fsm.pc_mux == PC_TRAP_IRQ) ||
+                          (ctrl_fsm.pc_mux == PC_TRAP_DBD) ||
+                          (ctrl_fsm.pc_mux == PC_TRAP_DBE) ||
+                          (ctrl_fsm.pc_mux == PC_TRAP_NMI);
+
   // Assert that change to machine mode only happens upon an exception
   // If IF is killed (for instance due to a fencei), priviledege level can be restored to PRIV_LVL_M without jumping to an exception
   // ##1 is to avoid trigging the assertion in cycle 1
   a_priv_lvl_m_mode_exception:
     assert property (@(posedge clk) disable iff (!rst_ni)
                      ##1 $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_M) |-> 
-                     (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_EXCEPTION) || ctrl_fsm.kill_if))
+                     (ctrl_fsm.pc_set && pc_mux_is_trap || ctrl_fsm.kill_if))
     else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
     
   // Assert that all exceptions trap to machine mode, except when in debug mode (todo: revisit when debug related part of user mode is implemented)
   a_priv_lvl_exception :
     assert property (@(posedge clk) disable iff (!rst_ni)
-                      (!(ctrl_fsm.debug_mode || ctrl_fsm.debug_csr_save) && ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_EXCEPTION))
+                      (!(ctrl_fsm.debug_mode || ctrl_fsm.debug_csr_save) && ctrl_fsm.pc_set && pc_mux_is_trap)
                       |-> (priv_lvl_if == PRIV_LVL_M))
     else `uvm_error("core", "Exception not trapping to machine mode")
 
