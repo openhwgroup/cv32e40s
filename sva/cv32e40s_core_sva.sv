@@ -78,7 +78,7 @@ module cv32e40s_core_sva
   // written to.
   property p_irq_enabled_0;
     @(posedge clk) disable iff (!rst_ni)
-    (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_EXCEPTION) && (ctrl_fsm.exc_pc_mux == EXC_PC_IRQ)) |->
+    (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_TRAP_IRQ)) |->
     (mie[exc_cause] && cs_registers_mstatus_q.mie);
   endproperty
 
@@ -87,7 +87,7 @@ module cv32e40s_core_sva
   // Check that a taken IRQ was for an enabled cause and that mstatus.mie gets disabled
   property p_irq_enabled_1;
     @(posedge clk) disable iff (!rst_ni)
-      (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_EXCEPTION) && (ctrl_fsm.exc_pc_mux == EXC_PC_IRQ)) |=>
+      (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_TRAP_IRQ)) |=>
       (cs_registers_mcause_q.interrupt && cs_registers_mie_q[cs_registers_mcause_q.exception_code[4:0]] && !cs_registers_mstatus_q.mie);
   endproperty
 
@@ -126,7 +126,7 @@ always_ff @(posedge clk , negedge rst_ni)
       // code needs to check priority of what to expect
       if (!first_illegal_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK)) &&
-        !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&
+        !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           ex_wb_pipe.illegal_insn && !ctrl_debug_mode_n) begin
         first_illegal_found   <= 1'b1;
         expected_illegal_mepc <= ex_wb_pipe.pc;
@@ -134,28 +134,28 @@ always_ff @(posedge clk , negedge rst_ni)
       // todo: must check for M/U-mode as well, otherwise this will pick up both types of Ecalls
       if (!first_ecall_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn) &&
-        !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&
+        !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           ex_wb_pipe.ecall_insn && !ctrl_debug_mode_n) begin
         first_ecall_found   <= 1'b1;
         expected_ecall_mepc <= ex_wb_pipe.pc;
       end
       if (!first_ebrk_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn || ex_wb_pipe.ecall_insn) &&
-        !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&
+        !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           ex_wb_pipe.ebrk_insn) begin
         first_ebrk_found   <= 1'b1;
         expected_ebrk_mepc <= ex_wb_pipe.pc;
       end
 
       if (!first_instr_err_found && (ex_wb_pipe.instr.mpu_status == MPU_OK) && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
-         !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&
+         !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           ex_wb_pipe.instr_valid && ex_wb_pipe.instr.bus_resp.err && !ctrl_debug_mode_n ) begin
         first_instr_err_found   <= 1'b1;
         expected_instr_err_mepc <= ex_wb_pipe.pc;
       end
 
       if (!first_instr_mpuerr_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
-         !(ctrl_fsm.exc_pc_mux == EXC_PC_NMI) &&
+         !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           (ex_wb_pipe.instr.mpu_status != MPU_OK) && !ctrl_debug_mode_n) begin
         first_instr_mpuerr_found   <= 1'b1;
         expected_instr_mpuerr_mepc <= ex_wb_pipe.pc;
@@ -330,19 +330,27 @@ always_ff @(posedge clk , negedge rst_ni)
                      (mret_insn_id && if_id_pipe.instr_valid && (cs_registers_mstatus_q.mpp == PRIV_LVL_U)))
     else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
 
+  // Helper signal. Indicate that pc_mux is set to a trap
+  logic pc_mux_is_trap;
+  assign pc_mux_is_trap = (ctrl_fsm.pc_mux == PC_TRAP_EXC) ||
+                          (ctrl_fsm.pc_mux == PC_TRAP_IRQ) ||
+                          (ctrl_fsm.pc_mux == PC_TRAP_DBD) ||
+                          (ctrl_fsm.pc_mux == PC_TRAP_DBE) ||
+                          (ctrl_fsm.pc_mux == PC_TRAP_NMI);
+
   // Assert that change to machine mode only happens upon an exception
   // If IF is killed (for instance due to a fencei), priviledege level can be restored to PRIV_LVL_M without jumping to an exception
   // ##1 is to avoid trigging the assertion in cycle 1
   a_priv_lvl_m_mode_exception:
     assert property (@(posedge clk) disable iff (!rst_ni)
                      ##1 $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_M) |-> 
-                     (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_EXCEPTION) || ctrl_fsm.kill_if))
+                     (ctrl_fsm.pc_set && pc_mux_is_trap || ctrl_fsm.kill_if))
     else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
     
   // Assert that all exceptions trap to machine mode, except when in debug mode (todo: revisit when debug related part of user mode is implemented)
   a_priv_lvl_exception :
     assert property (@(posedge clk) disable iff (!rst_ni)
-                      (!(ctrl_fsm.debug_mode || ctrl_fsm.debug_csr_save) && ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_EXCEPTION))
+                      (!(ctrl_fsm.debug_mode || ctrl_fsm.debug_csr_save) && ctrl_fsm.pc_set && pc_mux_is_trap)
                       |-> (priv_lvl_if == PRIV_LVL_M))
     else `uvm_error("core", "Exception not trapping to machine mode")
 
