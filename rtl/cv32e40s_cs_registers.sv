@@ -97,6 +97,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // Xsecure control
   output xsecure_ctrl_t   xsecure_ctrl_o,
+  input logic             dummy_instr_if_i,
 
   // CSR write strobes
   output logic            cpuctrl_wr_in_wb_o,
@@ -880,6 +881,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     if (SECURE) begin : xsecure
 
       logic [2:0] lfsr_lockup;
+      logic       lfsr_en;
+
+      // Shift lfsr for each insterted dummy instruction when enabled
+      assign lfsr_en = cpuctrl_q.dummyen && dummy_instr_if_i;
 
       cv32e40s_csr #(
         .WIDTH      (32),
@@ -901,7 +906,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           .rst_n      (rst_n),
           .seed_i     (secureseed0_n),
           .seed_we_i  (secureseed0_we),
-          .enable_i   (cpuctrl_q.dummyen),
+          .enable_i   (lfsr_en),
           .data_o     (xsecure_ctrl_o.lfsr0),
           .lockup_o   (lfsr_lockup[0])
         );
@@ -913,7 +918,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           .rst_n      (rst_n),
           .seed_i     (secureseed1_n),
           .seed_we_i  (secureseed1_we),
-          .enable_i   (cpuctrl_q.dummyen),
+          .enable_i   (lfsr_en),
           .data_o     (xsecure_ctrl_o.lfsr1),
           .lockup_o   (lfsr_lockup[1])
         );
@@ -925,7 +930,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           .rst_n      (rst_n),
           .seed_i     (secureseed2_n),
           .seed_we_i  (secureseed2_we),
-          .enable_i   (cpuctrl_q.dummyen),
+          .enable_i   (lfsr_en),
           .data_o     (xsecure_ctrl_o.lfsr2),
           .lockup_o   (lfsr_lockup[2])
         );

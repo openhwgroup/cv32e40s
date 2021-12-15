@@ -130,6 +130,11 @@ module cv32e40s_id_stage_sva
                       |-> (id_ready_o && !id_valid_o))
       else `uvm_error("id_stage", "Kill should imply ready and not valid")
 
+  // Assert that we never get a triggermatch on a dummy instruction
+  a_no_trigger_match_on_dummy :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     if_id_pipe_i.instr_meta.dummy |-> !if_id_pipe_i.trigger_match)
+      else `uvm_error("id_stage", "Trigger match on dummy instruction")
 
 endmodule // cv32e40s_id_stage_sva
 

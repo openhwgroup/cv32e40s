@@ -352,6 +352,8 @@ bind cv32e40s_sleep_unit:
          .operand_a_fw_id_i        ( core_i.id_stage_i.operand_a_fw                                       ),
          .operand_b_fw_id_i        ( core_i.id_stage_i.operand_b_fw                                       ),
 
+         .is_dummy_instr_wb_i      ( core_i.wb_stage_i.ex_wb_pipe_i.instr_meta.dummy                      ),
+
          .pc_if_i                  ( core_i.if_stage_i.pc_if_o                                            ),
          .pc_id_i                  ( core_i.id_stage_i.if_id_pipe_i.pc                                    ),
          .pc_wb_i                  ( core_i.wb_stage_i.ex_wb_pipe_i.pc                                    ),

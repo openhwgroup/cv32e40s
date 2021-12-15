@@ -68,6 +68,7 @@ module cv32e40s_rvfi
    input logic                                wb_valid_i,
    input logic                                ebreak_in_wb_i,
    input logic [31:0]                         instr_rdata_wb_i,
+   input logic                                is_dummy_instr_wb_i,
    // Register writes
    input logic                                rf_we_wb_i,
    input logic [4:0]                          rf_addr_wb_i,
@@ -466,11 +467,11 @@ module cv32e40s_rvfi
 
   // Assign rvfi channels
   assign rvfi_halt = 1'b0; // No instruction causing halt
-  assign rvfi_ixl = 2'b01; // XLEN for current privilege level, must be 1(32) for RV32 systems
+  assign rvfi_ixl               = 2'b01; // XLEN for current privilege level, must be 1(32) for RV32 systems
 
   logic         in_trap_clr;
   // Clear in trap pipeline when it reaches rvfi_intr
-  // This is done to avoid reporting already signaled triggers as supressed during by debug
+  // This is done to avoid reporting already signaled triggers as supressed by debug
   assign in_trap_clr = wb_valid_i && in_trap[STAGE_WB];
 
 
@@ -501,6 +502,23 @@ module cv32e40s_rvfi
       rvfi_trap_next[11:9] = DBG_CAUSE_STEP;
     end
   end
+
+  logic dummy_suppressed_intr;
+  // Sticky rvfi_intr bit to allow signalling rvfi_intr from ignored dummy instructions
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      dummy_suppressed_intr <= 1'b0;
+    end else begin
+      if (wb_valid_i) begin
+        if (is_dummy_instr_wb_i) begin
+          dummy_suppressed_intr <= in_trap[STAGE_WB] || dummy_suppressed_intr;
+        end else begin
+          dummy_suppressed_intr <= 1'b0;
+        end
+      end
+    end
+  end
+
 
   // Pipeline stage model //
 
@@ -649,9 +667,9 @@ module cv32e40s_rvfi
 
 
       //// WB Stage ////
-      rvfi_valid      <= wb_valid_i;
+      rvfi_valid      <= wb_valid_i && !is_dummy_instr_wb_i;
       if (wb_valid_i) begin
-        rvfi_order      <= rvfi_order + 64'b1;
+        rvfi_order      <= is_dummy_instr_wb_i ? rvfi_order : rvfi_order + 64'b1;
         rvfi_pc_rdata   <= pc_wb_i;
         rvfi_insn       <= instr_rdata_wb_i;
 
@@ -667,7 +685,8 @@ module cv32e40s_rvfi
         rvfi_csr_wdata  <= rvfi_csr_wdata_d;
         rvfi_csr_wmask  <= rvfi_csr_wmask_d;
 
-        rvfi_intr      <= in_trap   [STAGE_WB];
+        // Signal rvfi_intr if previous retirement was a dummy instruction with a suppressed/invalidated rvfi_intr signal
+        rvfi_intr      <= dummy_suppressed_intr ? 1'b1 : in_trap[STAGE_WB];
         rvfi_rs1_addr  <= rs1_addr  [STAGE_WB];
         rvfi_rs2_addr  <= rs2_addr  [STAGE_WB];
         rvfi_rs1_rdata <= rs1_rdata [STAGE_WB];

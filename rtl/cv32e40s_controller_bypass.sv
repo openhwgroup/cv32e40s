@@ -236,6 +236,12 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
       end
     end
 
+    // Overriding operands with data from LFSRs for dummy instructions
+    if (if_id_pipe_i.instr_meta.dummy) begin
+        ctrl_byp_o.operand_a_fw_mux_sel = SEL_LFSR;
+        ctrl_byp_o.operand_b_fw_mux_sel = SEL_LFSR;
+    end
+
   end
 
   // Stall EX if offloaded instruction in WB may trigger an exception

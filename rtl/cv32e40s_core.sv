@@ -271,6 +271,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Xsecure control
   xsecure_ctrl_t xsecure_ctrl;
+  logic        dummy_instr_if;
   
   // Internal OBI interfaces
   if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
@@ -395,7 +396,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .PMA_NUM_REGIONS     ( PMA_NUM_REGIONS           ),
     .PMA_CFG             ( PMA_CFG                   ),
     .PMP_GRANULARITY     ( PMP_GRANULARITY           ),
-    .PMP_NUM_REGIONS     ( PMP_NUM_REGIONS           )
+    .PMP_NUM_REGIONS     ( PMP_NUM_REGIONS           ),
+    .DUMMY_INSTRUCTIONS  ( SECURE                    )
   )
   if_stage_i
   (
@@ -451,6 +453,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .if_valid_o          ( if_valid                  ),
     .id_ready_i          ( id_ready                  ),
 
+    // Dummy Instruction CSRs
+    .xsecure_ctrl_i      ( xsecure_ctrl              ),
+    .dummy_instr_if_o    ( dummy_instr_if            ),
+
     // eXtension interface
     .xif_compressed_if   ( xif_compressed_if         ),
     .xif_issue_valid_i   ( xif_issue_if.issue_valid  )
@@ -496,6 +502,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR ID/EX
     .mstatus_i                    ( mstatus                   ),
+    .xsecure_ctrl_i               ( xsecure_ctrl              ),
 
     // Register file write back and forwards
     .rf_wdata_ex_i                ( rf_wdata_ex               ),
@@ -766,6 +773,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Xsecure control
     .xsecure_ctrl_o             ( xsecure_ctrl           ),
+    .dummy_instr_if_i           ( dummy_instr_if         ),
 
     // CSR write strobes
     .cpuctrl_wr_in_wb_o         ( cpuctrl_wr_in_wb       ),

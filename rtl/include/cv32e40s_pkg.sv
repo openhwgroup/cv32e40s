@@ -471,8 +471,8 @@ parameter int unsigned CSR_MFIX_BIT_HIGH = 31;
 
 // CPUCTRL
 typedef struct packed {
-  logic [31:5] zero0;
-  logic [4:2]  dummyfreq;
+  logic [31:6] zero0;
+  logic [ 5:2] dummyfreq;
   logic        dummyen;
   logic        dataindtiming;
 } cpuctrl_t;
@@ -681,7 +681,8 @@ typedef logic [REGFILE_DATA_WIDTH-1:0] rf_data_t;
 typedef enum logic[1:0] {
                          SEL_REGFILE = 2'b00,
                          SEL_FW_EX   = 2'b01,
-                         SEL_FW_WB   = 2'b10
+                         SEL_FW_WB   = 2'b10,
+                         SEL_LFSR    = 2'b11
                          } op_fw_mux_e;
 
 typedef enum logic {
@@ -1038,12 +1039,13 @@ typedef struct packed {
 // TODO: consider moving other instruction meta data to this struct. e.g. xxx_insn, pc, etc
 typedef struct packed
 {
+  logic        dummy;
   logic        jump;
   logic        branch;
   logic        branch_taken;
   logic        compressed;
 } instr_meta_t;
-
+  
 // Struct for carrying eXtension interface information
 typedef struct packed
 {
@@ -1199,7 +1201,7 @@ typedef struct packed {
   logic        csr_stall;
   logic        wfi_stall;
   logic        minstret_stall;        // Stall due to minstret/h read in EX
-  logic        deassert_we;           // Deassert write enable and special insn bits
+  logic        deassert_we;   // Deassert write enable and special insn bits
   logic        xif_exception_stall;   // Stall (EX) if xif insn in WB can cause an exception
 } ctrl_byp_t;
 
@@ -1211,6 +1213,7 @@ typedef struct packed {
   logic        instr_req;             // Start fetching instructions
   logic        pc_set;                // jump to address set by pc_mux
   pc_mux_e     pc_mux;                // Selector in the Fetch stage to select the rigth PC (normal, jump ...)
+  logic        allow_dummy_instr;     // Allow dummy instruction insertion
 
   // To WB stage
   logic        block_data_addr;       // To LSU to prevent data_addr_wb_i updates between error and taken NMI
@@ -1292,7 +1295,8 @@ typedef struct packed {
   } lfsr_cfg_t;
 
   // Defaults for LFSR configuration. Note that default setting should not be used.
-  parameter lfsr_cfg_t LFSR_CFG_DEFAULT = '{coeffs       : 32'h0,
-                                            default_seed : 32'h0};
+  parameter lfsr_cfg_t LFSR_CFG_DEFAULT = '{coeffs       : 32'h4536,
+                                            default_seed : 32'h389047};
+
 
 endpackage
