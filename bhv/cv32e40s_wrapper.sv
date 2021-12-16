@@ -19,6 +19,7 @@
   `include "cv32e40s_cs_registers_sva.sv"
   `include "cv32e40s_decoder_sva.sv"
   `include "cv32e40s_div_sva.sv"
+  `include "cv32e40s_dummy_instr_sva.sv"
   `include "cv32e40s_if_stage_sva.sv"
   `include "cv32e40s_id_stage_sva.sv"
   `include "cv32e40s_ex_stage_sva.sv"
@@ -152,7 +153,16 @@ module cv32e40s_wrapper
       .*
     );
 
-
+  generate
+    if (SECURE) begin
+      bind cv32e40s_dummy_instr :
+        core_i.if_stage_i.gen_dummy_instr.dummy_instr_i cv32e40s_dummy_instr_sva
+      dummy_instr_sva
+        (
+         .*
+         );
+    end
+  endgenerate
   bind cv32e40s_id_stage:
     core_i.id_stage_i cv32e40s_id_stage_sva id_stage_sva
     (
