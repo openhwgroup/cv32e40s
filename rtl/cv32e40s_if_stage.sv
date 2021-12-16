@@ -333,14 +333,17 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   //---------------------------------------------------------------------------
   // Dummy Instruction Insertion
   //---------------------------------------------------------------------------
-//  assign dummy_instr_if_o = dummy_insert;
 
   generate
     if (DUMMY_INSTRUCTIONS) begin : gen_dummy_instr
+      logic instr_issued; // Used to count issued instructions between dummy instructions
+      assign instr_issued = if_valid_o && id_ready_i;
+
       cv32e40s_dummy_instr
         dummy_instr_i
           (.clk            ( clk            ),
            .rst_n          ( rst_n          ),
+           .instr_issued_i ( instr_issued   ),
            .ctrl_fsm_i     ( ctrl_fsm_i     ),
            .xsecure_ctrl_i ( xsecure_ctrl_i ),
            .dummy_insert_o ( dummy_insert   ),

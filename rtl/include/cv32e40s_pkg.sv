@@ -471,10 +471,13 @@ parameter int unsigned CSR_MFIX_BIT_HIGH = 31;
 
 // CPUCTRL
 typedef struct packed {
-  logic [31:6] zero0;
-  logic [ 5:2] dummyfreq;
-  logic        dummyen;
-  logic        dataindtiming;
+  logic [31:20] zero1;
+  logic [19:16] rnddummyfreq;
+  logic [15: 4] zero0;
+  logic         rnddata;
+  logic         rndhint;
+  logic         rnddummy;
+  logic         dataindtiming;
 } cpuctrl_t;
 
 typedef struct packed {

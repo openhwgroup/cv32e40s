@@ -35,6 +35,7 @@ module cv32e40s_dummy_instr
   #()
   (input  logic          clk,
    input  logic          rst_n,
+   input  logic          instr_issued_i,
    input  ctrl_fsm_t     ctrl_fsm_i,
    input  xsecure_ctrl_t xsecure_ctrl_i,
    output logic          dummy_insert_o,
@@ -42,6 +43,8 @@ module cv32e40s_dummy_instr
   );
 
   localparam MAX_DUMMY_INTERVAL = 64;
+  // Counter needs to count to one more than MAX_DUMMY_INTERVAL because we are
+  // comparing with > to get the 1 to MAX_DUMMY_INTERVAL range (the lfsr_cnt range is 0 to MAX_DUMMY_INTERVAL-1)
   localparam CNT_WIDTH = $clog2(MAX_DUMMY_INTERVAL+1);
 
   localparam logic [2:0] FUNCT3_ADD  = 3'b000;
@@ -70,24 +73,24 @@ module cv32e40s_dummy_instr
   logic [4:0]   lfsr_rs2;
   logic [5:0]   lfsr_cnt;
 
-  logic         cnt_reset;
-
   assign lfsr_instr = xsecure_ctrl_i.lfsr0[ 1: 0];
   assign lfsr_rs1   = xsecure_ctrl_i.lfsr0[12: 8];
   assign lfsr_rs2   = xsecure_ctrl_i.lfsr0[20:16];
-  assign lfsr_cnt   = xsecure_ctrl_i.lfsr0[29:24] & {xsecure_ctrl_i.cpuctrl.dummyfreq[5:2], 2'b11};
+  assign lfsr_cnt   = xsecure_ctrl_i.lfsr0[29:24] & {xsecure_ctrl_i.cpuctrl.rnddummyfreq, 2'b11};
 
-  assign dummy_insert_o = (cnt_q > lfsr_cnt) && ctrl_fsm_i.allow_dummy_instr && xsecure_ctrl_i.cpuctrl.dummyen;
+  assign dummy_insert_o = (cnt_q > lfsr_cnt) && ctrl_fsm_i.allow_dummy_instr && xsecure_ctrl_i.cpuctrl.rnddummy;
 
-  assign cnt_reset      = (cnt_q > lfsr_cnt) || !ctrl_fsm_i.allow_dummy_instr || !xsecure_ctrl_i.cpuctrl.dummyen;
-
-  assign cnt_next       = cnt_reset ? '0 : cnt_q + 1;
+  assign cnt_next       = (cnt_q > lfsr_cnt) ? '0        : // Reset counter on overflow
+                          instr_issued_i     ? cnt_q + 1 : // Count issued instructions only
+                                               cnt_q;
 
   always_ff @(posedge clk, negedge rst_n) begin
     if (rst_n == 1'b0) begin
       cnt_q <= '0;
     end else begin
-      cnt_q <= cnt_next;
+      if (xsecure_ctrl_i.cpuctrl.rnddummy) begin
+        cnt_q <= cnt_next;
+      end
     end
   end
 
