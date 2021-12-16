@@ -95,7 +95,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
     // Dummy Instruction CSRs
     input xsecure_ctrl_t  xsecure_ctrl_i,
-    output logic          dummy_instr_if_o,
 
     // eXtension interface
     if_xif.cpu_compressed xif_compressed_if,    // XIF compressed interface
@@ -334,7 +333,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   //---------------------------------------------------------------------------
   // Dummy Instruction Insertion
   //---------------------------------------------------------------------------
-  assign dummy_instr_if_o = dummy_insert;
+//  assign dummy_instr_if_o = dummy_insert;
 
   generate
     if (DUMMY_INSTRUCTIONS) begin : gen_dummy_instr

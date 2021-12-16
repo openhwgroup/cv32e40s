@@ -1295,8 +1295,8 @@ typedef struct packed {
   } lfsr_cfg_t;
 
   // Defaults for LFSR configuration. Note that default setting should not be used.
-  parameter lfsr_cfg_t LFSR_CFG_DEFAULT = '{coeffs       : 32'h4536,
-                                            default_seed : 32'h389047};
+  parameter lfsr_cfg_t LFSR_CFG_DEFAULT = '{coeffs       : 32'h0,
+                                            default_seed : 32'h0};
 
 
 endpackage

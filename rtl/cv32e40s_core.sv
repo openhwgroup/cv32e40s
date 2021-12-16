@@ -271,7 +271,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Xsecure control
   xsecure_ctrl_t xsecure_ctrl;
-  logic        dummy_instr_if;
   
   // Internal OBI interfaces
   if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
@@ -455,7 +454,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Dummy Instruction CSRs
     .xsecure_ctrl_i      ( xsecure_ctrl              ),
-    .dummy_instr_if_o    ( dummy_instr_if            ),
 
     // eXtension interface
     .xif_compressed_if   ( xif_compressed_if         ),
@@ -773,7 +771,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Xsecure control
     .xsecure_ctrl_o             ( xsecure_ctrl           ),
-    .dummy_instr_if_i           ( dummy_instr_if         ),
 
     // CSR write strobes
     .cpuctrl_wr_in_wb_o         ( cpuctrl_wr_in_wb       ),

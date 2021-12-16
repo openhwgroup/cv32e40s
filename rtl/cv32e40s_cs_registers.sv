@@ -97,7 +97,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // Xsecure control
   output xsecure_ctrl_t   xsecure_ctrl_o,
-  input logic             dummy_instr_if_i,
 
   // CSR write strobes
   output logic            cpuctrl_wr_in_wb_o,
@@ -883,8 +882,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       logic [2:0] lfsr_lockup;
       logic       lfsr_en;
 
-      // Shift lfsr for each insterted dummy instruction when enabled
-      assign lfsr_en = cpuctrl_q.dummyen && dummy_instr_if_i;
+      // -Shift lfsr for each insterted dummy instruction when enabled-
+      // Using the dummy bit from if_id_pipe (and not directly from dummy_instr in IF)
+      // is ok because there is at least one non-dummy cycle between each dummy instruction.
+      // This ensures at least one LFSR shift per inserted dummy
+      assign lfsr_en = cpuctrl_q.dummyen && if_id_pipe_i.instr_meta.dummy;
 
       cv32e40s_csr #(
         .WIDTH      (32),
