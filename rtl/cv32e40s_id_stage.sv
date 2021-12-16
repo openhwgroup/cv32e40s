@@ -293,6 +293,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       SEL_FW_WB:    operand_a_fw = rf_wdata_wb_i;
       SEL_REGFILE:  operand_a_fw = regfile_rdata_i[0];
       SEL_LFSR:     operand_a_fw = xsecure_ctrl_i.lfsr1;
+      SEL_ZERO:     operand_a_fw = 32'b0;
       default:      operand_a_fw = regfile_rdata_i[0];
     endcase;
   end
@@ -341,6 +342,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       SEL_FW_WB:    operand_b_fw = rf_wdata_wb_i;
       SEL_REGFILE:  operand_b_fw = regfile_rdata_i[1];
       SEL_LFSR:     operand_b_fw = xsecure_ctrl_i.lfsr2;
+      SEL_ZERO:     operand_b_fw = 32'b0;
       default:      operand_b_fw = regfile_rdata_i[1];
     endcase;
   end

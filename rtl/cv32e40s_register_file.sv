@@ -81,19 +81,9 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
     //-----------------------------------------------------------------------------
     //-- WRITE : Write operation
     //-----------------------------------------------------------------------------
-    // R0 is nil
-    always_ff @(posedge clk or negedge rst_n) begin
-      if(~rst_n) begin
-        // R0 is nil
-        mem[0] <= '0;
-      end else begin
-        // R0 is nil
-        mem[0] <= '0;
-      end
-    end
 
-    // loop from 1 to NUM_WORDS-1 as R0 is nil
-    for (i = 1; i < REGFILE_NUM_WORDS; i++)
+    // loop over all regitstrers, R0 can be used by dummy instructions
+    for (i = 0; i < REGFILE_NUM_WORDS; i++)
     begin : gen_rf
 
       always_ff @(posedge clk, negedge rst_n)
