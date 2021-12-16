@@ -75,9 +75,4 @@ module cv32e40s_wb_stage_sva
                     |-> !rf_we_wb_o)
       else `uvm_error("wb_stage", "Register file written while WB is halted or killed")
 
-  a_no_writes_to_r0_for_non_dummy_instr:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     (rf_waddr_wb_o == 32'h0) && !ex_wb_pipe_i.instr_meta.dummy |-> !rf_we_wb_o)
-      else `uvm_error("wb_stage", "Non-dummy instruction wrote to R0")
-
 endmodule // cv32e40s_wb_stage_sva

@@ -681,12 +681,11 @@ typedef logic [REGFILE_ADDR_WIDTH-1:0] rf_addr_t;
 typedef logic [REGFILE_DATA_WIDTH-1:0] rf_data_t;
 
 // forwarding operand mux
-typedef enum logic[2:0] {
-                         SEL_REGFILE = 3'b000,
-                         SEL_FW_EX   = 3'b001,
-                         SEL_FW_WB   = 3'b010,
-                         SEL_LFSR    = 3'b011,
-                         SEL_ZERO    = 3'b100
+typedef enum logic[1:0] {
+                         SEL_REGFILE = 2'b00,
+                         SEL_FW_EX   = 2'b01,
+                         SEL_FW_WB   = 2'b10,
+                         SEL_LFSR    = 2'b11
                          } op_fw_mux_e;
 
 typedef enum logic {

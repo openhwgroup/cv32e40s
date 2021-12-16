@@ -110,11 +110,8 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   // In case of MPU/PMA error, the register file should not be written.
   // rf_we_wb_o is deasserted if lsu_mpu_status is not equal to MPU_OK
 
-  // Writing to R0 is only allowed for dummy instructions
-  assign block_r0_we    = (ex_wb_pipe_i.rf_waddr == 0) && !ex_wb_pipe_i.instr_meta.dummy;
-
   // TODO: Could use result interface.we into account if out of order completion is allowed.
-  assign rf_we_wb_o     = ex_wb_pipe_i.rf_we && !lsu_exception && !xif_waiting && !xif_exception && !block_r0_we && instr_valid;
+  assign rf_we_wb_o     = ex_wb_pipe_i.rf_we && !lsu_exception && !xif_waiting && !xif_exception && instr_valid;
   // TODO: Could use result interface.rd into account if out of order completion is allowed.
   assign rf_waddr_wb_o  = ex_wb_pipe_i.rf_waddr;
   // TODO: Could use result interface.rd into account if out of order completion is allowed.

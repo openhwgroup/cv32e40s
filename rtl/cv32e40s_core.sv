@@ -173,7 +173,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Register file write enable for ALU insn in ID
   logic regfile_alu_we_id;
 
-    // CSR control
+  // CSR control
   logic [23:0] mtvec_addr;
   logic [1:0]  mtvec_mode;
 
@@ -942,6 +942,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   (
     .clk                ( clk                ),
     .rst_n              ( rst_ni             ),
+
+
+   .dummy_instr_id_i   ( if_id_pipe.instr_meta.dummy ),
+   .dummy_instr_wb_i   ( ex_wb_pipe.instr_meta.dummy ),
 
     // ECC error output
     .ecc_err_o          ( rf_ecc_err         ),
