@@ -668,8 +668,8 @@ module cv32e40s_rvfi
 
       //// WB Stage ////
       rvfi_valid      <= wb_valid_i && !is_dummy_instr_wb_i;
-      if (wb_valid_i) begin
-        rvfi_order      <= is_dummy_instr_wb_i ? rvfi_order : rvfi_order + 64'b1;
+      if (wb_valid_i && !is_dummy_instr_wb_i) begin
+        rvfi_order      <= rvfi_order + 64'b1;
         rvfi_pc_rdata   <= pc_wb_i;
         rvfi_insn       <= instr_rdata_wb_i;
 
