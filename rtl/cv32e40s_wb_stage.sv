@@ -74,7 +74,6 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   logic                 instr_valid;
   logic                 wb_valid;
   logic                 lsu_exception;
-  logic                 block_r0_we;
 
   // eXtension interface signals
   logic                 xif_waiting;

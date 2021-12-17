@@ -238,11 +238,11 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
     if (if_id_pipe_i.instr_meta.dummy) begin
       // Overriding operands with data from LFSRs for dummy instructions, except for reads from R0
-      if (rf_raddr_i[0] != 32'h0) begin
+      if (rf_raddr_i[0] != '0) begin
         ctrl_byp_o.operand_a_fw_mux_sel = SEL_LFSR;
       end
 
-      if (rf_raddr_i[1] != 32'h0) begin
+      if (rf_raddr_i[1] != '0) begin
         ctrl_byp_o.operand_b_fw_mux_sel = SEL_LFSR;
       end
     end

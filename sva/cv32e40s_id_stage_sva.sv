@@ -159,7 +159,7 @@ module cv32e40s_id_stage_sva
   a_dummy_can_read_r0_p0:
     assert property (@(posedge clk) disable iff (!rst_n)
                      rf_re_o[0] && (rf_raddr_o[0] == 32'h0) && if_id_pipe_i.instr_meta.dummy |-> (operand_a_fw == regfile_rdata_i[0]))
-      else `uvm_error("id_stage", "Dummy instruction could not read from R0 (on read port 1)")
+      else `uvm_error("id_stage", "Dummy instruction could not read from R0 (on read port 0)")
 
   a_dummy_can_read_r0_p1:
     assert property (@(posedge clk) disable iff (!rst_n)
