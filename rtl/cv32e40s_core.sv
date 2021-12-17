@@ -63,7 +63,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   input  logic [31:0] dm_halt_addr_i,
   input  logic [31:0] hart_id_i,
   input  logic [31:0] dm_exception_addr_i,
-  input  logic [31:0] nmi_addr_i,               // TODO:OK:low use
+  input  logic [31:0] nmi_addr_i,
 
   // Instruction memory interface
   output logic        instr_req_o,
