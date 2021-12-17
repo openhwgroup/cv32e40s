@@ -26,6 +26,9 @@
 module cv32e40s_id_stage_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
+  #(
+    parameter int unsigned REGFILE_NUM_READ_PORTS = 2
+    )
 (
   input logic           clk,
   input logic           rst_n,
@@ -43,6 +46,11 @@ module cv32e40s_id_stage_sva
   input logic           fencei_insn,
   input logic           ex_ready_i,
   input logic           illegal_insn,
+  input logic [31:0]    operand_a_fw,
+  input logic [31:0]    operand_b_fw,
+  input logic [REGFILE_NUM_READ_PORTS-1:0] rf_re_o,
+  input rf_addr_t       rf_raddr_o[REGFILE_NUM_READ_PORTS],
+  input rf_data_t       regfile_rdata_i[REGFILE_NUM_READ_PORTS],
   input csr_opcode_e    csr_op,
   input if_id_pipe_t    if_id_pipe_i,
   input id_ex_pipe_t    id_ex_pipe_o,
@@ -130,6 +138,33 @@ module cv32e40s_id_stage_sva
                       |-> (id_ready_o && !id_valid_o))
       else `uvm_error("id_stage", "Kill should imply ready and not valid")
 
+  // Assert that we never get a triggermatch on a dummy instruction
+  a_no_trigger_match_on_dummy :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     if_id_pipe_i.instr_meta.dummy |-> !if_id_pipe_i.trigger_match)
+      else `uvm_error("id_stage", "Trigger match on dummy instruction")
+
+
+  // Assert that regular (non-dummy) instructions use 0 instead of the R0 register value
+  a_non_dummy_reads_0_from_r0_p0:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     rf_re_o[0] && (rf_raddr_o[0] == 32'h0) && !if_id_pipe_i.instr_meta.dummy |-> (operand_a_fw == 32'h0))
+      else `uvm_error("id_stage", "Non-dummy instruction used non-zero value from R0 (on read port 0)")
+
+  a_non_dummy_reads_0_from_r0_p1:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     rf_re_o[1] && (rf_raddr_o[1] == 32'h0) && !if_id_pipe_i.instr_meta.dummy |-> (operand_b_fw == 32'h0))
+      else `uvm_error("id_stage", "Non-dummy instruction used non-zero value from R0 (on read port 1)")
+
+  a_dummy_can_read_r0_p0:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     rf_re_o[0] && (rf_raddr_o[0] == 32'h0) && if_id_pipe_i.instr_meta.dummy |-> (operand_a_fw == regfile_rdata_i[0]))
+      else `uvm_error("id_stage", "Dummy instruction could not read from R0 (on read port 0)")
+
+  a_dummy_can_read_r0_p1:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     rf_re_o[1] && (rf_raddr_o[1] == 32'h0) && if_id_pipe_i.instr_meta.dummy |-> (operand_b_fw == regfile_rdata_i[1]))
+      else `uvm_error("id_stage", "Dummy instruction could not read from R0 (on read port 1)")
 
 endmodule // cv32e40s_id_stage_sva
 

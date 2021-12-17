@@ -196,9 +196,13 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   
   // Mux selector for vectored IRQ PC
   assign ctrl_fsm_o.m_exc_vec_pc_mux = (mtvec_mode_i == 2'b0) ? 5'h0 : exc_cause;
-  
-  ////////////////////////////////////////////////////////////////////
 
+
+  ////////////////////////////////////////////////////////////////////
+  // Blocking dummy instructions during single stepping and in debug mode
+  // Todo: Use allow_dummy_instr to guarantee progress (ensure there are never two dummies in a row in any pipeline stage)
+  assign  ctrl_fsm_o.allow_dummy_instr = !dcsr_i.step && // Valid in IF because it can only be written in debug mode
+                                         !debug_mode_q;  // Valid in IF because pipeline is killed when entering and exiting debug
 
   // ID stage
   // A jump is taken in ID for jump instructions, and also for mret instructions
@@ -358,6 +362,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Halted WB due to debug will result in WB getting killed
   // Halted WB due to fence.i will result in fence.i retire after handshake is done and we count when WB is un-halted
   assign wb_counter_event_gated = wb_counter_event && !exception_in_wb && !trigger_match_in_wb &&
+                                  !ex_wb_pipe_i.instr_meta.dummy && // Don't count dummy instuctions
                                   !ctrl_fsm_o.kill_wb && !ctrl_fsm_o.halt_wb;
 
   // Performance counter events
@@ -433,7 +438,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     debug_mode_n                   = debug_mode_q;
     ctrl_fsm_o.debug_csr_save      = 1'b0;
     ctrl_fsm_o.block_data_addr     = 1'b0;
-    
+
     // Single step halting of IF
     single_step_halt_if_n = single_step_halt_if_q;
 

@@ -49,7 +49,20 @@ module cv32e40s_rvfi_sva
    input logic [3:0]       in_trap,
    input logic [3:0] [2:0] debug_cause
    );
-  
+
+  logic [11:0] rvfi_trap_q; // RVFI trap value of the previous valid rvfi instruction
+
+  always_ff @(posedge clk_i, negedge rst_ni) begin
+    if (rst_ni == 1'b0) begin
+      rvfi_trap_q <= '0;
+    end else begin
+      if (rvfi_valid) begin
+        rvfi_trap_q <= rvfi_trap;
+      end
+    end
+  end
+
+
   // Check that irq_ack results in RVFI capturing a trap
   // Ideally, we should assert that every irq_ack eventually leads to rvfi_intr,
   // but since there can be an infinite delay between irq_ack and rvfi_intr (e.g. because of bus stalls), we're settling for asserting
@@ -133,14 +146,14 @@ module cv32e40s_rvfi_sva
   a_rvfi_trap_mcause_align:
     assert property (@(posedge clk_i) disable iff (!rst_ni)
                     (no_debug && !ctrl_fsm_i.pending_nmi) throughout s_goto_next_rvfi_valid(|rvfi_trap) |->
-                     rvfi_intr && (rvfi_csr_mcause_rdata[5:0] == $past(rvfi_trap[8:3])))
+                     rvfi_intr && (rvfi_csr_mcause_rdata[5:0] == rvfi_trap_q[8:3]))
       else `uvm_error("rvfi", "rvfi_trap[8:3] not consistent with mcause[5:0] in following retired instruction")
 
   // Exception code in rvfi_trap[11:9] should align with rvfi_dbg the following retired instruction
   a_rvfi_trap_rvfi_dbg_align:
     assert property (@(posedge clk_i) disable iff (!rst_ni)
                      s_goto_next_rvfi_valid(rvfi_trap[2]) |->
-                     rvfi_dbg == $past(rvfi_trap[11:9]))
+                     rvfi_dbg == rvfi_trap_q[11:9])
      else `uvm_error("rvfi", "rvfi_trap[11:9] not consistent with rvfi_dbg in following retired instruction")
 
   // Check that rvfi_trap always indicate single step if rvfi_trap[2:1] == 2'b11
@@ -155,7 +168,7 @@ module cv32e40s_rvfi_sva
     assert property (@(posedge clk_i) disable iff (!rst_ni)
                      s_goto_next_rvfi_valid(rvfi_trap[1] && rvfi_trap[2]) |->
                      (rvfi_dbg == DBG_CAUSE_STEP) && (rvfi_csr_dcsr_rdata[8:6] == DBG_CAUSE_STEP) &&
-                     (rvfi_csr_mcause_rdata[5:0] == $past(rvfi_trap[8:3])) &&
+                     (rvfi_csr_mcause_rdata[5:0] == rvfi_trap_q[8:3]) &&
                      rvfi_intr)
      else `uvm_error("rvfi", "dcsr.cause, mcause and rvfi_intr not as expected following an exception during single step")
     

@@ -28,9 +28,12 @@ module cv32e40s_if_stage_sva
   input  logic          rst_n,
 
   input logic           if_ready,
-  input logic           if_valid_o,  
-  input  ctrl_fsm_t     ctrl_fsm_i,
+  input logic           if_valid_o,
+  input logic [31:0]    pc_if_o,
+  input logic           prefetch_resp_valid,
+  input ctrl_fsm_t      ctrl_fsm_i,
   input privlvl_t       prefetch_priv_lvl,
+  input logic           dummy_insert,
   input if_id_pipe_t    if_id_pipe_o,
   if_c_obi.monitor      m_c_obi_instr_if
 );
@@ -84,6 +87,20 @@ module cv32e40s_if_stage_sva
                      priv_lvl_change && if_id_pipe_o.instr_valid |-> 
                      if_id_pipe_o.priv_lvl == new_priv_lvl)
     else `uvm_error("if_stage", "Wrong privilege level sent to ID stage")
+
+  // Assert that the prefetcher is never popped during a dummy instruction unless it's killed
+  a_never_pop_prefetcher_on_dummy :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     dummy_insert && prefetch_resp_valid && !ctrl_fsm_i.kill_if |=> (ctrl_fsm_i.kill_if || (pc_if_o === $past(pc_if_o))))
+      else `uvm_error("if_stage", "Prefetcher popped during dummy instruction")
+
+  // Assert that we do not trigger dummy instructions multiple cycles in a row
+  // Todo: When/if we use allow_dummy_instr from controller_fsm to guarantee progress,
+  //       this assertion should be updated to check for guaranteed progress
+  a_no_back_to_back_dummy_instructions :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     dummy_insert |-> !$past(dummy_insert))
+      else `uvm_error("if_stage", "Two dummy instructions in a row")
 
 endmodule // cv32e40s_if_stage
 

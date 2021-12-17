@@ -29,12 +29,13 @@ module cv32e40s_wb_stage_sva
 (
   input logic           clk,
   input logic           rst_n,
-   
+
   input logic           wb_ready_o,
-  input logic           wb_valid,  
+  input logic           wb_valid,
   input ctrl_fsm_t      ctrl_fsm_i,
   input ex_wb_pipe_t    ex_wb_pipe_i,
   input mpu_status_e    lsu_mpu_status_i,
+  input rf_addr_t       rf_waddr_wb_o,
   input logic           rf_we_wb_o
 );
 
@@ -73,4 +74,5 @@ module cv32e40s_wb_stage_sva
                     (ctrl_fsm_i.kill_wb || ctrl_fsm_i.halt_wb)
                     |-> !rf_we_wb_o)
       else `uvm_error("wb_stage", "Register file written while WB is halted or killed")
+
 endmodule // cv32e40s_wb_stage_sva

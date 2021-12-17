@@ -38,6 +38,10 @@ module cv32e40s_register_file_wrapper import cv32e40s_pkg::*;
    input logic      clk,
    input logic      rst_n,
 
+   // R0 Dummy instruction handling
+    input logic     dummy_instr_id_i,
+    input logic     dummy_instr_wb_i,
+
    // ECC
    output logic     ecc_err_o,
 
@@ -63,6 +67,9 @@ module cv32e40s_register_file_wrapper import cv32e40s_pkg::*;
       (
        .clk                ( clk                ),
        .rst_n              ( rst_n              ),
+
+       .dummy_instr_id_i   ( dummy_instr_id_i   ),
+       .dummy_instr_wb_i   ( dummy_instr_wb_i   ),
 
        // Read ports
        .raddr_i            ( raddr_i            ),

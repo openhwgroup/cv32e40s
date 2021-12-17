@@ -35,18 +35,22 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
     input logic                           clk,
     input logic                           rst_n,
 
+    input logic                           dummy_instr_id_i,
+    input logic                           dummy_instr_wb_i,
+
     // Read ports
-    input  rf_addr_t                      raddr_i [REGFILE_NUM_READ_PORTS],
+    input                                 rf_addr_t raddr_i [REGFILE_NUM_READ_PORTS],
     output logic [REGFILE_WORD_WIDTH-1:0] rdata_o [REGFILE_NUM_READ_PORTS],
 
     // Write ports
-    input rf_addr_t                       waddr_i [REGFILE_NUM_WRITE_PORTS],
+    input                                 rf_addr_t waddr_i [REGFILE_NUM_WRITE_PORTS],
     input logic [REGFILE_WORD_WIDTH-1:0]  wdata_i [REGFILE_NUM_WRITE_PORTS],
-    input logic                           we_i    [REGFILE_NUM_WRITE_PORTS]
+    input logic                           we_i [REGFILE_NUM_WRITE_PORTS]
    );
 
   // integer register file
-  logic [REGFILE_WORD_WIDTH-1:0]          mem [REGFILE_NUM_WORDS];
+  logic [REGFILE_WORD_WIDTH-1:0]          mem       [REGFILE_NUM_WORDS];
+  logic [REGFILE_WORD_WIDTH-1:0]          mem_gated [REGFILE_NUM_WORDS];
 
   // write enable signals for all registers
   logic [REGFILE_NUM_WORDS-1:0]           we_dec[REGFILE_NUM_WRITE_PORTS];
@@ -54,10 +58,22 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
   //-----------------------------------------------------------------------------
   //-- READ : Read address decoder RAD
   //-----------------------------------------------------------------------------
+
+  generate
+    if (SECURE) begin
+      assign mem_gated[0] = dummy_instr_id_i ? mem[0] : '0;
+      for (genvar addr=1; addr < REGFILE_NUM_WORDS; addr++) begin
+        assign mem_gated[addr] = mem[addr];
+      end
+    end else begin
+      assign mem_gated = mem;
+    end
+  endgenerate
+
   genvar ridx;
   generate
     for (ridx=0; ridx<REGFILE_NUM_READ_PORTS; ridx++) begin : gen_regfile_rdata
-      assign rdata_o[ridx] = mem[raddr_i[ridx]];
+      assign rdata_o[ridx] = mem_gated[raddr_i[ridx]];
     end
   endgenerate
 
@@ -81,18 +97,33 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
     //-----------------------------------------------------------------------------
     //-- WRITE : Write operation
     //-----------------------------------------------------------------------------
-    // R0 is nil
-    always_ff @(posedge clk or negedge rst_n) begin
-      if(~rst_n) begin
-        // R0 is nil
-        mem[0] <= '0;
-      end else begin
-        // R0 is nil
-        mem[0] <= '0;
+    if (SECURE) begin
+      always_ff @(posedge clk or negedge rst_n) begin
+        if(~rst_n) begin
+          mem[0] <= '0;
+        end else begin
+          if (dummy_instr_wb_i) begin
+            if(we_dec[0][0] == 1'b1) begin
+              mem[0] <= wdata_i[0];
+            end
+          end else begin
+            mem[0] <= '0;
+          end
+        end
+      end
+    end else begin // (!SECURE)
+      always_ff @(posedge clk or negedge rst_n) begin
+        if(~rst_n) begin
+          // R0 is nil
+          mem[0] <= '0;
+        end else begin
+          // R0 is nil
+          mem[0] <= '0;
+        end
       end
     end
 
-    // loop from 1 to NUM_WORDS-1 as R0 is nil
+    // loop over all regitstrers, R0 can be used by dummy instructions
     for (i = 1; i < REGFILE_NUM_WORDS; i++)
     begin : gen_rf
 

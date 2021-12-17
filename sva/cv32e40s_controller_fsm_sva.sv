@@ -489,6 +489,24 @@ endgenerate
                       ctrl_fsm_o.kill_if &&
                       ctrl_fsm_o.kill_id));
 
+
+  // Assert that we don't count dummy instruction retirements
+  // Events caused by the dummy instruction shoud be suppressed
+  a_not_counting_dummy_instr :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     (ex_wb_pipe_i.instr_meta.dummy |-> !(ctrl_fsm_o.mhpmevent.minstret   ||
+                                                          ctrl_fsm_o.mhpmevent.compressed ||
+                                                          ctrl_fsm_o.mhpmevent.jump       ||
+                                                          ctrl_fsm_o.mhpmevent.branch     ||
+                                                          ctrl_fsm_o.mhpmevent.branch_taken)))
+                     else `uvm_error("controller", "Dummy instruction retirement counted")
+
+  // Dummy instructions should never have synchronous exceptions
+  a_no_sync_exception_on_dummy_inst:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     (ex_wb_pipe_i.instr_meta.dummy |-> !exception_in_wb))
+      else `uvm_error("wb_stage", "Dummy instructions had synchronous exception")
+
   // Ensure bubbles in EX and WB while in SLEEP mode
   a_wfi_bubbles:
     assert property (@(posedge clk) disable iff (!rst_n)

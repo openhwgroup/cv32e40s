@@ -61,6 +61,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   input  mstatus_t    mstatus_i,
 
+  input  xsecure_ctrl_t xsecure_ctrl_i,
+
   // Register file write data from WB stage
   input  logic [31:0]    rf_wdata_wb_i,
 
@@ -290,6 +292,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       SEL_FW_EX:    operand_a_fw = rf_wdata_ex_i;
       SEL_FW_WB:    operand_a_fw = rf_wdata_wb_i;
       SEL_REGFILE:  operand_a_fw = regfile_rdata_i[0];
+      SEL_LFSR:     operand_a_fw = xsecure_ctrl_i.lfsr1;
       default:      operand_a_fw = regfile_rdata_i[0];
     endcase;
   end
@@ -337,6 +340,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       SEL_FW_EX:    operand_b_fw = rf_wdata_ex_i;
       SEL_FW_WB:    operand_b_fw = rf_wdata_wb_i;
       SEL_REGFILE:  operand_b_fw = regfile_rdata_i[1];
+      SEL_LFSR:     operand_b_fw = xsecure_ctrl_i.lfsr2;
       default:      operand_b_fw = regfile_rdata_i[1];
     endcase;
   end

@@ -19,6 +19,7 @@
   `include "cv32e40s_cs_registers_sva.sv"
   `include "cv32e40s_decoder_sva.sv"
   `include "cv32e40s_div_sva.sv"
+  `include "cv32e40s_dummy_instr_sva.sv"
   `include "cv32e40s_if_stage_sva.sv"
   `include "cv32e40s_id_stage_sva.sv"
   `include "cv32e40s_ex_stage_sva.sv"
@@ -152,7 +153,16 @@ module cv32e40s_wrapper
       .*
     );
 
-
+  generate
+    if (SECURE) begin
+      bind cv32e40s_dummy_instr :
+        core_i.if_stage_i.gen_dummy_instr.dummy_instr_i cv32e40s_dummy_instr_sva
+      dummy_instr_sva
+        (
+         .*
+         );
+    end
+  endgenerate
   bind cv32e40s_id_stage:
     core_i.id_stage_i cv32e40s_id_stage_sva id_stage_sva
     (
@@ -351,6 +361,8 @@ bind cv32e40s_sleep_unit:
          .rs2_addr_id_i            ( core_i.register_file_wrapper_i.raddr_i[1]                            ),
          .operand_a_fw_id_i        ( core_i.id_stage_i.operand_a_fw                                       ),
          .operand_b_fw_id_i        ( core_i.id_stage_i.operand_b_fw                                       ),
+
+         .is_dummy_instr_wb_i      ( core_i.wb_stage_i.ex_wb_pipe_i.instr_meta.dummy                      ),
 
          .pc_if_i                  ( core_i.if_stage_i.pc_if_o                                            ),
          .pc_id_i                  ( core_i.id_stage_i.if_id_pipe_i.pc                                    ),

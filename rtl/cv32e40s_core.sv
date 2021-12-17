@@ -173,7 +173,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Register file write enable for ALU insn in ID
   logic regfile_alu_we_id;
 
-    // CSR control
+  // CSR control
   logic [23:0] mtvec_addr;
   logic [1:0]  mtvec_mode;
 
@@ -395,7 +395,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .PMA_NUM_REGIONS     ( PMA_NUM_REGIONS           ),
     .PMA_CFG             ( PMA_CFG                   ),
     .PMP_GRANULARITY     ( PMP_GRANULARITY           ),
-    .PMP_NUM_REGIONS     ( PMP_NUM_REGIONS           )
+    .PMP_NUM_REGIONS     ( PMP_NUM_REGIONS           ),
+    .DUMMY_INSTRUCTIONS  ( SECURE                    )
   )
   if_stage_i
   (
@@ -451,6 +452,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .if_valid_o          ( if_valid                  ),
     .id_ready_i          ( id_ready                  ),
 
+    // Dummy Instruction CSRs
+    .xsecure_ctrl_i      ( xsecure_ctrl              ),
+
     // eXtension interface
     .xif_compressed_if   ( xif_compressed_if         ),
     .xif_issue_valid_i   ( xif_issue_if.issue_valid  )
@@ -496,6 +500,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR ID/EX
     .mstatus_i                    ( mstatus                   ),
+    .xsecure_ctrl_i               ( xsecure_ctrl              ),
 
     // Register file write back and forwards
     .rf_wdata_ex_i                ( rf_wdata_ex               ),
@@ -937,6 +942,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   (
     .clk                ( clk                ),
     .rst_n              ( rst_ni             ),
+
+
+   .dummy_instr_id_i   ( if_id_pipe.instr_meta.dummy ),
+   .dummy_instr_wb_i   ( ex_wb_pipe.instr_meta.dummy ),
 
     // ECC error output
     .ecc_err_o          ( rf_ecc_err         ),

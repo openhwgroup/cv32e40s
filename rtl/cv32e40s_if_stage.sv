@@ -34,7 +34,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   parameter int          PMA_NUM_REGIONS = 0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
   parameter int          PMP_GRANULARITY = 0,
-  parameter int          PMP_NUM_REGIONS = 0
+  parameter int          PMP_NUM_REGIONS = 0,
+  parameter bit          DUMMY_INSTRUCTIONS = 0
 )
 (
     input  logic        clk,
@@ -92,6 +93,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     output logic        if_valid_o,
     input  logic        id_ready_i,
 
+    // Dummy Instruction CSRs
+    input xsecure_ctrl_t  xsecure_ctrl_i,
+
     // eXtension interface
     if_xif.cpu_compressed xif_compressed_if,    // XIF compressed interface
     input  logic          xif_issue_valid_i     // ID stage attempts to offload an instruction
@@ -127,6 +131,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic              bus_trans_ready;
   obi_inst_req_t     bus_trans;
   obi_inst_req_t     core_trans;
+
+  logic              dummy_insert;
+  inst_resp_t        dummy_instr;
 
   // Local instr_valid
   logic instr_valid;
@@ -255,12 +262,12 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .m_c_obi_instr_if     ( m_c_obi_instr_if )
   );
 
-  // Local instr_valid when we have valid output from prefetcher
+  // Local instr_valid when we have valid output from prefetcher or we are inserting a dummy instruction
   // and IF is not halted or killed
-  assign instr_valid = prefetch_valid && !ctrl_fsm_i.kill_if && !ctrl_fsm_i.halt_if;
+  assign instr_valid = (prefetch_valid || dummy_insert) && !ctrl_fsm_i.kill_if && !ctrl_fsm_i.halt_if;
 
-  // if_stage ready when killed, otherwise when not halted.
-  assign if_ready = ctrl_fsm_i.kill_if || (id_ready_i && !ctrl_fsm_i.halt_if);
+  // if_stage ready when killed, otherwise when not halted or if a dummy instruction is inserted.
+  assign if_ready = ctrl_fsm_i.kill_if || (id_ready_i && !dummy_insert && !ctrl_fsm_i.halt_if);
 
   // if stage valid when local instr_valid is 1
   assign if_valid_o = instr_valid;
@@ -268,10 +275,11 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   assign if_busy_o = prefetch_busy;
 
   // Populate instruction meta data
-  instr_meta_t instr_meta_n; 
+  instr_meta_t instr_meta_n;
   always_comb begin
-    instr_meta_n = '0;
-    instr_meta_n.compressed = instr_compressed_int;
+    instr_meta_n            = '0;
+    instr_meta_n.dummy      = dummy_insert;
+    instr_meta_n.compressed = dummy_insert ? 1'b0 : instr_compressed_int;
   end
 
   // IF-ID pipeline registers, frozen when the ID stage is stalled
@@ -291,19 +299,19 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     end
     else
     begin
-      
+
       // Valid pipeline output if we are valid AND the
       // alignment buffer has a valid instruction
       if (if_valid_o && id_ready_i)
       begin
         if_id_pipe_o.instr_valid      <= 1'b1;
-        if_id_pipe_o.instr            <= instr_decompressed;
+        if_id_pipe_o.instr            <= dummy_insert ? dummy_instr : instr_decompressed;
         if_id_pipe_o.instr_meta       <= instr_meta_n;
-        if_id_pipe_o.illegal_c_insn   <= illegal_c_insn;
+        if_id_pipe_o.illegal_c_insn   <= dummy_insert ?        1'b0 : illegal_c_insn;
         if_id_pipe_o.pc               <= pc_if_o;
         if_id_pipe_o.compressed_instr <= prefetch_instr.bus_resp.rdata[15:0];
         if_id_pipe_o.priv_lvl         <= prefetch_priv_lvl;
-        if_id_pipe_o.trigger_match    <= trigger_match_i;
+        if_id_pipe_o.trigger_match    <= dummy_insert ?        1'b0 : trigger_match_i; // Block trigger for dummy instructions to avoid double trigger
         if_id_pipe_o.xif_id           <= xif_id;
       end else if (id_ready_i) begin
         if_id_pipe_o.instr_valid      <= 1'b0;
@@ -319,6 +327,35 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .is_compressed_o ( instr_compressed_int    ),
     .illegal_instr_o ( illegal_c_insn          )
   );
+
+
+
+  //---------------------------------------------------------------------------
+  // Dummy Instruction Insertion
+  //---------------------------------------------------------------------------
+
+  generate
+    if (DUMMY_INSTRUCTIONS) begin : gen_dummy_instr
+      logic instr_issued; // Used to count issued instructions between dummy instructions
+      assign instr_issued = if_valid_o && id_ready_i;
+
+      cv32e40s_dummy_instr
+        dummy_instr_i
+          (.clk            ( clk            ),
+           .rst_n          ( rst_n          ),
+           .instr_issued_i ( instr_issued   ),
+           .ctrl_fsm_i     ( ctrl_fsm_i     ),
+           .xsecure_ctrl_i ( xsecure_ctrl_i ),
+           .dummy_insert_o ( dummy_insert   ),
+           .dummy_instr_o  ( dummy_instr    )
+           );
+
+    end : gen_dummy_instr
+    else begin : gen_no_dummy_instr
+      assign dummy_insert = 1'b0;
+      assign dummy_instr  = '0;
+    end : gen_no_dummy_instr
+  endgenerate
 
 
   //---------------------------------------------------------------------------
