@@ -58,7 +58,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        lsu_split_ex_i,             // LSU is splitting misaligned
   input  mpu_status_e lsu_mpu_status_wb_i,        // MPU status (WB stage)
   input  logic        data_stall_wb_i,            // WB stalled by LSU
-  input  logic        lsu_err_wb_i,               // LSU bus error in WB stage
+  input  logic [1:0]  lsu_err_wb_i,               // LSU bus error in WB stage
   input  logic [31:0] lsu_addr_wb_i,              // LSU address in WB stage
   input  logic        lsu_busy_i,                 // LSU is busy with outstanding transfers
   input  logic        lsu_interruptible_i,        // LSU may be interrupted
@@ -81,7 +81,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  dcsr_t        dcsr_i,
 
   // Regfile target
-  input  logic         regfile_alu_we_id_i,        // currently decoded we enable
+  input  logic         rf_alu_we_id_i,             // currently decoded we enable
 
   // CSR raddr in ex
   input  logic         csr_counter_read_i,         // A performance counter is read in CSR (EX)
@@ -211,7 +211,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .rf_waddr_i                 ( rf_waddr_i               ),
 
     // From id_stage
-    .regfile_alu_we_id_i        ( regfile_alu_we_id_i      ),
+    .rf_alu_we_id_i             ( rf_alu_we_id_i           ),
     .mret_id_i                  ( mret_id_i                ),
     .dret_id_i                  ( dret_id_i                ),
     .csr_en_id_i                ( csr_en_id_i              ),

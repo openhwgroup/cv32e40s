@@ -219,6 +219,7 @@ module cv32e40s_wrapper
     core_i.load_store_unit_i cv32e40s_load_store_unit_sva #(.DEPTH (DEPTH)) load_store_unit_sva (
       // The SVA's monitor modport can't connect to a master modport, so it is connected to the interface instance directly:
       .m_c_obi_data_if(core_i.m_c_obi_data_if),
+      .ex_wb_pipe_i   (core_i.ex_wb_pipe),
       .*);
 
   bind cv32e40s_prefetch_unit:
@@ -403,6 +404,8 @@ bind cv32e40s_sleep_unit:
          .ctrl_fsm_i               ( core_i.ctrl_fsm                                                      ),
          .pending_single_step_i    ( core_i.controller_i.controller_fsm_i.pending_single_step             ),
          .single_step_allowed_i    ( core_i.controller_i.controller_fsm_i.single_step_allowed             ),
+         .nmi_pending_i            ( core_i.controller_i.controller_fsm_i.nmi_pending_q                   ),
+         .nmi_is_store_i           ( core_i.controller_i.controller_fsm_i.nmi_is_store_q                  ),
          // CSRs
          .csr_mstatus_n_i          ( core_i.cs_registers_i.mstatus_n                                      ),
          .csr_mstatus_q_i          ( core_i.cs_registers_i.mstatus_q                                      ),
