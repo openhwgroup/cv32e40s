@@ -72,6 +72,7 @@ The trap signal indicates that a synchronous trap has ocurred and side-effects c
 ``rvfi_trap[0]`` is asserted if an instruction causes an exception or debug entry.
 ``rvfi_trap[2:1]`` indicate trap type. ``rvfi_trap[1]`` is set for synchronous traps that do not cause debug entry. ``rvfi_trap[2]`` is set for synchronous traps that do cause debug mode entry.
 ``rvfi_trap[8:3]`` provide information about non-debug traps, while ``rvfi_trap[11:9]`` provide information about traps causing entry to debug mode.
+``rvfi_trap[13:12]`` differentiates between fault causes that map to the same exception code in ``rvfi_trap[8:3]`` and ``rvfi_trap[11:9]``.
 When an exception is caused by a single stepped instruction, both ``rvfi_trap[1]`` and ``rvfi_trap[2]`` will be set.
 When ``rvfi_trap`` signals a trap, CSR side effects and a jump to a trap/debug handler in the next cycle can be expected.
 The different trap scenarios, their expected side-effects and trap signalling are listed in the table below:
