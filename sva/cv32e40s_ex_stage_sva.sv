@@ -122,8 +122,9 @@ endgenerate
                    ((ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_mux == PC_BRANCH)) &&
                     xsecure_ctrl_i.cpuctrl.dataindtiming &&
                     !alu_cmp_result)
-                   |-> id_ex_pipe_i.instr_meta.compressed ? branch_target_o == (id_ex_pipe_i.pc + 2) :
-                   branch_target_o == (id_ex_pipe_i.pc + 4));
+                   |-> id_ex_pipe_i.instr_meta.dummy      ? branch_target_o == id_ex_pipe_i.pc       :
+                       id_ex_pipe_i.instr_meta.compressed ? branch_target_o == (id_ex_pipe_i.pc + 2) :
+                                                            branch_target_o == (id_ex_pipe_i.pc + 4));
     
   // Make sure cpuctrl is stable when the EX stage has a valid instruction (i.e. cpuctrl hazard is handled correctly)
   // cpuctrl updates are treated similar to a fence instruction, so when a cpuctrl write is in WB, IF, ID and EX should be killed
