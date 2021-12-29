@@ -45,7 +45,62 @@ These timing side-channels can largely be mitigated by imposing (branch target a
 Dummy instruction insertion
 ---------------------------
 
-Dummy instructions can be randomly inserted without functional impact to disrupt timing and power profiles. See https://ibex-core.readthedocs.io/en/latest/03_reference/security.html.
+When enabled (via the ``rnddummy`` control bit in the ``cpuctrl`` register), dummy instructions will be inserted at random intervals into the execution pipeline.
+The dummy instructions have no functional impact on processor state, but add some difficult-to-predict timing and power disruption to executed code.
+This disruption makes it more difficult for an attacker to infer what is being executed, and also makes it more difficult to execute precisely timed fault injection attacks.
+
+The frequency of injected instructions can be tuned via the ``rnddummyfreq`` bits in the ``cpuctrl`` register.
+
+.. table:: Intervals for rnddummyfreq settings
+  :name: Intervals for rnddummyfreq settings
+
+  +------------------+----------------------------------------------------------+
+  | ``rnddummyfreq`` | Interval                                                 |
+  +------------------+----------------------------------------------------------+
+  | 0000             | Dummy instruction every 1 - 4 real instructions          |
+  +------------------+----------------------------------------------------------+
+  | 0001             | Dummy instruction every 1 - 8 real instructions          |
+  +------------------+----------------------------------------------------------+
+  | 0011             | Dummy instruction every 1 - 16 real instructions         |
+  +------------------+----------------------------------------------------------+
+  | 0111             | Dummy instruction every 1 - 32 real instructions         |
+  +------------------+----------------------------------------------------------+
+  | 1111             | Dummy instruction every 1 - 64 real instructions         |
+  +------------------+----------------------------------------------------------+
+
+As the ``rnddummyfreq`` is used as a mask on the random top value of a counter, other values are legal, but will have a less predictable impact.
+
+The interval between instruction insertion, and the instruction itself is randomized in the core using an LFSR (lfsr0). The randomization of the instruction word is constrained to valid ADD, MUL, AND and BLTU opcodes.
+Register read data for dummy instructions is replaced with random data from lfsr1 and lfsr2 to further increase the noise.
+
+The initial seed and output permutation for the LFSRs can be set using the following parameters from the |corev| top-level;
+``LFSR0_CFG``, ``LFSR1_CFG`` and ``LFSR2_CFG`` for the lfsr0, lfsr1 and lfsr2 respectively.
+Sofware can periodically re-seed the LFSRs with true random numbers (if available) via the ``secureseed*`` CSRs.
+This will make the insertion interval of dummy instructions much harder for an attacker to predict.
+
+An example of performance impact from inserting dummy instructions is shown in :numref:`Example of Dummy Instruction Performance Impact`
+where coremark has been run with the different ``rnddummyfreq`` settings.
+
+.. table:: Example of Dummy Instruction Performance Impact
+  :name: Example of Dummy Instruction Performance Impact
+
+  +----------------+------------------+----------+------------------+
+  | ``rnddummyen`` | ``rnddummyfreq`` | Interval | Performance Cost |
+  +----------------+------------------+----------+------------------+
+  | Disabled       | N/A              | N/A      | 0.0%             |
+  +----------------+------------------+----------+------------------+
+  | Enabled        | 0000             | 1-4      | 28.4%            |
+  +----------------+------------------+----------+------------------+
+  | Enabled        | 0001             | 1-8      | 15.9%            |
+  +----------------+------------------+----------+------------------+
+  | Enabled        | 0011             | 1-16     | 8.5%             |
+  +----------------+------------------+----------+------------------+
+  | Enabled        | 0111             | 1-32     | 4.4%             |
+  +----------------+------------------+----------+------------------+
+  | Enabled        | 1111             | 1-64     | 2.2%             |
+  +----------------+------------------+----------+------------------+
+
+
 
 Register file ECC 
 -----------------
