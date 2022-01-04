@@ -21,17 +21,34 @@ Xsecure extension
 
 Security alerts
 ---------------
-|corev| has two alert outputs for signaling security issues, a major and a minor alert. The major alert (alert_major_o) indicates a critical security issue from which the core cannot recover. The minor alert (alert_minor_o) indicates potential security issues which can be monitored over time by a system.
-These outputs can be used by external hardware to trigger security incident responses like a system wide reset or memory erase.
+|corev| has two alert outputs for signaling security issues: A major and a minor alert. The major alert (``alert_major_o``) indicates a critical security issue from which the core cannot recover. The minor alert (``alert_minor_o``) indicates potential security issues, which can be monitored by a system over time.
+These outputs can be used by external hardware to trigger security incident responses like for example a system wide reset or a memory erase.
+A security output is high for every clock cycle that the related security issue persists.
+
+The following issues result in a major security alert:
+
+* Register file ECC error
+* Hardened PC error
+* Hardened CSR error
+* Interface integrity error
+
+The following issues result in a minor security alert:
+
+* LFSR0, LFSR1, LFSR2 lockup
+* Instruction access fault
+* Illegal instruction
+* Load access fault
+* Store/AMO access fault
+* Instruction bus fault
 
 Data independent timing
 -----------------------
-Data independent timing is enabled by setting the **dataindtiming** bit in the **cpuctrl** CSR.
+Data independent timing is enabled by setting the ``dataindtiming`` bit in the ``cpuctrl`` CSR.
 This will make execution times of all instructions independent of the input data, making it more difficult for an external
-observer to extract data by observing power consumption or exploiting timing side-channels.
-When **dataindtiming** is set, div/divu/rem/remu instructions will have a fixed (data independent) latency.
-Branches will also have a fixed latency, regardless of the taken/not-taken status.
-See :ref:`pipeline-details` for details.
+observer to extract information by observing power consumption or exploiting timing side-channels.
+
+When ``dataindtiming`` is set, the DIV, DIVU, REM and REMU instructions will have a fixed (data independent) latency and branches
+will have a fixed latency as well, regardless of whether they are taken or not. See :ref:`pipeline-details` for details.
 
 Note that the addresses used by loads and stores will still provide a timing side-channel due to the following properties:
 
@@ -47,13 +64,13 @@ These timing side-channels can largely be mitigated by imposing (branch target a
 Dummy instruction insertion
 ---------------------------
 
-When enabled (via the ``rnddummy`` control bit in the ``cpuctrl`` register), dummy instructions will be inserted at random intervals into the execution pipeline.
-The dummy instructions have no functional impact on processor state but adds some difficult-to-predict timing and power disruption to executed code.
+Dummy instructions are inserted at random intervals into the execution pipeline if enabled via the ``rnddummy`` bit in the ``cpuctrl`` CSR.
+The dummy instructions have no functional impact on processor state, but add difficult-to-predict timing and power disruptions to the executed code.
 This disruption makes it more difficult for an attacker to infer what is being executed, and also makes it more difficult to execute precisely timed fault injection attacks.
 
-The frequency of injected instructions can be tuned via the ``rnddummyfreq`` bits in the ``cpuctrl`` register.
+The frequency of injected instructions can be tuned via the ``rnddummyfreq`` bits in the ``cpuctrl`` CSR.
 
-.. table:: Intervals for rnddummyfreq settings
+.. table:: Intervals for ``rnddummyfreq`` settings
   :name: Intervals for rnddummyfreq settings
 
   +------------------+----------------------------------------------------------+
@@ -70,49 +87,37 @@ The frequency of injected instructions can be tuned via the ``rnddummyfreq`` bit
   | 1111             | Dummy instruction every 1 - 64 real instructions         |
   +------------------+----------------------------------------------------------+
 
-As the ``rnddummyfreq`` is used as a mask on the random top value of a counter, other values are legal, but will have a less predictable impact.
+Other ``rnddummyfreq`` values are legal as well, but will have a less predictable performance impact.
 
-The interval between instruction insertion, and the instruction itself is randomized in the core using an LFSR (lfsr0). The randomization of the instruction word is constrained to valid ADD, MUL, AND and BLTU opcodes.
-Register read data for dummy instructions is replaced with random data from lfsr1 and lfsr2 to further increase the noise.
+The frequency of the dummy instruction insertion is randomized using an LFSR (LFSR0). The dummy instruction itself is also randomized based on LFSR0
+and is constrained to ADD, MUL, AND and BLTU opcodes. The source data for the dummy instructions is obtained from LFSRs (LFSR1 and LFSR2) as opposed to sourcing
+it from the register file.
 
-The initial seed and output permutation for the LFSRs can be set using the following parameters from the |corev| top-level;
-``LFSR0_CFG``, ``LFSR1_CFG`` and ``LFSR2_CFG`` for the lfsr0, lfsr1 and lfsr2 respectively.
-Software can periodically re-seed the LFSRs with true random numbers (if available) via the ``secureseed*`` CSRs.
-This will make the insertion interval of dummy instructions much harder for an attacker to predict.
+The initial seed and output permutation for the LFSRs can be set using the following parameters from the |corev| top-level:
 
-An example of performance impact from inserting dummy instructions is shown in :numref:`Example of Dummy Instruction Performance Impact`
-where coremark has been run with the different ``rnddummyfreq`` settings.
+* ``LFSR0_CFG`` for LFSR0.
+* ``LFSR1_CFG`` for LFSR1.
+* ``LFSR2_CFG`` for LFSR2.
 
-.. table:: Example of Dummy Instruction Performance Impact
-  :name: Example of Dummy Instruction Performance Impact
+Software can periodically re-seed the LFSRs with true random numbers (if available) via the ``secureseed*`` CSRs, making the insertion interval of
+dummy instructions much harder to predict.
 
-  +----------------+------------------+----------+------------------+
-  | ``rnddummyen`` | ``rnddummyfreq`` | Interval | Performance Cost |
-  +----------------+------------------+----------+------------------+
-  | Disabled       | N/A              | N/A      | 0.0%             |
-  +----------------+------------------+----------+------------------+
-  | Enabled        | 0000             | 1-4      | 28.4%            |
-  +----------------+------------------+----------+------------------+
-  | Enabled        | 0001             | 1-8      | 15.9%            |
-  +----------------+------------------+----------+------------------+
-  | Enabled        | 0011             | 1-16     | 8.5%             |
-  +----------------+------------------+----------+------------------+
-  | Enabled        | 0111             | 1-32     | 4.4%             |
-  +----------------+------------------+----------+------------------+
-  | Enabled        | 1111             | 1-64     | 2.2%             |
-  +----------------+------------------+----------+------------------+
+.. note::
+  The user is recommended to pick maximum length LFSR configurations and must take care that writes to the ``secureseed*`` CSRs will not cause LFSR lockup.
+  An LFSR lockup will result in a minor alert and will automatically cause a re-seed of the LFSR with the default seed from the related parameter.
 
-
+.. note::
+  Dummy instructions do affect the cycle count as visible via the ``mcycle`` CSR, but they are not counted as retired instructions (so they do not affect the ``minstret`` CSR).
 
 Register file ECC
 -----------------
 ECC checking is added to all reads of the register file, where a checksum is stored for each register file word.
-All 1-bit and 2-bit errors will be detected and this can be useful to detect fault injection attacks since the register file covers a reasonably large area.
-No attempt is made to correct detected errors, but an external alert is raised for the system to take action (see :ref:`security_alerts`).
+All 1-bit and 2-bit errors will be detected. This can be useful to detect fault injection attacks since the register file covers a reasonably large area of |corev|.
+No attempt is made to correct detected errors, but a major alert is raised upon a detected error for the system to take action (see :ref:`security_alerts`).
 
 .. note::
-  This feature is logically redundant and might get partially or fully optimized away.
-  Special care might be needed and the final netlist must be checked to ensure the ECC and correction logic is kept.
+  This feature is logically redundant and might get partially or fully optimized away during synthesis.
+  Special care might be needed and the final netlist must be checked to ensure that the ECC and correction logic is still present.
   A netlist test for this feature is recommended.
 
 Hardened PC
@@ -125,8 +130,8 @@ Critical CSRs (``mstatus``, ``mtvec``, ``pmpcfg``, ``pmpaddr*``, ``mseccfg*``, `
 For these registers a second copy of the register is added which stores a complemented version of the main CSR data. A constant check is made that the two copies are consistent, and a major alert is signaled if not (see :ref:`security_alerts`).
 
 .. note::
-  The shadow copy is logically redundant and is therefore likely to be optimized away.
-  Special care in the synthesis script is necessary and the final netlist must be checked to ensure the shadow are kept.
+  The shadow copies are logically redundant and are therefore likely to be optimized away during synthesis.
+  Special care in the synthesis script is necessary and the final netlist must be checked to ensure that the shadow copies are still present.
   A netlist test for this feature is recommended.
 
 Control flow hardening

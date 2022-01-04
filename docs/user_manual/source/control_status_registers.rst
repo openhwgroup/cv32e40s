@@ -1183,12 +1183,11 @@ Detailed:
 
 The ``cpuctrl`` register contains configuration registers for core security features. It will allways read as 0.
 
-
 Secure Seed 0
 ~~~~~~~~~~~~~
 CSR Address: 0xBF9
 
-Reset Value: 0x0000_0000
+Reset Value: ``LFSR0_CFG.default_seed``
 
 Detailed:
 
@@ -1198,13 +1197,13 @@ Detailed:
 | 31:0        | RW        | Seed for LFSR0. Always reads as 0x0.                                   |
 +-------------+-----------+------------------------------------------------------------------------+
 
-The ``secureseed0`` register contains seed data for LFSR0.
+The ``secureseed0`` CSR contains seed data for LFSR0.
 
 Secure Seed 1
 ~~~~~~~~~~~~~
 CSR Address: 0xBFA
 
-Reset Value: 0x0000_0000
+Reset Value: ``LFSR1_CFG.default_seed``
 
 Detailed:
 
@@ -1214,13 +1213,13 @@ Detailed:
 | 31:0        | RW        | Seed for LFSR1. Always reads as 0x0.                                   |
 +-------------+-----------+------------------------------------------------------------------------+
 
-The ``secureseed1`` register contains seed data for LFSR1.
+The ``secureseed1`` CSR contains seed data for LFSR1.
 
 Secure Seed 2
 ~~~~~~~~~~~~~
 CSR Address: 0xBFC
 
-Reset Value: 0x0000_0000
+Reset Value: ``LFSR2_CFG.default_seed``
 
 Detailed:
 
@@ -1230,7 +1229,7 @@ Detailed:
 | 31:0        | RW        | Seed for LFSR2. Always reads as 0x0.                                   |
 +-------------+-----------+------------------------------------------------------------------------+
 
-The ``secureseed2`` register contains seed data for LFSR2.
+The ``secureseed2`` CSR contains seed data for LFSR2.
 
 Machine Vendor ID (``mvendorid``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
