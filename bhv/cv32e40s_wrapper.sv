@@ -164,8 +164,9 @@ module cv32e40s_wrapper
          );
     end
   endgenerate
-  bind cv32e40s_id_stage:
-    core_i.id_stage_i cv32e40s_id_stage_sva id_stage_sva
+
+  bind cv32e40x_id_stage:
+    core_i.id_stage_i cv32e40x_id_stage_sva #(.A_EXT(A_EXT)) id_stage_sva
     (
       .*
     );
