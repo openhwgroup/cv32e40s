@@ -52,6 +52,7 @@ module cv32e40s_alu import cv32e40s_pkg::*;
   input  alu_opcode_e       operator_i,
   input  logic [31:0]       operand_a_i,
   input  logic [31:0]       operand_b_i,
+  input  logic [31:0]       muldiv_operand_b_i,
 
   output logic [31:0]       result_o,
   output logic              cmp_result_o,
@@ -141,7 +142,7 @@ module cv32e40s_alu import cv32e40s_pkg::*;
 
   always_comb begin
     // Defaults (ALU_SLL, ALU_SRL, ALU_B_BEXT, DIV_DIVU, DIV_DIVU, DIV_REM, DIV_REMU)
-    shifter_aa = div_shift_en_i ? operand_b_i : operand_a_i;
+    shifter_aa = div_shift_en_i ? muldiv_operand_b_i : operand_a_i;
     shifter_bb = 32'h0;
 
     unique case (operator_i)
@@ -190,7 +191,7 @@ module cv32e40s_alu import cv32e40s_pkg::*;
 
   logic [31:0] result_shnadd;
 
-  assign result_shnadd = (operand_a_i << ((operator_i == ALU_B_SH1ADD) ? 1 : (operator_i == ALU_B_SH2ADD) ? 2 : 3)) + operand_b_i; // todo: consider alternatives
+  assign result_shnadd = (operand_a_i << ((operator_i == ALU_B_SH1ADD) ? 1 : (operator_i == ALU_B_SH2ADD) ? 2 : 3)) + operand_b_i;
 
   //////////////////////////////////////////////////////////////////
   //   ____ ___  __  __ ____   _    ____  ___ ____   ___  _   _   //

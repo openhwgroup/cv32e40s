@@ -35,16 +35,14 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   // singals running to/from controller
   input  logic        deassert_we_i,    // deassert we and special insn (exception in IF)
 
-  output logic        illegal_insn_o,           // illegal instruction encountered
-  output logic        ebrk_insn_o,              // trap instruction encountered
-
-  output logic        mret_insn_o,              // return from exception instruction encountered (M)
-  output logic        dret_insn_o,              // return from debug (M)
-
-  output logic        ecall_insn_o,             // environment call (syscall) instruction encountered
-  output logic        wfi_insn_o,               // pipeline flush is requested
-
-  output logic        fencei_insn_o,            // fence.i instruction
+  output logic        sys_en_o,                 // System enable
+  output logic        illegal_insn_o,           // Illegal instruction encountered
+  output logic        sys_ebrk_insn_o,          // Trap instruction encountered
+  output logic        sys_mret_insn_o,          // Return from exception instruction encountered (M)
+  output logic        sys_dret_insn_o,          // Return from debug (M)
+  output logic        sys_ecall_insn_o,         // Environment call (syscall) instruction encountered
+  output logic        sys_wfi_insn_o,           // Pipeline flush is requested
+  output logic        sys_fencei_insn_o,        // fence.i instruction
 
   // from IF/ID pipeline
   input  if_id_pipe_t if_id_pipe_i,  
@@ -52,11 +50,11 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   // ALU signals
   output logic          alu_en_o,               // ALU enable
   output alu_opcode_e   alu_operator_o,         // ALU operation selection
-  output alu_op_a_mux_e alu_op_a_mux_sel_o,     // operand a selection: reg value, PC, immediate or zero
-  output alu_op_b_mux_e alu_op_b_mux_sel_o,     // operand b selection: reg value or immediate
-  output op_c_mux_e     op_c_mux_sel_o,         // operand c selection: reg value or jump target
-  output imm_a_mux_e    imm_a_mux_sel_o,        // immediate selection for operand a
-  output imm_b_mux_e    imm_b_mux_sel_o,        // immediate selection for operand b
+  output alu_op_a_mux_e alu_op_a_mux_sel_o,     // Operand a selection: reg value, PC, immediate or zero
+  output alu_op_b_mux_e alu_op_b_mux_sel_o,     // Operand b selection: reg value or immediate
+  output op_c_mux_e     op_c_mux_sel_o,         // Operand c selection: reg value or jump target
+  output imm_a_mux_e    imm_a_mux_sel_o,        // Immediate selection for operand a
+  output imm_b_mux_e    imm_b_mux_sel_o,        // Immediate selection for operand b
 
   // MUL related control signals
   output mul_opcode_e mul_operator_o,           // Multiplication operation selection
@@ -73,25 +71,24 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   output logic [1:0]  rf_re_o,
 
   // CSR
-  output logic        csr_en_o,                 // enable access to CSR
-  output csr_opcode_e csr_op_o,                 // operation to perform on CSR
+  output logic        csr_en_o,                 // Enable access to CSR
+  output csr_opcode_e csr_op_o,                 // Operation to perform on CSR
   input  mstatus_t    mstatus_i,                // Current mstatus
 
   // LSU
-  output logic        lsu_en_o,                 // start transaction to data memory
+  output logic        lsu_en_o,                 // Start transaction to data memory
   output logic        lsu_en_raw_o,
-  output logic        lsu_we_o,                 // data memory write enable
-  output logic        lsu_prepost_useincr_o,    // when not active bypass the alu result for address calculation
-  output logic [1:0]  lsu_type_o,               // data type on data memory: byte, half word or word
-  output logic        lsu_sign_ext_o,           // sign extension on read data from data memory
-  output logic [1:0]  lsu_reg_offset_o,         // offset in byte inside register for stores
+  output logic        lsu_we_o,                 // Data memory write enable
+  output logic [1:0]  lsu_type_o,               // Data type on data memory: byte, half word or word
+  output logic        lsu_sign_ext_o,           // Sign extension on read data from data memory
+  output logic [1:0]  lsu_reg_offset_o,         // Offset in byte inside register for stores
   output logic [5:0]  lsu_atop_o,               // Atomic memory access
 
   input  ctrl_fsm_t   ctrl_fsm_i,               // Control signal from controller_fsm
   // jump/branches
-  output logic [1:0]  ctrl_transfer_insn_o,     // control transfer instructio is decoded
-  output logic [1:0]  ctrl_transfer_insn_raw_o, // control transfer instruction without deassert
-  output jt_mux_e     ctrl_transfer_target_mux_sel_o // jump target selection
+  output logic [1:0]  ctrl_transfer_insn_o,     // Control transfer instructio is decoded
+  output logic [1:0]  ctrl_transfer_insn_raw_o, // Control transfer instruction without deassert
+  output jt_mux_e     ctrl_transfer_target_mux_sel_o // Jump target selection
 );
 
   // write enable/request control
@@ -105,6 +102,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   logic       alu_en;
   logic       mul_en;
   logic       div_en;
+  logic       sys_en;
 
   decoder_ctrl_t decoder_i_ctrl;
   decoder_ctrl_t decoder_m_ctrl;
@@ -116,41 +114,50 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   assign instr_rdata = if_id_pipe_i.instr.bus_resp.rdata;
   
   // RV32I Base instruction set decoder
-  cv32e40s_i_decoder #(.DEBUG_TRIGGER_EN(DEBUG_TRIGGER_EN))
-    i_decoder_i
-      (.instr_rdata_i(instr_rdata),
-       .ctrl_fsm_i (ctrl_fsm_i),
-       .priv_lvl_i (if_id_pipe_i.priv_lvl),
-       .mstatus_i (mstatus_i),
-       .decoder_ctrl_o(decoder_i_ctrl));
+  cv32e40s_i_decoder
+  #(
+    .DEBUG_TRIGGER_EN (DEBUG_TRIGGER_EN)
+  )
+  i_decoder_i
+  (
+    .instr_rdata_i  ( instr_rdata           ),
+    .ctrl_fsm_i     ( ctrl_fsm_i            ),
+    .priv_lvl_i     ( if_id_pipe_i.priv_lvl ),
+    .mstatus_i      ( mstatus_i             ),
+    .decoder_ctrl_o ( decoder_i_ctrl        )
+  );
   
   // RV32M extension decoder
-  cv32e40s_m_decoder
-    m_decoder_i
-      (.instr_rdata_i(instr_rdata),
-       .decoder_ctrl_o(decoder_m_ctrl));
+  cv32e40s_m_decoder m_decoder_i
+  (
+    .instr_rdata_i  ( instr_rdata    ),
+    .decoder_ctrl_o ( decoder_m_ctrl )
+  );
 
   generate
     if (A_EXT) begin: a_decoder
       // RV32A extension decoder
-      cv32e40s_a_decoder
-        a_decoder_i
-          (.instr_rdata_i(instr_rdata),
-           .decoder_ctrl_o(decoder_a_ctrl));
-    end
-    else begin: no_a_decoder
+      cv32e40s_a_decoder a_decoder_i
+      (
+        .instr_rdata_i  ( instr_rdata    ),
+        .decoder_ctrl_o ( decoder_a_ctrl )
+      );
+    end else begin: no_a_decoder
       assign decoder_a_ctrl = DECODER_CTRL_ILLEGAL_INSN;
     end
 
     if (B_EXT != NONE) begin: b_decoder
       // RV32B extension decoder
       cv32e40s_b_decoder
-        #(.B_EXT(B_EXT))
+      #(
+        .B_EXT (B_EXT)
+      )
       b_decoder_i
-        (.instr_rdata_i(instr_rdata),
-         .decoder_ctrl_o(decoder_b_ctrl));
-    end
-    else begin: no_b_decoder
+      (
+        .instr_rdata_i  ( instr_rdata    ),
+        .decoder_ctrl_o ( decoder_b_ctrl )
+      );
+    end else begin: no_b_decoder
       assign decoder_b_ctrl = DECODER_CTRL_ILLEGAL_INSN;
     end
     
@@ -187,8 +194,8 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   assign op_c_mux_sel_o                 = decoder_ctrl_mux.op_c_mux_sel;
   assign imm_a_mux_sel_o                = decoder_ctrl_mux.imm_a_mux_sel;                 
   assign imm_b_mux_sel_o                = decoder_ctrl_mux.imm_b_mux_sel;                 
-  assign mul_operator_o                 = decoder_ctrl_mux.mul_operator;               
   assign mul_en                         = decoder_ctrl_mux.mul_en;
+  assign mul_operator_o                 = decoder_ctrl_mux.mul_operator;               
   assign mul_signed_mode_o              = decoder_ctrl_mux.mul_signed_mode;
   assign div_en                         = decoder_ctrl_mux.div_en;
   assign div_operator_o                 = decoder_ctrl_mux.div_operator;
@@ -202,10 +209,17 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   assign lsu_sign_ext_o                 = decoder_ctrl_mux.lsu_sign_ext;
   assign lsu_reg_offset_o               = decoder_ctrl_mux.lsu_reg_offset;               
   assign lsu_atop_o                     = decoder_ctrl_mux.lsu_atop;                     
-  assign lsu_prepost_useincr_o          = decoder_ctrl_mux.lsu_prepost_useincr;               
+  assign sys_en                         = decoder_ctrl_mux.sys_en;
+  assign sys_mret_insn_o                = decoder_ctrl_mux.sys_mret_insn;
+  assign sys_dret_insn_o                = decoder_ctrl_mux.sys_dret_insn;
+  assign sys_ebrk_insn_o                = decoder_ctrl_mux.sys_ebrk_insn;
+  assign sys_ecall_insn_o               = decoder_ctrl_mux.sys_ecall_insn;
+  assign sys_wfi_insn_o                 = decoder_ctrl_mux.sys_wfi_insn;
+  assign sys_fencei_insn_o              = decoder_ctrl_mux.sys_fencei_insn;
 
   // Suppress control signals
   assign alu_en_o             = deassert_we_i ? 1'b0        : alu_en;
+  assign sys_en_o             = deassert_we_i ? 1'b0        : sys_en;
   assign mul_en_o             = deassert_we_i ? 1'b0        : mul_en;
   assign div_en_o             = deassert_we_i ? 1'b0        : div_en;
   assign lsu_en_o             = deassert_we_i ? 1'b0        : lsu_en;
@@ -214,14 +228,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   assign ctrl_transfer_insn_o = deassert_we_i ? BRANCH_NONE : ctrl_transfer_insn;
 
   // Suppress special instruction/illegal instruction bits
-  assign mret_insn_o          = deassert_we_i ? 1'b0 : decoder_ctrl_mux.mret_insn;
-  assign dret_insn_o          = deassert_we_i ? 1'b0 : decoder_ctrl_mux.dret_insn;
-  assign ebrk_insn_o          = deassert_we_i ? 1'b0 : decoder_ctrl_mux.ebrk_insn;
-  assign ecall_insn_o         = deassert_we_i ? 1'b0 : decoder_ctrl_mux.ecall_insn;
-  assign wfi_insn_o           = deassert_we_i ? 1'b0 : decoder_ctrl_mux.wfi_insn;
-  assign fencei_insn_o        = deassert_we_i ? 1'b0 : decoder_ctrl_mux.fencei_insn;
   assign illegal_insn_o       = deassert_we_i ? 1'b0 : decoder_ctrl_mux.illegal_insn;
-
 
   assign ctrl_transfer_insn_raw_o = ctrl_transfer_insn;
   assign rf_we_raw_o              = rf_we;
