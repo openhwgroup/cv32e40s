@@ -71,8 +71,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   output logic        sys_en_o,
   output logic        sys_mret_insn_o,
-  output logic        dret_insn_o,
-  output logic        wfi_insn_o,
+  output logic        sys_wfi_insn_o,
   output logic        csr_en_o,
   output csr_opcode_e csr_op_o,
 
@@ -204,8 +203,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   assign sys_en_o = sys_en;
   assign sys_mret_insn_o = sys_mret_insn;
-  assign dret_insn_o = dret_insn;
-  assign wfi_insn_o  = wfi_insn;
+  assign sys_wfi_insn_o  = sys_wfi_insn;
 
   assign instr = if_id_pipe_i.instr.bus_resp.rdata;
 

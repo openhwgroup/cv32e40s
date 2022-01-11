@@ -52,7 +52,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   input  logic        sys_mret_id_i,              // mret in ID
   input  logic        csr_en_id_i,                // CSR in ID
   input  csr_opcode_e csr_op_id_i,                // CSR opcode (ID) // todo: Not used (is this on purpose or should it be used here?)
-  input  logic        wfi_id_i,                   // WFI instruction in ID
+  input  logic        sys_wfi_id_i,               // WFI instruction in ID
 
   // From EX
   input  logic        csr_counter_read_i,         // CSR is reading a counter (EX).
@@ -118,7 +118,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
   // todo:low:Above loop reasoning only applies to halt_id; for other pipeline stages a local instr_valid signal can maybe be used.
 
-  assign csr_read_in_id = (csr_en_id_i || (sys_en_id_i && sys_mret_id_i) || wfi_id_i) && if_id_pipe_i.instr_valid;
+  assign csr_read_in_id = (csr_en_id_i || (sys_en_id_i && sys_mret_id_i) || (sys_en_id_i && sys_wfi_id_i)) && if_id_pipe_i.instr_valid;
 
   // Detect when a CSR insn  in in EX or WB
   // mret and dret implicitly writes to CSR. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.

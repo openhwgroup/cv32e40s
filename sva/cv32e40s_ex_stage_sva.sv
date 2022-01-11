@@ -114,12 +114,6 @@ endgenerate
                      id_ex_pipe_i.csr_en, id_ex_pipe_i.sys_en, id_ex_pipe_i.lsu_en, id_ex_pipe_i.xif_en}))
       else `uvm_error("ex_stage", "Multiple functional units enabled")
 
-  // First access of split LSU instruction should have rf_we deasserted
-  a_split_rf_we:
-  assert property (@(posedge clk) disable iff (!rst_n)
-                    (ex_valid_o && wb_ready_i && id_ex_pipe_i.lsu_en && lsu_split_i)
-                    |=> !ex_wb_pipe_o.rf_we);
-
   // Assert that branch decision is always 1 when dataindtiming=1
   a_dataindtiming_branch_taken:
   assert property (@(posedge clk) disable iff (!rst_n)

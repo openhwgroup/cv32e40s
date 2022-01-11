@@ -114,7 +114,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   assign instr_rdata = if_id_pipe_i.instr.bus_resp.rdata;
   
   // RV32I Base instruction set decoder
-  cv32e40x_i_decoder
+  cv32e40s_i_decoder
   #(
     .DEBUG_TRIGGER_EN (DEBUG_TRIGGER_EN)
   )
@@ -128,16 +128,16 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   );
   
   // RV32M extension decoder
-  cv32e40x_m_decoder m_decoder_i
+  cv32e40s_m_decoder m_decoder_i
   (
-    .instr_rdata_i  ( instr_rdata_i  ),
+    .instr_rdata_i  ( instr_rdata    ),
     .decoder_ctrl_o ( decoder_m_ctrl )
   );
 
   generate
     if (A_EXT) begin: a_decoder
       // RV32A extension decoder
-      cv32e40x_a_decoder a_decoder_i
+      cv32e40s_a_decoder a_decoder_i
       (
         .instr_rdata_i  ( instr_rdata    ),
         .decoder_ctrl_o ( decoder_a_ctrl )
@@ -148,7 +148,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
 
     if (B_EXT != NONE) begin: b_decoder
       // RV32B extension decoder
-      cv32e40x_b_decoder
+      cv32e40s_b_decoder
       #(
         .B_EXT (B_EXT)
       )

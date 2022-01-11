@@ -59,7 +59,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // IF/ID pipeline
   input  if_id_pipe_t     if_id_pipe_i,
-  input  logic            mret_id_i,
+  input  logic            sys_en_id_i,
+  input  logic            sys_mret_id_i,
 
   // ID/EX pipeline 
   input  id_ex_pipe_t     id_ex_pipe_i,
@@ -531,7 +532,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                       default: 'b0
                       };
     mcause_we     = 1'b0;
-    exception_pc  = if_id_pipe_i.pc;
     priv_lvl_n    = priv_lvl_q;
     priv_lvl_we   = 1'b0;
     
@@ -985,9 +985,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       priv_lvl_if_ctrl_o.priv_lvl     = privlvl_t'(mstatus_q.mpp);
       priv_lvl_if_ctrl_o.priv_lvl_set = 1'b1;
     end
-    else if ((id_ex_pipe_i.mret_insn && ctrl_fsm_i.kill_ex) || 
-             (ex_wb_pipe_i.mret_insn && ctrl_fsm_i.kill_wb) ||
-             (mret_id_i && ctrl_fsm_i.kill_id)) begin
+    else if ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && ctrl_fsm_i.kill_ex) || 
+             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ctrl_fsm_i.kill_wb) ||
+             (sys_en_id_i && sys_mret_id_i && ctrl_fsm_i.kill_id)) begin
       // MRET got killed before retiring in the WB stage. Restore IF priviledge level
       // In most cases, the logic behind priv_lvl_we and priv_lvl_n will take care of this.
       // The exception is if debug mode is entered after MRET jump from ID is taken, and the MRET is killed.

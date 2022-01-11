@@ -243,8 +243,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Controller <-> decoder
   logic        sys_en_id;
   logic        sys_mret_insn_id;
-  logic        dret_insn_id;
-  logic        wfi_insn_id;
+  logic        sys_wfi_insn_id;
   logic [1:0]  ctrl_transfer_insn_id;
   logic [1:0]  ctrl_transfer_insn_raw_id;
 
@@ -489,8 +488,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     .sys_en_o                     ( sys_en_id                 ),
     .sys_mret_insn_o              ( sys_mret_insn_id          ),
-    .dret_insn_o                  ( dret_insn_id              ),
-    .wfi_insn_o                   ( wfi_insn_id               ),
+    .sys_wfi_insn_o               ( sys_wfi_insn_id           ),
 
     .csr_en_o                     ( csr_en_id                 ),
     .csr_op_o                     ( csr_op_id                 ),
@@ -716,7 +714,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // IF/ID pipeline
     .if_id_pipe_i               ( if_id_pipe             ),
-    .mret_id_i                  ( mret_insn_id           ),
+    .sys_en_id_i                ( sys_en_id              ),
+    .sys_mret_id_i              ( sys_mret_insn_id       ),
 
     // ID/EX pipeline
     .id_ex_pipe_i               ( id_ex_pipe             ),
@@ -807,7 +806,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .sys_mret_id_i                  ( sys_mret_insn_id       ),
     .csr_en_id_i                    ( csr_en_id              ),
     .csr_op_id_i                    ( csr_op_id              ),
-    .wfi_id_i                       ( wfi_insn_id            ),
+    .sys_wfi_id_i                   ( sys_wfi_insn_id        ),
 
     // LSU
     .lsu_split_ex_i                 ( lsu_split_ex           ),

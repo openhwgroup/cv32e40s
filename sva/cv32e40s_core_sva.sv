@@ -44,7 +44,8 @@ module cv32e40s_core_sva
   input logic        irq_ack, // irq ack output
   input ex_wb_pipe_t ex_wb_pipe,
   input id_ex_pipe_t id_ex_pipe,
-  input logic        mret_insn_id, 
+  input logic        sys_en_id, 
+  input logic        sys_mret_insn_id, 
   input logic        wb_valid,
   input logic        branch_taken_in_ex,
   
@@ -319,14 +320,14 @@ always_ff @(posedge clk , negedge rst_ni)
   // MRET in ID will immediatly update the priviledge level for the IF stage, but priv_lvl won't be updated until the MRET retires in the WB stage
   a_priv_lvl_consistency : 
     assert property (@(posedge clk) disable iff (!rst_ni)
-                     (priv_lvl_if_q != priv_lvl) |-> (mret_insn_id || id_ex_pipe.mret_insn || ex_wb_pipe.mret_insn))
+                     (priv_lvl_if_q != priv_lvl) |-> ((sys_en_id && sys_mret_insn_id) || (id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn) || (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn)))
     else `uvm_error("core", "IF priviledge level not consistent with current priviledge level")
   
   // Assert that change to user mode only happens when and MRET is in ID and mstatus.mpp == PRIV_LVL_U
   a_priv_lvl_u_mode_mret:
     assert property (@(posedge clk) disable iff (!rst_ni)
                      $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_U) |-> 
-                     (mret_insn_id && if_id_pipe.instr_valid && (cs_registers_mstatus_q.mpp == PRIV_LVL_U)))
+                     ((sys_en_id && sys_mret_insn_id) && if_id_pipe.instr_valid && (cs_registers_mstatus_q.mpp == PRIV_LVL_U)))
     else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
 
   // Helper signal. Indicate that pc_mux is set to a trap
