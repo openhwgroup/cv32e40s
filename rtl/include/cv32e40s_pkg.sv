@@ -693,28 +693,30 @@ typedef enum logic {
                          SELJ_FW_WB   = 1'b1
                          } jalr_fw_mux_e;
 
-// operand a selection
+// Operand a selection
 typedef enum logic[1:0] {
                          OP_A_REGA_OR_FWD = 2'b00,
                          OP_A_CURRPC      = 2'b01,
-                         OP_A_IMM         = 2'b10
+                         OP_A_IMM         = 2'b10,
+                         OP_A_NONE        = 2'b11
                          } alu_op_a_mux_e;
 
 
-// immediate a selection
+// Immediate a selection
 typedef enum logic {
                     IMMA_Z      = 1'b0,
                     IMMA_ZERO   = 1'b1
                     } imm_a_mux_e;
 
 
-// operand b selection
-typedef enum logic {
-                    OP_B_REGB_OR_FWD = 1'b0,
-                    OP_B_IMM         = 1'b1
+// Operand b selection
+typedef enum logic[1:0] {
+                    OP_B_REGB_OR_FWD = 2'b00,
+                    OP_B_IMM         = 2'b01,
+                    OP_B_NONE        = 2'b10
                     } alu_op_b_mux_e;
 
-// immediate b selection
+// Immediate b selection
 typedef enum logic[1:0] {
                          IMMB_I      = 2'b00,
                          IMMB_S      = 2'b01,
@@ -722,11 +724,11 @@ typedef enum logic[1:0] {
                          IMMB_PCINCR = 2'b11
                          } imm_b_mux_e;
 
-// operand c selection
+// Operand c selection
 typedef enum logic[1:0] {
-                         OP_C_FWD         = 2'b00,
-                         OP_C_REGB_OR_FWD = 2'b01,
-                         OP_C_BCH         = 2'b10
+                         OP_C_REGB_OR_FWD = 2'b00,
+                         OP_C_BCH         = 2'b01,
+                         OP_C_NONE        = 2'b10
                          } op_c_mux_e;
 
 // branch types
@@ -783,23 +785,23 @@ typedef struct packed {
   logic                              lsu_sign_ext;
   logic [1:0]                        lsu_reg_offset;
   logic [5:0]                        lsu_atop;
-  logic                              lsu_prepost_useincr;
-  logic                              mret_insn;
-  logic                              dret_insn;
+  logic                              sys_en;
   logic                              illegal_insn;
-  logic                              ebrk_insn;
-  logic                              ecall_insn;
-  logic                              wfi_insn;
-  logic                              fencei_insn;
+  logic                              sys_dret_insn;
+  logic                              sys_ebrk_insn;
+  logic                              sys_ecall_insn;
+  logic                              sys_fencei_insn;
+  logic                              sys_mret_insn;
+  logic                              sys_wfi_insn;
 } decoder_ctrl_t;
 
   parameter decoder_ctrl_t DECODER_CTRL_ILLEGAL_INSN =  '{ctrl_transfer_insn           : BRANCH_NONE,
                                                           ctrl_transfer_target_mux_sel : JT_JAL,
                                                           alu_en                       : 1'b0,
                                                           alu_operator                 : ALU_SLTU,
-                                                          alu_op_a_mux_sel             : OP_A_REGA_OR_FWD,
-                                                          alu_op_b_mux_sel             : OP_B_REGB_OR_FWD,
-                                                          op_c_mux_sel                 : OP_C_FWD,
+                                                          alu_op_a_mux_sel             : OP_A_NONE,
+                                                          alu_op_b_mux_sel             : OP_B_NONE,
+                                                          op_c_mux_sel                 : OP_C_NONE,
                                                           imm_a_mux_sel                : IMMA_ZERO,
                                                           imm_b_mux_sel                : IMMB_I,
                                                           mul_en                       : 1'b0,
@@ -817,14 +819,14 @@ typedef struct packed {
                                                           lsu_sign_ext                 : 1'b0,
                                                           lsu_reg_offset               : 2'b00,
                                                           lsu_atop                     : 6'b000000,
-                                                          lsu_prepost_useincr          : 1'b1,
-                                                          mret_insn                    : 1'b0,
-                                                          dret_insn                    : 1'b0,
+                                                          sys_en                       : 1'b0,
                                                           illegal_insn                 : 1'b1,
-                                                          ebrk_insn                    : 1'b0,
-                                                          ecall_insn                   : 1'b0,
-                                                          wfi_insn                     : 1'b0,
-                                                          fencei_insn                  : 1'b0
+                                                          sys_dret_insn                : 1'b0,
+                                                          sys_ebrk_insn                : 1'b0,
+                                                          sys_ecall_insn               : 1'b0,
+                                                          sys_fencei_insn              : 1'b0,
+                                                          sys_mret_insn                : 1'b0,
+                                                          sys_wfi_insn                 : 1'b0
                                                           };
 
 ///////////////////////////////////////////////
@@ -1091,13 +1093,15 @@ typedef struct packed {
   // Multiplier control
   logic         mul_en;
   mul_opcode_e  mul_operator;
-  logic [31:0]  mul_operand_a;
-  logic [31:0]  mul_operand_b;
   logic [ 1:0]  mul_signed_mode;
 
   // Divider control
   logic         div_en;
   div_opcode_e  div_operator;
+
+  // Operands for multiplier and divider
+  logic [31:0]  muldiv_operand_a;
+  logic [31:0]  muldiv_operand_b;
 
   // Register write control
   logic         rf_we;
@@ -1114,7 +1118,16 @@ typedef struct packed {
   logic         lsu_sign_ext;
   logic [1:0]   lsu_reg_offset;
   logic [5:0]   lsu_atop;
-  logic         lsu_prepost_useincr;
+
+  // SYS
+  logic         sys_en;
+  logic         illegal_insn;
+  logic         sys_dret_insn;
+  logic         sys_ebrk_insn;
+  logic         sys_ecall_insn;
+  logic         sys_fencei_insn;
+  logic         sys_mret_insn;
+  logic         sys_wfi_insn;
 
   // Branch target
   logic         branch_in_ex;
@@ -1127,13 +1140,6 @@ typedef struct packed {
   inst_resp_t   instr;            // Contains instruction word (may be compressed),bus error status and MPU status
   instr_meta_t  instr_meta;
   logic         instr_valid;      // instruction in EX is valid
-  logic         illegal_insn;
-  logic         ebrk_insn;
-  logic         wfi_insn;
-  logic         ecall_insn;
-  logic         fencei_insn;
-  logic         mret_insn;
-  logic         dret_insn;
 
   // Priviledge level
   privlvl_t    priv_lvl;
@@ -1168,12 +1174,14 @@ typedef struct packed {
   instr_meta_t  instr_meta;
   logic         instr_valid;      // instruction in WB is valid
   logic         illegal_insn;
-  logic         ebrk_insn;
-  logic         wfi_insn;
-  logic         ecall_insn;
-  logic         fencei_insn;
-  logic         mret_insn;
-  logic         dret_insn;
+
+  logic         sys_en;
+  logic         sys_dret_insn;
+  logic         sys_ebrk_insn;
+  logic         sys_ecall_insn;
+  logic         sys_fencei_insn;
+  logic         sys_mret_insn;
+  logic         sys_wfi_insn;
 
   // eXtension interface
   logic         xif_en;           // Instruction has been offloaded via eXtension interface
@@ -1248,10 +1256,7 @@ typedef struct packed {
   logic        wake_from_sleep;       // Wakeup (due to irq or debug)
 
   // CSR signals
-  logic        csr_save_if;         // Save PC from IF stage
-  logic        csr_save_id;         // Save PC from ID stage
-  logic        csr_save_ex;         // Save PC from EX stage (currently unused)
-  logic        csr_save_wb;         // Save PC from WB stage
+  logic [31:0] pipe_pc;             // PC from pipeline
   mcause_t     csr_cause;           // CSR cause (saves to mcause CSR)
   logic        csr_restore_mret;    // Restore CSR due to mret
   logic        csr_restore_dret;    // Restore CSR due to dret
@@ -1307,5 +1312,12 @@ typedef struct packed {
   parameter lfsr_cfg_t LFSR_CFG_DEFAULT = '{coeffs       : 32'h0,
                                             default_seed : 32'h0};
 
+  // Pipe PC mux selector defines. Used to control PC mux in control FSM
+  typedef enum logic[1:0] {
+    PC_IF,
+    PC_ID,
+    PC_EX,
+    PC_WB
+  } pipe_pc_mux_e;
 
 endpackage

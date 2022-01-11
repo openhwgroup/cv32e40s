@@ -43,10 +43,13 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   input  logic        if_valid_i,
 
+  // From IF stage
+  input logic [31:0]  pc_if_i,
+
   // from IF/ID pipeline
   input  if_id_pipe_t if_id_pipe_i,
-  input  logic        mret_id_i,
-  input  logic        dret_id_i,
+  input  logic        sys_en_id_i,
+  input  logic        sys_mret_id_i,
   input  logic        csr_en_id_i,
   input  csr_opcode_e csr_op_id_i,
   input  logic        wfi_id_i,
@@ -59,7 +62,6 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  mpu_status_e lsu_mpu_status_wb_i,        // MPU status (WB stage)
   input  logic        data_stall_wb_i,            // WB stalled by LSU
   input  logic [1:0]  lsu_err_wb_i,               // LSU bus error in WB stage
-  input  logic [31:0] lsu_addr_wb_i,              // LSU address in WB stage
   input  logic        lsu_busy_i,                 // LSU is busy with outstanding transfers
   input  logic        lsu_interruptible_i,        // LSU may be interrupted
 
@@ -74,17 +76,17 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        irq_wu_ctrl_i,
   input  privlvl_t    priv_lvl_i,
 
-  input logic  [1:0]     mtvec_mode_i,
+  input logic  [1:0]  mtvec_mode_i,
 
   // Debug Signal
-  input  logic         debug_req_i,
-  input  dcsr_t        dcsr_i,
+  input  logic        debug_req_i,
+  input  dcsr_t       dcsr_i,
 
   // Regfile target
-  input  logic         rf_alu_we_id_i,             // currently decoded we enable
+  input  logic        rf_alu_we_id_i,             // currently decoded we enable
 
   // CSR raddr in ex
-  input  logic         csr_counter_read_i,         // A performance counter is read in CSR (EX)
+  input  logic        csr_counter_read_i,         // A performance counter is read in CSR (EX)
 
   // CSR write stobes
   input logic          cpuctrl_wr_in_wb_i,
@@ -133,14 +135,14 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .ctrl_byp_i                  ( ctrl_byp_o               ),
 
     .if_valid_i                  ( if_valid_i               ),
+    .pc_if_i                     ( pc_if_i                  ),
 
     // From ID stage
+    .if_id_pipe_i                ( if_id_pipe_i             ),
     .id_ready_i                  ( id_ready_i               ),
     .id_valid_i                  ( id_valid_i               ),
-    .if_id_pipe_i                ( if_id_pipe_i             ),
-    .mret_id_i                   ( mret_id_i                ),
-    .dret_id_i                   ( dret_id_i                ),
-    .ex_wb_pipe_i                ( ex_wb_pipe_i             ),
+    .sys_en_id_i                 ( sys_en_id_i              ),
+    .sys_mret_id_i               ( sys_mret_id_i            ),
     .ctrl_transfer_insn_i        ( ctrl_transfer_insn_i     ),
     .ctrl_transfer_insn_raw_i    ( ctrl_transfer_insn_raw_i ),
 
@@ -152,8 +154,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .lsu_split_ex_i              ( lsu_split_ex_i           ),
 
     // From WB stage
+    .ex_wb_pipe_i                ( ex_wb_pipe_i             ),
     .lsu_err_wb_i                ( lsu_err_wb_i             ),
-    .lsu_addr_wb_i               ( lsu_addr_wb_i            ),
     .lsu_mpu_status_wb_i         ( lsu_mpu_status_wb_i      ),
     .data_stall_wb_i             ( data_stall_wb_i          ),
     .wb_ready_i                  ( wb_ready_i               ),
@@ -212,8 +214,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
     // From id_stage
     .rf_alu_we_id_i             ( rf_alu_we_id_i           ),
-    .mret_id_i                  ( mret_id_i                ),
-    .dret_id_i                  ( dret_id_i                ),
+    .sys_en_id_i                ( sys_en_id_i              ),
+    .sys_mret_id_i              ( sys_mret_id_i            ),
     .csr_en_id_i                ( csr_en_id_i              ),
     .csr_op_id_i                ( csr_op_id_i              ),
     .wfi_id_i                   ( wfi_id_i                 ),

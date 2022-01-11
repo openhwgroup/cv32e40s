@@ -31,24 +31,24 @@
 
 module cv32e40s_core import cv32e40s_pkg::*;
 #(
-  parameter         NUM_MHPMCOUNTERS     =  1,
-  parameter         LIB                  =  0,
-  parameter int     PMP_GRANULARITY      =  0,
-  parameter int     PMP_NUM_REGIONS      =  0,
-  parameter bit     A_EXT                =  0,
-  parameter b_ext_e B_EXT                =  NONE,
-  parameter bit     X_EXT                =  0,
-  parameter int     X_NUM_RS             =  2,
-  parameter int     X_ID_WIDTH           =  4,
-  parameter int     X_MEM_WIDTH          =  32,
-  parameter int     X_RFR_WIDTH          =  32,
-  parameter int     X_RFW_WIDTH          =  32,
-  parameter int     X_MISA               =  32'h00000000,
-  parameter int     PMA_NUM_REGIONS      =  0,
+  parameter NUM_MHPMCOUNTERS             =  1,
+  parameter              LIB             =  0,
+  parameter bit          A_EXT           =  0,
+  parameter b_ext_e      B_EXT           =  NONE,
+  parameter bit          X_EXT           =  0,
+  parameter int          X_NUM_RS        =  2,
+  parameter int          X_ID_WIDTH      =  4,
+  parameter int          X_MEM_WIDTH     =  32,
+  parameter int          X_RFR_WIDTH     =  32,
+  parameter int          X_RFW_WIDTH     =  32,
+  parameter int          X_MISA          =  32'h00000000,
+  parameter int          PMA_NUM_REGIONS =  0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
-  parameter lfsr_cfg_t   LFSR0_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter lfsr_cfg_t   LFSR1_CFG = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter lfsr_cfg_t   LFSR2_CFG = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
+  parameter int          PMP_GRANULARITY =  0,
+  parameter int          PMP_NUM_REGIONS =  0,
+  parameter lfsr_cfg_t   LFSR0_CFG       = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR1_CFG       = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR2_CFG       = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
 )
 (
   // Clock and Reset
@@ -191,7 +191,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   mpu_status_e lsu_mpu_status_wb;
   logic [31:0] lsu_rdata_wb;
   logic [1:0]  lsu_err_wb;
-  logic [31:0] lsu_addr_wb;
 
   logic        lsu_valid_0;             // Handshake with EX
   logic        lsu_ready_ex;
@@ -242,11 +241,12 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        trigger_match_if;
 
   // Controller <-> decoder
-  logic       mret_insn_id;
-  logic       dret_insn_id;
-  logic       wfi_insn_id;
-  logic [1:0] ctrl_transfer_insn_id;
-  logic [1:0] ctrl_transfer_insn_raw_id;
+  logic        sys_en_id;
+  logic        sys_mret_insn_id;
+  logic        dret_insn_id;
+  logic        wfi_insn_id;
+  logic [1:0]  ctrl_transfer_insn_id;
+  logic [1:0]  ctrl_transfer_insn_raw_id;
 
   logic        csr_en_id;
   csr_opcode_e csr_op_id;
@@ -389,77 +389,58 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //////////////////////////////////////////////////
   cv32e40s_if_stage
   #(
-    .A_EXT               ( A_EXT                     ),
-    .X_EXT               ( X_EXT                     ),
-    .X_ID_WIDTH          ( X_ID_WIDTH                ),
-    .PMA_NUM_REGIONS     ( PMA_NUM_REGIONS           ),
-    .PMA_CFG             ( PMA_CFG                   ),
+    .A_EXT               ( A_EXT                    ),
+    .X_EXT               ( X_EXT                    ),
+    .X_ID_WIDTH          ( X_ID_WIDTH               ),
+    .PMA_NUM_REGIONS     ( PMA_NUM_REGIONS          ),
+    .PMA_CFG             ( PMA_CFG                  ),
     .PMP_GRANULARITY     ( PMP_GRANULARITY           ),
     .PMP_NUM_REGIONS     ( PMP_NUM_REGIONS           ),
     .DUMMY_INSTRUCTIONS  ( SECURE                    )
   )
   if_stage_i
   (
-    .clk                 ( clk                       ),
-    .rst_n               ( rst_ni                    ),
+    .clk                 ( clk                      ),
+    .rst_n               ( rst_ni                   ),
 
-    // boot address
-    .boot_addr_i         ( boot_addr_i[31:0]         ),
-    .dm_exception_addr_i ( dm_exception_addr_i[31:0] ),
+    .boot_addr_i         ( boot_addr_i              ), // Boot address
+    .branch_target_ex_i  ( branch_target_ex         ), // Branch target address
+    .dm_exception_addr_i ( dm_exception_addr_i      ), // Debug mode exception address
+    .dm_halt_addr_i      ( dm_halt_addr_i           ), // Debug mode halt address
+    .dpc_i               ( dpc                      ), // Debug PC (restore upon return from debug)
+    .jump_target_id_i    ( jump_target_id           ), // Jump target address
+    .mepc_i              ( mepc                     ), // Exception PC (restore upon return from exception/interrupt)
+    .mtvec_addr_i        ( mtvec_addr               ), // Exception/interrupt address (MSBs only)
+    .nmi_addr_i          ( nmi_addr_i               ), // NMI address
 
-    // NMI address
-    .nmi_addr_i          ( nmi_addr_i                ),
+    .m_c_obi_instr_if    ( m_c_obi_instr_if         ), // Instruction bus interface
 
-    // debug mode halt address
-    .dm_halt_addr_i      ( dm_halt_addr_i[31:0]      ),
+    .if_id_pipe_o        ( if_id_pipe               ),
 
-    // trap vector location
-    .mtvec_addr          ( mtvec_addr                ),
+    .ctrl_fsm_i          ( ctrl_fsm                 ),
+    .trigger_match_i     ( trigger_match_if         ),
 
-    // instruction cache interface
-    .m_c_obi_instr_if    ( m_c_obi_instr_if          ),
-
-    // CSR registers
-    .csr_pmp_i           ( csr_pmp                   ),
-
-    // Privilege level
-    .priv_lvl_ctrl_i     ( priv_lvl_if_ctrl          ),
-
-    // IF/ID pipeline
-    .if_id_pipe_o        ( if_id_pipe                ),
-
-    .ex_wb_pipe_i        ( ex_wb_pipe                ),
-
-    .ctrl_fsm_i          ( ctrl_fsm                  ),
-
-    .mepc_i              ( mepc                      ), // exception return address
-
-    .dpc_i               ( dpc                       ), // debug return address
-
-    .trigger_match_i     ( trigger_match_if          ),
-
-    .pc_if_o             ( pc_if                     ),
-
-    .csr_mtvec_init_o    ( csr_mtvec_init_if         ),
-
-    // Jump targets
-    .jump_target_id_i    ( jump_target_id            ),
-    .branch_target_ex_i  ( branch_target_ex          ),
-
-    .if_busy_o           ( if_busy                   ),
+    .pc_if_o             ( pc_if                    ),
+    .csr_mtvec_init_o    ( csr_mtvec_init_if        ),
+    .if_busy_o           ( if_busy                  ),
 
     // Pipeline handshakes
-    .if_valid_o          ( if_valid                  ),
-    .id_ready_i          ( id_ready                  ),
+    .if_valid_o          ( if_valid                 ),
+    .id_ready_i          ( id_ready                 ),
+
+    // CSR registers
+    .csr_pmp_i           ( csr_pmp                  ),
+
+    // Privilege level
+    .priv_lvl_ctrl_i     ( priv_lvl_if_ctrl         ),
 
     // Dummy Instruction CSRs
-    .xsecure_ctrl_i      ( xsecure_ctrl              ),
+    .xsecure_ctrl_i      ( xsecure_ctrl             ),
 
     // eXtension interface
-    .xif_compressed_if   ( xif_compressed_if         ),
-    .xif_issue_valid_i   ( xif_issue_if.issue_valid  )
+    .xif_compressed_if   ( xif_compressed_if        ),
+    .xif_issue_valid_i   ( xif_issue_if.issue_valid )
   );
-
 
   /////////////////////////////////////////////////
   //   ___ ____    ____ _____  _    ____ _____   //
@@ -506,7 +487,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .rf_wdata_ex_i                ( rf_wdata_ex               ),
     .rf_wdata_wb_i                ( rf_wdata_wb               ),
 
-    .mret_insn_o                  ( mret_insn_id              ),
+    .sys_en_o                     ( sys_en_id                 ),
+    .sys_mret_insn_o              ( sys_mret_insn_id          ),
     .dret_insn_o                  ( dret_insn_id              ),
     .wfi_insn_o                   ( wfi_insn_id               ),
 
@@ -631,7 +613,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lsu_mpu_status_1_o    ( lsu_mpu_status_wb  ),
 
     // Stage 1 outputs (WB)
-    .lsu_addr_1_o          ( lsu_addr_wb        ), // To controller (has WB timing, but does not pass through WB stage)
     .lsu_err_1_o           ( lsu_err_wb         ), // To controller (has WB timing, but does not pass through WB stage)
     .lsu_rdata_1_o         ( lsu_rdata_wb       ),
 
@@ -736,6 +717,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // IF/ID pipeline
     .if_id_pipe_i               ( if_id_pipe             ),
     .mret_id_i                  ( mret_insn_id           ),
+
     // ID/EX pipeline
     .id_ex_pipe_i               ( id_ex_pipe             ),
 
@@ -818,11 +800,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ex_wb_pipe_i                   ( ex_wb_pipe             ),
 
     .if_valid_i                     ( if_valid               ),
-
+    .pc_if_i                        ( pc_if                  ),
     // from IF/ID pipeline
     .if_id_pipe_i                   ( if_id_pipe             ),
-    .mret_id_i                      ( mret_insn_id           ),
-    .dret_id_i                      ( dret_insn_id           ),
+    .sys_en_id_i                    ( sys_en_id              ),
+    .sys_mret_id_i                  ( sys_mret_insn_id       ),
     .csr_en_id_i                    ( csr_en_id              ),
     .csr_op_id_i                    ( csr_op_id              ),
     .wfi_id_i                       ( wfi_insn_id            ),
@@ -831,7 +813,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lsu_split_ex_i                 ( lsu_split_ex           ),
     .lsu_mpu_status_wb_i            ( lsu_mpu_status_wb      ),
     .data_stall_wb_i                ( data_stall_wb          ),
-    .lsu_addr_wb_i                  ( lsu_addr_wb            ),
     .lsu_err_wb_i                   ( lsu_err_wb             ),
     .lsu_busy_i                     ( lsu_busy               ),
     .lsu_interruptible_i            ( lsu_interruptible      ),
@@ -887,17 +868,17 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // eXtension interface
     .xif_commit_if                  ( xif_commit_if          ),
     .xif_csr_error_i                ( xif_csr_error_ex       )
- );
+  );
 
-////////////////////////////////////////////////////////////////////////
-//  _____      _       _____             _             _ _            //
-// |_   _|    | |     /  __ \           | |           | | |           //
-//   | | _ __ | |_    | /  \/ ___  _ __ | |_ _ __ ___ | | | ___ _ __  //
-//   | || '_ \| __|   | |    / _ \| '_ \| __| '__/ _ \| | |/ _ \ '__| //
-//  _| || | | | |_ _  | \__/\ (_) | | | | |_| | | (_) | | |  __/ |    //
-//  \___/_| |_|\__(_)  \____/\___/|_| |_|\__|_|  \___/|_|_|\___|_|    //
-//                                                                    //
-////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////
+  //  _____      _       _____             _             _ _            //
+  // |_   _|    | |     /  __ \           | |           | | |           //
+  //   | | _ __ | |_    | /  \/ ___  _ __ | |_ _ __ ___ | | | ___ _ __  //
+  //   | || '_ \| __|   | |    / _ \| '_ \| __| '__/ _ \| | |/ _ \ '__| //
+  //  _| || | | | |_ _  | \__/\ (_) | | | | |_| | | (_) | | |  __/ |    //
+  //  \___/_| |_|\__(_)  \____/\___/|_| |_|\__|_|  \___/|_|_|\___|_|    //
+  //                                                                    //
+  ////////////////////////////////////////////////////////////////////////
 
 
   cv32e40s_int_controller

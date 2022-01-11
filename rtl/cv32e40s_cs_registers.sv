@@ -163,7 +163,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic mscratch_we;
   logic mscratch_rd_error;
 
-  logic [31:0] exception_pc;
   mstatus_t mstatus_q, mstatus_n;
   logic mstatus_we;
   logic mstatus_rd_error;
@@ -655,17 +654,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     unique case (1'b1)
 
       ctrl_fsm_i.csr_save_cause: begin
-        unique case (1'b1)
-          ctrl_fsm_i.csr_save_if:
-            exception_pc = pc_if_i;
-          ctrl_fsm_i.csr_save_id:
-            exception_pc = if_id_pipe_i.pc;
-          ctrl_fsm_i.csr_save_ex:
-            exception_pc = id_ex_pipe_i.pc;
-          ctrl_fsm_i.csr_save_wb:
-            exception_pc = ex_wb_pipe_i.pc;
-          default:;
-        endcase
 
         if (ctrl_fsm_i.debug_csr_save) begin
             // all interrupts are masked, don't update cause, epc, tval dpc and
@@ -682,7 +670,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             };
             dcsr_we = 1'b1;
 
-            dpc_n       = exception_pc;
+            dpc_n  = ctrl_fsm_i.pipe_pc;
             dpc_we = 1'b1;
         end else begin
           priv_lvl_n     = PRIV_LVL_M; // trap into machine mode
@@ -694,7 +682,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           mstatus_n.mpp  = priv_lvl_q;
           mstatus_we     = 1'b1;
 
-          mepc_n         = exception_pc;
+          mepc_n         = ctrl_fsm_i.pipe_pc;
           mepc_we        = 1'b1;
 
           mcause_n       = ctrl_fsm_i.csr_cause;
@@ -1220,8 +1208,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   
   // Write select
-  assign tmatch_control_we = csr_we_int & ctrl_fsm_i.debug_mode & (csr_waddr == CSR_TDATA1);
-  assign tmatch_value_we   = csr_we_int & ctrl_fsm_i.debug_mode & (csr_waddr == CSR_TDATA2);
+  assign tmatch_control_we = csr_we_int && ctrl_fsm_i.debug_mode && (csr_waddr == CSR_TDATA1);
+  assign tmatch_value_we   = csr_we_int && ctrl_fsm_i.debug_mode && (csr_waddr == CSR_TDATA2);
 
   // All supported trigger types
   assign tinfo_types = 1 << TTYPE_MCONTROL;
@@ -1280,7 +1268,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Breakpoint matching
   // We match against the next address, as the breakpoint must be taken before execution
   // Matching is disabled when ctrl_fsm_i.debug_mode == 1'b1
-  // todo: Need to explain why this does not require hazard detection (ie csr write to tdata2 before the matched instruction)
+  // Trigger CSRs can only be written from debug mode, writes from any other privilege level are ignored.
+  //   Thus we do not have an issue where a write to the tdata2 CSR immediately before the matched instruction
+  //   could be missed since we must write in debug mode, then dret to machine mode (kills pipeline) before
+  //   returning to dpc.
   assign trigger_match_o = tmatch_control_q[2] && !ctrl_fsm_i.debug_mode &&
                            (pc_if_i[31:0] == tmatch_value_q[31:0]);
 
@@ -1399,7 +1390,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       
       // Inhibit Control
       if(mcountinhibit_we)
-        mcountinhibit_n = csr_wdata_int;
+        mcountinhibit_n = csr_wdata_int & MCOUNTINHIBIT_MASK;
 
       // Event Control
       if(mhpmevent_we)
@@ -1531,22 +1522,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   //  Inhibit Regsiter: mcountinhibit_q
   //  Note: implemented counters are disabled out of reset to save power
-  genvar inh_gidx;
-  generate
-    for (inh_gidx = 0; inh_gidx < 32; inh_gidx++) begin : gen_mcountinhibit
-      if(!MCOUNTINHIBIT_MASK[inh_gidx])
-        begin : gen_non_implemented
-        assign mcountinhibit_q[inh_gidx] = 'b0;
-      end
-      else begin : gen_implemented
-        always_ff @(posedge clk, negedge rst_n)
-          if (!rst_n)
-            mcountinhibit_q[inh_gidx] <= 'b1; // default disable
-          else
-            mcountinhibit_q[inh_gidx] <= mcountinhibit_n[inh_gidx];
-      end
+  always_ff @(posedge clk, negedge rst_n) begin
+    if (!rst_n) begin
+      mcountinhibit_q <= MCOUNTINHIBIT_MASK; // default disable
+    end else begin
+      mcountinhibit_q <= mcountinhibit_n;
     end
-  endgenerate
+  end
 
   //  Counter enable register: mcounteren
   //  mcounteren[2:0] = {IR, TM, CY}. time (TM) is not implemented

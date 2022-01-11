@@ -64,15 +64,15 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   input  xsecure_ctrl_t xsecure_ctrl_i,
 
   // Register file write data from WB stage
-  input  logic [31:0]    rf_wdata_wb_i,
+  input  logic [31:0] rf_wdata_wb_i,
 
   // Register file write data from EX stage
-  input  logic [31:0]    rf_wdata_ex_i,
+  input  logic [31:0] rf_wdata_ex_i,
 
-  output logic        mret_insn_o,
+  output logic        sys_en_o,
+  output logic        sys_mret_insn_o,
   output logic        dret_insn_o,
   output logic        wfi_insn_o,
-  // Decoder to controller
   output logic        csr_en_o,
   output csr_opcode_e csr_op_o,
 
@@ -113,112 +113,111 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   logic [31:0] instr;
 
-  // Immediate decoding and sign extension
-  logic [31:0] imm_i_type;
-  logic [31:0] imm_s_type;
-  logic [31:0] imm_sb_type;
-  logic [31:0] imm_u_type;
-  logic [31:0] imm_uj_type;
-  logic [31:0] imm_z_type;
-
-  logic [31:0] imm_a;           // contains the immediate for operand b
-  logic [31:0] imm_b;           // contains the immediate for operand b
-
   // Register Read/Write Control
-  logic [1:0]  rf_re;           // Decoder only supports rs1, rs2
-  logic        rf_we;
-  logic        rf_we_dec;
-  logic        rf_we_raw;
+  logic [1:0]           rf_re;                  // Decoder only supports rs1, rs2
+  logic                 rf_we;
+  logic                 rf_we_dec;
+  logic                 rf_we_raw;
   
   // ALU Control
-  logic        alu_en;
-  alu_opcode_e alu_operator;
-  alu_op_a_mux_e alu_op_a_mux_sel;
-  alu_op_b_mux_e alu_op_b_mux_sel;
-
-  op_c_mux_e     op_c_mux_sel;
-
-  imm_a_mux_e  imm_a_mux_sel;
-  imm_b_mux_e  imm_b_mux_sel;
-  jt_mux_e     ctrl_transfer_target_mux_sel;
+  logic                 alu_en;
+  alu_opcode_e          alu_operator;
 
   // Multiplier Control
-  mul_opcode_e mul_operator;    // multiplication operation selection
-  logic        mul_en;          // multiplication is used instead of ALU
-  logic [1:0]  mul_signed_mode; // Signed mode multiplication at the output of the controller, and before the pipe registers
+  logic                 mul_en;                 // Multiplication is used instead of ALU
+  mul_opcode_e          mul_operator;           // Multiplication operation selection
+  logic [1:0]           mul_signed_mode;        // Signed mode multiplication at the output of the controller, and before the pipe registers
 
   // Divider control
-  logic         div_en;
-  div_opcode_e  div_operator;
+  logic                 div_en;
+  div_opcode_e          div_operator;
   
   // LSU
-  logic        lsu_en;
-  logic        lsu_we;
-  logic [1:0]  lsu_type;
-  logic        lsu_sign_ext;
-  logic [1:0]  lsu_reg_offset;
-  logic        lsu_en_raw;
-  logic [5:0]  lsu_atop;                // Atomic memory instruction
-  logic        lsu_prepost_useincr;
+  logic                 lsu_en;
+  logic                 lsu_we;
+  logic [1:0]           lsu_type;
+  logic                 lsu_sign_ext;
+  logic [1:0]           lsu_reg_offset;
+  logic                 lsu_en_raw;
+  logic [5:0]           lsu_atop;               // Atomic memory instruction
 
   // CSR
-  logic        csr_en;
-  csr_opcode_e csr_op;
+  logic                 csr_en;
+  csr_opcode_e          csr_op;
 
-  logic [31:0] operand_a_fw;
-  logic [31:0] operand_b_fw;
+  // SYS
+  logic                 sys_en;
+  logic                 sys_fencei_insn;
+  logic                 sys_ecall_insn;
+  logic                 sys_ebrk_insn;
+  logic                 sys_mret_insn;
+  logic                 sys_dret_insn;
+  logic                 sys_wfi_insn;
 
-  logic [31:0] jalr_fw;
+  // Operands and forwarding
+  logic [31:0]          operand_a;
+  logic [31:0]          operand_b;
+  logic [31:0]          operand_c;
+  logic [31:0]          operand_a_fw;
+  logic [31:0]          operand_b_fw;
+  logic [31:0]          jalr_fw;
+  alu_op_a_mux_e        alu_op_a_mux_sel;
+  alu_op_b_mux_e        alu_op_b_mux_sel;
+  op_c_mux_e            op_c_mux_sel;
+  imm_a_mux_e           imm_a_mux_sel;
+  imm_b_mux_e           imm_b_mux_sel;
+  jt_mux_e              ctrl_transfer_target_mux_sel;
 
-  logic [31:0] operand_a;
-  logic [31:0] operand_b;
-  logic [31:0] operand_c;
+  // Immediates
+  logic [31:0]          imm_a;                  // Immediate for operand A
+  logic [31:0]          imm_b;                  // Immediate for operand B
+  logic [31:0]          imm_i_type;
+  logic [31:0]          imm_s_type;
+  logic [31:0]          imm_sb_type;
+  logic [31:0]          imm_u_type;
+  logic [31:0]          imm_uj_type;
+  logic [31:0]          imm_z_type;
+
 
   // Branch target address
-  logic [31:0] bch_target;
+  logic [31:0]          bch_target;
 
   // Stall for multicycle ID instructions
-  logic multi_cycle_id_stall;
+  logic                 multi_cycle_id_stall;
 
-  // Special insn to travel down pipeline structs
-  logic        illegal_insn;
-  logic        ecall_insn;
-  logic        mret_insn;
-  logic        dret_insn;
-  logic        wfi_insn;
-  logic        ebrk_insn;
-  logic        fencei_insn;
+  logic                 illegal_insn;
 
   // Local instruction valid qualifier
-  logic        instr_valid;
+  logic                 instr_valid;
 
   // eXtension interface signals
-  logic        xif_waiting;
-  logic        xif_insn_accept;
-  logic        xif_insn_reject;
-  logic        xif_we;
-  logic        xif_exception;
-  logic        xif_dualwrite;
-  logic        xif_loadstore;
+  logic                 xif_en;
+  logic                 xif_waiting;
+  logic                 xif_insn_accept;
+  logic                 xif_insn_reject;
+  logic                 xif_we;
+  logic                 xif_exception;
+  logic                 xif_dualwrite;
+  logic                 xif_loadstore;
 
   assign instr_valid = if_id_pipe_i.instr_valid && !ctrl_fsm_i.kill_id && !ctrl_fsm_i.halt_id;
 
-  assign mret_insn_o = mret_insn;
+  assign sys_en_o = sys_en;
+  assign sys_mret_insn_o = sys_mret_insn;
   assign dret_insn_o = dret_insn;
   assign wfi_insn_o  = wfi_insn;
 
   assign instr = if_id_pipe_i.instr.bus_resp.rdata;
 
-  // immediate extraction and sign extension
+  // Immediate extraction and sign extension
   assign imm_i_type  = { {20 {instr[31]}}, instr[31:20] };
   assign imm_s_type  = { {20 {instr[31]}}, instr[31:25], instr[11:7] };
   assign imm_sb_type = { {19 {instr[31]}}, instr[31], instr[7], instr[30:25], instr[11:8], 1'b0 };
   assign imm_u_type  = { instr[31:12], 12'b0 };
   assign imm_uj_type = { {12 {instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0 };
 
-  // immediate for CSR manipulation (zero extended)
+  // Immediate for CSR manipulation (zero extended)
   assign imm_z_type  = { 27'b0, instr[REG_S1_MSB:REG_S1_LSB] };
-
 
   //---------------------------------------------------------------------------
   // Source register selection
@@ -359,8 +358,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     case (op_c_mux_sel)
       OP_C_REGB_OR_FWD:  operand_c = operand_b_fw;
       OP_C_BCH:          operand_c = bch_target;
-      OP_C_FWD:          operand_c = 32'h0;
-      default:           operand_c = 32'h0;
+      default:           operand_c = operand_b_fw;
     endcase // case (op_c_mux_sel)
   end
 
@@ -385,13 +383,15 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     // controller related signals
     .deassert_we_i                   ( ctrl_byp_i.deassert_we    ),
 
+    // SYS signals
+    .sys_en_o                        ( sys_en                    ),
     .illegal_insn_o                  ( illegal_insn              ),
-    .ebrk_insn_o                     ( ebrk_insn                 ),
-    .mret_insn_o                     ( mret_insn                 ),
-    .dret_insn_o                     ( dret_insn                 ),
-    .ecall_insn_o                    ( ecall_insn                ),
-    .wfi_insn_o                      ( wfi_insn                  ),
-    .fencei_insn_o                   ( fencei_insn               ),
+    .sys_ebrk_insn_o                 ( sys_ebrk_insn             ),
+    .sys_mret_insn_o                 ( sys_mret_insn             ),
+    .sys_dret_insn_o                 ( sys_dret_insn             ),
+    .sys_ecall_insn_o                ( sys_ecall_insn            ),
+    .sys_wfi_insn_o                  ( sys_wfi_insn              ),
+    .sys_fencei_insn_o               ( sys_fencei_insn           ),
     
     // from IF/ID pipeline
     .if_id_pipe_i                    ( if_id_pipe_i              ),
@@ -429,7 +429,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     .lsu_en_o                        ( lsu_en                    ),
     .lsu_en_raw_o                    ( lsu_en_raw                ),
     .lsu_we_o                        ( lsu_we                    ),
-    .lsu_prepost_useincr_o           ( lsu_prepost_useincr       ),
     .lsu_type_o                      ( lsu_type                  ),
     .lsu_sign_ext_o                  ( lsu_sign_ext              ),
     .lsu_reg_offset_o                ( lsu_reg_offset            ),
@@ -450,10 +449,10 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   //       issue_valid depends on halt_id (and data_rvalid) via the local instr_valid.
   //       Can issue_valid be made fast by using the registered instr_valid and only factor in kill_id and not halt_id?
   //       Maybe it is ok to have a late issue_valid, as accept signal will depend on late rs_valid anyway?
-  assign rf_re_o             = illegal_insn ? '1 : REGFILE_NUM_READ_PORTS'(rf_re);
+  assign rf_re_o        = illegal_insn ? '1 : REGFILE_NUM_READ_PORTS'(rf_re);
 
   // Register writeback is enabled either by the decoder or by the XIF
-  assign rf_we               = rf_we_dec || xif_we;
+  assign rf_we          = rf_we_dec || xif_we;
 
   assign rf_alu_we_id_o = rf_we_raw && !lsu_en_raw;
 
@@ -471,9 +470,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   instr_meta_t instr_meta_n;
   always_comb begin
     instr_meta_n        = if_id_pipe_i.instr_meta;
-    instr_meta_n.jump  = (ctrl_transfer_insn_o == BRANCH_JAL) ||
-                         (ctrl_transfer_insn_o == BRANCH_JALR);
-    instr_meta_n.branch = ctrl_transfer_insn_o == BRANCH_COND;
+    instr_meta_n.jump   = (ctrl_transfer_insn_o == BRANCH_JAL) || (ctrl_transfer_insn_o == BRANCH_JALR);
+    instr_meta_n.branch = (ctrl_transfer_insn_o == BRANCH_COND);
   end
 
   always_ff @(posedge clk, negedge rst_n)
@@ -490,12 +488,13 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
       id_ex_pipe_o.mul_en                 <= 1'b0;
       id_ex_pipe_o.mul_operator           <= MUL_M32;
-      id_ex_pipe_o.mul_operand_a          <= 32'b0;
-      id_ex_pipe_o.mul_operand_b          <= 32'b0;
       id_ex_pipe_o.mul_signed_mode        <= 2'b0;
 
       id_ex_pipe_o.div_en                 <= 1'b0;
       id_ex_pipe_o.div_operator           <= DIV_DIVU;
+
+      id_ex_pipe_o.muldiv_operand_a       <= 32'b0;
+      id_ex_pipe_o.muldiv_operand_b       <= 32'b0;
 
       id_ex_pipe_o.rf_we                  <= 1'b0;
       id_ex_pipe_o.rf_waddr               <= '0;
@@ -508,25 +507,27 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.lsu_type               <= 2'b0;
       id_ex_pipe_o.lsu_sign_ext           <= 1'b0;
       id_ex_pipe_o.lsu_reg_offset         <= 2'b0;
-      id_ex_pipe_o.lsu_atop               <= 5'b0;
-      id_ex_pipe_o.lsu_prepost_useincr    <= 1'b1;
+      id_ex_pipe_o.lsu_atop               <= 6'b0;
 
       id_ex_pipe_o.pc                     <= 32'b0;
 
       id_ex_pipe_o.branch_in_ex           <= 1'b0;
 
-      id_ex_pipe_o.trigger_match          <= 1'b0;
-
       // Signals for exception handling
       id_ex_pipe_o.instr                  <= INST_RESP_RESET_VAL;
       id_ex_pipe_o.instr_meta             <= '0;
+
       id_ex_pipe_o.illegal_insn           <= 1'b0;
-      id_ex_pipe_o.ebrk_insn              <= 1'b0;
-      id_ex_pipe_o.wfi_insn               <= 1'b0;
-      id_ex_pipe_o.ecall_insn             <= 1'b0;
-      id_ex_pipe_o.fencei_insn            <= 1'b0;
-      id_ex_pipe_o.mret_insn              <= 1'b0;
-      id_ex_pipe_o.dret_insn              <= 1'b0;
+      id_ex_pipe_o.trigger_match          <= 1'b0;
+
+      id_ex_pipe_o.sys_en                <= 1'b0;
+      id_ex_pipe_o.sys_dret_insn         <= 1'b0;
+      id_ex_pipe_o.sys_ebrk_insn         <= 1'b0;
+      id_ex_pipe_o.sys_ecall_insn        <= 1'b0;
+      id_ex_pipe_o.sys_fencei_insn       <= 1'b0;
+      id_ex_pipe_o.sys_mret_insn         <= 1'b0;
+      id_ex_pipe_o.sys_wfi_insn          <= 1'b0;
+
       id_ex_pipe_o.xif_en                 <= 1'b0;
       id_ex_pipe_o.xif_meta               <= '0;
 
@@ -537,36 +538,38 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
         id_ex_pipe_o.priv_lvl     <= if_id_pipe_i.priv_lvl;
         id_ex_pipe_o.instr_valid  <= 1'b1;
         
-        id_ex_pipe_o.alu_en                 <= alu_en;
-
-        // ALU, DIV, CSR and LSU use operand_a and operand_b
-        if (alu_en || div_en || csr_en || lsu_en) begin
-          id_ex_pipe_o.alu_operand_a        <= operand_a;
-          id_ex_pipe_o.alu_operand_b        <= operand_b;
+        // Operands
+        if (alu_op_a_mux_sel != OP_A_NONE) begin
+          id_ex_pipe_o.alu_operand_a        <= operand_a;               // Used by most ALU, CSR and LSU instructions
         end
-
-        // ALU and LSU use operand_c
-        if (alu_en || lsu_en)
+        if (alu_op_b_mux_sel != OP_B_NONE) begin
+          id_ex_pipe_o.alu_operand_b        <= operand_b;               // Used by most ALU, CSR and LSU instructions
+        end
+        
+        if (op_c_mux_sel != OP_C_NONE)
         begin
-          id_ex_pipe_o.operand_c            <= operand_c;
+          id_ex_pipe_o.operand_c            <= operand_c;               // Used by LSU stores and some ALU instructions
         end
 
-        // ALU and DIV use alu_operator. DIV uses the shifter in the ALU.
-        if (alu_en || div_en) begin
+        id_ex_pipe_o.alu_en                 <= alu_en;
+        if (alu_en || div_en) begin                                     // ALU and DIV use alu_operator (DIV uses the shifter in the ALU)
           id_ex_pipe_o.alu_operator         <= alu_operator;
         end
 
         id_ex_pipe_o.div_en                 <= div_en;
         if (div_en) begin
-          id_ex_pipe_o.div_operator         <= div_operator; // todo: consider letting div/rem use mul_operands
+          id_ex_pipe_o.div_operator         <= div_operator;
         end
         
         id_ex_pipe_o.mul_en                 <= mul_en;
         if (mul_en) begin
           id_ex_pipe_o.mul_operator         <= mul_operator;
           id_ex_pipe_o.mul_signed_mode      <= mul_signed_mode;
-          id_ex_pipe_o.mul_operand_a        <= operand_a;
-          id_ex_pipe_o.mul_operand_b        <= operand_b;
+        end
+
+        if (mul_en || div_en) begin
+          id_ex_pipe_o.muldiv_operand_a     <= operand_a_fw;            // Only register file operand (or forward) is required
+          id_ex_pipe_o.muldiv_operand_b     <= operand_b_fw;            // Only register file operand (or forward) is required
         end
 
         id_ex_pipe_o.rf_we                  <= rf_we;
@@ -584,14 +587,11 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
           id_ex_pipe_o.lsu_sign_ext         <= lsu_sign_ext;
           id_ex_pipe_o.lsu_reg_offset       <= lsu_reg_offset;
           id_ex_pipe_o.lsu_atop             <= lsu_atop;
-          id_ex_pipe_o.lsu_prepost_useincr  <= lsu_prepost_useincr;
         end
 
         id_ex_pipe_o.branch_in_ex           <= ctrl_transfer_insn_o == BRANCH_COND;
 
         // Propagate signals needed for exception handling in WB
-        // TODO:OK:low Clock gating of pc if no existing exceptions
-        //          and LSU it not in use
         id_ex_pipe_o.pc                     <= if_id_pipe_i.pc;
 
         if (if_id_pipe_i.instr_meta.compressed) begin
@@ -599,31 +599,32 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
           id_ex_pipe_o.instr.bus_resp.rdata <= {16'h0, if_id_pipe_i.compressed_instr};
           id_ex_pipe_o.instr.bus_resp.err   <= if_id_pipe_i.instr.bus_resp.err;
           id_ex_pipe_o.instr.mpu_status     <= if_id_pipe_i.instr.mpu_status;
-        end
-        else begin
+        end else begin
           id_ex_pipe_o.instr                <= if_id_pipe_i.instr;
         end
 
         id_ex_pipe_o.instr_meta             <= instr_meta_n;
 
         // Exceptions and special instructions
+        id_ex_pipe_o.sys_en                 <= sys_en;
+        if (sys_en) begin
+          id_ex_pipe_o.sys_dret_insn        <= sys_dret_insn;
+          id_ex_pipe_o.sys_ebrk_insn        <= sys_ebrk_insn;
+          id_ex_pipe_o.sys_ecall_insn       <= sys_ecall_insn;
+          id_ex_pipe_o.sys_fencei_insn      <= sys_fencei_insn;
+          id_ex_pipe_o.sys_mret_insn        <= sys_mret_insn;
+          id_ex_pipe_o.sys_wfi_insn         <= sys_wfi_insn;
+        end
         id_ex_pipe_o.illegal_insn           <= illegal_insn && !xif_insn_accept;
-        id_ex_pipe_o.ebrk_insn              <= ebrk_insn;
-        id_ex_pipe_o.wfi_insn               <= wfi_insn;
-        id_ex_pipe_o.ecall_insn             <= ecall_insn;
-        id_ex_pipe_o.fencei_insn            <= fencei_insn;
-        id_ex_pipe_o.mret_insn              <= mret_insn;
-        id_ex_pipe_o.dret_insn              <= dret_insn;
+        id_ex_pipe_o.trigger_match          <= if_id_pipe_i.trigger_match;
 
         // eXtension interface
-        id_ex_pipe_o.xif_en                 <= xif_insn_accept || xif_insn_reject;
+        id_ex_pipe_o.xif_en                 <= xif_en;
         id_ex_pipe_o.xif_meta.id            <= if_id_pipe_i.xif_id;
         id_ex_pipe_o.xif_meta.exception     <= xif_exception;
         id_ex_pipe_o.xif_meta.loadstore     <= xif_loadstore;
         id_ex_pipe_o.xif_meta.dualwrite     <= xif_dualwrite;
         id_ex_pipe_o.xif_meta.accepted      <= xif_insn_accept;
-
-        id_ex_pipe_o.trigger_match          <= if_id_pipe_i.trigger_match;
 
       end else if (ex_ready_i) begin
         id_ex_pipe_o.instr_valid            <= 1'b0;
@@ -661,6 +662,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       // remember whether an instruction was accepted or rejected (required if EX stage is not ready)
       // TODO: check whether this state machine should be put back in its initial state when the instruction in ID gets killed
       logic xif_accepted_q, xif_rejected_q;
+
+      assign xif_en = xif_insn_accept || xif_insn_reject;
 
       always_ff @(posedge clk, negedge rst_n) begin : ID_XIF_STATE_REGISTERS
         if (rst_n == 1'b0) begin
@@ -723,20 +726,21 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     end else begin : no_x_ext
 
       // Drive all eXtension interface signals and outputs low if X_EXT == 0
-      assign xif_waiting                        = '0;
-      assign xif_insn_accept                    = '0;
-      assign xif_insn_reject                    = '0;
-      assign xif_we                             = '0;
-      assign xif_exception                      = '0;
-      assign xif_dualwrite                      = '0;
-      assign xif_loadstore                      = '0;
+      assign xif_en                          = 1'b0;
+      assign xif_waiting                     = 1'b0;
+      assign xif_insn_accept                 = 1'b0;
+      assign xif_insn_reject                 = 1'b0;
+      assign xif_we                          = 1'b0;
+      assign xif_exception                   = 1'b0;
+      assign xif_dualwrite                   = 1'b0;
+      assign xif_loadstore                   = 1'b0;
 
-      assign xif_issue_if.issue_valid         = '0;
-      assign xif_issue_if.issue_req.instr     = '0;
-      assign xif_issue_if.issue_req.mode      = '0;
-      assign xif_issue_if.issue_req.id        = '0;
-      assign xif_issue_if.issue_req.rs        = '0;
-      assign xif_issue_if.issue_req.rs_valid  = '0;
+      assign xif_issue_if.issue_valid        = 1'b0;
+      assign xif_issue_if.issue_req.instr    = '0;
+      assign xif_issue_if.issue_req.mode     = '0;
+      assign xif_issue_if.issue_req.id       = '0;
+      assign xif_issue_if.issue_req.rs       = '0;
+      assign xif_issue_if.issue_req.rs_valid = '0;
 
     end
   endgenerate
