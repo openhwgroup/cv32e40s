@@ -44,10 +44,13 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // From bypass logic
   input  ctrl_byp_t   ctrl_byp_i,
 
+  // From IF stage
+  input logic [31:0]   pc_if_i,
+
   // From ID stage
   input  if_id_pipe_t if_id_pipe_i,
-  input  logic        mret_id_i,                  // mret in ID stage
-  input  logic        dret_id_i,                  // dret in ID stage
+  input  logic        sys_en_id_i,
+  input  logic        sys_mret_id_i,              // mret in ID stage
   input  logic [1:0]  ctrl_transfer_insn_i,       // jump is being calculated in ALU
   input  logic [1:0]  ctrl_transfer_insn_raw_i,   // jump is being calculated in ALU
 
@@ -61,7 +64,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // From WB stage
   input  logic [1:0]  lsu_err_wb_i,               // LSU caused bus_error in WB stage, gated with data_rvalid_i inside load_store_unit
-  input  logic [31:0] lsu_addr_wb_i,              // LSU address in WB stage //todo: only needed if MTVAL is implemented
 
   // From LSU (WB)
   input  mpu_status_e lsu_mpu_status_wb_i,        // MPU status (WB timing)
@@ -157,6 +159,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   logic xif_in_wb;
 
   logic pending_nmi;
+  logic pending_nmi_early;
   logic pending_debug;
   logic pending_single_step;
   logic pending_interrupt;
@@ -178,6 +181,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   logic       fencei_flush_req_set;
   logic       fencei_req_and_ack_q;
   logic       fencei_ongoing;    
+
+  // Pipeline PC mux control
+  pipe_pc_mux_e pipe_pc_mux_ctrl;
 
   // Flag for signalling that a new instruction arrived in WB.
   // Used for performance counters. High for one cycle, unless WB is halted
@@ -210,7 +216,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Using the ID stage local instr_valid would bring halt_id and kill_id into the equation
   // causing a path from data_rvalid to instr_addr_o/instr_req_o/instr_memtype_o via the jumps pc_set=1
   assign jump_in_id = ((((ctrl_transfer_insn_raw_i == BRANCH_JALR) || (ctrl_transfer_insn_raw_i == BRANCH_JAL)) && !ctrl_byp_i.jr_stall) ||
-                         (mret_id_i && !ctrl_byp_i.csr_stall)) &&
+                         (sys_en_id_i && sys_mret_id_i && !ctrl_byp_i.csr_stall)) &&
                          if_id_pipe_i.instr_valid;
 
   // Blocking on branch_taken_q, as a jump has already been taken
@@ -231,22 +237,22 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                                 (lsu_mpu_status_wb_i != MPU_OK))          && ex_wb_pipe_i.instr_valid;
 
   // Exception in WB if the following evaluates to 1
-  assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK) ||
-                            ex_wb_pipe_i.instr.bus_resp.err           ||
-                            ex_wb_pipe_i.illegal_insn                 ||
-                            ex_wb_pipe_i.ecall_insn                   ||
-                            ex_wb_pipe_i.ebrk_insn                    ||
-                            (lsu_mpu_status_wb_i != MPU_OK))          && ex_wb_pipe_i.instr_valid;
+  assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK)            ||
+                            ex_wb_pipe_i.instr.bus_resp.err                      ||
+                            ex_wb_pipe_i.illegal_insn                            ||
+                            (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn) ||
+                            (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn)  ||
+                            (lsu_mpu_status_wb_i != MPU_OK)) && ex_wb_pipe_i.instr_valid;
 
   // Set exception cause
-  assign exception_cause_wb = ex_wb_pipe_i.instr.mpu_status != MPU_OK       ? EXC_CAUSE_INSTR_FAULT     :
-                              ex_wb_pipe_i.instr.bus_resp.err               ? EXC_CAUSE_INSTR_BUS_FAULT :
-                              ex_wb_pipe_i.illegal_insn                     ? EXC_CAUSE_ILLEGAL_INSN    :
-                              ex_wb_pipe_i.ecall_insn                       ? (priv_lvl_i==PRIV_LVL_M ? 
-                                                                               EXC_CAUSE_ECALL_MMODE : 
-                                                                               EXC_CAUSE_ECALL_UMODE )  :
-                              ex_wb_pipe_i.ebrk_insn                        ? EXC_CAUSE_BREAKPOINT      :
-                              (lsu_mpu_status_wb_i == MPU_WR_FAULT)         ? EXC_CAUSE_STORE_FAULT     :
+  assign exception_cause_wb = ex_wb_pipe_i.instr.mpu_status != MPU_OK              ? EXC_CAUSE_INSTR_FAULT     :
+                              ex_wb_pipe_i.instr.bus_resp.err                      ? EXC_CAUSE_INSTR_BUS_FAULT :
+                              ex_wb_pipe_i.illegal_insn                            ? EXC_CAUSE_ILLEGAL_INSN    :
+                              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn) ? (priv_lvl_i==PRIV_LVL_M ? 
+                                                                                      EXC_CAUSE_ECALL_MMODE : 
+                                                                                      EXC_CAUSE_ECALL_UMODE )  :
+                              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn)  ? EXC_CAUSE_BREAKPOINT      :
+                              (lsu_mpu_status_wb_i == MPU_WR_FAULT)                ? EXC_CAUSE_STORE_FAULT     :
                               EXC_CAUSE_LOAD_FAULT; // (lsu_mpu_status_wb_i == MPU_RE_FAULT)
 
   // For now we are always allowed to take exceptions once they arrive in WB.
@@ -258,19 +264,19 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign exception_allowed = 1'b1;
 
   // wfi in wb
-  assign wfi_in_wb = ex_wb_pipe_i.wfi_insn && ex_wb_pipe_i.instr_valid;
+  assign wfi_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_wfi_insn && ex_wb_pipe_i.instr_valid;
 
   // fencei in wb
-  assign fencei_in_wb = ex_wb_pipe_i.fencei_insn && ex_wb_pipe_i.instr_valid;
+  assign fencei_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_fencei_insn && ex_wb_pipe_i.instr_valid;
 
   // mret in wb
-  assign mret_in_wb = ex_wb_pipe_i.mret_insn && ex_wb_pipe_i.instr_valid;
+  assign mret_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.instr_valid;
 
   // dret in wb
-  assign dret_in_wb = ex_wb_pipe_i.dret_insn && ex_wb_pipe_i.instr_valid;
+  assign dret_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_dret_insn && ex_wb_pipe_i.instr_valid;
 
   // ebreak in wb
-  assign ebreak_in_wb = ex_wb_pipe_i.ebrk_insn && ex_wb_pipe_i.instr_valid;
+  assign ebreak_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn && ex_wb_pipe_i.instr_valid;
 
   // Trigger match in wb
   // Trigger_match during debug mode is masked in the trigger logic inside cs_registers.sv
@@ -283,7 +289,16 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Using flopped version to avoid paths from data_err_i/data_rvalid_i to instr_* outputs
   // Gating the pending signal instead of the allowed signal for debug related conditions, otherwise a pending NMI during debug mode
   // or single stepping with dcsr.stepie==0 would stall ID stage and we would never get out of debug, resulting in a deadlock.
-  assign pending_nmi = nmi_pending_q && !debug_mode_q  && !(dcsr_i.step && !dcsr_i.stepie);
+  assign pending_nmi = nmi_pending_q && !debug_mode_q && !(dcsr_i.step && !dcsr_i.stepie);
+
+  // Early version of the pending_nmi signal, including the unflopped lsu_err_wb_i[0]
+  // This signal is used for halting the ID stage in the same cycle as the bus error arrives, and any coming cycles where
+  // an NMI is pending but not allowed to be taken.
+  // This ensures that any instruction in the ID stage that may depend on the result of the faulted load
+  // will not get executed using invalid data.
+  assign pending_nmi_early = (nmi_pending_q || lsu_err_wb_i[0]) && !debug_mode_q && !(dcsr_i.step && !dcsr_i.stepie);
+
+  // todo: Halting ID and killing it later will not work for Zce (push/pop)
 
   // dcsr.nmip will always see a pending nmi if nmi_pending_q is set.
   // This CSR bit shall not be gated by debug mode or step without stepie
@@ -382,6 +397,20 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign ctrl_fsm_o.mhpmevent.id_ld_stall   = ctrl_byp_i.load_stall && !id_valid_i && ex_ready_i;
   assign ctrl_fsm_o.mhpmevent.wb_data_stall = data_stall_wb_i;
 
+  // Mux used to select PC from the different pipeline stages
+  always_comb begin
+
+    ctrl_fsm_o.pipe_pc = PC_WB;
+
+    unique case (pipe_pc_mux_ctrl)
+      PC_WB: ctrl_fsm_o.pipe_pc = ex_wb_pipe_i.pc;
+      PC_EX: ctrl_fsm_o.pipe_pc = id_ex_pipe_i.pc;
+      PC_ID: ctrl_fsm_o.pipe_pc = if_id_pipe_i.pc;
+      PC_IF: ctrl_fsm_o.pipe_pc = pc_if_i;
+      default:;
+    endcase
+  end
+
   //////////////
   // FSM comb //
   //////////////
@@ -407,7 +436,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     ctrl_fsm_o.halt_id = ctrl_byp_i.jr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_stall ||
                          (pending_interrupt && !interrupt_allowed) ||
                          (pending_debug && !debug_allowed) ||
-                         (pending_nmi && !nmi_allowed);
+                         (pending_nmi_early && !nmi_allowed);
     // Halting EX if minstret_stall occurs. Otherwise we would read the wrong minstret value
     // Also halting EX if an offloaded instruction in WB may cause an exception, such that a following offloaded
     // instruction can correctly receive commit_kill.
@@ -422,16 +451,15 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
     ctrl_fsm_o.csr_restore_mret    = 1'b0;
     ctrl_fsm_o.csr_restore_dret    = 1'b0;
-    ctrl_fsm_o.csr_save_if         = 1'b0; // todo: can we send the correct pc to the CSR module instead of the separate save_* signals? (Keep the save signals local to this file, but move the pc mux from CSR to here)
-    ctrl_fsm_o.csr_save_id         = 1'b0;
-    ctrl_fsm_o.csr_save_ex         = 1'b0;
-    ctrl_fsm_o.csr_save_wb         = 1'b0;
+
     ctrl_fsm_o.csr_save_cause      = 1'b0;
     ctrl_fsm_o.csr_cause           = 32'h0;
 
     ctrl_fsm_o.exception_alert     = 1'b0;
 
     ctrl_fsm_o.mret_jump_id        = 1'b0;
+
+    pipe_pc_mux_ctrl               = PC_WB;
 
     exc_cause                      = 5'b0;
 
@@ -479,16 +507,17 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
           // Save pc from oldest valid instruction
           if (ex_wb_pipe_i.instr_valid) begin
-            ctrl_fsm_o.csr_save_wb = 1'b1;
+            pipe_pc_mux_ctrl = PC_WB;
           end else if (id_ex_pipe_i.instr_valid) begin
-            ctrl_fsm_o.csr_save_ex = 1'b1;
+            pipe_pc_mux_ctrl = PC_EX;
           end else if (if_id_pipe_i.instr_valid) begin
-            ctrl_fsm_o.csr_save_id = 1'b1;
+            pipe_pc_mux_ctrl = PC_ID;
           end else begin
             // IF PC will always be valid as it points to the next
             // instruction to be issued from IF to ID.
-            ctrl_fsm_o.csr_save_if = 1'b1;
+            pipe_pc_mux_ctrl = PC_IF;
           end
+
         // Debug entry (except single step which is handled later)
         end else if (pending_debug && debug_allowed) begin
           // Halt the whole pipeline
@@ -518,15 +547,15 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
           // Save pc from oldest valid instruction
           if (ex_wb_pipe_i.instr_valid) begin
-            ctrl_fsm_o.csr_save_wb = 1'b1;
+            pipe_pc_mux_ctrl = PC_WB;
           end else if (id_ex_pipe_i.instr_valid) begin
-            ctrl_fsm_o.csr_save_ex = 1'b1;
+            pipe_pc_mux_ctrl = PC_EX;
           end else if (if_id_pipe_i.instr_valid) begin
-            ctrl_fsm_o.csr_save_id = 1'b1;
+            pipe_pc_mux_ctrl = PC_ID;
           end else begin
             // IF PC will always be valid as it points to the next
             // instruction to be issued from IF to ID.
-            ctrl_fsm_o.csr_save_if = 1'b1;
+            pipe_pc_mux_ctrl = PC_IF;
           end
 
         end else begin
@@ -542,7 +571,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             ctrl_fsm_o.pc_mux = debug_mode_q ? PC_TRAP_DBE : PC_TRAP_EXC;
 
             // Save CSR from WB
-            ctrl_fsm_o.csr_save_wb = 1'b1;
+            pipe_pc_mux_ctrl = PC_WB;
             ctrl_fsm_o.csr_save_cause = !debug_mode_q; // Do not update CSRs if in debug mode
             ctrl_fsm_o.csr_cause.exception_code = exception_cause_wb;
 
@@ -557,9 +586,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             ctrl_fsm_ns = SLEEP;
           end else if (fencei_in_wb) begin
 
-            ctrl_fsm_o.kill_if = 1'b1;
-            ctrl_fsm_o.kill_id = 1'b1;
-            ctrl_fsm_o.kill_ex = 1'b1;
+            // Halt the pipeline
+            ctrl_fsm_o.halt_if = 1'b1;
+            ctrl_fsm_o.halt_id = 1'b1;
+            ctrl_fsm_o.halt_ex = 1'b1;
             ctrl_fsm_o.halt_wb = 1'b1;
 
             if(fencei_ready) begin
@@ -567,15 +597,30 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
               fencei_flush_req_set = 1'b1;
             end
             if(fencei_req_and_ack_q) begin
-              // fencei req and ack were set at in the same cycle, complete handshake and jump to PC_WB_PLUS4
-              // Unhalt wb and jump to wb.pc + 4
+              // fencei req and ack were set at in the same cycle, complete handshake and jump to PC_FENCEI
+
+              // Unhalt wb, kill if,id,ex
+              ctrl_fsm_o.kill_if   = 1'b1;
+              ctrl_fsm_o.kill_id   = 1'b1;
+              ctrl_fsm_o.kill_ex   = 1'b1;
+              ctrl_fsm_o.halt_wb   = 1'b0;
+
+              // Jump to PC from oldest valid instruction, excluding WB stage
+              if (id_ex_pipe_i.instr_valid) begin
+                pipe_pc_mux_ctrl = PC_EX;
+              end else if (if_id_pipe_i.instr_valid) begin
+                pipe_pc_mux_ctrl = PC_ID;
+              end else begin
+                pipe_pc_mux_ctrl = PC_IF;
+              end
+
               ctrl_fsm_o.pc_set    = 1'b1;
               ctrl_fsm_o.pc_mux    = PC_WB_PLUS4;
-              ctrl_fsm_o.halt_wb   = 1'b0;
+
               fencei_flush_req_set = 1'b0;
             end
           end else if (dret_in_wb) begin
-            // Dret takes jump from WB stage
+            // dret takes jump from WB stage
             // Kill previous stages and jump to pc in dpc
             ctrl_fsm_o.kill_if = 1'b1;
             ctrl_fsm_o.kill_id = 1'b1;
@@ -612,8 +657,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             // kill_if
             ctrl_fsm_o.kill_if = 1'b1;
 
-            // Jumps in ID (JAL, JALR, mret, uret, dret)
-            if (mret_id_i) begin
+            // Jumps in ID (JAL, JALR, mret, dret)
+            if (sys_en_id_i && sys_mret_id_i) begin
               ctrl_fsm_o.pc_mux       = debug_mode_q ? PC_TRAP_DBE : PC_MRET;
               ctrl_fsm_o.pc_set       = 1'b1;
               ctrl_fsm_o.mret_jump_id = !debug_mode_q;
@@ -688,13 +733,13 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
           // Save pc from oldest valid instruction
           if (ex_wb_pipe_i.instr_valid) begin
-            ctrl_fsm_o.csr_save_wb = 1'b1;
+            pipe_pc_mux_ctrl = PC_WB;
           end else if (id_ex_pipe_i.instr_valid) begin
-            ctrl_fsm_o.csr_save_ex = 1'b1;
+            pipe_pc_mux_ctrl = PC_EX;
           end else if (if_id_pipe_i.instr_valid) begin
-            ctrl_fsm_o.csr_save_id = 1'b1;
+            pipe_pc_mux_ctrl = PC_ID;
           end else begin
-            ctrl_fsm_o.csr_save_if = 1'b1;
+            pipe_pc_mux_ctrl = PC_IF;
           end
         end else begin
           // Single step
@@ -706,7 +751,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           ctrl_fsm_o.kill_wb = 1'b0;
 
           // Should use pc from IF (next insn, as IF is halted after first issue)
-          ctrl_fsm_o.csr_save_if = 1'b1;
+          pipe_pc_mux_ctrl = PC_IF;
         end
 
         // Enter debug mode next cycle

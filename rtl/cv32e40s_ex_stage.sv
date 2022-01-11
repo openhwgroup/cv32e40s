@@ -31,8 +31,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_ex_stage import cv32e40s_pkg::*;
-  #( parameter bit X_EXT = 1'b0
-  )
+#( 
+  parameter bit X_EXT = 1'b0
+)
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -81,44 +82,42 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   input  logic        wb_ready_i        // WB stage is ready for new data
 );
 
-  logic [31:0]    alu_result;
-  logic           alu_cmp_result;
-  logic [31:0]    mul_result;
-
+  // Ready and valid signals
+  logic           instr_valid;
   logic           alu_ready;
   logic           alu_valid;
   logic           csr_ready;
   logic           csr_valid;
+  logic           sys_ready;
+  logic           sys_valid;
   logic           mul_ready;
   logic           mul_valid;
+  logic           div_ready;
+  logic           div_valid;
+  logic           xif_ready;
+  logic           xif_valid;
 
-  logic           instr_valid;
+  // Result signals
+  logic [31:0]    alu_result;
+  logic           alu_cmp_result;
+  logic [31:0]    mul_result;
+  logic [31:0]    div_result;
 
-  // Local signals after evaluating with instr_valid
+  // Gated enable signals factoring in instr_valid)
   logic           mul_en_gated;
   logic           div_en_gated;
   logic           lsu_en_gated;
-  logic           previous_exception;
-
-  // div_en not affected by kill/halt
-  logic           div_en;
 
   // Divider signals
-  logic           div_ready;
-  logic           div_valid;
-  logic [31:0]    div_result;
-
+  logic           div_en;               // Not affected by instr_valid (kill/halt)
   logic           div_clz_en;
   logic [31:0]    div_clz_data_rev;
   logic [5:0]     div_clz_result;
-
   logic           div_shift_en;
   logic [5:0]     div_shift_amt;
   logic [31:0]    div_op_b_shifted;
 
-  // eXtension interface signals
-  logic           xif_ready;
-  logic           xif_valid;
+  logic           previous_exception;
 
   // Detect if we get an illegal CSR instruction
   logic           csr_is_illegal;
@@ -157,10 +156,11 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
     // There is no need to use gated versions of alu_en, mul_en, etc. as rf_wdata_o will be ignored
     // for invalid instructions (as the register file write enable will be suppressed).
     unique case (1'b1)
+      id_ex_pipe_i.alu_en : rf_wdata_o = alu_result;
       id_ex_pipe_i.mul_en : rf_wdata_o = mul_result;
       id_ex_pipe_i.div_en : rf_wdata_o = div_result;
-      id_ex_pipe_i.csr_en : rf_wdata_o = csr_rdata_i;                           // alu_en = 1 here as well
-      default             : rf_wdata_o = alu_result;                            // Default on purpose
+      id_ex_pipe_i.csr_en : rf_wdata_o = csr_rdata_i;
+      default             : rf_wdata_o = alu_result;
     endcase
   end
 
@@ -205,23 +205,24 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
 
   cv32e40s_alu alu_i
   (
-    .operator_i          ( id_ex_pipe_i.alu_operator  ),
-    .operand_a_i         ( id_ex_pipe_i.alu_operand_a ),
-    .operand_b_i         ( id_ex_pipe_i.alu_operand_b ),
+    .operator_i          ( id_ex_pipe_i.alu_operator     ),
+    .operand_a_i         ( id_ex_pipe_i.alu_operand_a    ),
+    .operand_b_i         ( id_ex_pipe_i.alu_operand_b    ),
+    .muldiv_operand_b_i  ( id_ex_pipe_i.muldiv_operand_b ),
 
     // ALU CLZ interface
-    .div_clz_en_i        ( div_clz_en                 ),
-    .div_clz_data_rev_i  ( div_clz_data_rev           ),
-    .div_clz_result_o    ( div_clz_result             ),
+    .div_clz_en_i        ( div_clz_en                    ),
+    .div_clz_data_rev_i  ( div_clz_data_rev              ),
+    .div_clz_result_o    ( div_clz_result                ),
 
     // ALU shifter interface
-    .div_shift_en_i      ( div_shift_en               ),
-    .div_shift_amt_i     ( div_shift_amt              ),
-    .div_op_b_shifted_o  ( div_op_b_shifted           ),
+    .div_shift_en_i      ( div_shift_en                  ),
+    .div_shift_amt_i     ( div_shift_amt                 ),
+    .div_op_b_shifted_o  ( div_op_b_shifted              ),
 
     // Result(s)
-    .result_o            ( alu_result                 ),
-    .cmp_result_o        ( alu_cmp_result             )
+    .result_o            ( alu_result                    ),
+    .cmp_result_o        ( alu_cmp_result                )
   );
 
   ////////////////////////////////////////////////////
@@ -237,36 +238,36 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
 
   cv32e40s_div div_i
   (
-    .clk                ( clk                        ),
-    .rst_n              ( rst_n                      ),
+    .clk                ( clk                           ),
+    .rst_n              ( rst_n                         ),
 
     // Input IF
     .data_ind_timing_i  ( xsecure_ctrl_i.cpuctrl.dataindtiming ),
     .operator_i         ( id_ex_pipe_i.div_operator            ),
-    .op_a_i             ( id_ex_pipe_i.alu_operand_a           ),
-    .op_b_i             ( id_ex_pipe_i.alu_operand_b           ),
+    .op_a_i             ( id_ex_pipe_i.muldiv_operand_a        ),
+    .op_b_i             ( id_ex_pipe_i.muldiv_operand_b        ),
 
     // ALU CLZ interface
-    .alu_clz_result_i   ( div_clz_result             ),
-    .alu_clz_en_o       ( div_clz_en                 ),
-    .alu_clz_data_rev_o ( div_clz_data_rev           ),
+    .alu_clz_result_i   ( div_clz_result                ),
+    .alu_clz_en_o       ( div_clz_en                    ),
+    .alu_clz_data_rev_o ( div_clz_data_rev              ),
 
     // ALU shifter interface
-    .alu_op_b_shifted_i ( div_op_b_shifted           ),
-    .alu_shift_en_o     ( div_shift_en               ),
-    .alu_shift_amt_o    ( div_shift_amt              ),
+    .alu_op_b_shifted_i ( div_op_b_shifted              ),
+    .alu_shift_en_o     ( div_shift_en                  ),
+    .alu_shift_amt_o    ( div_shift_amt                 ),
 
     // Result
-    .result_o           ( div_result                 ),
+    .result_o           ( div_result                    ),
 
     // divider enable, not affected by kill/halt
-    .div_en_i           ( div_en                     ),
+    .div_en_i           ( div_en                        ),
 
     // Handshakes
-    .valid_i            ( div_en_gated               ),
-    .ready_o            ( div_ready                  ),
-    .valid_o            ( div_valid                  ),
-    .ready_i            ( wb_ready_i                 )
+    .valid_i            ( div_en_gated                  ),
+    .ready_o            ( div_ready                     ),
+    .valid_o            ( div_valid                     ),
+    .ready_i            ( wb_ready_i                    )
   );
 
   ////////////////////////////////////////////////////////////////
@@ -285,8 +286,8 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
 
     .operator_i      ( id_ex_pipe_i.mul_operator     ),
     .signed_mode_i   ( id_ex_pipe_i.mul_signed_mode  ),
-    .op_a_i          ( id_ex_pipe_i.mul_operand_a    ),
-    .op_b_i          ( id_ex_pipe_i.mul_operand_b    ),
+    .op_a_i          ( id_ex_pipe_i.muldiv_operand_a ),
+    .op_b_i          ( id_ex_pipe_i.muldiv_operand_b ),
 
     // Result
     .result_o        ( mul_result                    ),
@@ -319,21 +320,26 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
       ex_wb_pipe_o.pc             <= 32'h0;
       ex_wb_pipe_o.instr          <= INST_RESP_RESET_VAL;
       ex_wb_pipe_o.instr_meta     <= '0;
+
       ex_wb_pipe_o.illegal_insn   <= 1'b0;
-      ex_wb_pipe_o.ebrk_insn      <= 1'b0;
-      ex_wb_pipe_o.wfi_insn       <= 1'b0;
-      ex_wb_pipe_o.ecall_insn     <= 1'b0;
-      ex_wb_pipe_o.fencei_insn    <= 1'b0;
-      ex_wb_pipe_o.mret_insn      <= 1'b0;
-      ex_wb_pipe_o.dret_insn      <= 1'b0;
-      ex_wb_pipe_o.lsu_en         <= 1'b0;
-      ex_wb_pipe_o.csr_en         <= 1'b0;
-      ex_wb_pipe_o.csr_op         <= CSR_OP_READ;
-      ex_wb_pipe_o.csr_addr       <= 12'h000;
-      ex_wb_pipe_o.csr_wdata      <= 32'h00000000;
-      ex_wb_pipe_o.trigger_match  <= 1'b0;
-      ex_wb_pipe_o.xif_en         <= 1'b0;
-      ex_wb_pipe_o.xif_meta       <= '0;
+
+      ex_wb_pipe_o.sys_en          <= 1'b0;
+      ex_wb_pipe_o.sys_dret_insn   <= 1'b0;
+      ex_wb_pipe_o.sys_ebrk_insn   <= 1'b0;
+      ex_wb_pipe_o.sys_ecall_insn  <= 1'b0;
+      ex_wb_pipe_o.sys_fencei_insn <= 1'b0;
+      ex_wb_pipe_o.sys_mret_insn   <= 1'b0;
+      ex_wb_pipe_o.sys_wfi_insn    <= 1'b0;
+
+      ex_wb_pipe_o.trigger_match   <= 1'b0;
+
+      ex_wb_pipe_o.lsu_en          <= 1'b0;
+      ex_wb_pipe_o.csr_en          <= 1'b0;
+      ex_wb_pipe_o.csr_op          <= CSR_OP_READ;
+      ex_wb_pipe_o.csr_addr        <= 12'h000;
+      ex_wb_pipe_o.csr_wdata       <= 32'h00000000;
+      ex_wb_pipe_o.xif_en          <= 1'b0;
+      ex_wb_pipe_o.xif_meta        <= '0;
     end
     else
     begin
@@ -342,8 +348,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
         // Deassert rf_we in case of illegal csr instruction or
         // when the first half of a misaligned/split LSU goes to WB.
         // Also deassert if CSR was accepted both by eXtension if and pipeline
-        ex_wb_pipe_o.rf_we       <= (csr_is_illegal    ||
-                                    lsu_split_i)       ? 1'b0 : id_ex_pipe_i.rf_we;
+        ex_wb_pipe_o.rf_we       <= (csr_is_illegal || lsu_split_i) ? 1'b0 : id_ex_pipe_i.rf_we;
         ex_wb_pipe_o.lsu_en      <= id_ex_pipe_i.lsu_en;
 
         if (id_ex_pipe_i.rf_we) begin
@@ -360,25 +365,26 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
         if (id_ex_pipe_i.csr_en) begin
           ex_wb_pipe_o.csr_addr  <= id_ex_pipe_i.alu_operand_b[11:0];
           ex_wb_pipe_o.csr_wdata <= id_ex_pipe_i.alu_operand_a;
-          ex_wb_pipe_o.csr_op     <= id_ex_pipe_i.csr_op;
+          ex_wb_pipe_o.csr_op    <= id_ex_pipe_i.csr_op;
         end
 
         // Propagate signals needed for exception handling in WB
-        // TODO:OK:low Clock gating of pc if no existing exceptions
-        //          and LSU it not in use
         ex_wb_pipe_o.pc             <= id_ex_pipe_i.pc;
         ex_wb_pipe_o.instr          <= id_ex_pipe_i.instr;
         ex_wb_pipe_o.instr_meta     <= instr_meta_n;
 
-        // CSR illegal instruction detected in this stage, OR'ing in the status
-        ex_wb_pipe_o.illegal_insn   <= id_ex_pipe_i.illegal_insn || csr_is_illegal;
+        ex_wb_pipe_o.sys_en            <= id_ex_pipe_i.sys_en;
+        if (id_ex_pipe_i.sys_en) begin
+          ex_wb_pipe_o.sys_dret_insn   <= id_ex_pipe_i.sys_dret_insn;
+          ex_wb_pipe_o.sys_ebrk_insn   <= id_ex_pipe_i.sys_ebrk_insn;
+          ex_wb_pipe_o.sys_ecall_insn  <= id_ex_pipe_i.sys_ecall_insn;
+          ex_wb_pipe_o.sys_fencei_insn <= id_ex_pipe_i.sys_fencei_insn;
+          ex_wb_pipe_o.sys_mret_insn   <= id_ex_pipe_i.sys_mret_insn;
+          ex_wb_pipe_o.sys_wfi_insn    <= id_ex_pipe_i.sys_wfi_insn;
+        end
 
-        ex_wb_pipe_o.ebrk_insn      <= id_ex_pipe_i.ebrk_insn;
-        ex_wb_pipe_o.wfi_insn       <= id_ex_pipe_i.wfi_insn;
-        ex_wb_pipe_o.ecall_insn     <= id_ex_pipe_i.ecall_insn;
-        ex_wb_pipe_o.fencei_insn    <= id_ex_pipe_i.fencei_insn;
-        ex_wb_pipe_o.mret_insn      <= id_ex_pipe_i.mret_insn;
-        ex_wb_pipe_o.dret_insn      <= id_ex_pipe_i.dret_insn;
+        // CSR illegal instruction detected in this stage, OR'ing in the status
+        ex_wb_pipe_o.illegal_insn    <= id_ex_pipe_i.illegal_insn || csr_is_illegal;
         ex_wb_pipe_o.trigger_match  <= id_ex_pipe_i.trigger_match;
 
         // eXtension interface
@@ -404,18 +410,24 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   assign csr_valid = 1'b1;
   assign csr_ready = wb_ready_i;
 
+  // SYS instructions (ebreak, wfi, etc.) are single-cycle (and have no result output) (no handshake to optimize timing)
+  assign sys_valid = 1'b1;
+  assign sys_ready = wb_ready_i;
+
   // EX stage is ready immediately when killed and otherwise when its functional units are ready,
   // unless the stage is being halted. The late (data_rvalid_i based) downstream wb_ready_i signal
   // fans into the ready signals of all functional units.
 
-  assign ex_ready_o = ctrl_fsm_i.kill_ex || (alu_ready && csr_ready && mul_ready && div_ready && lsu_ready_i && xif_ready && !ctrl_fsm_i.halt_ex);
+  assign ex_ready_o = ctrl_fsm_i.kill_ex || (alu_ready && csr_ready && sys_ready && mul_ready && div_ready && lsu_ready_i && xif_ready && !ctrl_fsm_i.halt_ex);
 
   // TODO:ab Reconsider setting alu_en for exception/trigger instead of using 'previous_exception'
+  // todo: Following code assumes that enable signals are onehot, which is not the case for Atomics; add assertion after atomic fix
   assign ex_valid_o = ((id_ex_pipe_i.alu_en && alu_valid)   ||
-                       (id_ex_pipe_i.lsu_en && lsu_valid_i) ||
+                       (id_ex_pipe_i.csr_en && csr_valid)   ||
+                       (id_ex_pipe_i.sys_en && sys_valid)   ||
                        (id_ex_pipe_i.mul_en && mul_valid)   ||
                        (id_ex_pipe_i.div_en && div_valid)   ||
-                       (id_ex_pipe_i.csr_en && csr_valid)   ||
+                       (id_ex_pipe_i.lsu_en && lsu_valid_i) ||
                        (id_ex_pipe_i.xif_en && xif_valid)   ||
                        previous_exception // todo:ab:remove
                       ) && instr_valid;

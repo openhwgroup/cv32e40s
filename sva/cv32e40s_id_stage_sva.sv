@@ -22,7 +22,6 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-
 module cv32e40s_id_stage_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
@@ -36,14 +35,22 @@ module cv32e40s_id_stage_sva
   input logic [31:0]    instr,
   input logic           rf_we,
   input logic           alu_en,
+  input logic           div_en,
   input logic           mul_en,
+  input logic           csr_en,
+  input logic           sys_en,
   input logic           lsu_en,
-  input logic           wfi_insn,
-  input logic           ebrk_insn,
-  input logic           mret_insn,
-  input logic           dret_insn,
-  input logic           ecall_insn,
-  input logic           fencei_insn,
+  input logic           xif_en,
+  input alu_op_a_mux_e  alu_op_a_mux_sel,
+  input alu_op_b_mux_e  alu_op_b_mux_sel,
+  input logic           lsu_we,
+  input op_c_mux_e      op_c_mux_sel,
+  input logic           sys_dret_insn,
+  input logic           sys_ebrk_insn,
+  input logic           sys_ecall_insn,
+  input logic           sys_fencei_insn,
+  input logic           sys_mret_insn,
+  input logic           sys_wfi_insn,
   input logic           ex_ready_i,
   input logic           illegal_insn,
   input logic [31:0]    operand_a_fw,
@@ -60,7 +67,6 @@ module cv32e40s_id_stage_sva
   input mstatus_t       mstatus_i,
   input logic           xif_insn_accept
 );
-
 
     // the instruction delivered to the ID stage should always be valid
     a_valid_instr :
@@ -115,11 +121,18 @@ module cv32e40s_id_stage_sva
       // Check that illegal instruction has no other side effects
       // If xif accepts instruction, rf_we may still be 1
       property p_illegal_2;
-        @(posedge clk) disable iff (!rst_n) (illegal_insn == 1'b1) |-> !(ebrk_insn || mret_insn || dret_insn ||
-                                                                         ecall_insn || wfi_insn || fencei_insn ||
-                                                                         alu_en || mul_en ||
+        @(posedge clk) disable iff (!rst_n) (illegal_insn == 1'b1) |-> !((sys_en && sys_ebrk_insn) ||
+                                                                         (sys_en && sys_mret_insn) ||
+                                                                         (sys_en && sys_dret_insn) ||
+                                                                         (sys_en && sys_ecall_insn) ||
+                                                                         (sys_en && sys_wfi_insn) ||
+                                                                         (sys_en && sys_fencei_insn) ||
+                                                                         alu_en ||
+                                                                         mul_en ||
+                                                                         div_en ||
                                                                          (rf_we && !xif_insn_accept) ||
-                                                                         csr_op != CSR_OP_READ || lsu_en);
+                                                                         (csr_op != CSR_OP_READ) ||
+                                                                        lsu_en);
       endproperty
 
       a_illegal_2 : assert property(p_illegal_2) else `uvm_error("id_stage", "Assertion p_illegal_2 failed")
@@ -165,6 +178,34 @@ module cv32e40s_id_stage_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      rf_re_o[1] && (rf_raddr_o[1] == 32'h0) && if_id_pipe_i.instr_meta.dummy |-> (operand_b_fw == rf_rdata_i[1]))
       else `uvm_error("id_stage", "Dummy instruction could not read from R0 (on read port 1)")
+  // Ensure that functional unit enables are one-hot (ALU and DIV both use the ALU though)
+  a_functional_unit_enable_onehot :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     $onehot0({alu_en, div_en, mul_en, csr_en, sys_en, lsu_en, xif_en}))
+      else `uvm_error("id_stage", "Multiple functional units enabled")
+
+/* todo:ab:insert once sys* transformation is complete
+  // Ensure that the A operand is only used for certain functional units
+  a_alu_op_a_mux_sel :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (alu_op_a_mux_sel != OP_A_NONE)
+                      |-> ((alu_en || div_en || csr_en || lsu_en) && !(mul_en || sys_en || xif_en)))
+      else `uvm_error("id_stage", "Unexpected A operand usage")
+
+  // Ensure that the B operand is only used for certain functional units
+  a_alu_op_b_mux_sel :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (alu_op_b_mux_sel != OP_B_NONE)
+                      |-> ((alu_en || div_en || csr_en || lsu_en) && !(mul_en || sys_en || xif_en)))
+      else `uvm_error("id_stage", "Unexpected A operand usage")
+
+  // Ensure that the C operand is only used for certain functional units
+  a_op_c_mux_sel :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (op_c_mux_sel != OP_C_NONE)
+                      |-> ((alu_en || (lsu_en && lsu_we))))
+      else `uvm_error("id_stage", "Unexpected A operand usage")
+*/
 
 endmodule // cv32e40s_id_stage_sva
 

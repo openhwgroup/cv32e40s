@@ -186,12 +186,12 @@ module cv32e40s_wrapper
   bind cv32e40s_id_stage:
     core_i.id_stage_i
     cv32e40s_dbg_helper
-      dbg_help_i(.is_compressed(if_id_pipe_i.instr_meta.compressed),
-                 .rf_re    (core_i.rf_re_id               ),
-                 .rf_raddr (core_i.rf_raddr_id            ),
-                 .rf_we    (core_i.id_stage_i.rf_we       ),
-                 .rf_waddr (core_i.rf_waddr_id            ),
-                 .illegal_insn (core_i.id_stage_i.illegal_insn       ),
+      dbg_help_i(.is_compressed (if_id_pipe_i.instr_meta.compressed),
+                 .rf_re         (core_i.rf_re_id                   ),
+                 .rf_raddr      (core_i.rf_raddr_id                ),
+                 .rf_we         (core_i.id_stage_i.rf_we           ),
+                 .rf_waddr      (core_i.rf_waddr_id                ),
+                 .illegal_insn  (core_i.id_stage_i.illegal_insn    ),
                  .*);
 
   bind cv32e40s_mult:            core_i.ex_stage_i.mult_i           cv32e40s_mult_sva         mult_sva         (.*);
@@ -207,8 +207,9 @@ module cv32e40s_wrapper
                               .mstatus_i           (core_i.mstatus),
                               .priv_lvl_i          (core_i.priv_lvl),
                               .priv_lvl_n          (core_i.cs_registers_i.priv_lvl_n),
-                              .wfi_insn_id_i       (core_i.id_stage_i.wfi_insn),
-                              .mret_insn_id_i      (core_i.id_stage_i.mret_insn),
+                              .sys_en_id_i         (core_i.id_stage_i.sys_en),
+                              .sys_wfi_insn_id_i   (core_i.id_stage_i.sys_wfi_insn),
+                              .sys_mret_insn_id_i  (core_i.id_stage_i.sys_mret_insn),
                               .id_valid_i          (core_i.id_stage_i.id_valid_o),
                               .csr_illegal_i       (core_i.cs_registers_i.csr_illegal_o),
                               .xif_commit_kill     (core_i.xif_commit_if.commit.commit_kill),
@@ -369,7 +370,8 @@ bind cv32e40s_sleep_unit:
          .pc_if_i                  ( core_i.if_stage_i.pc_if_o                                            ),
          .pc_id_i                  ( core_i.id_stage_i.if_id_pipe_i.pc                                    ),
          .pc_wb_i                  ( core_i.wb_stage_i.ex_wb_pipe_i.pc                                    ),
-         .mret_insn_id_i           ( core_i.id_stage_i.mret_insn_o                                        ),
+         .sys_en_id_i              ( core_i.id_stage_i.sys_en_o                                           ),
+         .sys_mret_insn_id_i       ( core_i.id_stage_i.sys_mret_insn_o                                    ),
          .jump_in_id_i             ( core_i.controller_i.controller_fsm_i.jump_in_id                      ),
          .jump_target_id_i         ( core_i.id_stage_i.jmp_target_o                                       ),
          .is_compressed_id_i       ( core_i.id_stage_i.if_id_pipe_i.instr_meta.compressed                 ),
@@ -380,6 +382,11 @@ bind cv32e40s_sleep_unit:
 
          .branch_in_ex_i           ( core_i.controller_i.controller_fsm_i.branch_in_ex                    ),
          .lsu_en_ex_i              ( core_i.ex_stage_i.id_ex_pipe_i.lsu_en                                ),
+
+         .instr_pmp_err_if_i       ( 1'b0                          /* PMP not implemented in cv32e40x */  ), // TODO:HB connect
+         .lsu_pmp_err_ex_i         ( 1'b0                          /* PMP not implemented in cv32e40x */  ), // TODO:HB connect
+         .lsu_pma_err_atomic_ex_i  ( core_i.load_store_unit_i.mpu_i.pma_i.atomic_access_i && // Todo: Consider making this a signal in the pma
+                                    !core_i.load_store_unit_i.mpu_i.pma_i.pma_cfg_atomic                 ),
 
          .ex_ready_i               ( core_i.ex_stage_i.ex_ready_o                                         ),
          .ex_valid_i               ( core_i.ex_stage_i.ex_valid_o                                         ),
