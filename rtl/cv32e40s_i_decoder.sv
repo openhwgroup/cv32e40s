@@ -324,11 +324,6 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
 
               12'h105:  // wfi
               begin
-                // Treat as NOP
-                // Using decoding similar to ADDI, but without register reads/writes, i.e.
-                // keep rf_we = 0, rf_re[0] = 0
-                // Suppressing wfi_insn bit in case of ctrl_fsm_i.debug_wfi_no_sleep to prevent
-                // sleeping when not allowed to.
                 // If in user mode, WFI is treated like an illegal instruction
                 // if mstatus.tw == 1
                 // WFI in ID is stalled if CSR writes is present in EX or WB.
@@ -336,10 +331,8 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
                 if((priv_lvl_i == PRIV_LVL_U) && mstatus_i.tw) begin
                   decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
                 end else begin
-                  decoder_ctrl_o.sys_wfi_insn     = ctrl_fsm_i.debug_wfi_no_sleep ? 1'b0 : 1'b1;
-                  decoder_ctrl_o.alu_op_b_mux_sel = OP_B_IMM;
-                  decoder_ctrl_o.imm_b_mux_sel    = IMMB_I;
-                  decoder_ctrl_o.alu_operator     = ALU_ADD;
+                  // Suppressing WFI in case of ctrl_fsm_i.debug_wfi_no_sleep to prevent sleeping when not allowed.
+                  decoder_ctrl_o.sys_wfi_insn = ctrl_fsm_i.debug_wfi_no_sleep ? 1'b0 : 1'b1;
                 end
               end
 
