@@ -119,7 +119,7 @@ endgenerate
   // Assert that branch decision is always 1 when dataindtiming=1
   a_dataindtiming_branch_taken:
   assert property (@(posedge clk) disable iff (!rst_n)
-                   ($rose(id_ex_pipe_i.instr_meta.branch) && xsecure_ctrl_i.cpuctrl.dataindtiming)
+                   ($rose(id_ex_pipe_i.alu_bch) && xsecure_ctrl_i.cpuctrl.dataindtiming)
                    |-> branch_decision_o);
 
   // Assert that branch target for untaken branches with dataindtiming=1 match expected value.

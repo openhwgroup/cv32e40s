@@ -37,7 +37,7 @@ module cv32e40s_decoder_sva
   input decoder_ctrl_t  decoder_i_ctrl,
   input decoder_ctrl_t  decoder_b_ctrl,
   input decoder_ctrl_t  decoder_ctrl_mux,
-  input logic [31:0]    instr_rdata_i
+  input logic [31:0]    instr_rdata
 );
 
   // Check sub decoders have their outputs idle when there is no instruction match
@@ -65,7 +65,7 @@ module cv32e40s_decoder_sva
       // Check that A extension opcodes are decoded as illegal when A extension not enabled
       a_illegal_0 :
         assert property (@(posedge clk) disable iff (!rst_n)
-          (instr_rdata_i[6:0] == OPCODE_AMO) |-> (decoder_ctrl_mux.illegal_insn == 'b1))
+          (instr_rdata[6:0] == OPCODE_AMO) |-> (decoder_ctrl_mux.illegal_insn == 'b1))
         else `uvm_error("decoder", "AMO instruction should be illegal")
     end
   endgenerate

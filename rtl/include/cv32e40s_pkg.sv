@@ -1098,11 +1098,7 @@ typedef struct packed {
   // Operands for multiplier and divider
   logic [31:0]  muldiv_operand_a;
   logic [31:0]  muldiv_operand_b;
-<<<<<<< HEAD:rtl/include/cv32e40s_pkg.sv
-
-=======
   
->>>>>>> remotes/openhw_e40x/master:rtl/include/cv32e40x_pkg.sv
   // CSR
   logic         csr_en;
   csr_opcode_e  csr_op;
