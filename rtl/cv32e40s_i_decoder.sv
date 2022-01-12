@@ -59,45 +59,47 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
       //////////////////////////////////////
 
       OPCODE_JAL: begin // Jump and Link
-        decoder_ctrl_o.ctrl_transfer_target_mux_sel = JT_JAL;
-        decoder_ctrl_o.ctrl_transfer_insn           = BRANCH_JAL;
-        // Calculate and store PC+4
-        decoder_ctrl_o.alu_en                       = 1'b1;
+        decoder_ctrl_o.alu_en                       = 1'b1;             // ALU computes link address (PC+2/4)
+        decoder_ctrl_o.alu_jmp                      = 1'b1;
+        decoder_ctrl_o.alu_jmpr                     = 1'b0;             // No register used (rf_re[0] = 0) (used for hazard detection)
         decoder_ctrl_o.alu_op_a_mux_sel             = OP_A_CURRPC;
-        decoder_ctrl_o.alu_op_b_mux_sel             = OP_B_IMM;
+        decoder_ctrl_o.alu_op_b_mux_sel             = OP_B_IMM;         // PC increment (2 or 4) for link address
         decoder_ctrl_o.imm_b_mux_sel                = IMMB_PCINCR;
         decoder_ctrl_o.alu_operator                 = ALU_ADD;
-        decoder_ctrl_o.rf_we                        = 1'b1;
-        // Calculate jump target (= PC + UJ imm)
+        decoder_ctrl_o.rf_we                        = 1'b1;             // Write LR
+        decoder_ctrl_o.rf_re[0]                     = 1'b0;             // Calculate jump target (= PC + UJ imm)
+        decoder_ctrl_o.rf_re[1]                     = 1'b0;             // Calculate jump target (= PC + UJ imm)
+        decoder_ctrl_o.bch_jmp_mux_sel              = CT_JAL;
       end
 
       OPCODE_JALR: begin // Jump and Link Register
         if (instr_rdata_i[14:12] != 3'b0) begin
           decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
         end else begin
-          decoder_ctrl_o.ctrl_transfer_target_mux_sel = JT_JALR;
-          decoder_ctrl_o.ctrl_transfer_insn           = BRANCH_JALR;
-          // Calculate and store PC+4
-          decoder_ctrl_o.alu_en                       = 1'b1;
-          decoder_ctrl_o.alu_op_a_mux_sel             = OP_A_CURRPC;
-          decoder_ctrl_o.alu_op_b_mux_sel             = OP_B_IMM;
-          decoder_ctrl_o.imm_b_mux_sel                = IMMB_PCINCR;
-          decoder_ctrl_o.alu_operator                 = ALU_ADD;
-          decoder_ctrl_o.rf_we                        = 1'b1;
-          // Calculate jump target (= RS1 + I imm)
-          decoder_ctrl_o.rf_re[0]                     = 1'b1;
+          decoder_ctrl_o.alu_en                     = 1'b1;             // ALU computes link address (PC+2/4)
+          decoder_ctrl_o.alu_jmp                    = 1'b1;
+          decoder_ctrl_o.alu_jmpr                   = 1'b1;             // Register used (rf_re[0] = 1) (used for hazard detection)
+          decoder_ctrl_o.alu_op_a_mux_sel           = OP_A_CURRPC;
+          decoder_ctrl_o.alu_op_b_mux_sel           = OP_B_IMM;         // PC increment (2 or 4) for link address
+          decoder_ctrl_o.imm_b_mux_sel              = IMMB_PCINCR;
+          decoder_ctrl_o.alu_operator               = ALU_ADD;
+          decoder_ctrl_o.rf_we                      = 1'b1;             // Write LR
+          decoder_ctrl_o.rf_re[0]                   = 1'b1;             // Calculate jump target (= RS1 + I imm)
+          decoder_ctrl_o.rf_re[1]                   = 1'b0;             // Calculate jump target (= RS1 + I imm)
+          decoder_ctrl_o.bch_jmp_mux_sel            = CT_JALR;
         end
       end
 
       OPCODE_BRANCH: begin // Branch
-        decoder_ctrl_o.ctrl_transfer_target_mux_sel = JT_COND;
-        decoder_ctrl_o.ctrl_transfer_insn           = BRANCH_COND;
         decoder_ctrl_o.alu_en                       = 1'b1;
+        decoder_ctrl_o.alu_bch                      = 1'b1;
         decoder_ctrl_o.alu_op_a_mux_sel             = OP_A_REGA_OR_FWD;
         decoder_ctrl_o.alu_op_b_mux_sel             = OP_B_REGB_OR_FWD;
         decoder_ctrl_o.op_c_mux_sel                 = OP_C_BCH;
+        decoder_ctrl_o.rf_we                        = 1'b0;             // No result write
         decoder_ctrl_o.rf_re[0]                     = 1'b1;
         decoder_ctrl_o.rf_re[1]                     = 1'b1;
+        decoder_ctrl_o.bch_jmp_mux_sel              = CT_BCH;
 
         unique case (instr_rdata_i[14:12])
           3'b000: decoder_ctrl_o.alu_operator = ALU_EQ;
@@ -322,11 +324,6 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
 
               12'h105:  // wfi
               begin
-                // Treat as NOP
-                // Using decoding similar to ADDI, but without register reads/writes, i.e.
-                // keep rf_we = 0, rf_re[0] = 0
-                // Suppressing wfi_insn bit in case of ctrl_fsm_i.debug_wfi_no_sleep to prevent
-                // sleeping when not allowed to.
                 // If in user mode, WFI is treated like an illegal instruction
                 // if mstatus.tw == 1
                 // WFI in ID is stalled if CSR writes is present in EX or WB.
@@ -334,10 +331,8 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
                 if((priv_lvl_i == PRIV_LVL_U) && mstatus_i.tw) begin
                   decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
                 end else begin
-                  decoder_ctrl_o.sys_wfi_insn     = ctrl_fsm_i.debug_wfi_no_sleep ? 1'b0 : 1'b1;
-                  decoder_ctrl_o.alu_op_b_mux_sel = OP_B_IMM;
-                  decoder_ctrl_o.imm_b_mux_sel    = IMMB_I;
-                  decoder_ctrl_o.alu_operator     = ALU_ADD;
+                  // Suppressing WFI in case of ctrl_fsm_i.debug_wfi_no_sleep to prevent sleeping when not allowed.
+                  decoder_ctrl_o.sys_wfi_insn = ctrl_fsm_i.debug_wfi_no_sleep ? 1'b0 : 1'b1;
                 end
               end
 

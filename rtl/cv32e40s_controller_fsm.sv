@@ -49,13 +49,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // From ID stage
   input  if_id_pipe_t if_id_pipe_i,
+  input  logic        alu_en_raw_id_i,            // ALU enable (not gated with deassert)
+  input  logic        alu_jmp_id_i,               // ALU jump
   input  logic        sys_en_id_i,
   input  logic        sys_mret_id_i,              // mret in ID stage
-  input  logic [1:0]  ctrl_transfer_insn_i,       // jump is being calculated in ALU
-  input  logic [1:0]  ctrl_transfer_insn_raw_i,   // jump is being calculated in ALU
-
-  // From WB stage
-  input  ex_wb_pipe_t ex_wb_pipe_i,
 
   // From EX stage
   input  id_ex_pipe_t id_ex_pipe_i,        
@@ -63,6 +60,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  logic        lsu_split_ex_i,             // LSU is splitting misaligned, first half is in EX
 
   // From WB stage
+  input  ex_wb_pipe_t ex_wb_pipe_i,
   input  logic [1:0]  lsu_err_wb_i,               // LSU caused bus_error in WB stage, gated with data_rvalid_i inside load_store_unit
 
   // From LSU (WB)
@@ -215,8 +213,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Checking validity of jump instruction or mret with if_id_pipe_i.instr_valid.
   // Using the ID stage local instr_valid would bring halt_id and kill_id into the equation
   // causing a path from data_rvalid to instr_addr_o/instr_req_o/instr_memtype_o via the jumps pc_set=1
-  assign jump_in_id = ((((ctrl_transfer_insn_raw_i == BRANCH_JALR) || (ctrl_transfer_insn_raw_i == BRANCH_JAL)) && !ctrl_byp_i.jr_stall) ||
-                         (sys_en_id_i && sys_mret_id_i && !ctrl_byp_i.csr_stall)) &&
+  assign jump_in_id = ((alu_jmp_id_i && alu_en_raw_id_i && !ctrl_byp_i.jalr_stall) || // todo: study area and functional impact of using alu_en_id_i instead
+                       (sys_en_id_i && sys_mret_id_i && !ctrl_byp_i.csr_stall)) &&
                          if_id_pipe_i.instr_valid;
 
   // Blocking on branch_taken_q, as a jump has already been taken
@@ -225,7 +223,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // EX stage 
   // Branch taken for valid branch instructions in EX with valid decision
   
-  assign branch_in_ex = id_ex_pipe_i.branch_in_ex && id_ex_pipe_i.instr_valid && branch_decision_ex_i;
+  assign branch_in_ex = id_ex_pipe_i.alu_bch && id_ex_pipe_i.alu_en && id_ex_pipe_i.instr_valid && branch_decision_ex_i;
 
   // Blocking on branch_taken_q, as a branch ha already been taken
   assign branch_taken_ex = branch_in_ex && !branch_taken_q;
@@ -383,9 +381,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Performance counter events
   assign ctrl_fsm_o.mhpmevent.minstret      = wb_counter_event_gated;
   assign ctrl_fsm_o.mhpmevent.compressed    = wb_counter_event_gated && ex_wb_pipe_i.instr_meta.compressed;
-  assign ctrl_fsm_o.mhpmevent.jump          = wb_counter_event_gated && ex_wb_pipe_i.instr_meta.jump;
-  assign ctrl_fsm_o.mhpmevent.branch        = wb_counter_event_gated && ex_wb_pipe_i.instr_meta.branch;
-  assign ctrl_fsm_o.mhpmevent.branch_taken  = wb_counter_event_gated && ex_wb_pipe_i.instr_meta.branch && ex_wb_pipe_i.instr_meta.branch_taken;
+  assign ctrl_fsm_o.mhpmevent.jump          = wb_counter_event_gated && ex_wb_pipe_i.alu_jmp_qual;
+  assign ctrl_fsm_o.mhpmevent.branch        = wb_counter_event_gated && ex_wb_pipe_i.alu_bch_qual;
+  assign ctrl_fsm_o.mhpmevent.branch_taken  = wb_counter_event_gated && ex_wb_pipe_i.alu_bch_taken_qual;
   assign ctrl_fsm_o.mhpmevent.intr_taken    = ctrl_fsm_o.irq_ack;
   assign ctrl_fsm_o.mhpmevent.data_read     = m_c_obi_data_if.s_req.req && m_c_obi_data_if.s_gnt.gnt && !m_c_obi_data_if.req_payload.we;
   assign ctrl_fsm_o.mhpmevent.data_write    = m_c_obi_data_if.s_req.req && m_c_obi_data_if.s_gnt.gnt && m_c_obi_data_if.req_payload.we;
@@ -393,7 +391,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign ctrl_fsm_o.mhpmevent.id_invalid    = !id_valid_i && ex_ready_i;
   assign ctrl_fsm_o.mhpmevent.ex_invalid    = !ex_valid_i && wb_ready_i;
   assign ctrl_fsm_o.mhpmevent.wb_invalid    = !wb_valid_i;
-  assign ctrl_fsm_o.mhpmevent.id_jr_stall   = ctrl_byp_i.jr_stall   && !id_valid_i && ex_ready_i;
+  assign ctrl_fsm_o.mhpmevent.id_jalr_stall = ctrl_byp_i.jalr_stall && !id_valid_i && ex_ready_i;
   assign ctrl_fsm_o.mhpmevent.id_ld_stall   = ctrl_byp_i.load_stall && !id_valid_i && ex_ready_i;
   assign ctrl_fsm_o.mhpmevent.wb_data_stall = data_stall_wb_i;
 
@@ -433,7 +431,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     // ID stage is halted for regular stalls (i.e. stalls for which the instruction
     // currently in ID is not ready to be issued yet). Also halted if interrupt or debug pending
     // but not allowed to be taken. This is to create an interruptible bubble in WB.
-    ctrl_fsm_o.halt_id = ctrl_byp_i.jr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_stall ||
+    ctrl_fsm_o.halt_id = ctrl_byp_i.jalr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_stall ||
                          (pending_interrupt && !interrupt_allowed) ||
                          (pending_debug && !debug_allowed) ||
                          (pending_nmi_early && !nmi_allowed);
@@ -592,11 +590,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             ctrl_fsm_o.halt_ex = 1'b1;
             ctrl_fsm_o.halt_wb = 1'b1;
 
-            if(fencei_ready) begin
+            if (fencei_ready) begin
               // Set fencei_flush_req_o in the next cycle
               fencei_flush_req_set = 1'b1;
             end
-            if(fencei_req_and_ack_q) begin
+            if (fencei_req_and_ack_q) begin
               // fencei req and ack were set at in the same cycle, complete handshake and jump to PC_FENCEI
 
               // Unhalt wb, kill if,id,ex
@@ -657,7 +655,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             // kill_if
             ctrl_fsm_o.kill_if = 1'b1;
 
-            // Jumps in ID (JAL, JALR, mret, dret)
+            // Jumps in ID (JAL, JALR, mret)
             if (sys_en_id_i && sys_mret_id_i) begin
               ctrl_fsm_o.pc_mux       = debug_mode_q ? PC_TRAP_DBE : PC_MRET;
               ctrl_fsm_o.pc_set       = 1'b1;
@@ -695,7 +693,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
         ctrl_fsm_o.ctrl_busy = 1'b0;
         ctrl_fsm_o.instr_req = 1'b0;
         ctrl_fsm_o.halt_wb   = 1'b1; // Put backpressure on pipeline to avoid retiring following instructions
-        if(ctrl_fsm_o.wake_from_sleep) begin
+        if (ctrl_fsm_o.wake_from_sleep) begin
           ctrl_fsm_ns = FUNCTIONAL;
           ctrl_fsm_o.ctrl_busy = 1'b1;
         end
@@ -767,12 +765,12 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
     // Detect first insn issue in single step after dret
     // Used to block further issuing
-    if(!ctrl_fsm_o.debug_mode && dcsr_i.step && !single_step_halt_if_q && (if_valid_i && id_ready_i)) begin
+    if (!ctrl_fsm_o.debug_mode && dcsr_i.step && !single_step_halt_if_q && (if_valid_i && id_ready_i)) begin
       single_step_halt_if_n = 1'b1;
     end
 
     // Clear jump/branch flag when new insn is emitted from IF
-    if(branch_taken_q && if_valid_i && id_ready_i) begin
+    if (branch_taken_q && if_valid_i && id_ready_i) begin
       branch_taken_n = 1'b0;
     end
   end
@@ -856,7 +854,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       fencei_req_and_ack_q <= fencei_flush_req_o && fencei_flush_ack_i;
 
       // Set fencei_flush_req_o based on FSM output. Clear upon req&&ack.
-      if(fencei_flush_req_o && fencei_flush_ack_i) begin
+      if (fencei_flush_req_o && fencei_flush_ack_i) begin
         fencei_flush_req_o <= 1'b0;
       end
       else if (fencei_flush_req_set) begin
@@ -876,11 +874,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       // i.e halt_wb due to debug will result in killed WB, while for fence.i it will retire.
       // Note that this event bit is further gated before sent to the actual counters in case
       // other conditions prevent counting.
-      if(ex_valid_i && wb_ready_i && !lsu_split_ex_i) begin
+      if (ex_valid_i && wb_ready_i && !lsu_split_ex_i) begin
         wb_counter_event <= 1'b1;
       end else begin
         // Keep event flag high while WB is halted, as we don't know if it will retire yet
-        if(!ctrl_fsm_o.halt_wb) begin
+        if (!ctrl_fsm_o.halt_wb) begin
           wb_counter_event <= 1'b0;
         end
       end

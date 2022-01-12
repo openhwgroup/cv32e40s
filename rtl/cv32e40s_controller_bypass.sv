@@ -36,18 +36,17 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 )
 (
   // From decoder
-  input  logic [1:0]  ctrl_transfer_insn_raw_i,          // decoded control transfer instruction. Not gated with deassert
-  input  logic [REGFILE_NUM_READ_PORTS-1:0]     rf_re_i, // Read enables from decoder
-  input rf_addr_t  rf_raddr_i[REGFILE_NUM_READ_PORTS],   // Read addresses from decoder
-  input rf_addr_t  rf_waddr_i,                           // Write address from decoder
+  input  logic [REGFILE_NUM_READ_PORTS-1:0]     rf_re_id_i, // Read enables from decoder
+  input rf_addr_t     rf_raddr_id_i[REGFILE_NUM_READ_PORTS],// Read addresses from decoder
 
   // Pipeline registers
   input if_id_pipe_t  if_id_pipe_i,
   input id_ex_pipe_t  id_ex_pipe_i,
   input ex_wb_pipe_t  ex_wb_pipe_i,
 
-  // From id_stage
-  input  logic        rf_alu_we_id_i,             // RF we in ID is due to an ALU ins, not LSU
+  // From ID
+  input  logic        alu_en_raw_id_i,            // ALU enable (not gated with deassert) // todo: study area and functional impact of using alu_en_id_i instead
+  input  logic        alu_jmpr_id_i,              // ALU jump register (JALR)
   input  logic        sys_en_id_i,
   input  logic        sys_mret_id_i,              // mret in ID
   input  logic        csr_en_id_i,                // CSR in ID
@@ -64,10 +63,10 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   output ctrl_byp_t   ctrl_byp_o
 );
 
-  logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_ex_match;
-  logic                              rf_rd_ex_jr_match;
-  logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_wb_match;
-  logic                              rf_rd_wb_jr_match;
+  logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_ex_match;            // Register file address match (ID vs. EX). Not qualified with rf_we_ex yet.
+  logic                              rf_rd_ex_jalr_match;
+  logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_wb_match;            // Register file address match (ID vs. WB). Not qualified with rf_we_wb yet.
+  logic                              rf_rd_wb_jalr_match;
   logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_ex_hz;
   logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_wb_hz;
 
@@ -135,10 +134,10 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   generate
     for(i=0; i<REGFILE_NUM_READ_PORTS; i++) begin : gen_forward_signals
       // Does register file read address match write address in EX (excluding R0)?
-      assign rf_rd_ex_match[i] = (rf_waddr_ex == rf_raddr_i[i]) && |rf_raddr_i[i] && rf_re_i[i];
+      assign rf_rd_ex_match[i] = (rf_waddr_ex == rf_raddr_id_i[i]) && |rf_raddr_id_i[i] && rf_re_id_i[i];
 
       // Does register file read address match write address in WB (excluding R0)?
-      assign rf_rd_wb_match[i] = (rf_waddr_wb == rf_raddr_i[i]) && |rf_raddr_i[i] && rf_re_i[i];
+      assign rf_rd_wb_match[i] = (rf_waddr_wb == rf_raddr_id_i[i]) && |rf_raddr_id_i[i] && rf_re_id_i[i];
 
       // Load-read hazard (for any instruction following a load)
       assign rf_rd_ex_hz[i] = rf_rd_ex_match[i];
@@ -146,9 +145,10 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     end
   endgenerate
 
-  // JR will always read rs1, no need to check rf_re[0]
-  assign rf_rd_ex_jr_match = (rf_waddr_ex == rf_raddr_i[0]) && |rf_raddr_i[0];
-  assign rf_rd_wb_jr_match = (rf_waddr_wb == rf_raddr_i[0]) && |rf_raddr_i[0];
+  // JALR rs1 match (rf_re_id_i[0] implied by alu_jmpr_id_i).
+  // Not qualified yet with JALR (alu_jmpr_id_i && alu_en_raw_id_i) nor with read enable (implied by JALR)
+  assign rf_rd_ex_jalr_match = (rf_waddr_ex == rf_raddr_id_i[0]) && |rf_raddr_id_i[0];
+  assign rf_rd_wb_jalr_match = (rf_waddr_wb == rf_raddr_id_i[0]) && |rf_raddr_id_i[0];
 
   always_comb
   begin
@@ -172,19 +172,12 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
       ctrl_byp_o.load_stall  = 1'b1;
     end
 
-    // Stall because of jr path
-    // - Stall if a result is to be forwarded to the PC
-    // except if result from WB is an ALU result
-    // No need to deassert anything in ID,a s ID stage is stalled anyway
-    if ((ctrl_transfer_insn_raw_i == BRANCH_JALR) &&
-        ((rf_we_wb && rf_rd_wb_jr_match && lsu_en_wb) ||
-         (rf_we_ex && rf_rd_ex_jr_match)))
-    begin
-      ctrl_byp_o.jr_stall    = 1'b1;
-    end
-    else
-    begin
-      ctrl_byp_o.jr_stall = 1'b0;
+    // Stall because of jalr path. Stall if a result is to be forwarded to the PC except if result from WB is an ALU result.
+    // No need to deassert anything in ID as ID stage is stalled anyway. alu_jmpr_id_i implies rf_re_id_i[0].
+    if (alu_jmpr_id_i && alu_en_raw_id_i && ((rf_we_wb && rf_rd_wb_jalr_match && lsu_en_wb) || (rf_we_ex && rf_rd_ex_jalr_match))) begin
+      ctrl_byp_o.jalr_stall = 1'b1;
+    end else begin
+      ctrl_byp_o.jalr_stall = 1'b0;
     end
 
     // Stall because of CSR read (direct or implied) in ID while CSR (implied or direct) is written in EX/WB
@@ -228,20 +221,21 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     end
 
     // Forwarding WB->ID for the jump register path
-    // Only allowed if WB is writing back an ALU result; no forwarding for load result because of timing reasons
+    // Only used if WB is writing back an ALU result. No forwarding for load result because of timing reasons.
+    // Non qualified rf_rd_wb_jalr_match is used as it is a don't care if alu_jmpr_id_i = 0 or jalr_stall = 1.
     if (rf_we_wb) begin
-      if (rf_rd_wb_jr_match && !lsu_en_wb) begin
+      if (rf_rd_wb_jalr_match) begin
         ctrl_byp_o.jalr_fw_mux_sel = SELJ_FW_WB;
       end
     end
 
     if (if_id_pipe_i.instr_meta.dummy) begin
       // Overriding operands with data from LFSRs for dummy instructions, except for reads from R0
-      if (rf_raddr_i[0] != '0) begin
+      if (rf_raddr_id_i[0] != '0) begin
         ctrl_byp_o.operand_a_fw_mux_sel = SEL_LFSR;
       end
 
-      if (rf_raddr_i[1] != '0) begin
+      if (rf_raddr_id_i[1] != '0) begin
         ctrl_byp_o.operand_b_fw_mux_sel = SEL_LFSR;
       end
     end
@@ -250,6 +244,5 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
   // Stall EX if offloaded instruction in WB may trigger an exception
   assign ctrl_byp_o.xif_exception_stall = ex_wb_pipe_i.xif_en && ex_wb_pipe_i.xif_meta.exception && ex_wb_pipe_i.instr_valid;
-
 
 endmodule // cv32e40s_controller_bypass
