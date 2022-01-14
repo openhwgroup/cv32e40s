@@ -6,7 +6,7 @@ Performance Counters
 |corev| implements performance counters according to the RISC-V Privileged Specification, version 1.11 (see Hardware Performance Monitor, Section 3.1.11).
 The performance counters are placed inside the Control and Status Registers (CSRs) and can be accessed with the ``CSRRW(I)`` and ``CSRRS/C(I)`` instructions.
 
-|corev| implements the clock cycle counter ``mcycle(h)``, the retired instruction counter ``minstret(h)``. The ``mcycle(h)`` and ``minstret(h)`` counters are always available and 64 bit wide.
+|corev| implements the clock cycle counter ``mcycle(h)`` and the retired instruction counter ``minstret(h)``. The ``mcycle(h)`` and ``minstret(h)`` counters are always available and 64 bit wide.
 The event counters ``mhpmcounter3(h)`` - ``mhpmcounter31(h)`` and the corresponding event selector CSRs ``mhpmevent3`` - ``mhpmevent31`` are hard-wired to 0.
 The ``mcountinhibit`` CSR is used to individually enable/disable the counters.
 
@@ -14,58 +14,6 @@ The ``mcountinhibit`` CSR is used to individually enable/disable the counters.
 
    All performance counters are using the gated version of ``clk_i``. The **wfi** instruction impact the gating of ``clk_i`` as explained
    in :ref:`sleep_unit` and can therefore affect the counters.
-
-.. _event_selector:
-
-Event Selector
---------------
-
-The following events can be monitored using the performance counters of |corev|.
-
-
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| Bit #       | Event Name      |                                                                                        |
-+=============+=================+========================================================================================+
-| 0           | CYCLES          | Number of cycles                                                                       |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 1           | INSTR           | Number of instructions retired                                                         |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 2           | COMP_INSTR      | Number of compressed instructions retired                                              |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 3           | JUMP            | Number of jumps (unconditional)                                                        |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 4           | BRANCH          | Number of branches (conditional)                                                       |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 5           | BRANCH_TAKEN    | Number of branches taken (conditional)                                                 |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 6           | INTR_TAKEN      | Number of taken interrupts (excluding NMI)                                             |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 7           | DATA_READ       | Number of read transactions on the OBI data interface.                                 |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 8           | DATA_WRITE      | Number of write transactions on the OBI data interface.                                |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 9           | IF_INVALID      | Number of cycles that the IF stage causes ID stage underutilization                    |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 10          | ID_INVALID      | Number of cycles that the ID stage causes EX stage underutilization                    |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 11          | EX_INVALID      | Number of cycles that the EX stage causes WB stage underutilization                    |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 12          | WB_INVALID      | Number of cycles that the WB stage causes register file write port underutilization    |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 13          | LD_STALL        | Number of stall cycles caused by load use hazards                                      |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 14          | JMP_STALL       | Number of stall cycles caused by jump register hazards                                 |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-| 15          | WB_DATA_STALL   | Number of stall cycles caused in the WB stage by loads/stores.                         |
-+-------------+-----------------+----------------------------------------------------------------------------------------+
-
-The event selector CSRs ``mhpmevent3`` - ``mhpmevent31`` define which of these events are counted by the event counters ``mhpmcounter3(h)`` - ``mhpmcounter31(h)``.
-If a specific bit in an event selector CSR is set to 1, this means that events with this ID are being counted by the counter associated with that selector CSR.
-If an event selector CSR is 0, this means that the corresponding counter is not counting any event.
-
-.. note::
-
-   At most 1 bit should be set in an event selector. If multiple bits are set in an event selector, then the operation of the associated counter is undefined.
 
 Controlling the counters from software
 --------------------------------------
