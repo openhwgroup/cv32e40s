@@ -28,6 +28,7 @@ Instantiation Template
   cv32e40s_core #(
       .LIB                      (         0 ),
       .B_EXT                    (      NONE ),
+      .M_EXT                    (         M ),
       .DBG_NUM_TRIGGERS         (         1 ),
       .PMP_GRANULARITY          (         0 ),
       .PMP_NUM_REGIONS          (         0 ),
@@ -113,9 +114,15 @@ Parameters
 +==============================+================+===============+====================================================================+
 | ``LIB``                      | int            | 0             | Standard cell library (semantics defined by integrator)            |
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``B_EXT``                    | b_ext_e        | NONE          | Enable Bit Manipulation support. ``B_EXT`` = NONE: no Bit          |
-|                              |                |               | Manipulation instructions are supported, ``B_EXT`` = ZBA_ZBB_ZBS:  |
-|                              |                |               | Zba, Zbb and Zbs are supported.                                    |
+| ``B_EXT``                    | b_ext_e        | NONE          | Enable Bit Manipulation support. ``B_EXT`` = NONE: No Bit          |
+|                              |                |               | Manipulation instructions are supported. ``B_EXT`` = ZBA_ZBB_ZBS:  |
+|                              |                |               | Zba, Zbb and Zbs are supported. ``B_EXT`` = ZBA_ZBB_ZBC_ZBS:       |
+|                              |                |               | Zba, Zbb, Zbc and Zbs are supported.                               |
++------------------------------+----------------+---------------+--------------------------------------------------------------------+
+| ``M_EXT``                    | m_ext_e        | M             | Enable Multiply / Divide support. ``M_EXT`` = NONE: No multiply /  |
+|                              |                |               | divide instructions are supported. ``M_EXT`` = ZMMUL: The          |
+|                              |                |               | multiplication subset of the ``M`` extension is supported.         |
+|                              |                |               | ``M_EXT`` = M: The ``M`` extension is supported.                   |
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
 | ``PMP_GRANULARITY``          | int (0..31)    | 0             | Minimum granularity of PMP address matching                        |
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
