@@ -36,13 +36,13 @@ It follows these specifications:
 .. [RISC-V-UNPRIV] RISC-V Instruction Set Manual, Volume I: User-Level ISA, Document Version 20191213 (December 13, 2019),
    https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf
 
-.. [RISC-V-PRIV] RISC-V Instruction Set Manual, Volume II: Privileged Architecture, Document Version 20210915-Public-Review-draft (September 16, 2021),
-   https://github.com/riscv/riscv-isa-manual/releases/download/riscv-privileged-20210915-public-review/riscv-privileged-20210915-public-review.pdf
+.. [RISC-V-PRIV] RISC-V Instruction Set Manual, Volume II: Privileged Architecture, Document Version 20211105-signoff (November 5, 2021),
+   https://github.com/riscv/riscv-isa-manual/releases/download/draft-20211105-c30284b/riscv-privileged.pdf
 
 .. [RISC-V-DEBUG] RISC-V External Debug Support, version 1.0.0, 2021-10-07:,
    https://github.com/riscv/riscv-debug-spec/blob/master/riscv-debug-stable.pdf
 
-.. [RISC-V-ZBA_ZBB_ZBS] RISC-V Bit Manipulation ISA-extensions, Version 1.0.0-38-g865e7a7, 2021-06-28:,
+.. [RISC-V-ZBA_ZBB_ZBC_ZBS] RISC-V Bit Manipulation ISA-extensions, Version 1.0.0-38-g865e7a7, 2021-06-28,
    https://github.com/riscv/riscv-bitmanip/releases/download/1.0.0/bitmanip-1.0.0-38-g865e7a7.pdf
 
 .. [RISC-V-ZCEB] RISC-V Standard Extension for the **Zceb** subset of **Zce**, v0.52 (not ratified yet),
@@ -57,6 +57,9 @@ It follows these specifications:
 .. [RISC-V-SMEPMP] PMP Enhancements for memory access and execution prevention on Machine mode, version 0.9.5 (not ratified yet),
    https://github.com/riscv/riscv-tee/blob/main/Smepmp/Smepmp.pdf
 
+.. [RISC-V-CRYPTO] RISC-V Cryptography Extensions Volume I, Scalar & Entropy Source Instructions, Version v1.0.0, 2'nd December, 2021: Ratified,
+   https://github.com/riscv/riscv-crypto/releases/download/v1.0.0-scalar/riscv-crypto-spec-scalar-v1.0.0.pdf
+
 .. [OPENHW-OBI] OpenHW Open Bus Interface (OBI) protocol, version 1.2,
    https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf
 
@@ -69,7 +72,7 @@ Many features in the RISC-V specification are optional, and |corev| can be param
 
 * The RV32I Base Integer Instruction Set, version 2.1
 
-In addition, the following standard instruction set extensions are available from [RISC-V-UNPRIV]_, [RISC-V-ZBA_ZBB_ZBS]_, [RISC-V-ZCEB]_, [RISC-V-ZCEE]_ and [RISC-V-ZCES]_.
+In addition, the following standard instruction set extensions are available from [RISC-V-UNPRIV]_, [RISC-V-ZBA_ZBB_ZBC_ZBS]_, [RISC-V-CRYPTO]_, [RISC-V-ZCEB]_, [RISC-V-ZCEE]_ and [RISC-V-ZCES]_.
 
 .. list-table:: |corev| Standard Instruction Set Extensions
    :header-rows: 1
@@ -84,7 +87,7 @@ In addition, the following standard instruction set extensions are available fro
 
    * - **M**: Standard Extension for Integer Multiplication and Division
      - 2.0
-     - always enabled
+     - optionally enabled based on ``M_EXT`` parameter
 
    * - **Zicsr**: Control and Status Register Instructions
      - 2.0
@@ -107,32 +110,32 @@ In addition, the following standard instruction set extensions are available fro
      - always enabled
 
    * - **Zba**: Bit Manipulation Address calculation instructions
-     - Version 1.0.0-38-g865e7a7, 2021-06-28 (not ratified yet; version will change)
+     - Version 1.0.0
      - optionally enabled based on ``B_EXT`` parameter
 
    * - **Zbb**: Bit Manipulation Base instructions
-     - Version 1.0.0-38-g865e7a7, 2021-06-28 (not ratified yet; version will change)
+     - Version 1.0.0
+     - optionally enabled based on ``B_EXT`` parameter
+
+   * - **Zbc**: Bit Manipulation Carry-Less Multiply instructions
+     - Version 1.0.0
      - optionally enabled based on ``B_EXT`` parameter
 
    * - **Zbs**: Bit Manipulation Bit set, Bit clear, etc. instructions
-     - Version 1.0.0-38-g865e7a7, 2021-06-28 (not ratified yet; version will change)
+     - Version 1.0.0
      - optionally enabled based on ``B_EXT`` parameter
 
    * - **Zkt**: Data Independent Execution Latency
-     - Version v1.0.0-rc2 (not ratified yet; version will change)
+     - Version 1.0.0
      - always enabled
 
    * - **Zbkc**: Constant time Carry-Less Multiply
-     - Version v1.0.0-rc2 (not ratified yet; version will change)
+     - Version 1.0.0
      - optionally enabled based on ``B_EXT`` parameter
 
-   * - **Zkt**: Data Independent Execution Latency
-     - Version v1.0.0-rc2 (not ratified yet; version will change)
-     - always enabled
-
-   * - **Zbkc**: Constant time Carry-Less Multiply
-     - Version v1.0.0-rc2 (not ratified yet; version will change)
-     - optionally enabled based on ``B_EXT`` parameter
+   * - **Zmmul**: Multiplication subset of the **M** extension
+     - Version 0.1
+     - optionally enabled based on ``M_EXT`` parameter
 
 The following custom instruction set extensions are available.
 
