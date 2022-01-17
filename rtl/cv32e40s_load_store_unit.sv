@@ -151,7 +151,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   assign trans.we    = id_ex_pipe_i.lsu_we;
   assign trans.size  = id_ex_pipe_i.lsu_size;
   assign trans.wdata = id_ex_pipe_i.operand_c;
-  assign trans.mode  = PRIV_LVL_M; // Machine mode
+  assign trans.mode  = PRIV_LVL_M; // Machine mode TODO: connect to priv_lvl
 
   assign trans.atop  = id_ex_pipe_i.lsu_atop;
   assign trans.sext  = id_ex_pipe_i.lsu_sext;
