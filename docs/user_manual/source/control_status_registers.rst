@@ -1325,7 +1325,7 @@ Detailed:
 
   CSR Address: 0x747
 
-  Reset Value: 0x0000_0000
+  Reset Value: defined (based on ``PMP_CFG``)
 
   Detailed:
 
@@ -1346,7 +1346,7 @@ Detailed:
 
   CSR Address: 0x757
 
-  Reset Value: 0x0000_0000
+  Reset Value: defined (based on ``PMP_CFG``)
 
   Detailed:
 
@@ -1361,7 +1361,7 @@ Detailed:
 
   CSR Address: 0x3A0 - 0x3AF
 
-  Reset Value: 0x0000_0000
+  Reset Value: defined (based on ``PMP_CFG``)
 
   Detailed ``pmpcfg0``:
 
@@ -1441,7 +1441,7 @@ Detailed:
 
   CSR Address: 0x3B0 - 0x3EF
 
-  Reset Value: 0x0000_0000
+  Reset Value: defined (based on ``PMP_CFG``)
 
   +-------+---------------+---------------------------+
   | Bit#  |  Mode         |  Definition               |
