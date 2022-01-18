@@ -636,16 +636,24 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           // No bits implemented in MENVCFGH, do nothing
         end
         CSR_CPUCTRL: begin
-          cpuctrl_we = 1'b1;
+          if (SECURE) begin
+            cpuctrl_we = 1'b1;
+          end
         end
         CSR_SECURESEED0: begin
-          secureseed0_we = 1'b1;
+          if (SECURE) begin
+            secureseed0_we = 1'b1;
+          end
         end
         CSR_SECURESEED1: begin
-          secureseed1_we = 1'b1;
+          if (SECURE) begin
+            secureseed1_we = 1'b1;
+          end
         end
         CSR_SECURESEED2: begin
-          secureseed2_we = 1'b1;
+          if (SECURE) begin
+            secureseed2_we = 1'b1;
+          end
         end
       endcase
     end
