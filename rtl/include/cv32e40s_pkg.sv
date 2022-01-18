@@ -485,6 +485,7 @@ typedef struct packed {
   logic [31:0] lfsr1;
   logic [31:0] lfsr0;
   cpuctrl_t    cpuctrl;
+  logic        cntrst;
 } xsecure_ctrl_t;
 
 // Privileged mode

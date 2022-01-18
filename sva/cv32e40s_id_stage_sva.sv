@@ -160,6 +160,20 @@ module cv32e40s_id_stage_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      rf_re_o[1] && (rf_raddr_o[1] == 32'h0) && if_id_pipe_i.instr_meta.dummy |-> (operand_b_fw == rf_rdata_i[1]))
       else `uvm_error("id_stage", "Dummy instruction could not read from R0 (on read port 1)")
+
+  a_dummy_opa_mux_check:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     if_id_pipe_i.instr_meta.dummy |-> ( (ctrl_byp_i.operand_a_fw_mux_sel == SEL_LFSR) ||
+                                                        ((ctrl_byp_i.operand_a_fw_mux_sel == SEL_REGFILE) && (rf_raddr_o[0] == 0))))
+      else `uvm_error("id_stage", "Illegal operand a mux select value for dummy instruction")
+
+  a_dummy_opb_mux_check:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     if_id_pipe_i.instr_meta.dummy |-> ( (ctrl_byp_i.operand_b_fw_mux_sel == SEL_LFSR) ||
+                                                        ((ctrl_byp_i.operand_b_fw_mux_sel == SEL_REGFILE) && (rf_raddr_o[1] == 0))))
+      else `uvm_error("id_stage", "Illegal operand b mux select value for dummy instruction")
+
+
   // Ensure that functional unit enables are one-hot (ALU and DIV both use the ALU though)
   a_functional_unit_enable_onehot :
     assert property (@(posedge clk) disable iff (!rst_n)
