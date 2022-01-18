@@ -35,31 +35,34 @@ module cv32e40s_dummy_instr_sva
    input logic                 dummy_insert_o,
    input logic                 cpuctrl_we,
    input cpuctrl_t             cpuctrl_n,
+   input logic                 secureseed0_we,
+   input logic [31:0]          secureseed0_n,
    input xsecure_ctrl_t        xsecure_ctrl_i,
    input logic [CNT_WIDTH-1:0] cnt_q,
    input logic [5:0]           lfsr_cnt
    );
 
-  // Store rnddummyfreq to see if it has been changed since the last dummy instruction
-  logic                        rnddummyfreq_written;
+  // Check whether the randomization conditions have been changed by software
+  logic                        sw_reg_update;
   always_ff @(posedge clk, negedge rst_n) begin
     if (rst_n == 1'b0) begin
-      rnddummyfreq_written <= '0;
+      sw_reg_update <= '0;
     end else begin
       if (cpuctrl_we && (cpuctrl_n.rnddummyfreq != xsecure_ctrl_i.cpuctrl.rnddummyfreq)) begin
-        rnddummyfreq_written <= 1'b1;
+        sw_reg_update <= 1'b1;
+      end else if (secureseed0_we && (secureseed0_n != xsecure_ctrl_i.lfsr0)) begin
+        sw_reg_update <= 1'b1;
       end else if (dummy_insert_o) begin
-        rnddummyfreq_written <= 1'b0;
+        sw_reg_update <= 1'b0;
       end
     end
   end
 
   // Assert that counter stopped correctly when inserting dummy instruction
-  // The count is allowed to be off when the rnddummyfreq csr has been changed as it only results
-  // in a higher probablity of dummy instruction the cycle after a rnddummyfreq csr write
+  // The count is allowed to be off when the randomization conditions have been changed by software
   a_no_count_overflow :
     assert property (@(posedge clk) disable iff (!rst_n)
-                     dummy_insert_o |-> (cnt_q == lfsr_cnt + 1) || rnddummyfreq_written)
+                     dummy_insert_o |-> (cnt_q == lfsr_cnt + 1) || sw_reg_update)
       else `uvm_error("Dummy Instruction Insertion", "Counter counted further than lfsr_cnt + 1");
 
   // Assert that we never count when counter has passed the compare value

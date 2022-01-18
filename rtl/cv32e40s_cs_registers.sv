@@ -868,15 +868,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     if (SECURE) begin : xsecure
 
       logic [2:0] lfsr_lockup;
-      logic       lfsr0_en;
-      logic       lfsr1_en;
-      logic       lfsr2_en;
-
-      // -Shift lfsr for each insterted dummy instruction when enabled-
-      // At least one LFSR shift is guaranteed per dummy instruction
-      assign lfsr0_en = cpuctrl_q.rnddummy && if_id_pipe_i.instr_meta.dummy;
-      assign lfsr1_en = cpuctrl_q.rnddummy && if_id_pipe_i.instr_meta.dummy;
-      assign lfsr2_en = cpuctrl_q.rnddummy && if_id_pipe_i.instr_meta.dummy;
 
       cv32e40s_csr #(
         .WIDTH      (32),
@@ -898,7 +889,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           .rst_n      (rst_n),
           .seed_i     (secureseed0_n),
           .seed_we_i  (secureseed0_we),
-          .enable_i   (lfsr0_en),
+          .enable_i   (cpuctrl_q.rnddummy),
+          .shift_i    (if_id_pipe_i.instr_meta.dummy), // At least one shift per dummy instruction
           .data_o     (xsecure_ctrl_o.lfsr0),
           .lockup_o   (lfsr_lockup[0])
         );
@@ -910,7 +902,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           .rst_n      (rst_n),
           .seed_i     (secureseed1_n),
           .seed_we_i  (secureseed1_we),
-          .enable_i   (lfsr1_en),
+          .enable_i   (cpuctrl_q.rnddummy),
+          .shift_i    (if_id_pipe_i.instr_meta.dummy), // At least one shift per dummy instruction
           .data_o     (xsecure_ctrl_o.lfsr1),
           .lockup_o   (lfsr_lockup[1])
         );
@@ -922,7 +915,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           .rst_n      (rst_n),
           .seed_i     (secureseed2_n),
           .seed_we_i  (secureseed2_we),
-          .enable_i   (lfsr2_en),
+          .enable_i   (cpuctrl_q.rnddummy),
+          .shift_i    (if_id_pipe_i.instr_meta.dummy), // At least one shift per dummy instruction
           .data_o     (xsecure_ctrl_o.lfsr2),
           .lockup_o   (lfsr_lockup[2])
         );
