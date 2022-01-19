@@ -936,7 +936,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign lfsr_lockup_o = |lfsr_lockup;
 
       // Reset dummy instruction counter when writing registers that affect insertion frequency
-      assign xsecure_ctrl_o.cntrst = cpuctrl_we || secureseed0_we;
+      assign xsecure_ctrl_o.cntrst = cpuctrl_we || secureseed0_we || lfsr_lockup[0];
 
     end // block: xsecure
     else begin : no_xsecure
