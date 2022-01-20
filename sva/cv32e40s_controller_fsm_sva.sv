@@ -480,6 +480,10 @@ endgenerate
       else `uvm_error("controller", "debug_allowed high while LSU is in WB")
 
   // Assert that branches are always taken in the first cycle of EX, unless EX is killed or halted
+  // What we really want to check with this assertion is that a branch taken always results
+  // in a pc_set to PC_BRANCH.
+  // If the branch is not taken in the first cycle of EX, caution must be taken to avoid e.g. a jump in
+  // ID taking presedence over the branch in EX.
   a_branch_in_ex_taken_first_cycle:
     assert property (@(posedge clk) disable iff (!rst_n)
                      ($rose(branch_in_ex) && !(ctrl_fsm_o.halt_ex || ctrl_fsm_o.kill_ex) |->
