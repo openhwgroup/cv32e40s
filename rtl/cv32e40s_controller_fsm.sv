@@ -88,6 +88,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // CSR write strobes
   input logic         cpuctrl_wr_in_wb_i,
+  input logic         secureseed_wr_in_wb_i,
 
   // Stage valid/ready signals
   input  logic        if_valid_i,       // IF stage has valid (non-bubble) data for next stage
@@ -635,6 +636,15 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             // cpuctrl has impact on pipeline operation. When updated, clear pipeline.
             // div/divu/rem/remu and branch decisions in EX stage depend on cpuctrl.dataindtiming
             // Dummy instruction insertion depend on cpuctrl.dummyen/dummyfreq
+            ctrl_fsm_o.kill_if = 1'b1;
+            ctrl_fsm_o.kill_id = 1'b1;
+            ctrl_fsm_o.kill_ex = 1'b1;
+            ctrl_fsm_o.pc_set  = 1'b1;
+            ctrl_fsm_o.pc_mux  = PC_WB_PLUS4;
+          end else if (secureseed_wr_in_wb_i) begin
+            // The secureseed registers impact the pipeline operation. When updated, clear pipeline.
+            // Dummy instruction insertion decision and depends on secureseed0.
+            // The operands used by dummy instructions depend on secureseed1 and 2.
             ctrl_fsm_o.kill_if = 1'b1;
             ctrl_fsm_o.kill_id = 1'b1;
             ctrl_fsm_o.kill_ex = 1'b1;

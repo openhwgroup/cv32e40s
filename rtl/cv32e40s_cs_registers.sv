@@ -101,6 +101,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // CSR write strobes
   output logic            cpuctrl_wr_in_wb_o,
+  output logic            secureseed_wr_in_wb_o,
 
   // debug
   output logic [31:0]     dpc_o,
@@ -953,6 +954,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   endgenerate
 
   assign cpuctrl_wr_in_wb_o = cpuctrl_we;
+  assign secureseed_wr_in_wb_o = secureseed0_we || secureseed0_we || secureseed0_we;
 
   assign csr_rdata_o = csr_rdata_int;
 

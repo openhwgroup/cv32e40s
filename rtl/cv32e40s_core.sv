@@ -748,6 +748,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR write strobes
     .cpuctrl_wr_in_wb_o         ( cpuctrl_wr_in_wb       ),
+    .secureseed_wr_in_wb_o      ( secureseed_wr_in_wb    ),
 
     // debug
     .dpc_o                      ( dpc                    ),
@@ -829,6 +830,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR write strobes
     .cpuctrl_wr_in_wb_i             ( cpuctrl_wr_in_wb       ),
+    .secureseed_wr_in_wb_i          ( secureseed_wr_in_wb    ),
 
     // Debug signals
     .debug_req_i                    ( debug_req_i            ),
