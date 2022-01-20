@@ -73,8 +73,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Privilege mode
   input privlvlctrl_t   priv_lvl_ctrl_i,
 
-  // Dummy Instruction CSRs
+  // Dummy Instruction Control
   input xsecure_ctrl_t  xsecure_ctrl_i,
+  output  logic         lfsr_shift_o,
 
   // eXtension interface
   if_xif.cpu_compressed xif_compressed_if,      // XIF compressed interface
@@ -253,6 +254,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   assign if_valid_o = instr_valid;
 
   assign if_busy_o = prefetch_busy;
+
+  // Ensures one shift of lfsr0 for each instruction inserted in IF
+  assign lfsr_shift_o = (if_valid_o && id_ready_i) && dummy_insert;
 
   // Populate instruction meta data
   instr_meta_t instr_meta_n;
