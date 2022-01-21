@@ -958,7 +958,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   endgenerate
 
   assign cpuctrl_wr_in_wb_o = cpuctrl_we;
-  assign secureseed_wr_in_wb_o = secureseed0_we || secureseed0_we || secureseed0_we;
+  assign secureseed_wr_in_wb_o = secureseed0_we || secureseed1_we || secureseed2_we;
 
   assign csr_rdata_o = csr_rdata_int;
 
