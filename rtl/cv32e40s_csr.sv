@@ -35,16 +35,26 @@ module cv32e40s_csr #(
 
   assign rd_data_o = rdata_q;
 
-  if (SHADOWCOPY) begin : gen_shadow
-    logic [WIDTH-1:0] shadow_q;
+  generate
+    if (SHADOWCOPY) begin : gen_shadow
+      // The shadow registers are logically redundant and are therefore easily optimized away by most synthesis tools.
+      // These registers are therefore implemented as instantiated cells so that they can be preserved in the synthesis script.
 
-    always_ff @(posedge clk or negedge rst_n) begin
-      if (!rst_n) begin
-        shadow_q <= ~(RESETVALUE & MASK);
-      end else if (wr_en_i) begin
-        shadow_q <= ~(wr_data_i & MASK);
+      logic [WIDTH-1:0] shadow_q;
+      logic [WIDTH-1:0] shadow_d;
+
+      for (genvar i = 0; i < WIDTH; i++) begin : gen_shadow_regs
+        if (MASK[i]) begin : gen_unmasked
+          assign shadow_d[i] = wr_en_i ? wr_data_i[i] : shadow_q[i];
+          if (RESETVALUE[i] == 1'b1) begin : gen_rv1
+            cv32e40s_sffs sffs_shadowreg (.clk(clk), .set_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
+          end else begin : gen_rv0 // (RESETVALUE[i] == 1'b0)
+            cv32e40s_sffr sffr_shadowreg (.clk(clk), .rst_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
+          end
+        end else begin : gen_masked
+          assign shadow_q[i] = 1'b0;
+        end
       end
-    end
 
     assign rd_error_o = rdata_q != ~shadow_q;
 
@@ -52,5 +62,6 @@ module cv32e40s_csr #(
     assign rd_error_o = 1'b0;
   end
 
+  endgenerate
 
 endmodule
