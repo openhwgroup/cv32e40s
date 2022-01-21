@@ -95,12 +95,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // LFSR lockup
   output logic            lfsr_lockup_o,
+  input  logic            lfsr_shift_if_i,
+  input  logic            lfsr_shift_id_i,
 
   // Xsecure control
   output xsecure_ctrl_t   xsecure_ctrl_o,
 
   // CSR write strobes
   output logic            cpuctrl_wr_in_wb_o,
+  output logic            secureseed_wr_in_wb_o,
 
   // debug
   output logic [31:0]     dpc_o,
@@ -890,6 +893,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           .rd_error_o (cpuctrl_rd_error)
         );
 
+      // Shifting LFSR0 in IF because it controls instruction insertion
       cv32e40s_lfsr #(
         .LFSR_CFG     (LFSR0_CFG)
         ) lfsr0_i (
@@ -898,11 +902,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           .seed_i     (secureseed0_n),
           .seed_we_i  (secureseed0_we),
           .enable_i   (cpuctrl_q.rnddummy),
-          .shift_i    (if_id_pipe_i.instr_meta.dummy), // At least one shift per dummy instruction
+          .shift_i    (lfsr_shift_if_i),
           .data_o     (xsecure_ctrl_o.lfsr0),
           .lockup_o   (lfsr_lockup[0])
         );
 
+      // Shifting lfsr 1 and 2 in ID because they control the operand values
       cv32e40s_lfsr #(
         .LFSR_CFG     (LFSR1_CFG)
         ) lfsr1_i (
@@ -911,7 +916,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           .seed_i     (secureseed1_n),
           .seed_we_i  (secureseed1_we),
           .enable_i   (cpuctrl_q.rnddummy),
-          .shift_i    (if_id_pipe_i.instr_meta.dummy), // At least one shift per dummy instruction
+          .shift_i    (lfsr_shift_id_i),
           .data_o     (xsecure_ctrl_o.lfsr1),
           .lockup_o   (lfsr_lockup[1])
         );
@@ -924,7 +929,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           .seed_i     (secureseed2_n),
           .seed_we_i  (secureseed2_we),
           .enable_i   (cpuctrl_q.rnddummy),
-          .shift_i    (if_id_pipe_i.instr_meta.dummy), // At least one shift per dummy instruction
+          .shift_i    (lfsr_shift_id_i),
           .data_o     (xsecure_ctrl_o.lfsr2),
           .lockup_o   (lfsr_lockup[2])
         );
@@ -934,6 +939,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       // Combine lockup singals for alert
       assign lfsr_lockup_o = |lfsr_lockup;
+
+      // Reset dummy instruction counter when writing registers that affect insertion frequency
+      assign xsecure_ctrl_o.cntrst = cpuctrl_we || secureseed0_we || lfsr_lockup[0];
 
     end // block: xsecure
     else begin : no_xsecure
@@ -950,6 +958,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   endgenerate
 
   assign cpuctrl_wr_in_wb_o = cpuctrl_we;
+  assign secureseed_wr_in_wb_o = secureseed0_we || secureseed1_we || secureseed2_we;
 
   assign csr_rdata_o = csr_rdata_int;
 

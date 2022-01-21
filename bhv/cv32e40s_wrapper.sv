@@ -158,10 +158,7 @@ module cv32e40s_wrapper
       bind cv32e40s_dummy_instr :
         core_i.if_stage_i.gen_dummy_instr.dummy_instr_i cv32e40s_dummy_instr_sva
       dummy_instr_sva
-        (.cpuctrl_we     (core_i.cs_registers_i.cpuctrl_we),
-         .cpuctrl_n      (core_i.cs_registers_i.cpuctrl_n),
-         .secureseed0_we (core_i.cs_registers_i.secureseed0_we),
-         .secureseed0_n  (core_i.cs_registers_i.secureseed0_n),
+        (
          .*
          );
     end

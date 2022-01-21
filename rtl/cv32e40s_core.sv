@@ -266,7 +266,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Xsecure control
   xsecure_ctrl_t xsecure_ctrl;
-  
+
+  // Dummy Instruction LFSR shift control
+  logic        lfsr_shift_if;
+  logic        lfsr_shift_id;
+
   // Internal OBI interfaces
   if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
   if_c_obi #(.REQ_TYPE(obi_data_req_t), .RESP_TYPE(obi_data_resp_t))  m_c_obi_data_if();
@@ -429,8 +433,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Privilege level
     .priv_lvl_ctrl_i     ( priv_lvl_if_ctrl         ),
 
-    // Dummy Instruction CSRs
+    // Dummy Instruction control
     .xsecure_ctrl_i      ( xsecure_ctrl             ),
+    .lfsr_shift_o        ( lfsr_shift_if            ),
 
     // eXtension interface
     .xif_compressed_if   ( xif_compressed_if        ),
@@ -500,6 +505,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .id_ready_o                   ( id_ready                  ),
     .id_valid_o                   ( id_valid                  ),
     .ex_ready_i                   ( ex_ready                  ),
+
+    .lfsr_shift_o                 ( lfsr_shift_id             ),
 
     // eXtension interface
     .xif_issue_if                 ( xif_issue_if              )
@@ -746,8 +753,13 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Xsecure control
     .xsecure_ctrl_o             ( xsecure_ctrl           ),
 
+    // LFSR shifts
+    .lfsr_shift_if_i            ( lfsr_shift_if          ),
+    .lfsr_shift_id_i            ( lfsr_shift_id          ),
+
     // CSR write strobes
     .cpuctrl_wr_in_wb_o         ( cpuctrl_wr_in_wb       ),
+    .secureseed_wr_in_wb_o      ( secureseed_wr_in_wb    ),
 
     // debug
     .dpc_o                      ( dpc                    ),
@@ -829,6 +841,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR write strobes
     .cpuctrl_wr_in_wb_i             ( cpuctrl_wr_in_wb       ),
+    .secureseed_wr_in_wb_i          ( secureseed_wr_in_wb    ),
 
     // Debug signals
     .debug_req_i                    ( debug_req_i            ),

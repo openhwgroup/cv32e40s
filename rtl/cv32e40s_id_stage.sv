@@ -91,6 +91,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   output logic        id_valid_o,     // ID stage has valid (non-bubble) data for next stage
   input  logic        ex_ready_i,     // EX stage is ready for new data
 
+  output logic        lfsr_shift_o,
+
   // eXtension interface
   if_xif.cpu_issue  xif_issue_if
 );
@@ -203,6 +205,9 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   assign sys_en_o = sys_en;
   assign sys_mret_insn_o = sys_mret_insn;
   assign sys_wfi_insn_o  = sys_wfi_insn;
+
+  // Ensures one shift of the operand LFSRs for each dummy instruction in ID
+  assign lfsr_shift_o    = (id_valid_o && ex_ready_i) && if_id_pipe_i.instr_meta.dummy;
 
   assign instr = if_id_pipe_i.instr.bus_resp.rdata;
 

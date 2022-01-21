@@ -103,8 +103,10 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
           mem[0] <= '0;
         end else begin
           if (dummy_instr_wb_i) begin
-            if(we_dec[0][0] == 1'b1) begin
-              mem[0] <= wdata_i[0];
+            for(int j=0; j<REGFILE_NUM_WRITE_PORTS; j++) begin : dummy_rf_write_ports
+              if(we_dec[j][0] == 1'b1) begin
+                mem[0] <= wdata_i[j];
+              end
             end
           end else begin
             mem[0] <= '0;

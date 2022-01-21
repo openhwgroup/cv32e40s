@@ -58,15 +58,16 @@ module cv32e40s_dummy_instr
 
   opcode_e      opcode;
   logic [ 6:0]  funct7;
-  logic [ 4:0]  rs2;
-  logic [ 4:0]  rs1;
   logic [ 4:0]  rd;
   logic [ 2:0]  funct3;
   logic [12:0]  imm;
   logic [31:0]  instr;
 
+  logic         dummy_en;
+
   logic [CNT_WIDTH-1:0] cnt_q;
   logic [CNT_WIDTH-1:0] cnt_next;
+  logic                 cnt_rst;
 
   logic [1:0]   lfsr_instr;
   logic [4:0]   lfsr_rs1;
@@ -78,11 +79,17 @@ module cv32e40s_dummy_instr
   assign lfsr_rs2   = xsecure_ctrl_i.lfsr0[20:16];
   assign lfsr_cnt   = xsecure_ctrl_i.lfsr0[29:24] & {xsecure_ctrl_i.cpuctrl.rnddummyfreq, 2'b11};
 
-  assign dummy_insert_o = (cnt_q > lfsr_cnt) && ctrl_fsm_i.allow_dummy_instr && xsecure_ctrl_i.cpuctrl.rnddummy;
+  assign dummy_en   = ctrl_fsm_i.allow_dummy_instr && xsecure_ctrl_i.cpuctrl.rnddummy;
 
-  assign cnt_next       = (cnt_q > lfsr_cnt) ? '0        : // Reset counter on overflow
-                          instr_issued_i     ? cnt_q + 1 : // Count issued instructions only
-                                               cnt_q;
+  assign dummy_insert_o = (cnt_q > lfsr_cnt) && dummy_en;
+
+  assign cnt_rst        = !dummy_en      ||      // Reset counter when dummy instructions are disabled
+                          dummy_insert_o ||      // Reset counter when inserting dummy instruction
+                          xsecure_ctrl_i.cntrst; // Reset counter when requested by xsecure_ctrl (due to csr updates)
+
+  assign cnt_next       = cnt_rst        ? '0        : // Reset counter
+                          instr_issued_i ? cnt_q + 1 : // Count issued instructions only
+                                           cnt_q;
 
   always_ff @(posedge clk, negedge rst_n) begin
     if (rst_n == 1'b0) begin

@@ -88,6 +88,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   // CSR write stobes
   input logic          cpuctrl_wr_in_wb_i,
+  input logic          secureseed_wr_in_wb_i,
 
   input logic [REGFILE_NUM_READ_PORTS-1:0] rf_re_id_i,
   input rf_addr_t     rf_raddr_id_i[REGFILE_NUM_READ_PORTS],
@@ -162,6 +163,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
     // CSR write strobes
     .cpuctrl_wr_in_wb_i          ( cpuctrl_wr_in_wb_i       ),
+    .secureseed_wr_in_wb_i       ( secureseed_wr_in_wb_i    ),
 
     // Interrupt Controller Signals
     .irq_req_ctrl_i              ( irq_req_ctrl_i           ),
