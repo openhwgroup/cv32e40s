@@ -35,13 +35,16 @@
 
 module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
-  parameter bit A_EXT                 = 0,
-  parameter int PMP_NUM_REGIONS       = 0,
-  parameter int PMP_GRANULARITY       = 0,
-  parameter NUM_MHPMCOUNTERS          = 1,
-  parameter lfsr_cfg_t LFSR0_CFG      = LFSR_CFG_DEFAULT,
-  parameter lfsr_cfg_t LFSR1_CFG      = LFSR_CFG_DEFAULT,
-  parameter lfsr_cfg_t LFSR2_CFG      = LFSR_CFG_DEFAULT
+  parameter bit        A_EXT            = 0,
+  parameter m_ext_e    M_EXT            = M,
+  parameter bit        X_EXT            = 0,
+  parameter int        X_MISA           = 32'h00000000, 
+  parameter int        PMP_NUM_REGIONS  = 0,
+  parameter int        PMP_GRANULARITY  = 0,
+  parameter            NUM_MHPMCOUNTERS = 1,
+  parameter lfsr_cfg_t LFSR0_CFG        = LFSR_CFG_DEFAULT,
+  parameter lfsr_cfg_t LFSR1_CFG        = LFSR_CFG_DEFAULT,
+  parameter lfsr_cfg_t LFSR2_CFG        = LFSR_CFG_DEFAULT
 )
 (
   // Clock and Reset
@@ -119,14 +122,16 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   input  logic [31:0]     pc_if_i
 );
   
-  localparam logic [31:0] MISA_VALUE =
-  (32'(A_EXT) <<  0)  // A - Atomic Instructions extension
-| (32'(1)     <<  2)  // C - Compressed extension
-| (32'(1)     <<  8)  // I - RV32I/64I/128I base ISA
-| (32'(1)     << 12)  // M - Integer Multiply/Divide extension
-| (32'(1)     << 20)  // U - User mode implemented
-| (32'(0)     << 23)  // X - Non-standard extensions present
-| (32'(MXL)   << 30); // M-XLEN
+  localparam logic [31:0] CORE_MISA =
+  (32'(A_EXT)      <<  0)  // A - Atomic Instructions extension
+| (32'(1)          <<  2)  // C - Compressed extension
+| (32'(1)          <<  8)  // I - RV32I/64I/128I base ISA
+| (32'(M_EXT == M) << 12)  // M - Integer Multiply/Divide extension
+| (32'(1)          << 20)  // U - User mode implemented
+| (32'(0)          << 23)  // X - Non-standard extensions present
+| (32'(MXL)        << 30); // M-XLEN
+
+  localparam logic [31:0] MISA_VALUE = CORE_MISA | (X_EXT ? X_MISA : 32'h0000_0000);
 
   localparam PMP_ADDR_WIDTH = (PMP_GRANULARITY > 0) ? 33 - PMP_GRANULARITY : 32;
   
@@ -353,7 +358,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_TSELECT,
         CSR_TDATA3,
         CSR_MCONTEXT,
-        CSR_MSCONTEXT:
+        CSR_MSCONTEXT,
+        CSR_TCONTROL:
               csr_rdata_int = 'b0; // Always read 0
       CSR_TDATA1:
               csr_rdata_int = tmatch_control_q;

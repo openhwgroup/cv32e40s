@@ -33,7 +33,8 @@
 module cv32e40s_id_stage import cv32e40s_pkg::*;
 #(
   parameter bit          A_EXT                  = 0,
-  parameter b_ext_e      B_EXT                  = NONE,
+  parameter b_ext_e      B_EXT                  = B_NONE,
+  parameter m_ext_e      M_EXT                  = M,
   parameter bit          X_EXT                  = 0,
   parameter              DEBUG_TRIGGER_EN       = 1,
   parameter int unsigned REGFILE_NUM_READ_PORTS = 2
@@ -94,7 +95,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   output logic        lfsr_shift_o,
 
   // eXtension interface
-  if_xif.cpu_issue  xif_issue_if
+  if_xif.cpu_issue    xif_issue_if,
+  output logic        xif_offloading_o
 );
 
   // Source/Destination register instruction index
@@ -377,6 +379,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   #(
     .A_EXT                           ( A_EXT                     ),
     .B_EXT                           ( B_EXT                     ),
+    .M_EXT                           ( M_EXT                     ),
     .DEBUG_TRIGGER_EN                ( DEBUG_TRIGGER_EN          )
   )
   decoder_i
@@ -678,6 +681,10 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       // Instructions with deassert_we set to 1 from the controller bypass logic will not be attempted offloaded.
       assign xif_issue_if.issue_valid     = instr_valid && (illegal_insn || csr_en) &&
                                             !(xif_accepted_q || xif_rejected_q || ctrl_byp_i.deassert_we);
+
+      // Keep xif_offloading_o high after an offloaded instruction was accepted or rejected to get
+      // a new instruction ID from the IF stage
+      assign xif_offloading_o             = xif_issue_if.issue_valid || xif_accepted_q || xif_rejected_q;
 
       assign xif_issue_if.issue_req.instr = instr;
       assign xif_issue_if.issue_req.mode  = PRIV_LVL_M;

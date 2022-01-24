@@ -34,7 +34,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter NUM_MHPMCOUNTERS             =  1,
   parameter              LIB             =  0,
   parameter bit          A_EXT           =  0,
-  parameter b_ext_e      B_EXT           =  NONE,
+  parameter b_ext_e      B_EXT           =  B_NONE,
+  parameter m_ext_e      M_EXT           =  M,
   parameter bit          X_EXT           =  0,
   parameter int          X_NUM_RS        =  2,
   parameter int          X_ID_WIDTH      =  4,
@@ -271,6 +272,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        lfsr_shift_if;
   logic        lfsr_shift_id;
 
+  // eXtension interface signals
+  logic        xif_offloading_id;
+
   // Internal OBI interfaces
   if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
   if_c_obi #(.REQ_TYPE(obi_data_req_t), .RESP_TYPE(obi_data_resp_t))  m_c_obi_data_if();
@@ -439,7 +443,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // eXtension interface
     .xif_compressed_if   ( xif_compressed_if        ),
-    .xif_issue_valid_i   ( xif_issue_if.issue_valid )
+    .xif_offloading_id_i ( xif_offloading_id        )
   );
 
   /////////////////////////////////////////////////
@@ -454,6 +458,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   #(
     .A_EXT                        ( A_EXT                     ),
     .B_EXT                        ( B_EXT                     ),
+    .M_EXT                        ( M_EXT                     ),
     .X_EXT                        ( X_EXT                     ),
     .REGFILE_NUM_READ_PORTS       ( REGFILE_NUM_READ_PORTS    )
   )
@@ -509,7 +514,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lfsr_shift_o                 ( lfsr_shift_id             ),
 
     // eXtension interface
-    .xif_issue_if                 ( xif_issue_if              )
+    .xif_issue_if                 ( xif_issue_if              ),
+    .xif_offloading_o             ( xif_offloading_id         )
   );
 
 
@@ -523,7 +529,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   /////////////////////////////////////////////////////
   cv32e40s_ex_stage
   #(
-    .X_EXT                      ( X_EXT                        )
+    .X_EXT                      ( X_EXT                        ),
+    .M_EXT                      ( M_EXT                        )
   )
   ex_stage_i
   (
@@ -689,13 +696,16 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   cv32e40s_cs_registers
   #(
-    .A_EXT            ( A_EXT                 ),
-    .PMP_NUM_REGIONS  ( PMP_NUM_REGIONS       ),
-    .PMP_GRANULARITY  ( PMP_GRANULARITY       ),
-    .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
-    .LFSR0_CFG        ( LFSR0_CFG             ),
-    .LFSR1_CFG        ( LFSR1_CFG             ),
-    .LFSR2_CFG        ( LFSR2_CFG             )
+    .A_EXT                      ( A_EXT                  ),
+    .M_EXT                      ( M_EXT                  ),
+    .X_EXT                      ( X_EXT                  ),
+    .X_MISA                     ( X_MISA                 ),
+    .PMP_NUM_REGIONS            ( PMP_NUM_REGIONS        ),
+    .PMP_GRANULARITY            ( PMP_GRANULARITY        ),
+    .NUM_MHPMCOUNTERS           ( NUM_MHPMCOUNTERS       ),
+    .LFSR0_CFG                  ( LFSR0_CFG              ),
+    .LFSR1_CFG                  ( LFSR1_CFG              ),
+    .LFSR2_CFG                  ( LFSR2_CFG              )
   )
   cs_registers_i
   (
