@@ -48,7 +48,7 @@ module cv32e40s_wrapper
 #(
   parameter NUM_MHPMCOUNTERS             = 1,
   parameter bit          A_EXT           = 0,
-  parameter b_ext_e      B_EXT           = NONE,
+  parameter b_ext_e      B_EXT           = B_NONE,
   parameter m_ext_e      M_EXT           = M,
   parameter int          PMP_GRANULARITY =  0,
   parameter int          PMP_NUM_REGIONS =  0,

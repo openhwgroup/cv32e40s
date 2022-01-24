@@ -156,7 +156,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
 
     if (M_EXT != M_NONE) begin: m_decoder
       // RV32M extension decoder
-      cv32e40x_m_decoder
+      cv32e40s_m_decoder
         #(
           .M_EXT (M_EXT)
           )
