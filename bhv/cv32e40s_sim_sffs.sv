@@ -35,13 +35,13 @@ module cv32e40s_sffs
   )
   (
    input  logic  clk,
-   input  logic  set_n,
+   input  logic  rst_n,
    input  logic  d_i,
    output logic  q_o
    );
 
-  always_ff @(posedge clk, negedge set_n) begin
-    if (set_n == 1'b0) begin
+  always_ff @(posedge clk, negedge rst_n) begin
+    if (rst_n == 1'b0) begin
       q_o <= 1'b1;
     end else begin
       q_o <= d_i;

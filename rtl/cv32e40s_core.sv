@@ -711,6 +711,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   (
     .clk                        ( clk                    ),
     .rst_n                      ( rst_ni                 ),
+    .scan_cg_en_i               ( scan_cg_en_i           ),
 
     // Hart ID from outside
     .hart_id_i                  ( hart_id_i              ),

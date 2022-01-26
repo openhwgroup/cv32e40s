@@ -38,7 +38,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter bit        A_EXT            = 0,
   parameter m_ext_e    M_EXT            = M,
   parameter bit        X_EXT            = 0,
-  parameter int        X_MISA           = 32'h00000000, 
+  parameter int        X_MISA           = 32'h00000000,
   parameter int        PMP_NUM_REGIONS  = 0,
   parameter int        PMP_GRANULARITY  = 0,
   parameter            NUM_MHPMCOUNTERS = 1,
@@ -50,12 +50,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Clock and Reset
   input  logic            clk,
   input  logic            rst_n,
+  input  logic            scan_cg_en_i,
 
   // Hart ID
   input  logic [31:0]     hart_id_i,
   output logic [23:0]     mtvec_addr_o,
   output logic [ 1:0]     mtvec_mode_o,
-  
+
   // Used for mtvec address
   input  logic [31:0]     mtvec_addr_i,
   input  logic            csr_mtvec_init_i,
@@ -65,7 +66,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   input  logic            sys_en_id_i,
   input  logic            sys_mret_id_i,
 
-  // ID/EX pipeline 
+  // ID/EX pipeline
   input  id_ex_pipe_t     id_ex_pipe_i,
 
   // EX/WB pipeline
@@ -76,7 +77,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // To controller bypass logic
   output logic            csr_counter_read_o,
- 
+
   // Interface to registers (SRAM like)
   output logic [31:0]     csr_rdata_o,
 
@@ -87,7 +88,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output logic [31:0]     mie_o,
   input  logic [31:0]     mip_i,
   output logic            m_irq_enable_o,
-  
+
   output logic [31:0]     mepc_o,
 
   // PMP CSR's
@@ -121,7 +122,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   input  logic [31:0]     pc_if_i
 );
-  
+
   localparam logic [31:0] CORE_MISA =
   (32'(A_EXT)      <<  0)  // A - Atomic Instructions extension
 | (32'(1)          <<  2)  // C - Compressed extension
@@ -756,6 +757,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   ) dscratch0_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (dscratch0_n),
     .wr_en_i    (dscratch0_we),
     .rd_data_o  (dscratch0_q),
@@ -769,6 +771,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   ) dscratch1_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (dscratch1_n),
     .wr_en_i    (dscratch1_we),
     .rd_data_o  (dscratch1_q),
@@ -777,11 +780,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
  cv32e40s_csr #(
     .WIDTH      (32),
+    .MASK       (CSR_DCSR_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (DCSR_RESET_VAL)
   ) dcsr_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (dcsr_n),
     .wr_en_i    (dcsr_we),
     .rd_data_o  (dcsr_q),
@@ -795,6 +800,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   ) dpc_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (dpc_n),
     .wr_en_i    (dpc_we),
     .rd_data_o  (dpc_q),
@@ -803,11 +809,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_csr #(
     .WIDTH      (32),
+    .MASK       (CSR_MEPC_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (32'd0)
   ) mepc_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (mepc_n),
     .wr_en_i    (mepc_we),
     .rd_data_o  (mepc_q),
@@ -821,6 +829,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   ) mscratch_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (mscratch_n),
     .wr_en_i    (mscratch_we),
     .rd_data_o  (mscratch_q),
@@ -829,11 +838,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_csr #(
     .WIDTH      (32),
+    .MASK       (IRQ_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (32'd0)
   ) mie_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (mie_n),
     .wr_en_i    (mie_we),
     .rd_data_o  (mie_q),
@@ -842,11 +853,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_csr #(
     .WIDTH      (32),
+    .MASK       (CSR_MSTATUS_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (MSTATUS_RESET_VAL)
   ) mstatus_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (mstatus_n),
     .wr_en_i    (mstatus_we),
     .rd_data_o  (mstatus_q),
@@ -860,21 +873,23 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   ) mcause_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (mcause_n),
     .wr_en_i    (mcause_we),
     .rd_data_o  (mcause_q),
     .rd_error_o (mcause_rd_error)
   );
 
-  
 
   cv32e40s_csr #(
     .WIDTH      (32),
+    .MASK       (CSR_MTVEC_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (MTVEC_RESET_VAL)
   ) mtvec_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (mtvec_n),
     .wr_en_i    (mtvec_we),
     .rd_data_o  (mtvec_q),
@@ -888,11 +903,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       cv32e40s_csr #(
         .WIDTH      (32),
+        .MASK       (CSR_CPUCTRL_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (32'd0)
         ) cpuctrl_csr_i (
           .clk        (clk),
           .rst_n      (rst_n),
+          .scan_cg_en_i (scan_cg_en_i),
           .wr_data_i  (cpuctrl_n),
           .wr_en_i    (cpuctrl_we),
           .rd_data_o  (cpuctrl_q),
@@ -1075,19 +1092,21 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
               default : pmp_cfg_n[i].mode = PMP_MODE_OFF;
             endcase
           end
-          
+
           cv32e40s_csr #(
                          .WIDTH      ($bits(pmp_cfg_t)),
+                         .MASK       (CSR_PMPCFG_MASK),
                          .SHADOWCOPY (SECURE),
                          .RESETVALUE ('0))
-          pmp_cfg_csr_i 
+          pmp_cfg_csr_i
             (.clk        (clk),
              .rst_n      (rst_n),
+             .scan_cg_en_i (scan_cg_en_i),
              .wr_data_i  (pmp_cfg_n[i]),
              .wr_en_i    (pmp_cfg_we[i]),
              .rd_data_o  (pmp_cfg_q[i]),
              .rd_error_o (pmp_cfg_rd_error[i]));
-          
+
           assign csr_pmp_o.cfg[i] = pmp_cfg_q[i];
 
           if (i == PMP_NUM_REGIONS-1) begin: pmp_addr_qual_upper
@@ -1100,14 +1119,16 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                                     !pmp_cfg_locked[i] &&
                                     (!pmp_cfg_locked[i+1] || pmp_cfg_q[i+1].mode != PMP_MODE_TOR);
           end
-          
+
           cv32e40s_csr #(
                          .WIDTH      (PMP_ADDR_WIDTH),
+                         .MASK       (CSR_PMPADDR_MASK),
                          .SHADOWCOPY (SECURE),
                          .RESETVALUE ('0))
-          pmp_addr_csr_i 
+          pmp_addr_csr_i
             (.clk        (clk),
              .rst_n      (rst_n),
+             .scan_cg_en_i (scan_cg_en_i),
              .wr_data_i  (pmp_addr_n),
              .wr_en_i    (pmp_addr_we[i]),
              .rd_data_o  (pmp_addr_q[i]),
@@ -1168,7 +1189,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       // MSECFG.RLB cannot be set if any PMP region is locked
       // TODO:OE Spec: When mseccfg.RLB is 0 and pmpcfg.L is 1 in any entry (including disabled entries), then mseccfg.RLB is locked and any further modifications to mseccfg.RLB are ignored (WARL). Ibex version would clear RLB upon MSECCFG write if any region is locked, even if RLB=1.
-      
+
       // Ibex version: assign pmp_mseccfg_n.rlb = csr_wdata_int[CSR_MSECCFG_RLB_BIT]  && !(|pmp_cfg_locked);
 
       // MSECCFG.RLB cannot be set if RLB=0 and any PMP region is locked
@@ -1176,14 +1197,16 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                                       csr_wdata_int[CSR_MSECCFG_RLB_BIT] && !(|pmp_cfg_locked);
 
       assign pmp_mseccfg_n.zero0 = '0;
-      
+
       cv32e40s_csr #(
                      .WIDTH      ($bits(pmp_mseccfg_t)),
+                     .MASK       (CSR_MSECCFG_MASK),
                      .SHADOWCOPY (SECURE),
                      .RESETVALUE ('0))
-      pmp_mseccfg_csr_i 
+      pmp_mseccfg_csr_i
         (.clk        (clk),
          .rst_n      (rst_n),
+         .scan_cg_en_i (scan_cg_en_i),
          .wr_data_i  (pmp_mseccfg_n),
          .wr_en_i    (pmp_mseccfg_we),
          .rd_data_o  (pmp_mseccfg_q),
