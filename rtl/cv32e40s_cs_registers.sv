@@ -105,8 +105,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output xsecure_ctrl_t   xsecure_ctrl_o,
 
   // CSR write strobes
-  output logic            cpuctrl_wr_in_wb_o,
-  output logic            secureseed_wr_in_wb_o,
+  output logic            xsecure_csr_wr_in_wb_o,
 
   // debug
   output logic [31:0]     dpc_o,
@@ -248,6 +247,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   csr_num_e    csr_raddr;
   logic [31:0] csr_wdata;
   logic        csr_en_gated;
+  logic        csr_wr_in_wb;
 
   logic illegal_csr_read;  // Current CSR cannot be read
   logic illegal_csr_write; // Current CSR cannot be written
@@ -963,8 +963,19 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     end
   endgenerate
 
-  assign cpuctrl_wr_in_wb_o = cpuctrl_we;
-  assign secureseed_wr_in_wb_o = secureseed0_we || secureseed1_we || secureseed2_we;
+
+  assign csr_wr_in_wb = ex_wb_pipe_i.csr_en &&
+                        ex_wb_pipe_i.instr_valid &&
+                        ((csr_op == CSR_OP_WRITE) ||
+                         (csr_op == CSR_OP_SET)   ||
+                         (csr_op == CSR_OP_CLEAR));
+
+  assign xsecure_csr_wr_in_wb_o = SECURE &&
+                                  csr_wr_in_wb &&
+                                  ((csr_waddr == CSR_CPUCTRL)     ||
+                                   (csr_waddr == CSR_SECURESEED0) ||
+                                   (csr_waddr == CSR_SECURESEED1) ||
+                                   (csr_waddr == CSR_SECURESEED2));
 
   assign csr_rdata_o = csr_rdata_int;
 
