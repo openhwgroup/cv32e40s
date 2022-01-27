@@ -500,10 +500,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   begin
     mscratch_n               = csr_wdata_int;
     mscratch_we              = 1'b0;
-    mepc_n                   = csr_wdata_int & ~32'b1;
+    mepc_n                   = csr_wdata_int & CSR_MEPC_MASK;
     mepc_we                  = 1'b0;
     dpc_n                    = csr_wdata_int & ~32'b1;
-    dpc_we                   = 1'b0; 
+    dpc_we                   = 1'b0;
 
     dcsr_n                   = '{
                                 xdebugver : dcsr_q.xdebugver,
@@ -561,7 +561,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     pmp_addr_we_int = {PMP_MAX_REGIONS{1'b0}};
     pmp_mseccfg_we  = 1'b0;
 
-    cpuctrl_n       = csr_wdata_int;
+    cpuctrl_n       = csr_wdata_int & CSR_CPUCTRL_MASK;
     cpuctrl_we      = 1'b0;
     secureseed0_n   = csr_wdata_int;
     secureseed0_we  = 1'b0;

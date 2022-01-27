@@ -30,7 +30,7 @@ module cv32e40s_csr #(
 
   generate
     if (SHADOWCOPY) begin : gen_hardened
-      logic             cg_clk;
+      logic             clk_gated;
       logic [WIDTH-1:0] rdata_d;
       logic [WIDTH-1:0] shadow_d;
       logic [WIDTH-1:0] shadow_q;
@@ -43,18 +43,18 @@ module cv32e40s_csr #(
         (.clk_i        ( clk          ),
          .en_i         ( wr_en_i      ),
          .scan_cg_en_i ( scan_cg_en_i ),
-         .clk_o        ( cg_clk       ));
+         .clk_o        ( clk_gated    ));
 
       // The shadow registers are logically redundant and are therefore easily optimized away by most synthesis tools.
       // These registers are therefore implemented as instantiated cells so that they can be preserved in the synthesis script.
       for (genvar i = 0; i < WIDTH; i++) begin : gen_csr
         if (MASK[i]) begin : gen_unmasked
           if (RESETVALUE[i] == 1'b1) begin : gen_rv1
-            cv32e40s_sffs sffs_rdatareg  (.clk(cg_clk), .rst_n(rst_n), .d_i(rdata_d[i]),  .q_o(rdata_q[i]));
-            cv32e40s_sffr sffr_shadowreg (.clk(cg_clk), .rst_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
+            cv32e40s_sffs sffs_rdatareg  (.clk(clk_gated), .rst_n(rst_n), .d_i(rdata_d[i]),  .q_o(rdata_q[i]));
+            cv32e40s_sffr sffr_shadowreg (.clk(clk_gated), .rst_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
           end else begin : gen_rv0 // (RESETVALUE[i] == 1'b0)
-            cv32e40s_sffr sffr_rdatareg  (.clk(cg_clk), .rst_n(rst_n), .d_i(rdata_d[i]),  .q_o(rdata_q[i]));
-            cv32e40s_sffs sffs_shadowreg (.clk(cg_clk), .rst_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
+            cv32e40s_sffr sffr_rdatareg  (.clk(clk_gated), .rst_n(rst_n), .d_i(rdata_d[i]),  .q_o(rdata_q[i]));
+            cv32e40s_sffs sffs_shadowreg (.clk(clk_gated), .rst_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
           end
         end else begin : gen_masked
           assign rdata_q[i]  = 1'b0;
