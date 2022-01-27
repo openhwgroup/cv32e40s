@@ -124,6 +124,8 @@ Hardened PC
 -----------
 Checking is performed to ensure that the PC increments as expected for sequential code. See https://ibex-core.readthedocs.io/en/latest/03_reference/security.html.
 
+.. _hardened-csrs:
+
 Hardened CSRs
 -------------
 Critical CSRs (``mstatus``, ``mtvec``, ``pmpcfg``, ``pmpaddr*``, ``mseccfg*``, ``cpuctrl``, ``dcsr``, ``mie`` and ``mepc``) have extra glitch detection enabled.
@@ -131,7 +133,7 @@ For these registers a second copy of the register is added which stores a comple
 
 .. note::
   The shadow copies are logically redundant and are therefore likely to be optimized away during synthesis.
-  Special care in the synthesis script is necessary and the final netlist must be checked to ensure that the shadow copies are still present.
+  Special care in the synthesis script is necessary (see :ref:`register-cells`) and the final netlist must be checked to ensure that the shadow copies are still present.
   A netlist test for this feature is recommended.
 
 Control flow hardening

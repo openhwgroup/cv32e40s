@@ -76,5 +76,7 @@ ${DESIGN_RTL_DIR}/cv32e40s_pmp.sv
 ${DESIGN_RTL_DIR}/cv32e40s_pc_target.sv
 ${DESIGN_RTL_DIR}/cv32e40s_lfsr.sv
 
+${DESIGN_RTL_DIR}/../bhv/cv32e40s_sim_sffr.sv
+${DESIGN_RTL_DIR}/../bhv/cv32e40s_sim_sffs.sv
 ${DESIGN_RTL_DIR}/../bhv/cv32e40s_sim_clock_gate.sv
 ${DESIGN_RTL_DIR}/../bhv/cv32e40s_rvfi.sv
