@@ -162,3 +162,7 @@ The write buffer (when not full) allows |corev| to proceed executing instruction
    On the OBI interface ``data_gnt_i`` = 1 and ``data_rvalid_i`` = 1 still need to be signaled for every transfer (as specified in [OPENHW-OBI]_), also for bufferable transfers.
  
 Bus transfers will occur in program order, no matter if transfers are bufferable and non-bufferable.
+Transactions in the write buffer must be completed before the |corev| is able to:
+ 
+ * Retire a fence instruction
+ * Enter SLEEP mode

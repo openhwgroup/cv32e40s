@@ -39,6 +39,9 @@ Accesses to regions marked as bufferable (``bufferable=1``) will result in the O
 
 Accesses to regions marked as cacheable (``cacheable=1``) will result in the OBI ``mem_type[1]`` bit being set.
 
+.. note::
+   The PMA must be configured such that accesses to the external debug module are non-cacheable, to enable its program buffer to function correctly.
+
 Default attribution
 ~~~~~~~~~~~~~~~~~~~
 If the PMA is deconfigured (``PMA_NUM_REGIONS=0``), the entire memory range will be treated as main memory (``main=1``), non-bufferable (``bufferable=0``) and non-cacheable (``cacheable=0``).
