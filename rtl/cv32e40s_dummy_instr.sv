@@ -87,8 +87,8 @@ module cv32e40s_dummy_instr
                           dummy_insert_o ||      // Reset counter when inserting dummy instruction
                           xsecure_ctrl_i.cntrst; // Reset counter when requested by xsecure_ctrl (due to csr updates)
 
-  assign cnt_next       = cnt_rst        ? '0        : // Reset counter
-                          instr_issued_i ? cnt_q + 1 : // Count issued instructions only
+  assign cnt_next       = cnt_rst        ? '0           : // Reset counter
+                          instr_issued_i ? cnt_q + 1'b1 : // Count issued instructions only
                                            cnt_q;
 
   always_ff @(posedge clk, negedge rst_n) begin

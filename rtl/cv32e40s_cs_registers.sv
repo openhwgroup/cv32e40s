@@ -1004,6 +1004,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   ) priv_lvl_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (priv_lvl_n),
     .wr_en_i    (priv_lvl_we),
     .rd_data_o  (priv_lvl_q_int),
@@ -1296,6 +1297,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   ) tmatch_control_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (tmatch_control_n),
     .wr_en_i    (tmatch_control_we),
     .rd_data_o  (tmatch_control_q),
@@ -1309,6 +1311,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   ) tmatch_value_csr_i (
     .clk      (clk),
     .rst_n     (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (tmatch_value_n),
     .wr_en_i    (tmatch_value_we),
     .rd_data_o  (tmatch_value_q),
@@ -1594,6 +1597,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   ) mcounteren_csr_i (
     .clk        (clk),
     .rst_n      (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (mcounteren_n),
     .wr_en_i    (mcounteren_we),
     .rd_data_o  (mcounteren_q),
