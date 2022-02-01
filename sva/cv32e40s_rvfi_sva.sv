@@ -50,7 +50,7 @@ module cv32e40s_rvfi_sva
    input logic [3:0] [2:0] debug_cause
    );
 
-  logic [11:0] rvfi_trap_q; // RVFI trap value of the previous valid rvfi instruction
+  logic [13:0] rvfi_trap_q; // RVFI trap value of the previous valid rvfi instruction
 
   always_ff @(posedge clk_i, negedge rst_ni) begin
     if (rst_ni == 1'b0) begin
@@ -101,10 +101,10 @@ module cv32e40s_rvfi_sva
     end
     else begin
       if (dbg_ack && !rvfi_dbg_ack) begin
-        dbg_ack_cnt <= dbg_ack_cnt+1;
+        dbg_ack_cnt <= dbg_ack_cnt + 1'b1;
       end
       else if (rvfi_dbg_ack && !dbg_ack) begin
-        dbg_ack_cnt <= dbg_ack_cnt-1;
+        dbg_ack_cnt <= dbg_ack_cnt - 1'b1;
       end
     end
   end
@@ -177,6 +177,10 @@ module cv32e40s_rvfi_sva
                      (rvfi_csr_mcause_rdata[5:0] == rvfi_trap_q[8:3]) &&
                      rvfi_intr)
      else `uvm_error("rvfi", "dcsr.cause, mcause and rvfi_intr not as expected following an exception during single step")
+
+
+  // Todo: Add assertion for rvfi_trap[13:12]
+
 
   // When dcsr.nmip is set, the next retired instruction should be the NMI handler (except in debug mode).
   // rvfi_intr should also be set.
