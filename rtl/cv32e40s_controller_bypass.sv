@@ -121,9 +121,12 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
   // Detect when a CSR insn  in in EX or WB
   // mret and dret implicitly writes to CSR. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.
+  // Only the last part of multi cycle mrets update mstatus and privilege level. Factoring in last_op avoids
+  // stalling the second part of an mret when the first part is already in EX or WB.
+
   assign csr_write_in_ex_wb = (
-                              (id_ex_pipe_i.instr_valid && (id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn))) ||
-                              (ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn)))
+                              (id_ex_pipe_i.instr_valid && (id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && id_ex_pipe_i.last_op))) ||
+                              (ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.last_op)))
                               );
 
   // Stall ID when WFI is active in EX.

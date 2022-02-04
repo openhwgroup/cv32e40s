@@ -181,6 +181,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // MPU
   //////////////////////////////////////////////////////////////////////////////
 
+  // TODO: The prot bits are currently not checked for correctness anywhere
   assign core_trans.addr = prefetch_trans_addr;
   assign core_trans.prot[0] = 1'b0;                     // Transfers from IF stage are instruction transfers
   assign core_trans.prot[2:1] = PRIV_LVL_M;             // Machine mode. TODO: connect to priv_lvl

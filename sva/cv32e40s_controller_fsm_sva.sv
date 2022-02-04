@@ -37,6 +37,7 @@ module cv32e40s_controller_fsm_sva
   input logic           jump_taken_id,
   input logic           branch_in_ex,
   input logic           branch_taken_ex,
+  input logic           branch_taken_q,
   input logic           branch_decision_ex_i,
   input ctrl_state_e    ctrl_fsm_cs,
   input ctrl_state_e    ctrl_fsm_ns,
@@ -259,8 +260,8 @@ module cv32e40s_controller_fsm_sva
   // that could lead to undetected errors
   logic csrw_ex_wb;
   assign csrw_ex_wb = (
-                        ((id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn)) && id_ex_pipe_i.instr_valid) ||
-                        ((ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn)) && ex_wb_pipe_i.instr_valid)
+                        ((id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && id_ex_pipe_i.last_op)) && id_ex_pipe_i.instr_valid) ||
+                        ((ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.last_op)) && ex_wb_pipe_i.instr_valid)
                       );
   // Check that WFI is stalled in ID if CSR writes (explicit and implicit)
   // are present in EX or WB
@@ -277,6 +278,7 @@ module cv32e40s_controller_fsm_sva
                       ((sys_en_id_i && sys_mret_insn_id_i) && if_id_pipe_i.instr_valid && csrw_ex_wb)
                       |-> (!id_valid_i && ctrl_fsm_o.halt_id))
       else `uvm_error("controller", "mret not halted in ID when CSR write is present in EX or WB")
+
 
   // mret_jump_id is used to update the priviledge level for the IF stage to mstatus.mpp, this check asserts
   // that there are no updates to mstatus.mpp (or any other CSR) in EX or WB
@@ -479,17 +481,18 @@ endgenerate
                      (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en) |-> !debug_allowed)
       else `uvm_error("controller", "debug_allowed high while LSU is in WB")
 
-  // Assert that branches are always taken in the first cycle of EX, unless EX is killed or halted
+  // Assert that branches (that are not already taken) are always taken in the first cycle of EX, unless EX is killed or halted
   // What we really want to check with this assertion is that a branch taken always results
   // in a pc_set to PC_BRANCH.
   // If the branch is not taken in the first cycle of EX, caution must be taken to avoid e.g. a jump in
   // ID taking presedence over the branch in EX.
+
   a_branch_in_ex_taken_first_cycle:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     ($rose(branch_in_ex) && !(ctrl_fsm_o.halt_ex || ctrl_fsm_o.kill_ex) |->
+                     ($rose(branch_in_ex && branch_decision_ex_i) && !branch_taken_q && !(ctrl_fsm_o.halt_ex || ctrl_fsm_o.kill_ex) |->
                       ctrl_fsm_o.pc_set && (ctrl_fsm_o.pc_mux == PC_BRANCH) &&
                       ctrl_fsm_o.kill_if &&
-                      ctrl_fsm_o.kill_id));
+                      (SECURE ? 1'b1 : ctrl_fsm_o.kill_id))); // For SECURE=1, branch instructions are bot in ID and EX when branch is taken, do not kill ID.
 
 
   // Assert that we don't count dummy instruction retirements

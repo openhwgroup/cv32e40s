@@ -1163,6 +1163,9 @@ typedef struct packed {
   logic         xif_en;           // Instruction has been offloaded via eXtension interface
   xif_meta_t    xif_meta;         // xif meta struct
 
+  // Indicate that this is the last operation of a multi operation instruction
+  logic         last_op;
+
 } id_ex_pipe_t;
 
 // EX/WB pipeline
@@ -1206,6 +1209,9 @@ typedef struct packed {
   // eXtension interface
   logic         xif_en;           // Instruction has been offloaded via eXtension interface
   xif_meta_t    xif_meta;         // xif meta struct
+
+  // Indicate that this is the last operation of a multi operation instruction
+  logic         last_op;
 } ex_wb_pipe_t;
 
 // Performance counter events
