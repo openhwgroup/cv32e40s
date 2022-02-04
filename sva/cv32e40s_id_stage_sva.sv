@@ -187,7 +187,7 @@ module cv32e40s_id_stage_sva
   a_mret_self_stall :
     assert property (@(posedge clk) disable iff (!rst_n)
                       (sys_en && sys_mret_insn && last) &&
-                      ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op) ||
+                      ((id_ex_pipe_o.sys_en && id_ex_pipe_o.sys_mret_insn && !id_ex_pipe_o.last_op) ||
                        (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn && !ex_wb_pipe.last_op))
                        |-> !ctrl_byp_i.csr_stall)
       else `uvm_error("id_stage", "mret stalls on itself")
