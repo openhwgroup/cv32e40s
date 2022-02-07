@@ -929,7 +929,7 @@ typedef enum logic [2:0] {MPU_IDLE, MPU_RE_ERR_RESP, MPU_RE_ERR_WAIT, MPU_WR_ERR
 
 // PMP constants
 parameter int unsigned PMP_MAX_REGIONS      = 16;
-parameter int unsigned PMP_CFG_W            = 8;
+parameter int unsigned PMPNCFG_W            = 8;
 
 parameter int unsigned CSR_MSECCFG_MML_BIT  = 0;
 parameter int unsigned CSR_MSECCFG_MMWP_BIT = 1;
