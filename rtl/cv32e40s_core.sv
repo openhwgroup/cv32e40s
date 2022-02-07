@@ -31,26 +31,29 @@
 
 module cv32e40s_core import cv32e40s_pkg::*;
 #(
-  parameter              LIB                          = 0,
-  parameter bit          A_EXT                        = 0,
-  parameter b_ext_e      B_EXT                        = B_NONE,
-  parameter m_ext_e      M_EXT                        = M,
-  parameter bit          X_EXT                        = 0,
-  parameter int          X_NUM_RS                     = 2,
-  parameter int          X_ID_WIDTH                   = 4,
-  parameter int          X_MEM_WIDTH                  = 32,
-  parameter int          X_RFR_WIDTH                  = 32,
-  parameter int          X_RFW_WIDTH                  = 32,
-  parameter logic [31:0] X_MISA                       = 32'h00000000,
-  parameter logic [1:0]  X_ECS_XS                     = 2'b00,
-  parameter int          NUM_MHPMCOUNTERS             = 1,
-  parameter int          PMA_NUM_REGIONS              = 0,
-  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
-  parameter int          PMP_GRANULARITY              =  0,
-  parameter int          PMP_NUM_REGIONS              =  0,
-  parameter lfsr_cfg_t   LFSR0_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter lfsr_cfg_t   LFSR1_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter lfsr_cfg_t   LFSR2_CFG                    = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
+  parameter              LIB                                 = 0,
+  parameter bit          A_EXT                               = 0,
+  parameter b_ext_e      B_EXT                               = B_NONE,
+  parameter m_ext_e      M_EXT                               = M,
+  parameter bit          X_EXT                               = 0,
+  parameter int          X_NUM_RS                            = 2,
+  parameter int          X_ID_WIDTH                          = 4,
+  parameter int          X_MEM_WIDTH                         = 32,
+  parameter int          X_RFR_WIDTH                         = 32,
+  parameter int          X_RFW_WIDTH                         = 32,
+  parameter logic [31:0] X_MISA                              = 32'h00000000,
+  parameter logic [1:0]  X_ECS_XS                            = 2'b00,
+  parameter int          NUM_MHPMCOUNTERS                    = 1,
+  parameter int          PMA_NUM_REGIONS                     = 0,
+  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0]        = '{default:PMA_R_DEFAULT},
+  parameter int          PMP_GRANULARITY                     =  0,
+  parameter int          PMP_NUM_REGIONS                     =  0,
+  parameter pmpncfg_t    PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0] = '{default:PMPNCFG_DEFAULT},
+  parameter [32-1:0]     PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
+  parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
+  parameter lfsr_cfg_t   LFSR0_CFG                           = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR1_CFG                           = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR2_CFG                           = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
 )
 (
   // Clock and Reset
@@ -705,6 +708,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .NUM_MHPMCOUNTERS           ( NUM_MHPMCOUNTERS       ),
     .PMP_NUM_REGIONS            ( PMP_NUM_REGIONS        ),
     .PMP_GRANULARITY            ( PMP_GRANULARITY        ),
+    .PMP_PMPNCFG_RV             ( PMP_PMPNCFG_RV         ),
+    .PMP_PMPADDR_RV             ( PMP_PMPADDR_RV         ),
+    .PMP_MSECCFG_RV             ( PMP_MSECCFG_RV         ),
     .LFSR0_CFG                  ( LFSR0_CFG              ),
     .LFSR1_CFG                  ( LFSR1_CFG              ),
     .LFSR2_CFG                  ( LFSR2_CFG              )

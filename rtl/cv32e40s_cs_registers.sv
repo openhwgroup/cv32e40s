@@ -35,17 +35,20 @@
 
 module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
-  parameter bit          A_EXT            = 0,
-  parameter m_ext_e      M_EXT            = M,
-  parameter bit          X_EXT            = 0,
-  parameter logic [31:0] X_MISA           =  32'h00000000,
-  parameter logic [1:0]  X_ECS_XS         =  2'b00, // todo: implement related mstatus bitfields (but only if X_EXT = 1)
-  parameter int          NUM_MHPMCOUNTERS = 1,
-  parameter int          PMP_NUM_REGIONS  = 0,
-  parameter int          PMP_GRANULARITY  = 0,
-  parameter lfsr_cfg_t   LFSR0_CFG        = LFSR_CFG_DEFAULT,
-  parameter lfsr_cfg_t   LFSR1_CFG        = LFSR_CFG_DEFAULT,
-  parameter lfsr_cfg_t   LFSR2_CFG        = LFSR_CFG_DEFAULT
+  parameter bit          A_EXT                               = 0,
+  parameter m_ext_e      M_EXT                               = M,
+  parameter bit          X_EXT                               = 0,
+  parameter logic [31:0] X_MISA                              =  32'h00000000,
+  parameter logic [1:0]  X_ECS_XS                            =  2'b00, // todo: implement related mstatus bitfields (but only if X_EXT = 1)
+  parameter int          NUM_MHPMCOUNTERS                    = 1,
+  parameter int          PMP_NUM_REGIONS                     = 0,
+  parameter int          PMP_GRANULARITY                     = 0,
+  parameter pmpncfg_t    PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0] = '{default:PMPNCFG_DEFAULT},
+  parameter [32-1:0]     PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
+  parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
+  parameter lfsr_cfg_t   LFSR0_CFG                           = LFSR_CFG_DEFAULT,
+  parameter lfsr_cfg_t   LFSR1_CFG                           = LFSR_CFG_DEFAULT,
+  parameter lfsr_cfg_t   LFSR2_CFG                           = LFSR_CFG_DEFAULT
 )
 (
   // Clock and Reset
@@ -194,8 +197,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic mie_we;
   logic mie_rd_error;
 
-  pmp_cfg_t                   pmp_cfg_n[PMP_MAX_REGIONS];
-  pmp_cfg_t                   pmp_cfg_q[PMP_MAX_REGIONS];
+  pmpncfg_t                   pmp_cfg_n[PMP_MAX_REGIONS];
+  pmpncfg_t                   pmp_cfg_q[PMP_MAX_REGIONS];
   logic [PMP_MAX_REGIONS-1:0] pmp_cfg_we_int;
   logic [PMP_MAX_REGIONS-1:0] pmp_cfg_we;
   logic [PMP_NUM_REGIONS-1:0] pmp_cfg_locked;
@@ -208,8 +211,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [31:0]                pmp_addr_rdata[PMP_MAX_REGIONS];
   logic [PMP_NUM_REGIONS-1:0] pmp_addr_rd_error;
   
-  pmp_mseccfg_t               pmp_mseccfg_n;
-  pmp_mseccfg_t               pmp_mseccfg_q;
+  mseccfg_t                   pmp_mseccfg_n;
+  mseccfg_t                   pmp_mseccfg_q;
   logic                       pmp_mseccfg_we;
   logic                       pmp_mseccfg_rd_error;
 
@@ -1107,10 +1110,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           end
 
           cv32e40s_csr #(
-                         .WIDTH      ($bits(pmp_cfg_t)),
-                         .MASK       (CSR_PMPCFG_MASK),
+                         .WIDTH      ($bits(pmpncfg_t)),
+                         .MASK       (CSR_PMPNCFG_MASK),
                          .SHADOWCOPY (SECURE),
-                         .RESETVALUE ('0))
+                         .RESETVALUE (PMP_PMPNCFG_RV[i]))
           pmp_cfg_csr_i
             (.clk        (clk),
              .rst_n      (rst_n),
@@ -1137,7 +1140,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                          .WIDTH      (PMP_ADDR_WIDTH),
                          .MASK       (CSR_PMPADDR_MASK),
                          .SHADOWCOPY (SECURE),
-                         .RESETVALUE ('0))
+                         .RESETVALUE (PMP_PMPADDR_RV[i]))
           pmp_addr_csr_i
             (.clk        (clk),
              .rst_n      (rst_n),
@@ -1186,11 +1189,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign pmp_addr_rdata[i] = '0;
 
           assign csr_pmp_o.addr[i] = '0;
-          assign csr_pmp_o.cfg[i]  = pmp_cfg_t'('0);
+          assign csr_pmp_o.cfg[i]  = pmpncfg_t'('0);
 
           assign pmp_addr_q[i] = '0;
-          assign pmp_cfg_q[i]  = pmp_cfg_t'('0);
-          assign pmp_cfg_n[i]  = pmp_cfg_t'('0);
+          assign pmp_cfg_q[i]  = pmpncfg_t'('0);
+          assign pmp_cfg_n[i]  = pmpncfg_t'('0);
           assign pmp_cfg_we[i] = 1'b0;
         end
       end
@@ -1212,10 +1215,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign pmp_mseccfg_n.zero0 = '0;
 
       cv32e40s_csr #(
-                     .WIDTH      ($bits(pmp_mseccfg_t)),
+                     .WIDTH      ($bits(mseccfg_t)),
                      .MASK       (CSR_MSECCFG_MASK),
                      .SHADOWCOPY (SECURE),
-                     .RESETVALUE ('0))
+                     .RESETVALUE (PMP_MSECCFG_RV))
       pmp_mseccfg_csr_i
         (.clk        (clk),
          .rst_n      (rst_n),
@@ -1237,11 +1240,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       // Generate tieoffs when PMP is not configured
       for (genvar i = 0; i < PMP_MAX_REGIONS; i++) begin : g_tie_pmp_rdata
         assign pmp_addr_rdata[i] = '0;
-        assign csr_pmp_o.cfg[i]  = pmp_cfg_t'('0);
+        assign csr_pmp_o.cfg[i]  = pmpncfg_t'('0);
         assign csr_pmp_o.addr[i] = '0;
       end
 
-      assign csr_pmp_o.mseccfg = pmp_mseccfg_t'('0);  
+      assign csr_pmp_o.mseccfg = mseccfg_t'('0);
       assign pmp_rd_error = 1'b0;
       
     end
