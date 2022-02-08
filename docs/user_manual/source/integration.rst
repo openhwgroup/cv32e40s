@@ -26,15 +26,18 @@ Instantiation Template
 .. code-block:: verilog
 
   cv32e40s_core #(
-      .LIB                      (         0 ),
-      .B_EXT                    (      NONE ),
-      .M_EXT                    (         M ),
-      .DBG_NUM_TRIGGERS         (         1 ),
-      .PMP_GRANULARITY          (         0 ),
-      .PMP_NUM_REGIONS          (         0 ),
-      .PMA_NUM_REGIONS          (         0 ),
-      .PMA_CFG                  ( PMA_CFG[] ),
-      .SMCLIC                   (         0 )
+      .LIB                      (                0 ),
+      .B_EXT                    (             NONE ),
+      .M_EXT                    (                M ),
+      .DBG_NUM_TRIGGERS         (                1 ),
+      .PMP_GRANULARITY          (                0 ),
+      .PMP_NUM_REGIONS          (                0 ),
+      .PMP_PMPNCFG_RV           ( PMP_PMPNCFG_RV[] ),
+      .PMP_PMPADDR_RV           ( PMP_PMPADDR_RV[] ),
+      .PMP_MSECCFG_RV           (   PMP_MSECCFG_RV ),
+      .PMA_NUM_REGIONS          (                0 ),
+      .PMA_CFG                  (        PMA_CFG[] ),
+      .SMCLIC                   (                0 )
   ) u_core (
       // Clock and reset
       .clk_i                    (),
@@ -110,36 +113,42 @@ Parameters
 .. note::
    The non-default (i.e. non-zero) settings of ``FPU`` have not been verified yet.
 
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| Name                         | Type/Range     | Default       | Description                                                        |
-+==============================+================+===============+====================================================================+
-| ``LIB``                      | int            | 0             | Standard cell library (semantics defined by integrator)            |
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``B_EXT``                    | b_ext_e        | NONE          | Enable Bit Manipulation support. ``B_EXT`` = B_NONE: No Bit        |
-|                              |                |               | Manipulation instructions are supported. ``B_EXT`` = ZBA_ZBB_ZBS:  |
-|                              |                |               | Zba, Zbb and Zbs are supported. ``B_EXT`` = ZBA_ZBB_ZBC_ZBS:       |
-|                              |                |               | Zba, Zbb, Zbc and Zbs are supported.                               |
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``M_EXT``                    | m_ext_e        | M             | Enable Multiply / Divide support. ``M_EXT`` = M_NONE: No multiply /|
-|                              |                |               | divide instructions are supported. ``M_EXT`` = ZMMUL: The          |
-|                              |                |               | multiplication subset of the ``M`` extension is supported.         |
-|                              |                |               | ``M_EXT`` = M: The ``M`` extension is supported.                   |
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``DBG_NUM_TRIGGERS``         | int (0..4 )    | 1             | Number of debug triggers, see :ref:`debug-support`                 |
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``PMA_NUM_REGIONS``          | int (0..16)    | 0             | Number of PMA regions                                              |
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``PMA_CFG[]``                | pma_cfg_t      | PMA_R_DEFAULT | PMA configuration.                                                 |
-|                              |                |               | Array of pma_cfg_t with PMA_NUM_REGIONS entries, see :ref:`pma`    |
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``PMP_GRANULARITY``          | int (0..31)    | 0             | Minimum granularity of PMP address matching                        |
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``PMP_NUM_REGIONS``          | int (0..64)    | 0             | Number of PMP regions                                              |
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``PMP_CFG``                  | pmp_cfg_t      | PMP_R_DEFAULT | PMP default configuration. See :ref:`pmp`                          |
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``SMCLIC``                   | int (0..1 )    | 0             | Is Smclic supported?                                               |
-+------------------------------+----------------+---------------+--------------------------------------------------------------------+
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| Name                         | Type/Range     | Default         | Description                                                        |
++==============================+================+=================+====================================================================+
+| ``LIB``                      | int            | 0               | Standard cell library (semantics defined by integrator)            |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``B_EXT``                    | b_ext_e        | NONE            | Enable Bit Manipulation support. ``B_EXT`` = B_NONE: No Bit        |
+|                              |                |                 | Manipulation instructions are supported. ``B_EXT`` = ZBA_ZBB_ZBS:  |
+|                              |                |                 | Zba, Zbb and Zbs are supported. ``B_EXT`` = ZBA_ZBB_ZBC_ZBS:       |
+|                              |                |                 | Zba, Zbb, Zbc and Zbs are supported.                               |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``M_EXT``                    | m_ext_e        | M               | Enable Multiply / Divide support. ``M_EXT`` = M_NONE: No multiply /|
+|                              |                |                 | divide instructions are supported. ``M_EXT`` = ZMMUL: The          |
+|                              |                |                 | multiplication subset of the ``M`` extension is supported.         |
+|                              |                |                 | ``M_EXT`` = M: The ``M`` extension is supported.                   |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``DBG_NUM_TRIGGERS``         | int (0..4 )    | 1               | Number of debug triggers, see :ref:`debug-support`                 |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``PMA_NUM_REGIONS``          | int (0..16)    | 0               | Number of PMA regions                                              |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``PMA_CFG[]``                | pma_cfg_t      | PMA_R_DEFAULT   | PMA configuration.                                                 |
+|                              |                |                 | Array of pma_cfg_t with PMA_NUM_REGIONS entries, see :ref:`pma`    |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``PMP_GRANULARITY``          | int (0..31)    | 0               | Minimum granularity of PMP address matching                        |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``PMP_NUM_REGIONS``          | int (0..64)    | 0               | Number of PMP regions                                              |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``PMP_PMPNCFG_RV[]``         | pmpncfg_t      | PMPNCFG_DEFAULT | Reset values for ``pmpncfg`` bitfileds in ``pmpcfg`` CSRs.         |
+|                              |                |                 | Array of pmpncfg_t with PMP_NUM_REGIONS entries, see :ref:`pmp`    |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``PMP_PMPADDR_RV[]``         | logic[31:0]    | 0               | Reset values for ``pmpaddr`` CSRs.                                 |
+|                              |                |                 | Array with PMP_NUM_REGIONS entries, see :ref:`pmp`                 |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``PMP_MSECCFG_RV``           | mseccfg_t      | 0               | Reset value for ``mseccfg`` CSR, see :ref:`pmp`                    |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``SMCLIC``                   | int (0..1 )    | 0               | Is Smclic supported?                                               |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
 
 Interfaces
 ----------

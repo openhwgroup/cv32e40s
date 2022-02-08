@@ -62,6 +62,9 @@ module cv32e40s_wrapper
   parameter int          PMP_GRANULARITY              = 0,
   parameter int          PMP_NUM_REGIONS              = 0,
   parameter bit          SMCLIC                       = 0,
+  parameter pmpncfg_t    PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0] = '{default:PMPNCFG_DEFAULT},
+  parameter [31:0]       PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
+  parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
   parameter int          PMA_NUM_REGIONS              = 0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
@@ -162,9 +165,9 @@ module cv32e40s_wrapper
       bind cv32e40s_dummy_instr :
         core_i.if_stage_i.gen_dummy_instr.dummy_instr_i cv32e40s_dummy_instr_sva
       dummy_instr_sva
-    (
-      .*
-    );
+        (
+         .*
+         );
     end
   endgenerate
 
@@ -347,7 +350,7 @@ module cv32e40s_wrapper
                .*);
 
 `endif //  `ifndef COREV_ASSERT_OFF
-
+  
     cv32e40s_core_log
      #(
           .NUM_MHPMCOUNTERS      ( NUM_MHPMCOUNTERS      ))
@@ -514,9 +517,9 @@ module cv32e40s_wrapper
          .csr_mcounteren_q_i       ( core_i.cs_registers_i.mcounteren_q                                   ),
          .csr_mcounteren_we_i      ( core_i.cs_registers_i.mcounteren_we                                  ),
 
-         .csr_pmpcfg_n_i           ( core_i.cs_registers_i.pmp_cfg_n                                      ),
-         .csr_pmpcfg_q_i           ( core_i.cs_registers_i.pmp_cfg_q                                      ),
-         .csr_pmpcfg_we_i          ( core_i.cs_registers_i.pmp_cfg_we                                     ),
+         .csr_pmpncfg_n_i          ( core_i.cs_registers_i.pmpncfg_n                                      ),
+         .csr_pmpncfg_q_i          ( core_i.cs_registers_i.pmpncfg_q                                      ),
+         .csr_pmpncfg_we_i         ( core_i.cs_registers_i.pmpncfg_we                                     ),
          .csr_pmpaddr_n_i          ( core_i.cs_registers_i.pmp_addr_n                                     ),
          // Using rdata for pmp address to include read logic
          .csr_pmpaddr_q_i          ( core_i.cs_registers_i.pmp_addr_rdata                                 ),
@@ -545,6 +548,9 @@ module cv32e40s_wrapper
           .M_EXT                 ( M_EXT                 ),
           .PMP_GRANULARITY       ( PMP_GRANULARITY       ),
           .PMP_NUM_REGIONS       ( PMP_NUM_REGIONS       ),
+          .PMP_PMPNCFG_RV        ( PMP_PMPNCFG_RV        ),
+          .PMP_PMPADDR_RV        ( PMP_PMPADDR_RV        ),
+          .PMP_MSECCFG_RV        ( PMP_MSECCFG_RV        ),
           .X_EXT                 ( X_EXT                 ),
           .X_NUM_RS              ( X_NUM_RS              ),
           .X_ID_WIDTH            ( X_ID_WIDTH            ),

@@ -49,6 +49,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
   parameter int          PMP_GRANULARITY              =  0,
   parameter int          PMP_NUM_REGIONS              =  0,
+  parameter pmpncfg_t    PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0] = '{default:PMPNCFG_DEFAULT},
+  parameter [31:0]       PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
+  parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR0_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
   parameter lfsr_cfg_t   LFSR1_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
   parameter lfsr_cfg_t   LFSR2_CFG                    = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
@@ -556,7 +559,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Xsecure control
     .xsecure_ctrl_i             ( xsecure_ctrl                 ),
 
-    // CSR interface
+   // CSR interface
     .csr_rdata_i                ( csr_rdata                    ),
     .csr_illegal_i              ( csr_illegal                  ),
 
@@ -707,6 +710,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .NUM_MHPMCOUNTERS           ( NUM_MHPMCOUNTERS       ),
     .PMP_NUM_REGIONS            ( PMP_NUM_REGIONS        ),
     .PMP_GRANULARITY            ( PMP_GRANULARITY        ),
+    .PMP_PMPNCFG_RV             ( PMP_PMPNCFG_RV         ),
+    .PMP_PMPADDR_RV             ( PMP_PMPADDR_RV         ),
+    .PMP_MSECCFG_RV             ( PMP_MSECCFG_RV         ),
     .LFSR0_CFG                  ( LFSR0_CFG              ),
     .LFSR1_CFG                  ( LFSR1_CFG              ),
     .LFSR2_CFG                  ( LFSR2_CFG              )
@@ -755,7 +761,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .m_irq_enable_o             ( m_irq_enable           ),
     .mepc_o                     ( mepc                   ),
     .mstatus_o                  ( mstatus                ),
-
+ 
     // PMP CSR's    
     .csr_pmp_o                  ( csr_pmp                ),
 

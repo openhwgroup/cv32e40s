@@ -466,7 +466,7 @@ parameter CSR_MEPC_MASK     = ~32'b1;
 parameter CSR_MSTATUS_MASK  = 32'b0000_0000_0010_0010_0001_1000_1000_1000;
 parameter CSR_MTVEC_MASK    = 32'hFFFFFF01;
 parameter CSR_CPUCTRL_MASK  = 32'h000F000F;
-parameter CSR_PMPCFG_MASK   = ~32'h0;
+parameter CSR_PMPNCFG_MASK  = ~8'h0;
 parameter CSR_PMPADDR_MASK  = ~32'h0;
 parameter CSR_MSECCFG_MASK  = 32'h00000007;
 
@@ -966,7 +966,7 @@ typedef enum logic [2:0] {MPU_IDLE, MPU_RE_ERR_RESP, MPU_RE_ERR_WAIT, MPU_WR_ERR
 
 // PMP constants
 parameter int unsigned PMP_MAX_REGIONS      = 16;
-parameter int unsigned PMP_CFG_W            = 8;
+parameter int unsigned PMPNCFG_W            = 8;
 
 parameter int unsigned CSR_MSECCFG_MML_BIT  = 0;
 parameter int unsigned CSR_MSECCFG_MMWP_BIT = 1;
@@ -985,30 +985,45 @@ typedef enum logic [1:0] {
   PMP_MODE_TOR   = 2'b01,
   PMP_MODE_NA4   = 2'b10,
   PMP_MODE_NAPOT = 2'b11
-} pmp_cfg_mode_e;
+} pmpncfg_mode_e;
 
 // PMP region config
 typedef struct packed {
   logic          lock;
   logic [6:5]    zero0;
-  pmp_cfg_mode_e mode;
+  pmpncfg_mode_e mode;
   logic          exec;
   logic          write;
   logic          read;
-} pmp_cfg_t;
+} pmpncfg_t;
 
-// Machine Security Configuration (ePMP)
+// Default PMP region configuration
+parameter pmpncfg_t PMPNCFG_DEFAULT = '{lock  : 1'b0,
+                                        zero0 : 2'b00,
+                                        mode  : PMP_MODE_OFF,
+                                        exec  : 1'b0,
+                                        write : 1'b0,
+                                        read  : 1'b0};
+
+// Machine Security Configuration (SMEPMP)
 typedef struct packed {
   logic [31:3] zero0;
   logic        rlb;  // Rule Locking Bypass
-  logic mmwp; // Machine Mode Whitelist Policy
-  logic mml;  // Machine Mode Lockdown
-} pmp_mseccfg_t;
+  logic        mmwp; // Machine Mode Whitelist Policy
+  logic        mml;  // Machine Mode Lockdown
+} mseccfg_t;
 
+// Default value for MSECCFG
+parameter mseccfg_t MSECCFG_DEFAULT = '{zero0 : 29'h0,
+                                        rlb   : 1'b0,
+                                        mmwp  : 1'b0,
+                                        mml   : 1'b0};
+
+// Struct containing all PMP related CSR's
 typedef struct packed {
-  pmp_cfg_t [PMP_MAX_REGIONS-1:0]   cfg;
+  pmpncfg_t [PMP_MAX_REGIONS-1:0]   cfg;
   logic [PMP_MAX_REGIONS-1:0][33:0] addr;
-  pmp_mseccfg_t                     mseccfg;
+  mseccfg_t                         mseccfg;
 } pmp_csr_t;
 
 
