@@ -44,7 +44,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter int          PMP_NUM_REGIONS                     = 0,
   parameter int          PMP_GRANULARITY                     = 0,
   parameter pmpncfg_t    PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0] = '{default:PMPNCFG_DEFAULT},
-  parameter [32-1:0]     PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
+  parameter [31:0]       PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
   parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR0_CFG                           = LFSR_CFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR1_CFG                           = LFSR_CFG_DEFAULT,

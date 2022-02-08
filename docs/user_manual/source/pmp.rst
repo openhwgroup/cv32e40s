@@ -14,6 +14,6 @@ The ``PMP_NUM_REGIONS`` parameter is used to configure the number of PMP regions
 The reset value of the PMP CSR registers can be set through the top level parameters ``PMP_PMPNCFG_RV[]``, ``PMP_PMPADDR_RV[]`` and ``PMP_MSECCFG_RV``.
 ``PMP_PMPNCFG_RV[]`` is an array of ``PMP_NUM_REGIONS`` entries of the type ``pmpncfg_t``. Entry N determines the reset value of the ``pmpNcfg`` bitfield in the ``pmpcfg`` CSRs.
 ``PMP_PMPADDR_RV[]`` is an array of ``PMP_NUM_REGIONS`` entries of ``logic [31:0]``. Entry N determines the reset value of the ``pmpaddrN`` CSR.
-``PMP_MSECCFG_RV`` is of the type ``mseccfg_t`` and determnies the reset value of the ``mseccfg`` CSR.
+``PMP_MSECCFG_RV`` is of the type ``mseccfg_t`` and determines the reset value of the ``mseccfg`` CSR.
 
 The PMP is compliant to [RISC-V-PRIV]_ and [RISC-V-SMEPMP]_.
