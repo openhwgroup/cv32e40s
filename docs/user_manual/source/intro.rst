@@ -99,6 +99,14 @@ In addition, the following standard instruction set extensions are available fro
      - v0.70.1 (not ratified yet; version will change)
      - always enabled
 
+   * - **Zca**: Subset of the standard **Zc** Code-Size Reduction extension consisting of a subset of **C** with the FP load/stores removed.
+     - v0.70.1 (not ratified yet; version will change)
+     - always enabled
+
+   * - **Zcb**: Subset of the standard **Zc** Code-Size Reduction extension consisting of simple operations.
+     - v0.70.1 (not ratified yet; version will change)
+     - always enabled
+
    * - **Zcmb**: Subset of the standard **Zc** Code-Size Reduction extension consisting of load/store byte/half which overlap with **c.fld**, **c.fldsp**, **c.fsd**.
      - v0.70.1 (not ratified yet; version will change)
      - always enabled
