@@ -35,16 +35,17 @@
 
 module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
-  parameter bit        A_EXT            = 0,
-  parameter m_ext_e    M_EXT            = M,
-  parameter bit        X_EXT            = 0,
-  parameter int        X_MISA           = 32'h00000000,
-  parameter int        PMP_NUM_REGIONS  = 0,
-  parameter int        PMP_GRANULARITY  = 0,
-  parameter            NUM_MHPMCOUNTERS = 1,
-  parameter lfsr_cfg_t LFSR0_CFG        = LFSR_CFG_DEFAULT,
-  parameter lfsr_cfg_t LFSR1_CFG        = LFSR_CFG_DEFAULT,
-  parameter lfsr_cfg_t LFSR2_CFG        = LFSR_CFG_DEFAULT
+  parameter bit          A_EXT            = 0,
+  parameter m_ext_e      M_EXT            = M,
+  parameter bit          X_EXT            = 0,
+  parameter logic [31:0] X_MISA           =  32'h00000000,
+  parameter logic [1:0]  X_ECS_XS         =  2'b00, // todo: implement related mstatus bitfields (but only if X_EXT = 1)
+  parameter int          NUM_MHPMCOUNTERS = 1,
+  parameter int          PMP_NUM_REGIONS  = 0,
+  parameter int          PMP_GRANULARITY  = 0,
+  parameter lfsr_cfg_t   LFSR0_CFG        = LFSR_CFG_DEFAULT,
+  parameter lfsr_cfg_t   LFSR1_CFG        = LFSR_CFG_DEFAULT,
+  parameter lfsr_cfg_t   LFSR2_CFG        = LFSR_CFG_DEFAULT
 )
 (
   // Clock and Reset
@@ -537,7 +538,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     
     mstatus_we    = 1'b0;
     mcause_n      = '{
-                      interrupt:      csr_wdata_int[31],
+                      irq:            csr_wdata_int[31],
                       exception_code: csr_wdata_int[7:0],
                       default: 'b0
                       };

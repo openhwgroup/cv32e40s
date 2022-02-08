@@ -347,6 +347,8 @@ level):
   | 4:0         | RW        | Accrued Exceptions (``fflags``)                                        |
   +-------------+-----------+------------------------------------------------------------------------+
 
+.. _csr-mstatus:
+
 Machine Status (``mstatus``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -458,7 +460,7 @@ All bitfields in the ``misa`` CSR read as 0 except for the following:
 
 * **C** = 1
 * **I** = 1
-* **M** = 1 if ``M_EXT`` = M
+* **M** = 1 if ``M_EXT`` == M
 * **MXL** = 1 (i.e. XLEN = 32)
 * **U** = 1
 * **X** = 1

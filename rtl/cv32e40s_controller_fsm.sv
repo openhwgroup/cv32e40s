@@ -501,7 +501,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           ctrl_fsm_o.pc_mux = PC_TRAP_NMI;
 
           ctrl_fsm_o.csr_save_cause  = 1'b1;
-          ctrl_fsm_o.csr_cause.interrupt = 1'b1;
+          ctrl_fsm_o.csr_cause.irq = 1'b1;
           ctrl_fsm_o.csr_cause.exception_code = nmi_is_store_q ? INT_CAUSE_LSU_STORE_FAULT : INT_CAUSE_LSU_LOAD_FAULT;
 
           // Save pc from oldest valid instruction
@@ -541,7 +541,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           ctrl_fsm_o.irq_id  = irq_id_ctrl_i;
 
           ctrl_fsm_o.csr_save_cause  = 1'b1;
-          ctrl_fsm_o.csr_cause.interrupt = 1'b1;
+          ctrl_fsm_o.csr_cause.irq = 1'b1;
           ctrl_fsm_o.csr_cause.exception_code = {3'b000, irq_id_ctrl_i};
 
           // Save pc from oldest valid instruction
