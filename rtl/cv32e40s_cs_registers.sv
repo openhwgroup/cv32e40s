@@ -543,20 +543,25 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31:
         csr_rdata_int = mhpmevent_q[csr_raddr[4:0]];
 
-      CSR_PMPCFG0: 
-        csr_rdata_int = {pmpncfg_q[3],  pmpncfg_q[2],  pmpncfg_q[1],  pmpncfg_q[0]};
-      CSR_PMPCFG1:   
-        csr_rdata_int = {pmpncfg_q[7],  pmpncfg_q[6],  pmpncfg_q[5],  pmpncfg_q[4]};
-      CSR_PMPCFG2:   
-        csr_rdata_int = {pmpncfg_q[11], pmpncfg_q[10], pmpncfg_q[9],  pmpncfg_q[8]};
-      CSR_PMPCFG3:   
-        csr_rdata_int = {pmpncfg_q[15], pmpncfg_q[14], pmpncfg_q[13], pmpncfg_q[12]};
 
-      CSR_PMPADDR0, CSR_PMPADDR1, CSR_PMPADDR2, CSR_PMPADDR3,
-      CSR_PMPADDR4, CSR_PMPADDR5, CSR_PMPADDR6, CSR_PMPADDR7,
-      CSR_PMPADDR8, CSR_PMPADDR9, CSR_PMPADDR10, CSR_PMPADDR11,
-      CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15:
-        csr_rdata_int = pmp_addr_rdata[csr_raddr[3:0]];
+      CSR_PMPCFG0, CSR_PMPCFG1, CSR_PMPCFG2,  CSR_PMPCFG3,  CSR_PMPCFG4,  CSR_PMPCFG5,  CSR_PMPCFG6,  CSR_PMPCFG7,
+      CSR_PMPCFG8, CSR_PMPCFG9, CSR_PMPCFG10, CSR_PMPCFG11, CSR_PMPCFG12, CSR_PMPCFG13, CSR_PMPCFG14, CSR_PMPCFG15:
+        csr_rdata_int = {pmpncfg_q[6'(csr_raddr[3:0]*4 + 3)], pmpncfg_q[6'(csr_raddr[3:0]*4 + 2)],
+                         pmpncfg_q[6'(csr_raddr[3:0]*4 + 1)], pmpncfg_q[6'(csr_raddr[3:0]*4 + 0)]};
+
+
+      CSR_PMPADDR0,  CSR_PMPADDR1,  CSR_PMPADDR2,  CSR_PMPADDR3,  CSR_PMPADDR4,  CSR_PMPADDR5,  CSR_PMPADDR6,  CSR_PMPADDR7,
+      CSR_PMPADDR8,  CSR_PMPADDR9,  CSR_PMPADDR10, CSR_PMPADDR11, CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15:
+        csr_rdata_int = pmp_addr_rdata[6'(16*0 + csr_raddr[3:0])];
+      CSR_PMPADDR16, CSR_PMPADDR17, CSR_PMPADDR18, CSR_PMPADDR19, CSR_PMPADDR20, CSR_PMPADDR21, CSR_PMPADDR22, CSR_PMPADDR23,
+      CSR_PMPADDR24, CSR_PMPADDR25, CSR_PMPADDR26, CSR_PMPADDR27, CSR_PMPADDR28, CSR_PMPADDR29, CSR_PMPADDR30, CSR_PMPADDR31:
+        csr_rdata_int = pmp_addr_rdata[6'(16*1 + csr_raddr[3:0])];
+      CSR_PMPADDR32, CSR_PMPADDR33, CSR_PMPADDR34, CSR_PMPADDR35, CSR_PMPADDR36, CSR_PMPADDR37, CSR_PMPADDR38, CSR_PMPADDR39,
+      CSR_PMPADDR40, CSR_PMPADDR41, CSR_PMPADDR42, CSR_PMPADDR43, CSR_PMPADDR44, CSR_PMPADDR45, CSR_PMPADDR46, CSR_PMPADDR47:
+        csr_rdata_int = pmp_addr_rdata[6'(16*2 + csr_raddr[3:0])];
+      CSR_PMPADDR48, CSR_PMPADDR49, CSR_PMPADDR50, CSR_PMPADDR51, CSR_PMPADDR52, CSR_PMPADDR53, CSR_PMPADDR54, CSR_PMPADDR55,
+      CSR_PMPADDR56, CSR_PMPADDR57, CSR_PMPADDR58, CSR_PMPADDR59, CSR_PMPADDR60, CSR_PMPADDR61, CSR_PMPADDR62, CSR_PMPADDR63:
+        csr_rdata_int = pmp_addr_rdata[6'(16*3 + csr_raddr[3:0])];
 
       CSR_MSECCFG:
         csr_rdata_int = pmp_mseccfg_q;
@@ -760,23 +765,35 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_DSCRATCH1: begin
                 dscratch1_we = 1'b1;
         end
-        CSR_PMPCFG0: begin
-          pmpncfg_we_int[3:0] = 4'hF;
+        CSR_PMPCFG0,  CSR_PMPCFG1,  CSR_PMPCFG2,  CSR_PMPCFG3,
+        CSR_PMPCFG4,  CSR_PMPCFG5,  CSR_PMPCFG6,  CSR_PMPCFG7,
+        CSR_PMPCFG8,  CSR_PMPCFG9,  CSR_PMPCFG10, CSR_PMPCFG11,
+        CSR_PMPCFG12, CSR_PMPCFG13, CSR_PMPCFG14, CSR_PMPCFG15: begin
+          pmpncfg_we_int[csr_waddr[3:0]*4+:4] = 4'hF;
         end
-        CSR_PMPCFG1: begin
-          pmpncfg_we_int[7:4] = 4'hF;
-        end
-        CSR_PMPCFG2: begin
-          pmpncfg_we_int[11:8] = 4'hF;
-        end
-        CSR_PMPCFG3: begin
-          pmpncfg_we_int[15:12] = 4'hF;
-        end
-        CSR_PMPADDR0, CSR_PMPADDR1, CSR_PMPADDR2, CSR_PMPADDR3,
-        CSR_PMPADDR4, CSR_PMPADDR5, CSR_PMPADDR6, CSR_PMPADDR7,
-        CSR_PMPADDR8, CSR_PMPADDR9, CSR_PMPADDR10, CSR_PMPADDR11,
+        CSR_PMPADDR0,  CSR_PMPADDR1,  CSR_PMPADDR2,  CSR_PMPADDR3,
+        CSR_PMPADDR4,  CSR_PMPADDR5,  CSR_PMPADDR6,  CSR_PMPADDR7,
+        CSR_PMPADDR8,  CSR_PMPADDR9,  CSR_PMPADDR10, CSR_PMPADDR11,
         CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15: begin
-          pmp_addr_we_int[csr_waddr[3:0]] = 1'b1;
+          pmp_addr_we_int[6'(16*0 + csr_waddr[3:0])] = 1'b1;
+        end
+        CSR_PMPADDR16, CSR_PMPADDR17, CSR_PMPADDR18, CSR_PMPADDR19,
+        CSR_PMPADDR20, CSR_PMPADDR21, CSR_PMPADDR22, CSR_PMPADDR23,
+        CSR_PMPADDR24, CSR_PMPADDR25, CSR_PMPADDR26, CSR_PMPADDR27,
+        CSR_PMPADDR28, CSR_PMPADDR29, CSR_PMPADDR30, CSR_PMPADDR31: begin
+          pmp_addr_we_int[6'(16*1 + csr_waddr[3:0])] = 1'b1;
+        end
+        CSR_PMPADDR32, CSR_PMPADDR33, CSR_PMPADDR34, CSR_PMPADDR35,
+        CSR_PMPADDR36, CSR_PMPADDR37, CSR_PMPADDR38, CSR_PMPADDR39,
+        CSR_PMPADDR40, CSR_PMPADDR41, CSR_PMPADDR42, CSR_PMPADDR43,
+        CSR_PMPADDR44, CSR_PMPADDR45, CSR_PMPADDR46, CSR_PMPADDR47: begin
+          pmp_addr_we_int[6'(16*2 + csr_waddr[3:0])] = 1'b1;
+        end
+        CSR_PMPADDR48, CSR_PMPADDR49, CSR_PMPADDR50, CSR_PMPADDR51,
+        CSR_PMPADDR52, CSR_PMPADDR53, CSR_PMPADDR54, CSR_PMPADDR55,
+        CSR_PMPADDR56, CSR_PMPADDR57, CSR_PMPADDR58, CSR_PMPADDR59,
+        CSR_PMPADDR60, CSR_PMPADDR61, CSR_PMPADDR62, CSR_PMPADDR63: begin
+          pmp_addr_we_int[6'(16*3 + csr_waddr[3:0])] = 1'b1;
         end
         CSR_MSECCFG: begin
           pmp_mseccfg_we = 1'b1;
