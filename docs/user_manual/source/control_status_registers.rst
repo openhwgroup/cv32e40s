@@ -1786,3 +1786,9 @@ This applies to the following registers:
  - ``dcsr``
  - ``mie``
  - ``mepc``
+ - ``mtvt``
+ - ``mintstatus``
+ - ``mintthresh``
+ - ``mscratchcsw``
+ - ``mscratchcswl``
+ - ``mclicbase``

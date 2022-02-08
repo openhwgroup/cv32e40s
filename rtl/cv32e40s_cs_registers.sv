@@ -704,11 +704,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         // mcounteren: counter enable
         CSR_MCOUNTEREN: begin
               mcounteren_we = 1'b1;
+        end
         // mtvt: machine trap-handler vector table base address
         CSR_MTVT: begin
           if (SMCLIC) begin
             mtvt_we = 1'b1;
-        end
+          end
         end
         // mscratch: machine scratch
         CSR_MSCRATCH: begin
@@ -893,13 +894,14 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     end
   end
 
-  cv32e40x_csr #(
+  cv32e40s_csr #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
   ) jvt_csr_i (
     .clk        (clk),
     .rst_n      (rst_n),
+    .scan_cg_en_i (scan_cg_en_i),
     .wr_data_i  (jvt_n),
     .wr_en_i    (jvt_we),
     .rd_data_o  (jvt_q),
@@ -1055,13 +1057,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   generate
 
     if (SMCLIC) begin
-      cv32e40x_csr #(
+      cv32e40s_csr #(
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .MASK       (CSR_MTVT_MASK),
+        .SHADOWCOPY (SECURE),
         .RESETVALUE (MTVT_RESET_VAL)
       ) mtvt_csr_i (
         .clk        (clk),
         .rst_n      (rst_n),
+        .scan_cg_en_i (scan_cg_en_i),
         .wr_data_i  (mtvt_n),
         .wr_en_i    (mtvt_we),
         .rd_data_o  (mtvt_q),
@@ -1070,61 +1074,71 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       assign mnxti_q = 32'h0;
 
-      cv32e40x_csr #(
+      cv32e40s_csr #(
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .MASK       (CSR_MINTSTATUS_MASK),
+        .SHADOWCOPY (SECURE),
         .RESETVALUE (MINTSTATUS_RESET_VAL)
       ) mintstatus_csr_i (
         .clk        (clk),
         .rst_n      (rst_n),
+        .scan_cg_en_i (scan_cg_en_i),
         .wr_data_i  (mintstatus_n),
         .wr_en_i    (mintstatus_we),
         .rd_data_o  (mintstatus_q),
         .rd_error_o (mintstatus_rd_error)
       );
-      cv32e40x_csr #(
+      cv32e40s_csr #(
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .MASK       (CSR_MINTTHRESH_MASK),
+        .SHADOWCOPY (SECURE),
         .RESETVALUE (32'h0)
       ) mintthresh_csr_i (
         .clk        (clk),
         .rst_n      (rst_n),
+        .scan_cg_en_i (scan_cg_en_i),
         .wr_data_i  (mintthresh_n),
         .wr_en_i    (mintthresh_we),
         .rd_data_o  (mintthresh_q),
         .rd_error_o (mintthresh_rd_error)
       );
-      cv32e40x_csr #(
+      cv32e40s_csr #(
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .MASK       (CSR_MSCRATCHCSW_MASK),
+        .SHADOWCOPY (SECURE),
         .RESETVALUE (32'h0)
       ) mscratchcsw_csr_i (
         .clk        (clk),
         .rst_n      (rst_n),
+        .scan_cg_en_i (scan_cg_en_i),
         .wr_data_i  (mscratchcsw_n),
         .wr_en_i    (mscratchcsw_we),
         .rd_data_o  (mscratchcsw_q),
         .rd_error_o (mscratchcsw_rd_error)
       );
-      cv32e40x_csr #(
+      cv32e40s_csr #(
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .MASK       (CSR_MSCRATCHCSWL_MASK),
+        .SHADOWCOPY (SECURE),
         .RESETVALUE (32'h0)
       ) mscratchcswl_csr_i (
         .clk        (clk),
         .rst_n      (rst_n),
+        .scan_cg_en_i (scan_cg_en_i),
         .wr_data_i  (mscratchcswl_n),
         .wr_en_i    (mscratchcswl_we),
         .rd_data_o  (mscratchcswl_q),
         .rd_error_o (mscratchcswl_rd_error)
       );
-      cv32e40x_csr #(
+      cv32e40s_csr #(
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .MASK       (CSR_MCLICBASE_MASK),
+        .SHADOWCOPY (SECURE),
         .RESETVALUE (32'h0)
       ) mclicbase_csr_i (
         .clk        (clk),
         .rst_n      (rst_n),
+        .scan_cg_en_i (scan_cg_en_i),
         .wr_data_i  (mclicbase_n),
         .wr_en_i    (mclicbase_we),
         .rd_data_o  (mclicbase_q),
