@@ -159,9 +159,9 @@ module cv32e40s_rvfi
    input logic [31:0]                         csr_mcounteren_q_i,
    input logic                                csr_mcounteren_we_i,
 
-   input logic [ 7:0]                         csr_pmpcfg_n_i[16],
-   input logic [ 7:0]                         csr_pmpcfg_q_i[16],
-   input logic [15:0]                         csr_pmpcfg_we_i,
+   input logic [ 7:0]                         csr_pmpncfg_n_i[16],
+   input logic [ 7:0]                         csr_pmpncfg_q_i[16],
+   input logic [15:0]                         csr_pmpncfg_we_i,
    input logic [31:0]                         csr_pmpaddr_n_i, // PMP address input shared for all pmpaddr registers
    input logic [31:0]                         csr_pmpaddr_q_i[16],
    input logic [15:0]                         csr_pmpaddr_we_i,
@@ -1048,13 +1048,13 @@ module cv32e40s_rvfi
   generate
     for (genvar i = 0; i < 16; i++ ) begin // Max 16 pmp regions
       // 4 regions in each register
-      assign rvfi_csr_wdata_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpcfg_n_i[i];
-      assign rvfi_csr_rdata_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpcfg_q_i[i];
-      assign rvfi_csr_wmask_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpcfg_we_i[i] ? '1 : '0;
+      assign rvfi_csr_wdata_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpncfg_n_i[i];
+      assign rvfi_csr_rdata_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpncfg_q_i[i];
+      assign rvfi_csr_wmask_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpncfg_we_i[i] ? '1 : '0;
 
       assign rvfi_csr_wdata_d.pmpaddr[i]          = csr_pmpaddr_n_i; // input shared between all registers
       assign rvfi_csr_rdata_d.pmpaddr[i]          = csr_pmpaddr_q_i[i];
-    assign rvfi_csr_wmask_d.pmpaddr[i]       = csr_pmpaddr_we_i[i] ? '1 : '0;
+      assign rvfi_csr_wmask_d.pmpaddr[i]          = csr_pmpaddr_we_i[i] ? '1 : '0;
     end
   endgenerate
 
