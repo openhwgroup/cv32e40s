@@ -48,7 +48,7 @@ It follows these specifications:
 .. [RISC-V-ZCA_ZCB_ZCMB_ZCMP_ZCMT] RISC-V Standard Extension for the **Zca**, **Zcb**, **Zcmb**, **Zcmp**, **Zcmt** subsets of **Zc**, v0.70.1, 29f0511 (not ratified yet),
    https://github.com/riscv/riscv-code-size-reduction/releases/download/V0.70.1-TOOLCHAIN-DEV/Zc_0_70_1.pdf
 
-.. [RISC-V-SMEPMP] PMP Enhancements for memory access and execution prevention on Machine mode, version 0.9.5 (not ratified yet),
+.. [RISC-V-SMEPMP] PMP Enhancements for memory access and execution prevention on Machine mode, version 1.0, 12/2021,
    https://github.com/riscv/riscv-tee/blob/main/Smepmp/Smepmp.pdf
 
 .. [RISC-V-CRYPTO] RISC-V Cryptography Extensions Volume I, Scalar & Entropy Source Instructions, Version v1.0.0, 2'nd December, 2021: Ratified,
@@ -62,9 +62,22 @@ It follows these specifications:
 
 Many features in the RISC-V specification are optional, and |corev| can be parameterized to enable or disable some of them.
 
-|corev| supports the following base instruction set from [RISC-V-UNPRIV]_.
+|corev| supports one of the following base integer instruction sets from [RISC-V-UNPRIV]_.
 
-* The RV32I Base Integer Instruction Set, version 2.1
+.. list-table:: |corev| Base Instruction Set
+   :header-rows: 1
+
+   * - Base Integer Instruction Set
+     - Version
+     - Configurability
+
+   * - **RV32I**: RV32I Base Integer Instruction Set
+     - 2.1
+     - optionally enabled based on ``RV32`` parameter
+
+   * - **RV32E**: RV32E Base Integer Instruction Set
+     - 1.9 (not ratified yet)
+     - optionally enabled based on ``RV32`` parameter
 
 In addition, the following standard instruction set extensions are available from [RISC-V-UNPRIV]_, [RISC-V-ZBA_ZBB_ZBC_ZBS]_, [RISC-V-CRYPTO]_ and [RISC-V-ZCA_ZCB_ZCMB_ZCMP_ZCMT]_.
 

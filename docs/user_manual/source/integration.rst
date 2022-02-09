@@ -27,6 +27,7 @@ Instantiation Template
 
   cv32e40s_core #(
       .LIB                      (                0 ),
+      .RV32                     (            RV32I ),
       .B_EXT                    (             NONE ),
       .M_EXT                    (                M ),
       .DBG_NUM_TRIGGERS         (                1 ),
@@ -117,6 +118,10 @@ Parameters
 | Name                         | Type/Range     | Default         | Description                                                        |
 +==============================+================+=================+====================================================================+
 | ``LIB``                      | int            | 0               | Standard cell library (semantics defined by integrator)            |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``RV32``                     | rv32_e         | RV32I           | Base Integer Instruction Set.                                      |
+|                              |                |                 | ``RV32`` = RV32I: RV32I Base Integer Instruction Set.              |
+|                              |                |                 | ``RV32`` = RV32E: RV32E Base Integer Instruction Set.              |
 +------------------------------+----------------+-----------------+--------------------------------------------------------------------+
 | ``B_EXT``                    | b_ext_e        | NONE            | Enable Bit Manipulation support. ``B_EXT`` = B_NONE: No Bit        |
 |                              |                |                 | Manipulation instructions are supported. ``B_EXT`` = ZBA_ZBB_ZBS:  |
