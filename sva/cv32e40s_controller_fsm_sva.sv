@@ -79,7 +79,10 @@ module cv32e40s_controller_fsm_sva
   input logic           xif_commit_valid,
   input logic           nmi_is_store_q,
   input logic           nmi_pending_q,
-  input dcsr_t          dcsr_i
+  input dcsr_t          dcsr_i,
+  input logic           last_op_id_i,
+  input logic           sys_mret_id_i
+
 );
 
 
@@ -260,9 +263,16 @@ module cv32e40s_controller_fsm_sva
   // that could lead to undetected errors
   logic csrw_ex_wb;
   assign csrw_ex_wb = (
-                        ((id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && id_ex_pipe_i.last_op)) && id_ex_pipe_i.instr_valid) ||
-                        ((ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.last_op)) && ex_wb_pipe_i.instr_valid)
+                        ((id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn)) && id_ex_pipe_i.instr_valid) ||
+                        ((ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn)) && ex_wb_pipe_i.instr_valid)
                       );
+
+  // Detect if the last part of a secure mret is in ID while the first part is in EX or WB
+  logic mret_self_stall;
+  assign mret_self_stall = (sys_en_id_i && sys_mret_id_i && last_op_id_i) && // MRET 2/2 in ID
+                      ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op) || // mret 1/2 in EX
+                       (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_op));  // mret 1/2 in WB
+
   // Check that WFI is stalled in ID if CSR writes (explicit and implicit)
   // are present in EX or WB
   a_wfi_id_halt :
@@ -272,10 +282,11 @@ module cv32e40s_controller_fsm_sva
       else `uvm_error("controller", "WFI not halted in ID when CSR write is present in EX or WB")
 
   // Check that mret is stalled in ID if CSR writes (explicit and implicit)
-  // are present in EX or WB
+  // are present in EX or WB. Exluding the case where the second part of an mret is in ID while the first part
+  // is in either EX or WB.
   a_mret_id_halt :
     assert property (@(posedge clk) disable iff (!rst_n)
-                      ((sys_en_id_i && sys_mret_insn_id_i) && if_id_pipe_i.instr_valid && csrw_ex_wb)
+                      ((sys_en_id_i && sys_mret_insn_id_i) && if_id_pipe_i.instr_valid && (csrw_ex_wb && !mret_self_stall))
                       |-> (!id_valid_i && ctrl_fsm_o.halt_id))
       else `uvm_error("controller", "mret not halted in ID when CSR write is present in EX or WB")
 
@@ -284,7 +295,7 @@ module cv32e40s_controller_fsm_sva
   // that there are no updates to mstatus.mpp (or any other CSR) in EX or WB
   a_mret_jump_id_csrw :
    assert property (@(posedge clk) disable iff (!rst_n)
-                    ctrl_fsm_o.mret_jump_id |-> !csrw_ex_wb)
+                    ctrl_fsm_o.mret_jump_id |-> !(csrw_ex_wb && !mret_self_stall))
      else `uvm_error("controller", "Priviledge level updated by MRET in ID while CSR write is present in EX or WB")
     
   // mret in User mode must result in illegal instruction
@@ -613,5 +624,6 @@ endgenerate
     assert property (@(posedge clk) disable iff (!rst_n)
                     (valid_cnt < 2'b10)) // 0 or 1 instructions are allowed to retire, thus the counter must always be less than 2.
     else `uvm_error("controller", "NMI handler not taken within two instruction retirements")
+
 endmodule // cv32e40s_controller_fsm_sva
 

@@ -77,6 +77,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   output logic        sys_en_o,
   output logic        sys_mret_insn_o,
   output logic        sys_wfi_insn_o,
+  output logic        last_op_o,
   output logic        csr_en_o,
   output csr_opcode_e csr_op_o,
 
@@ -188,7 +189,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   logic                 multi_op_id_stall;
 
   // Indicate last part of a multi operation instruction
-  logic                 last;
+  logic                 last_op;
 
   logic                 illegal_insn;
 
@@ -214,7 +215,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
 
   // Ensures one shift of the operand LFSRs for each dummy instruction in ID
-  assign lfsr_shift_o    = (id_valid_o && ex_ready_i) && if_id_pipe_i.instr_meta.dummy && last;
+  assign lfsr_shift_o    = (id_valid_o && ex_ready_i) && if_id_pipe_i.instr_meta.dummy && last_op;
 
   assign instr = if_id_pipe_i.instr.bus_resp.rdata;
 
@@ -625,7 +626,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
         id_ex_pipe_o.xif_meta.accepted      <= xif_insn_accept;
 
         // Multi operation
-        id_ex_pipe_o.last_op                <= last;
+        id_ex_pipe_o.last_op                <= last_op;
 
       end else if (ex_ready_i) begin
         id_ex_pipe_o.instr_valid            <= 1'b0;
@@ -635,32 +636,43 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   generate
     if (SECURE) begin : secure_ctrl_flow
+      // Flag for jumps, mret and branch instructions
       logic jmp_bch_insn;
-      logic jmp_bch_last;
+
+      // Counter for finished sub operations
+      logic [MULTI_OP_CNT_WIDTH-1:0] multi_op_cnt;
 
       // Detect jumps (including mret) and branches.
-      assign jmp_bch_insn = ((alu_jmp || alu_jmpr || alu_bch) && alu_en) || (sys_mret_insn && sys_en);
+      assign jmp_bch_insn = ((alu_jmp || alu_bch) && alu_en) || (sys_mret_insn && sys_en);
 
-      // All instructions should spend one cycle in ID (unless stalled), except jumps and branches.
-      assign last = jmp_bch_insn ? jmp_bch_last : 1'b1;
+      // Detect last operation of current instruction.
+      assign last_op = jmp_bch_insn ? (multi_op_cnt == JMP_BCH_CYCLES - 1)
+                                    : 1'b1;
 
-      // Make jumps and branches stay two cycles in ID stage to enable recomputing of target address
+      // Count number of operations performed by an instruction.
       always_ff @(posedge clk, negedge rst_n) begin
         if (rst_n == 1'b0) begin
-          jmp_bch_last <= '0;
+          multi_op_cnt <= MULTI_OP_CNT_WIDTH'(0);
         end else begin
-          if ((id_valid_o && ex_ready_i && jmp_bch_last) || ctrl_fsm_i.kill_id) begin
-            jmp_bch_last <= 1'b0;
-          end else begin
-            if (jmp_bch_insn && if_id_pipe_i.instr_valid && !ctrl_fsm_i.halt_id && ex_ready_i) begin
-              jmp_bch_last <= 1'b1;
+          if(id_valid_o && ex_ready_i) begin
+            if(last_op) begin
+              // Last operation is done, reset counter
+              multi_op_cnt <= MULTI_OP_CNT_WIDTH'(0);
+            end else begin
+              // Suboperation done, increment counter
+              multi_op_cnt <= multi_op_cnt + MULTI_OP_CNT_WIDTH'(1);
             end
+          end
+
+          // Reset multi op counter if stage is killed
+          if(ctrl_fsm_i.kill_id) begin
+            multi_op_cnt <= MULTI_OP_CNT_WIDTH'(0);
           end
         end
       end
 
-    end else begin // !SECURE
-      assign last = 1'b1;
+    end else begin : nonsecure_ctrl_flow // !SECURE
+      assign last_op = 1'b1;
     end
   endgenerate
 
@@ -671,8 +683,10 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   assign csr_en_o = csr_en;
   assign csr_op_o = csr_op;
 
+  assign last_op_o = last_op;
+
   // stall control for multi operation ID instructions (currently only jumps and branches if SECURE=1)
-  assign multi_op_id_stall = !last && (if_id_pipe_i.instr_valid); //todo:ok Zce push/pop will use this
+  assign multi_op_id_stall = !last_op && (if_id_pipe_i.instr_valid); //todo:ok Zce push/pop will use this
 
   // Stage ready/valid
   //

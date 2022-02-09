@@ -52,6 +52,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   input  logic        csr_en_id_i,                // CSR in ID
   input  csr_opcode_e csr_op_id_i,                // CSR opcode (ID) // todo: Not used (is this on purpose or should it be used here?)
   input  logic        sys_wfi_id_i,               // WFI instruction in ID
+  input  logic        last_op_id_i,
 
   // From EX
   input  logic        csr_counter_read_i,         // CSR is reading a counter (EX).
@@ -75,6 +76,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
   // Detect CSR write in EX or WB (implicit and explicit)
   logic csr_write_in_ex_wb;
+
+  // Detect if a SECURE mret would stall on itself
+  logic mret_self_stall;
 
   // EX register file write enable
   logic rf_we_ex;
@@ -121,13 +125,16 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
   // Detect when a CSR insn  in in EX or WB
   // mret and dret implicitly writes to CSR. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.
-  // Only the last part of multi cycle mrets update mstatus and privilege level. Factoring in last_op avoids
-  // stalling the second part of an mret when the first part is already in EX or WB.
 
   assign csr_write_in_ex_wb = (
-                              (id_ex_pipe_i.instr_valid && (id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && id_ex_pipe_i.last_op))) ||
-                              (ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.last_op)))
+                              (id_ex_pipe_i.instr_valid && (id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn))) ||
+                              (ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn)))
                               );
+
+  // Detect if an a secure mret has its last phase (2/2) in ID while the first is in EX or WB.
+  assign mret_self_stall = (sys_en_id_i && sys_mret_id_i && last_op_id_i) && // MRET 2/2 in ID
+                           ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op) || // mret 1/2 in EX
+                            (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_op));  // mret 1/2 in WB
 
   // Stall ID when WFI is active in EX.
   // Prevent load/store following a WFI in the pipeline
@@ -184,7 +191,8 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     end
 
     // Stall because of CSR read (direct or implied) in ID while CSR (implied or direct) is written in EX/WB
-    if (csr_read_in_id && csr_write_in_ex_wb) begin
+    // Secure mret which stalls on itself is excluded to avoid uneeded bubbles.
+    if (csr_read_in_id && csr_write_in_ex_wb && !mret_self_stall) begin
       ctrl_byp_o.csr_stall = 1'b1;
     end
 

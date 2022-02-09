@@ -188,7 +188,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
           branch_target_o   = id_ex_pipe_i.operand_c;
         end
       end
-    end else begin //!SECURE
+    end else begin : regular_branches //!SECURE
       assign branch_decision_o = alu_cmp_result;
       assign branch_target_o   = id_ex_pipe_i.operand_c;
     end

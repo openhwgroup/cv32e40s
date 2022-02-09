@@ -220,6 +220,7 @@ module cv32e40s_wrapper
                               .csr_illegal_i       (core_i.cs_registers_i.csr_illegal_o),
                               .xif_commit_kill     (core_i.xif_commit_if.commit.commit_kill),
                               .xif_commit_valid    (core_i.xif_commit_if.commit_valid),
+                              .last_op_id_i        (core_i.controller_i.last_op_id_i),
                               .*);
   bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
 
