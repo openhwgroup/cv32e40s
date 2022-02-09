@@ -249,6 +249,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        sys_en_id;
   logic        sys_mret_insn_id;
   logic        sys_wfi_insn_id;
+  logic        last_op_id;
   logic        csr_en_id;
   csr_opcode_e csr_op_id;
   logic        csr_illegal;
@@ -503,6 +504,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .sys_en_o                     ( sys_en_id                 ),
     .sys_mret_insn_o              ( sys_mret_insn_id          ),
     .sys_wfi_insn_o               ( sys_wfi_insn_id           ),
+    .last_op_o                    ( last_op_id                ),
 
     .csr_en_o                     ( csr_en_id                 ),
     .csr_op_o                     ( csr_op_id                 ),
@@ -836,6 +838,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_en_id_i                    ( csr_en_id              ),
     .csr_op_id_i                    ( csr_op_id              ),
     .sys_wfi_id_i                   ( sys_wfi_insn_id        ),
+    .last_op_id_i                   ( last_op_id             ),
 
     // LSU
     .lsu_split_ex_i                 ( lsu_split_ex           ),

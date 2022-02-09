@@ -143,6 +143,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   logic branch_taken_n;
   logic branch_taken_q;
+  logic jump_taken_n;
+  logic jump_taken_q;
   
   // Events in WB
   logic exception_in_wb;
@@ -217,16 +219,16 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                        (sys_en_id_i && sys_mret_id_i && !ctrl_byp_i.csr_stall)) &&
                          if_id_pipe_i.instr_valid;
 
-  // Blocking on branch_taken_q, as a jump has already been taken
-  assign jump_taken_id = jump_in_id && !branch_taken_q; // todo: RVFI does not use jump_taken_id (which is not in itself an issue); we should have an assertion showing that the target address remains constant during jump_in_id; same remark for branches
+  // Blocking on jump_taken_q, which flags that a jump has already been taken
+  assign jump_taken_id = jump_in_id && !jump_taken_q; // todo: RVFI does not use jump_taken_id (which is not in itself an issue); we should have an assertion showing that the target address remains constant during jump_in_id; same remark for branches
 
   // EX stage 
   // Branch taken for valid branch instructions in EX with valid decision
   
-  assign branch_in_ex = id_ex_pipe_i.alu_bch && id_ex_pipe_i.alu_en && id_ex_pipe_i.instr_valid && branch_decision_ex_i;
+  assign branch_in_ex = id_ex_pipe_i.alu_bch && id_ex_pipe_i.alu_en && id_ex_pipe_i.instr_valid;
 
   // Blocking on branch_taken_q, as a branch ha already been taken
-  assign branch_taken_ex = branch_in_ex && !branch_taken_q;
+  assign branch_taken_ex = branch_in_ex && branch_decision_ex_i && !branch_taken_q;
 
   // Exception should trigger minor alert if the following evaluates to 1
   assign exception_alert_wb  = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK) ||
@@ -268,7 +270,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign fencei_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_fencei_insn && ex_wb_pipe_i.instr_valid;
 
   // mret in wb
-  assign mret_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.instr_valid;
+  // Factoring in last_op. This will always be 1 for SECURE=0, but for SECURE=1 mrets will span two cycles
+  // and the mstatus and privilege level writes should only be done during the last cycle.
+  // If an mret would write to the mstatus during the first half, we would not be able to kill it due to debug or interrupts
+  // until the second part finished.
+  assign mret_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.last_op && ex_wb_pipe_i.instr_valid;
 
   // dret in wb
   assign dret_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_dret_insn && ex_wb_pipe_i.instr_valid;
@@ -471,6 +477,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
     // Ensure jumps and branches are taken only once
     branch_taken_n                 = branch_taken_q;
+    jump_taken_n                   = jump_taken_q;
 
     fencei_flush_req_set           = 1'b0;
 
@@ -643,7 +650,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             ctrl_fsm_o.pc_mux  = PC_WB_PLUS4;
           end else if (branch_taken_ex) begin
             ctrl_fsm_o.kill_if = 1'b1;
-            ctrl_fsm_o.kill_id = 1'b1;  
+            // For SECURE, branches will be both in ID and EX when the branch is taken, avoid killing ID.
+            ctrl_fsm_o.kill_id = SECURE ? 1'b0 : 1'b1;
 
             ctrl_fsm_o.pc_mux  = PC_BRANCH;
             ctrl_fsm_o.pc_set  = 1'b1;
@@ -651,7 +659,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             // Set flag to avoid further branches to the same target
             // if we are stalled
             branch_taken_n     = 1'b1;
-            
           end else if (jump_taken_id) begin
             // kill_if
             ctrl_fsm_o.kill_if = 1'b1;
@@ -668,7 +675,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
             // Set flag to avoid further jumps to the same target
             // if we are stalled
-            branch_taken_n = 1'b1;
+            jump_taken_n   = 1'b1;
           end
 
           // Mret in WB restores CSR regs
@@ -770,9 +777,32 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       single_step_halt_if_n = 1'b1;
     end
 
-    // Clear jump/branch flag when new insn is emitted from IF
-    if (branch_taken_q && if_valid_i && id_ready_i) begin
+    // The branch_taken flag is used to prevent multiple 'pc_set' for the same branch instruction
+    // in case it stays multiple cycles in EX.
+    // The flag is cleared when a new instruction enters EX and EX contains the last operation of an instruction (branch is done).
+    // New instruction from ID to EX is detected by checking id_ex_pipe.last_op==1 when the ID/EX handshake is performed.
+    // NB! It should not be needed to include the branch_taken_q flag, but the assertion checking for no
+    // back-to-back branches cannot converge without it.
+    //
+    // The timing of the wanted behaviour is shown in the table below, we need to clear the flag when the target instruction
+    // enters the EX stage.
+    // |  IF      |  ID      |  EX    |  WB   |
+    // | <killed> | B 2/2    | B 1/2  | LD/ST |  <- Branch is taken, pc_set=1, wb_ready=0
+    // | target   | B 2/2    | B 1/2  | LD/ST |  <- branch_taken_q = 1
+    // | target+1 | target   | B 2/2  | B 1/2 |  <- branch_taken_q = 1
+    // | target+2 | target+1 | target | B 2/2 |  <- branch_taken_q = 0
+    // | target+2 | target+1 | target | B 2/2 |  <- branch_taken_q = 0
+    if ((id_valid_i && ex_ready_i && id_ex_pipe_i.last_op && branch_taken_q) || ctrl_fsm_o.kill_ex) begin
       branch_taken_n = 1'b0;
+    end
+
+    // Clear jump_taken flag when a new instruction enters the ID stage, or ID is killed.
+    // The flag has ID stage timing, and thus when a new instruction enters ID
+    // the flag must be cleared. IF stage has no 'last_op' output, as the instructions
+    // are only split into sub operations in the ID stage.
+    // Jump_taken_q flag not strictly needed, but added to get same semantics as for branches.
+    if ((if_valid_i && id_ready_i && jump_taken_q) || ctrl_fsm_o.kill_id) begin
+      jump_taken_n = 1'b0;
     end
   end
 
@@ -837,9 +867,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     if (rst_n == 1'b0) begin
       single_step_halt_if_q <= 1'b0;
       branch_taken_q        <= 1'b0;
+      jump_taken_q          <= 1'b0;
     end else begin
       single_step_halt_if_q <= single_step_halt_if_n;
       branch_taken_q        <= branch_taken_n;
+      jump_taken_q          <= jump_taken_n;
     end
   end
 
@@ -875,7 +907,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       // i.e halt_wb due to debug will result in killed WB, while for fence.i it will retire.
       // Note that this event bit is further gated before sent to the actual counters in case
       // other conditions prevent counting.
-      if (ex_valid_i && wb_ready_i && !lsu_split_ex_i) begin
+      if (ex_valid_i && wb_ready_i && !(lsu_split_ex_i || !id_ex_pipe_i.last_op)) begin
         wb_counter_event <= 1'b1;
       end else begin
         // Keep event flag high while WB is halted, as we don't know if it will retire yet

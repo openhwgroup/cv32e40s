@@ -174,6 +174,7 @@ module cv32e40s_wrapper
   bind cv32e40s_id_stage:
     core_i.id_stage_i cv32e40s_id_stage_sva id_stage_sva
     (
+      .ex_wb_pipe      (core_i.ex_wb_pipe),
       .*
     );
 
@@ -225,6 +226,7 @@ module cv32e40s_wrapper
                               .csr_illegal_i       (core_i.cs_registers_i.csr_illegal_o),
                               .xif_commit_kill     (core_i.xif_commit_if.commit.commit_kill),
                               .xif_commit_valid    (core_i.xif_commit_if.commit_valid),
+                              .last_op_id_i        (core_i.controller_i.last_op_id_i),
                               .*);
   bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
 
@@ -272,7 +274,7 @@ module cv32e40s_wrapper
                 .ctrl_debug_mode_n                (core_i.controller_i.controller_fsm_i.debug_mode_n),
                 .ctrl_pending_debug               (core_i.controller_i.controller_fsm_i.pending_debug),
                 .ctrl_debug_allowed               (core_i.controller_i.controller_fsm_i.debug_allowed),
-                .id_stage_multi_cycle_id_stall    (core_i.id_stage_i.multi_cycle_id_stall),
+                .id_stage_multi_op_id_stall       (core_i.id_stage_i.multi_op_id_stall),
                 .id_stage_id_valid                (core_i.id_stage_i.id_valid_o),
                 .priv_lvl_if                      (core_i.if_stage_i.prefetch_priv_lvl),
                 .priv_lvl_if_q                    (core_i.if_stage_i.prefetch_unit_i.alignment_buffer_i.instr_priv_lvl_q),

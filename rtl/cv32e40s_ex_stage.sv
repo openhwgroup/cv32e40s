@@ -166,33 +166,33 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   end
 
   // Branch handling
-  always_comb begin
-    if (xsecure_ctrl_i.cpuctrl.dataindtiming) begin
-      // Data independent timing enabled, always "take" branch. 
-      branch_decision_o = 1'b1;
+  generate
+    if (SECURE) begin : secure_branches
+      always_comb begin
+        if (xsecure_ctrl_i.cpuctrl.dataindtiming) begin
+          // Data independent timing enabled, always "take" branch.
+          branch_decision_o = 1'b1;
 
-      if (alu_cmp_result) begin
-        // Branch was taken
-        branch_target_o = id_ex_pipe_i.operand_c;
-      end
-      else begin
-        // Branch not taken
-        if (if_id_pipe_i.instr_valid) begin
-          // Jump to PC from ID stage if valid
-          branch_target_o = if_id_pipe_i.pc;
+          if (alu_cmp_result) begin
+            // Branch was taken
+            branch_target_o = id_ex_pipe_i.operand_c;
+          end
+          else begin
+            // ID and EX stage both contain the branch instruction, target addr is in IF.
+            branch_target_o = pc_if_i;
+          end
         end
         else begin
-          // PC in ID not valid, jump to PC from IF stage
-          branch_target_o = pc_if_i;
+          // Data independent timing not enabled
+          branch_decision_o = alu_cmp_result;
+          branch_target_o   = id_ex_pipe_i.operand_c;
         end
       end
+    end else begin : regular_branches //!SECURE
+      assign branch_decision_o = alu_cmp_result;
+      assign branch_target_o   = id_ex_pipe_i.operand_c;
     end
-    else begin
-      // Data independent timing not enabled
-      branch_decision_o = alu_cmp_result;
-      branch_target_o   = id_ex_pipe_i.operand_c;
-    end
-  end
+  endgenerate
 
   ////////////////////////////
   //     _    _    _   _    //
@@ -370,11 +370,15 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
       ex_wb_pipe_o.csr_wdata          <= 32'h00000000;
       ex_wb_pipe_o.xif_en             <= 1'b0;
       ex_wb_pipe_o.xif_meta           <= '0;
+
+      ex_wb_pipe_o.last_op            <= 1'b0;
     end
     else
     begin
       if (ex_valid_o && wb_ready_i) begin
         ex_wb_pipe_o.instr_valid <= 1'b1;
+        ex_wb_pipe_o.last_op     <= id_ex_pipe_i.last_op;
+
         // Deassert rf_we in case of illegal csr instruction or
         // when the first half of a misaligned/split LSU goes to WB.
         // Also deassert if CSR was accepted both by eXtension if and pipeline

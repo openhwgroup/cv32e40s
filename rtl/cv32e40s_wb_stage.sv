@@ -134,7 +134,10 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
                      ( ex_wb_pipe_i.lsu_en && lsu_exception)      // LSU instruction had an exception
                     ) && instr_valid;
 
-  assign wb_valid_o = wb_valid;
+  // Only set wb_valid during the last operation of an instruction
+  // TODO: We might want to signal wb_valid for all operations (Zce push/pop for instance), but
+  // this will also require changes in RVFI
+  assign wb_valid_o = wb_valid && ex_wb_pipe_i.last_op;
 
   // Export signal indicating WB stage stalled by load/store
   assign data_stall_o = (ex_wb_pipe_i.lsu_en && !lsu_valid_i) && !wb_valid && instr_valid;

@@ -77,6 +77,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   output logic        sys_en_o,
   output logic        sys_mret_insn_o,
   output logic        sys_wfi_insn_o,
+  output logic        last_op_o,
   output logic        csr_en_o,
   output csr_opcode_e csr_op_o,
 
@@ -184,8 +185,11 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   // Branch target address
   logic [31:0]          bch_target;
 
-  // Stall for multicycle ID instructions
-  logic                 multi_cycle_id_stall;
+  // Stall for multi operation ID instructions
+  logic                 multi_op_id_stall;
+
+  // Indicate last part of a multi operation instruction
+  logic                 last_op;
 
   logic                 illegal_insn;
 
@@ -208,8 +212,10 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   assign sys_mret_insn_o = sys_mret_insn;
   assign sys_wfi_insn_o  = sys_wfi_insn;
 
+
+
   // Ensures one shift of the operand LFSRs for each dummy instruction in ID
-  assign lfsr_shift_o    = (id_valid_o && ex_ready_i) && if_id_pipe_i.instr_meta.dummy;
+  assign lfsr_shift_o    = (id_valid_o && ex_ready_i) && if_id_pipe_i.instr_meta.dummy && last_op;
 
   assign instr = if_id_pipe_i.instr.bus_resp.rdata;
 
@@ -521,6 +527,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.instr                  <= INST_RESP_RESET_VAL;
       id_ex_pipe_o.instr_meta             <= '0;
       id_ex_pipe_o.trigger_match          <= 1'b0;
+
+      id_ex_pipe_o.last_op                <= 1'b0;
     end else begin
       // normal pipeline unstall case
       if (id_valid_o && ex_ready_i) begin
@@ -619,11 +627,56 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
         id_ex_pipe_o.xif_meta.dualwrite     <= xif_dualwrite;
         id_ex_pipe_o.xif_meta.accepted      <= xif_insn_accept;
 
+        // Multi operation
+        id_ex_pipe_o.last_op                <= last_op;
+
       end else if (ex_ready_i) begin
         id_ex_pipe_o.instr_valid            <= 1'b0;
       end
     end
   end
+
+  generate
+    if (SECURE) begin : secure_ctrl_flow
+      // Flag for jumps, mret and branch instructions
+      logic jmp_bch_insn;
+
+      // Counter for finished sub operations
+      logic [MULTI_OP_CNT_WIDTH-1:0] multi_op_cnt;
+
+      // Detect jumps (including mret) and branches.
+      assign jmp_bch_insn = ((alu_jmp || alu_bch) && alu_en) || (sys_mret_insn && sys_en);
+
+      // Detect last operation of current instruction.
+      assign last_op = jmp_bch_insn ? (multi_op_cnt == JMP_BCH_CYCLES - 1)
+                                    : 1'b1;
+
+      // Count number of operations performed by an instruction.
+      always_ff @(posedge clk, negedge rst_n) begin
+        if (rst_n == 1'b0) begin
+          multi_op_cnt <= MULTI_OP_CNT_WIDTH'(0);
+        end else begin
+          if(id_valid_o && ex_ready_i) begin
+            if(last_op) begin
+              // Last operation is done, reset counter
+              multi_op_cnt <= MULTI_OP_CNT_WIDTH'(0);
+            end else begin
+              // Suboperation done, increment counter
+              multi_op_cnt <= multi_op_cnt + MULTI_OP_CNT_WIDTH'(1);
+            end
+          end
+
+          // Reset multi op counter if stage is killed
+          if(ctrl_fsm_i.kill_id) begin
+            multi_op_cnt <= MULTI_OP_CNT_WIDTH'(0);
+          end
+        end
+      end
+
+    end else begin : nonsecure_ctrl_flow // !SECURE
+      assign last_op = 1'b1;
+    end
+  endgenerate
 
   assign alu_en_raw_o = alu_en_raw;
   assign alu_jmp_o    = alu_jmp;
@@ -632,21 +685,23 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   assign csr_en_o = csr_en;
   assign csr_op_o = csr_op;
 
-  // stall control for multicyle ID instructions (currently only misaligned LSU)
-  assign multi_cycle_id_stall = 1'b0; //todo:ok Zce push/pop will use this
+  assign last_op_o = last_op;
+
+  // stall control for multi operation ID instructions (currently only jumps and branches if SECURE=1)
+  assign multi_op_id_stall = !last_op && (if_id_pipe_i.instr_valid); //todo:ok Zce push/pop will use this
 
   // Stage ready/valid
   //
   // Most stall conditions are factored into halt_id (and will force both ready and valid to 0).
   //
-  // Multi-cycle instruction related stalls are different; in that case ready will be 0 (as ID already
-  // contains the instruction following the multicycle instruction.
-  // todo: update when Zce is included. Currently, no multi cycle ID stalls are possible.
+  // Multi operation instruction related stalls are different; in that case ready will be 0 to avoid
+  // following instructions to enter ID at the same time as id_valid will be allowed to go high to update
+  // operands in EX for operations within the same instruction.
+  // todo: update when Zce is included.
 
-  assign id_ready_o = ctrl_fsm_i.kill_id || (!multi_cycle_id_stall && ex_ready_i && !ctrl_fsm_i.halt_id && !xif_waiting);
+  assign id_ready_o = ctrl_fsm_i.kill_id || (!multi_op_id_stall && ex_ready_i && !ctrl_fsm_i.halt_id && !xif_waiting);
 
-  // multi_cycle_id_stall is currently tied to 1'b0. Will be used for Zce push/pop instructions.
-  assign id_valid_o = (instr_valid && !xif_waiting) || (multi_cycle_id_stall && !ctrl_fsm_i.kill_id && !ctrl_fsm_i.halt_id);
+  assign id_valid_o = (instr_valid && !xif_waiting) || (multi_op_id_stall && !ctrl_fsm_i.kill_id && !ctrl_fsm_i.halt_id);
 
 
   //---------------------------------------------------------------------------

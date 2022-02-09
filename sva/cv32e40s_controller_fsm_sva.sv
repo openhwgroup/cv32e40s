@@ -37,6 +37,7 @@ module cv32e40s_controller_fsm_sva
   input logic           jump_taken_id,
   input logic           branch_in_ex,
   input logic           branch_taken_ex,
+  input logic           branch_taken_q,
   input logic           branch_decision_ex_i,
   input ctrl_state_e    ctrl_fsm_cs,
   input ctrl_state_e    ctrl_fsm_ns,
@@ -78,7 +79,10 @@ module cv32e40s_controller_fsm_sva
   input logic           xif_commit_valid,
   input logic           nmi_is_store_q,
   input logic           nmi_pending_q,
-  input dcsr_t          dcsr_i
+  input dcsr_t          dcsr_i,
+  input logic           last_op_id_i,
+  input logic           sys_mret_id_i
+
 );
 
 
@@ -262,6 +266,13 @@ module cv32e40s_controller_fsm_sva
                         ((id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn)) && id_ex_pipe_i.instr_valid) ||
                         ((ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn)) && ex_wb_pipe_i.instr_valid)
                       );
+
+  // Detect if the last part of a secure mret is in ID while the first part is in EX or WB
+  logic mret_self_stall;
+  assign mret_self_stall = (sys_en_id_i && sys_mret_id_i && last_op_id_i) && // MRET 2/2 in ID
+                      ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op) || // mret 1/2 in EX
+                       (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_op));  // mret 1/2 in WB
+
   // Check that WFI is stalled in ID if CSR writes (explicit and implicit)
   // are present in EX or WB
   a_wfi_id_halt :
@@ -271,18 +282,20 @@ module cv32e40s_controller_fsm_sva
       else `uvm_error("controller", "WFI not halted in ID when CSR write is present in EX or WB")
 
   // Check that mret is stalled in ID if CSR writes (explicit and implicit)
-  // are present in EX or WB
+  // are present in EX or WB. Exluding the case where the second part of an mret is in ID while the first part
+  // is in either EX or WB.
   a_mret_id_halt :
     assert property (@(posedge clk) disable iff (!rst_n)
-                      ((sys_en_id_i && sys_mret_insn_id_i) && if_id_pipe_i.instr_valid && csrw_ex_wb)
+                      ((sys_en_id_i && sys_mret_insn_id_i) && if_id_pipe_i.instr_valid && (csrw_ex_wb && !mret_self_stall))
                       |-> (!id_valid_i && ctrl_fsm_o.halt_id))
       else `uvm_error("controller", "mret not halted in ID when CSR write is present in EX or WB")
+
 
   // mret_jump_id is used to update the priviledge level for the IF stage to mstatus.mpp, this check asserts
   // that there are no updates to mstatus.mpp (or any other CSR) in EX or WB
   a_mret_jump_id_csrw :
    assert property (@(posedge clk) disable iff (!rst_n)
-                    ctrl_fsm_o.mret_jump_id |-> !csrw_ex_wb)
+                    ctrl_fsm_o.mret_jump_id |-> !(csrw_ex_wb && !mret_self_stall))
      else `uvm_error("controller", "Priviledge level updated by MRET in ID while CSR write is present in EX or WB")
     
   // mret in User mode must result in illegal instruction
@@ -479,17 +492,18 @@ endgenerate
                      (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en) |-> !debug_allowed)
       else `uvm_error("controller", "debug_allowed high while LSU is in WB")
 
-  // Assert that branches are always taken in the first cycle of EX, unless EX is killed or halted
+  // Assert that branches (that are not already taken) are always taken in the first cycle of EX, unless EX is killed or halted
   // What we really want to check with this assertion is that a branch taken always results
   // in a pc_set to PC_BRANCH.
   // If the branch is not taken in the first cycle of EX, caution must be taken to avoid e.g. a jump in
   // ID taking presedence over the branch in EX.
+
   a_branch_in_ex_taken_first_cycle:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     ($rose(branch_in_ex) && !(ctrl_fsm_o.halt_ex || ctrl_fsm_o.kill_ex) |->
+                     ($rose(branch_in_ex && branch_decision_ex_i) && !branch_taken_q && !(ctrl_fsm_o.halt_ex || ctrl_fsm_o.kill_ex) |->
                       ctrl_fsm_o.pc_set && (ctrl_fsm_o.pc_mux == PC_BRANCH) &&
                       ctrl_fsm_o.kill_if &&
-                      ctrl_fsm_o.kill_id));
+                      (SECURE ? 1'b1 : ctrl_fsm_o.kill_id))); // For SECURE=1, branch instructions are bot in ID and EX when branch is taken, do not kill ID.
 
 
   // Assert that we don't count dummy instruction retirements
@@ -618,5 +632,6 @@ endgenerate
     assert property (@(posedge clk) disable iff (!rst_n)
                     (valid_cnt < (retire_at_error ? 2'b10 : 2'b11)))
     else `uvm_error("controller", "NMI handler not taken within two instruction retirements")
+
 endmodule // cv32e40s_controller_fsm_sva
 

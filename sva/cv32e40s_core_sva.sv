@@ -38,7 +38,7 @@ module cv32e40s_core_sva
   input logic [31:0] mie,
   input dcsr_t       dcsr,
   input              if_id_pipe_t if_id_pipe,
-  input              id_stage_multi_cycle_id_stall,
+  input              id_stage_multi_op_id_stall,
   input logic        id_stage_id_valid,
   input logic        ex_ready,
   input logic        irq_ack, // irq ack output
@@ -261,10 +261,10 @@ always_ff @(posedge clk , negedge rst_ni)
     end
   endgenerate
 
-  // For checking single step, ID stage is used as it contains a 'multi_cycle_id_stall' signal.
+  // For checking single step, ID stage is used as it contains a 'multi_op_id_stall' signal.
   // This makes it easy to count misaligned LSU ins as one instruction instead of two.
   logic inst_taken;
-  assign inst_taken = id_stage_id_valid && ex_ready && !id_stage_multi_cycle_id_stall;
+  assign inst_taken = id_stage_id_valid && ex_ready && !id_stage_multi_op_id_stall;
 
   // Support for single step assertion
   // In case of single step + taken interrupt, the first instruction

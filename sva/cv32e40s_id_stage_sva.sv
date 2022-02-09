@@ -61,12 +61,14 @@ module cv32e40s_id_stage_sva
   input csr_opcode_e    csr_op,
   input if_id_pipe_t    if_id_pipe_i,
   input id_ex_pipe_t    id_ex_pipe_o,
+  input ex_wb_pipe_t    ex_wb_pipe,
   input logic           id_ready_o,
   input logic           id_valid_o,
   input ctrl_fsm_t      ctrl_fsm_i,
   input ctrl_byp_t      ctrl_byp_i,
   input mstatus_t       mstatus_i,
-  input logic           xif_insn_accept
+  input logic           xif_insn_accept,
+  input logic           last_op
 );
 
     // the instruction delivered to the ID stage should always be valid
@@ -180,6 +182,15 @@ module cv32e40s_id_stage_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      $onehot0({alu_en, div_en, mul_en, csr_en, sys_en, lsu_en, xif_en}))
       else `uvm_error("id_stage", "Multiple functional units enabled")
+
+  // Check that second part of a multicycle mret does not stall on the first part of the same instruction
+  a_mret_self_stall :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (sys_en && sys_mret_insn && last_op) &&
+                      ((id_ex_pipe_o.sys_en && id_ex_pipe_o.sys_mret_insn) ||
+                       (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn))
+                       |-> !ctrl_byp_i.csr_stall)
+      else `uvm_error("id_stage", "mret stalls on itself")
 
 endmodule // cv32e40s_id_stage_sva
 
