@@ -896,7 +896,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_csr #(
     .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
+    .MASK       (CSR_JVT_MASK),
+    .SHADOWCOPY (SECURE),
     .RESETVALUE (32'd0)
   ) jvt_csr_i (
     .clk        (clk),
@@ -982,7 +983,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_csr #(
     .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
+    .MASK       (CSR_MSCRATCH_MASK),
+    .SHADOWCOPY (SECURE),
     .RESETVALUE (32'd0)
   ) mscratch_csr_i (
     .clk      (clk),

@@ -1777,6 +1777,7 @@ Hardened CSRs
 Some CSRs have been implemeted with error detection using an inverted shadow copy. If an attack is successful in altering the register value, the error detection logic will trigger a major alert.
 
 This applies to the following registers:
+ - ``jvt``
  - ``mstatus``
  - ``mtvec``
  - ``pmpcfg``
@@ -1787,6 +1788,7 @@ This applies to the following registers:
  - ``mie``
  - ``mepc``
  - ``mtvt``
+ - ``mscratch``
  - ``mintstatus``
  - ``mintthresh``
  - ``mscratchcsw``

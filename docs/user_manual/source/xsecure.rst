@@ -128,8 +128,8 @@ Checking is performed to ensure that the PC increments as expected for sequentia
 
 Hardened CSRs
 -------------
-Critical CSRs (``mstatus``, ``mtvec``, ``pmpcfg``, ``pmpaddr*``, ``mseccfg*``, ``cpuctrl``, ``dcsr``, ``mie``, ``mepc``,
-``mtvt``, ``mintstatus``, ``mintthresh``, ``mscratchcsw``, ``mscratchcswl`` and ``mclicbase``)
+Critical CSRs (``jvt``, ``mstatus``, ``mtvec``, ``pmpcfg``, ``pmpaddr*``, ``mseccfg*``, ``cpuctrl``, ``dcsr``, ``mie``, ``mepc``,
+``mtvt``, ``mscratch``, ``mintstatus``, ``mintthresh``, ``mscratchcsw``, ``mscratchcswl`` and ``mclicbase``)
 have extra glitch detection enabled.
 For these registers a second copy of the register is added which stores a complemented version of the main CSR data. A constant check is made that the two copies are consistent, and a major alert is signaled if not (see :ref:`security_alerts`).
 
