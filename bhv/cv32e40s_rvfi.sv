@@ -183,12 +183,12 @@ module cv32e40s_rvfi
    input logic [31:0]                         csr_mcounteren_q_i,
    input logic                                csr_mcounteren_we_i,
 
-   input logic [ 7:0]                         csr_pmpncfg_n_i[16],
-   input logic [ 7:0]                         csr_pmpncfg_q_i[16],
-   input logic [15:0]                         csr_pmpncfg_we_i,
+   input logic [ 7:0]                         csr_pmpncfg_n_i[PMP_MAX_REGIONS],
+   input logic [ 7:0]                         csr_pmpncfg_q_i[PMP_MAX_REGIONS],
+   input logic [PMP_MAX_REGIONS-1:0]          csr_pmpncfg_we_i,
    input logic [31:0]                         csr_pmpaddr_n_i, // PMP address input shared for all pmpaddr registers
-   input logic [31:0]                         csr_pmpaddr_q_i[16],
-   input logic [15:0]                         csr_pmpaddr_we_i,
+   input logic [31:0]                         csr_pmpaddr_q_i[PMP_MAX_REGIONS],
+   input logic [PMP_MAX_REGIONS-1:0]          csr_pmpaddr_we_i,
    input logic [31:0]                         csr_mseccfg_n_i,
    input logic [31:0]                         csr_mseccfg_q_i,
    input logic                                csr_mseccfg_we_i,
@@ -407,14 +407,14 @@ module cv32e40s_rvfi
    output logic [31:0]                        rvfi_csr_mcounteren_rdata,
    output logic [31:0]                        rvfi_csr_mcounteren_wdata,
 
-   output logic [ 3:0] [31:0]                 rvfi_csr_pmpcfg_rmask,
-   output logic [ 3:0] [31:0]                 rvfi_csr_pmpcfg_wmask,
-   output logic [ 3:0] [31:0]                 rvfi_csr_pmpcfg_rdata,
-   output logic [ 3:0] [31:0]                 rvfi_csr_pmpcfg_wdata,
-   output logic [15:0] [31:0]                 rvfi_csr_pmpaddr_rmask,
-   output logic [15:0] [31:0]                 rvfi_csr_pmpaddr_wmask,
-   output logic [15:0] [31:0]                 rvfi_csr_pmpaddr_rdata,
-   output logic [15:0] [31:0]                 rvfi_csr_pmpaddr_wdata,
+   output logic [PMP_MAX_REGIONS/4-1:0][31:0] rvfi_csr_pmpcfg_rmask,
+   output logic [PMP_MAX_REGIONS/4-1:0][31:0] rvfi_csr_pmpcfg_wmask,
+   output logic [PMP_MAX_REGIONS/4-1:0][31:0] rvfi_csr_pmpcfg_rdata,
+   output logic [PMP_MAX_REGIONS/4-1:0][31:0] rvfi_csr_pmpcfg_wdata,
+   output logic [PMP_MAX_REGIONS-1:0] [31:0]  rvfi_csr_pmpaddr_rmask,
+   output logic [PMP_MAX_REGIONS-1:0] [31:0]  rvfi_csr_pmpaddr_wmask,
+   output logic [PMP_MAX_REGIONS-1:0] [31:0]  rvfi_csr_pmpaddr_rdata,
+   output logic [PMP_MAX_REGIONS-1:0] [31:0]  rvfi_csr_pmpaddr_wdata,
    output logic        [31:0]                 rvfi_csr_mseccfg_rmask,
    output logic        [31:0]                 rvfi_csr_mseccfg_wmask,
    output logic        [31:0]                 rvfi_csr_mseccfg_rdata,
@@ -1135,7 +1135,7 @@ module cv32e40s_rvfi
   // PMP
   // Special case for the PMP cfg registers because they are split by pmp region and not by register
   generate
-    for (genvar i = 0; i < 16; i++ ) begin // Max 16 pmp regions
+    for (genvar i = 0; i < PMP_MAX_REGIONS; i++ ) begin
       // 4 regions in each register
       assign rvfi_csr_wdata_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpncfg_n_i[i];
       assign rvfi_csr_rdata_d.pmpcfg[i/4][8*(i%4)+:8] = csr_pmpncfg_q_i[i];

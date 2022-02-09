@@ -53,8 +53,8 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
    );
 
   // Access Checking Signals
-  logic [PMP_MAX_REGIONS-1:0][33:0]                 region_start_addr ;
-  logic [PMP_MAX_REGIONS-1:0][33:PMP_GRANULARITY+2] region_addr_mask  ;
+  logic [PMP_NUM_REGIONS-1:0][33:0]                 region_start_addr;
+  logic [PMP_NUM_REGIONS-1:0][33:PMP_GRANULARITY+2] region_addr_mask;
   logic [PMP_NUM_REGIONS-1:0]                       region_match_gt;
   logic [PMP_NUM_REGIONS-1:0]                       region_match_lt;
   logic [PMP_NUM_REGIONS-1:0]                       region_match_eq;
