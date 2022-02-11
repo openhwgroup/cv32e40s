@@ -58,6 +58,7 @@ module cv32e40s_wrapper
   parameter int          X_RFW_WIDTH                  = 32,
   parameter logic [31:0] X_MISA                       = 32'h00000000,
   parameter logic [1:0]  X_ECS_XS                     = 2'b00,
+  parameter bit          ZC_EXT                       = 0,
   parameter int          NUM_MHPMCOUNTERS             = 1,
   parameter int          PMP_GRANULARITY              = 0,
   parameter int          PMP_NUM_REGIONS              = 0,
@@ -514,7 +515,12 @@ module cv32e40s_wrapper
          .csr_mvendorid_i          ( {MVENDORID_BANK, MVENDORID_OFFSET}                                   ),
          .csr_marchid_i            ( MARCHID                                                              ),
          .csr_mhartid_i            ( core_i.cs_registers_i.hart_id_i                                      ),
-
+         .csr_mstatush_n_i         ( '0                                                                   ),
+         .csr_mstatush_q_i         ( '0                                                                   ),
+         .csr_mstatush_we_i        ( '0                                                                   ),
+         .csr_tcontrol_n_i         ( '0                                                                   ),
+         .csr_tcontrol_q_i         ( '0                                                                   ),
+         .csr_tcontrol_we_i        ( '0                                                                   ),
          .csr_mcounteren_n_i       ( core_i.cs_registers_i.mcounteren_n                                   ),
          .csr_mcounteren_q_i       ( core_i.cs_registers_i.mcounteren_q                                   ),
          .csr_mcounteren_we_i      ( core_i.cs_registers_i.mcounteren_we                                  ),
@@ -531,7 +537,10 @@ module cv32e40s_wrapper
          .csr_mseccfg_we_i         ( core_i.cs_registers_i.pmp_mseccfg_we                                 ),
          .csr_mseccfgh_n_i         ( '0                                                                   ),
          .csr_mseccfgh_q_i         ( '0                                                                   ),
-         .csr_mseccfgh_we_i        ( '0                                                                   )
+         .csr_mseccfgh_we_i        ( '0                                                                   ),
+         .csr_mconfigptr_n_i       ( '0                                                                   ),
+         .csr_mconfigptr_q_i       ( '0                                                                   ),
+         .csr_mconfigptr_we_i      ( '0                                                                   )
 
 `ifdef RISCV_FORMAL
          ,`RVFI_CONN
@@ -561,6 +570,7 @@ module cv32e40s_wrapper
           .X_RFW_WIDTH           ( X_RFW_WIDTH           ),
           .X_MISA                ( X_MISA                ),
           .X_ECS_XS              ( X_ECS_XS              ),
+          .ZC_EXT                ( ZC_EXT                ),
           .NUM_MHPMCOUNTERS      ( NUM_MHPMCOUNTERS      ),
           .SMCLIC                ( SMCLIC                ),
           .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),

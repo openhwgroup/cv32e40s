@@ -40,6 +40,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter bit          X_EXT            = 0,
   parameter logic [31:0] X_MISA           =  32'h00000000,
   parameter logic [1:0]  X_ECS_XS         =  2'b00, // todo: implement related mstatus bitfields (but only if X_EXT = 1)
+  parameter bit          ZC_EXT           = 0, // todo: remove parameter once fully implemented
   parameter bit          SMCLIC           = 0,
   parameter int          NUM_MHPMCOUNTERS = 1,
   parameter int          PMP_NUM_REGIONS  = 0,
@@ -351,15 +352,27 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     
     case (csr_raddr)
       // jvt: Jump vector table
-      CSR_JVT: csr_rdata_int = jvt_q;
+      CSR_JVT:  begin
+        if (ZC_EXT) begin // todo: remove conditional once fully implemented
+          csr_rdata_int = jvt_q;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
+
       // mstatus: always M-mode, contains IE bit
       CSR_MSTATUS: csr_rdata_int = mstatus_q;
+
       // mstatush: All bits hardwired to 0
       CSR_MSTATUSH: csr_rdata_int = 'b0;
+
       // misa: machine isa register
       CSR_MISA: csr_rdata_int = MISA_VALUE;
+
       // mie: machine interrupt enable
       CSR_MIE: csr_rdata_int = mie_q;
+
       // mtvec: machine trap-handler base address
       CSR_MTVEC: csr_rdata_int = mtvec_q;
       // mcounteren: Counter enable registers
@@ -373,14 +386,19 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           illegal_csr_read = 1'b1;
         end
       end
+
       // mscratch: machine scratch
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
+
       // mepc: exception program counter
       CSR_MEPC: csr_rdata_int = mepc_q;
+
       // mcause: exception cause
       CSR_MCAUSE: csr_rdata_int = mcause_q;
+
       // mip: interrupt pending
       CSR_MIP: csr_rdata_int = mip;
+
       // mnxti: Next Interrupt Handler Address and Interrupt Enable
       CSR_MNXTI: begin
         if (SMCLIC) begin
@@ -390,6 +408,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           illegal_csr_read = 1'b1;
         end
       end
+
       // mintstatus: Interrupt Status
       CSR_MINTSTATUS: begin
         if (SMCLIC) begin
@@ -399,6 +418,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           illegal_csr_read = 1'b1;
         end
       end
+
       // mintthresh: Interrupt-Level Threshold
       CSR_MINTTHRESH: begin
         if (SMCLIC) begin
@@ -408,6 +428,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           illegal_csr_read = 1'b1;
         end
       end
+
       // mscratchcsw: Scratch Swap for Multiple Privilege Modes
       CSR_MSCRATCHCSW: begin
         if (SMCLIC) begin
@@ -417,6 +438,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           illegal_csr_read = 1'b1;
         end
       end
+
       // mscratchcswl: Scratch Swap for Interrupt Levels
       CSR_MSCRATCHCSWL: begin
         if (SMCLIC) begin
@@ -426,6 +448,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           illegal_csr_read = 1'b1;
         end
       end
+
       // mclicbase: CLIC Base
       CSR_MCLICBASE: begin
         if (SMCLIC) begin
@@ -435,10 +458,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           illegal_csr_read = 1'b1;
         end
       end
+
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
+
       // mconfigptr: Pointer to configuration data structure. Read only, hardwired to 0
       CSR_MCONFIGPTR: csr_rdata_int = 'b0;
+
       // mvendorid: Machine Vendor ID
       CSR_MVENDORID: csr_rdata_int = {MVENDORID_BANK, MVENDORID_OFFSET};
 
@@ -689,7 +715,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       case (csr_waddr)
         // jvt: Jump vector table
         CSR_JVT: begin
-          jvt_we = 1'b1;
+          if (ZC_EXT) begin
+            jvt_we = 1'b1;
+          end
         end
         // mstatus: IE bit
         CSR_MSTATUS: begin
