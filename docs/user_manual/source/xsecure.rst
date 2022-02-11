@@ -122,10 +122,11 @@ No attempt is made to correct detected errors, but a major alert is raised upon 
 
 Hardened PC
 -----------
-The IF stage PC is hardened by checking that it has the correct value compared to the ID stage with an offset determined by the compressed/uncompressed state of the 
-instruction in ID. In addition, the IF stage PC is checked for correctness for non-incremental addresses after control flow changes. For jumps (including mret) and branches, this is done
-by making the instructions stay two cycles in ID and EX to enable the second cycle to recompute the PC target and branch decision. Any error in the check for correct PC or branch/jump
-decision will result in a pulse on the ``alert_major_o`` pin.
+During sequential execution the IF stage PC is hardened by checking that it has the correct value compared to the ID stage with an offset determined by the compressed/uncompressed state of the instruction in ID. 
+
+In addition, the IF stage PC is checked for correctness for potential non-sequential execution due to control transfer instructions. For jumps (including mret) and branches, this is done by recomputing the PC target and branch decision (incurring an additional cycle for non-taken branches).
+
+Any error in the check for correct PC or branch/jump decision will result in a pulse on the ``alert_major_o`` pin.
 
 .. _hardened-csrs:
 
