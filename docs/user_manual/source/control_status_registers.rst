@@ -43,7 +43,7 @@ instruction exception.
   +===============+===================+===========+==========================+=========================================================+
   | Zc CSRs                                                                                                                            |
   +---------------+-------------------+-----------+--------------------------+---------------------------------------------------------+
-  | 0x017         | ``jvt``           | MRW       |                          | Table jump base vector and control register             |
+  | 0x017         | ``jvt``           | MRW       | ``ZC_EXT`` = 1           | Table jump base vector and control register             |
   +---------------+-------------------+-----------+--------------------------+---------------------------------------------------------+
   | Machine CSRs                                                                                                                       |
   +---------------+-------------------+-----------+--------------------------+---------------------------------------------------------+
@@ -290,6 +290,14 @@ level):
   reads return either the previously written value or a value determined by the
   operation of the core.
 
+* **WARL**: **write-any-read-legal** fields store only legal values written by CSR writes.
+  For example, a WARL (0x0) field supports only the value 0. Any value may be written, but
+  all reads would return zero regardless of the value being written to it. A WARL field may
+  support more than one value. If an unsupported value is written to such a field, subsequent
+  reads will return the value marked with an asterix (6* for example) in the definiton of that field.
+
+* **WPRI**: Software should ignore values read from these fields, and presereve the values when writing.
+
 .. note::
 
    The **R/W** information does **not** impact whether CSR accesses result in illegal instruction exceptions or not.
@@ -369,6 +377,8 @@ Jump Vector Table (``jvt``)
 CSR Address: 0x017
 
 Reset Value: 0x0000_0000
+
+Include Condition: ``ZC_EXT`` = 1
 
 Detailed:
 

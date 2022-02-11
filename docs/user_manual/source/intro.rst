@@ -94,7 +94,7 @@ In addition, the following standard instruction set extensions are available fro
 
    * - **M**: Standard Extension for Integer Multiplication and Division
      - 2.0
-     - optionally enabled based on ``M_EXT`` parameter
+     - optionally enabled with the ``M_EXT`` parameter
 
    * - **Zicsr**: Control and Status Register Instructions
      - 2.0
@@ -106,39 +106,39 @@ In addition, the following standard instruction set extensions are available fro
 
    * - **Zca**: Subset of the standard **Zc** Code-Size Reduction extension consisting of a subset of **C** with the FP load/stores removed.
      - v0.70.1 (not ratified yet; version will change)
-     - always enabled
+     - optionally enabled with the ``ZC_EXT`` parameter
 
    * - **Zcb**: Subset of the standard **Zc** Code-Size Reduction extension consisting of simple operations.
      - v0.70.1 (not ratified yet; version will change)
-     - always enabled
+     - optionally enabled with the ``ZC_EXT`` parameter
 
    * - **Zcmb**: Subset of the standard **Zc** Code-Size Reduction extension consisting of load/store byte/half which overlap with **c.fld**, **c.fldsp**, **c.fsd**.
      - v0.70.1 (not ratified yet; version will change)
-     - always enabled
+     - optionally enabled with the ``ZC_EXT`` parameter
 
    * - **Zcmp**: Subset of the standard **Zc** Code-Size Reduction extension consisting of push/pop and double move which overlap with **c.fsdsp**.
      - v0.70.1 (not ratified yet; version will change)
-     - always enabled
+     - optionally enabled with the ``ZC_EXT`` parameter
 
    * - **Zcmt**: Subset of the standard **Zc** Code-Size Reduction extension consisting of table jump.
      - v0.70.1 (not ratified yet; version will change)
-     - always enabled
+     - optionally enabled with the ``ZC_EXT`` parameter
 
    * - **Zba**: Bit Manipulation Address calculation instructions
      - Version 1.0.0
-     - optionally enabled based on ``B_EXT`` parameter
+     - optionally enabled with the ``B_EXT`` parameter
 
    * - **Zbb**: Bit Manipulation Base instructions
      - Version 1.0.0
-     - optionally enabled based on ``B_EXT`` parameter
+     - optionally enabled with the ``B_EXT`` parameter
 
    * - **Zbc**: Bit Manipulation Carry-Less Multiply instructions
      - Version 1.0.0
-     - optionally enabled based on ``B_EXT`` parameter
+     - optionally enabled with the ``B_EXT`` parameter
 
    * - **Zbs**: Bit Manipulation Bit set, Bit clear, etc. instructions
      - Version 1.0.0
-     - optionally enabled based on ``B_EXT`` parameter
+     - optionally enabled with the ``B_EXT`` parameter
 
    * - **Zkt**: Data Independent Execution Latency
      - Version 1.0.0
@@ -146,11 +146,11 @@ In addition, the following standard instruction set extensions are available fro
 
    * - **Zbkc**: Constant time Carry-Less Multiply
      - Version 1.0.0
-     - optionally enabled based on ``B_EXT`` parameter
+     - optionally enabled with the ``B_EXT`` parameter
 
    * - **Zmmul**: Multiplication subset of the **M** extension
      - Version 0.1
-     - optionally enabled based on ``M_EXT`` parameter
+     - optionally enabled with the ``M_EXT`` parameter
 
 The following custom instruction set extensions are available.
 
