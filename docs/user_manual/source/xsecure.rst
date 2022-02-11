@@ -124,8 +124,8 @@ Hardened PC
 -----------
 The IF stage PC is hardened by checking that it has the correct value compared to the ID stage with an offset determined by the compressed/uncompressed state of the 
 instruction in ID. In addition, the IF stage PC is checked for correctness for non-incremental addresses after control flow changes. For jumps (including mret) and branches, this is done
-by making the instructions stay two cycles in ID and EX to enable the second cycle to recompute the PC target. The recomputed target is compared to the actual IF stage PC in the cycle after
-the actual PC change.
+by making the instructions stay two cycles in ID and EX to enable the second cycle to recompute the PC target and branch decision. Any error in the check for correct PC or branch/jump
+decision will result in a pulse on the ``alert_major_o`` pin.
 
 .. _hardened-csrs:
 
@@ -141,11 +141,6 @@ For these registers a second copy of the register is added which stores a comple
   Special care in the synthesis script is necessary (see :ref:`register-cells`) and the final netlist must be checked to ensure that the shadow copies are still present.
   A netlist test for this feature is recommended.
 
-Control flow hardening
-----------------------
-A hardware check is performed to check if branches are taken (or not taken) as they should.
-Jumps and branches stay two cycles in ID and EX to enable the pipeline to recompute the PC target and the branch decision. These recomputed values are then compared
-to the actual used values one cycle after they have been used, or should have been used in the case of branches that were not taken.
 
 Functional unit and FSM hardening
 ---------------------------------
