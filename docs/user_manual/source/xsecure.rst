@@ -122,7 +122,10 @@ No attempt is made to correct detected errors, but a major alert is raised upon 
 
 Hardened PC
 -----------
-Checking is performed to ensure that the PC increments as expected for sequential code. See https://ibex-core.readthedocs.io/en/latest/03_reference/security.html.
+The IF stage PC is hardened by checking that it has the correct value compared to the ID stage with an offset determined by the compressed/uncompressed state of the 
+instruction in ID. In addition, the IF stage PC is checked for correctness for non-incremental addresses after control flow changes. For jumps (including mret) and branches, this is done
+by making the instructions stay two cycles in ID and EX to enable the second cycle to recompute the PC target. The recomputed target is compared to the actual IF stage PC in the cycle after
+the actual PC change.
 
 .. _hardened-csrs:
 
@@ -141,6 +144,8 @@ For these registers a second copy of the register is added which stores a comple
 Control flow hardening
 ----------------------
 A hardware check is performed to check if branches are taken (or not taken) as they should.
+Jumps and branches stay two cycles in ID and EX to enable the pipeline to recompute the PC target and the branch decision. These recomputed values are then compared
+to the actual used values one cycle after they have been used, or should have been used in the case of branches that were not taken.
 
 Functional unit and FSM hardening
 ---------------------------------
