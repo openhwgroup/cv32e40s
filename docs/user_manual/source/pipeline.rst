@@ -43,7 +43,7 @@ and zero stall on the data-side memory interface.
   |                       | mcycle, minstret, mhpmcounter*,      | RISC-V specification.                                       |
   |                       | mcycleh, minstreth, mhpmcounter*h,   |                                                             |
   |                       | mcountinhibit, mhpmevent*, dscr,     |                                                             |
-  |                       | dpc, dscratch0, dscratch1, privlv)   |                                                             |
+  |                       | dpc, dscratch0, dscratch1)           |                                                             |
   |                       |                                      |                                                             |
   |                       | 1 (all the other CSRs)               |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
@@ -66,13 +66,19 @@ and zero stall on the data-side memory interface.
   |                       | 35 (cpuctrl.dataindtiming is set)    | The maximum number of cycles is 35 when the divider is 0    |
   |                       |                                      |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
-  | Jump                  | 2                                    | Jumps are performed in the ID stage. Upon a jump the IF     |
+  | Jump                  | 3                                    | Jumps are performed in the ID stage. Upon a jump the IF     |
   |                       |                                      | stage (including prefetch buffer) is flushed. The new PC    |
-  |                       | 3 (target is a non-word-aligned      | request will appear on the instruction-side memory          |
+  |                       | 4 (target is a non-word-aligned      | request will appear on the instruction-side memory          |
   |                       | non-RVC instruction)                 | interface the same cycle the jump instruction is in the ID  |
   |                       |                                      | stage.                                                      |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
-  | Branch (Not-Taken)    | 1                                    | Any branch where the condition is not met will              |
+  | mret                  | 3                                    | Mret is performed in the ID stage. Upon an mret the IF      |
+  |                       |                                      | stage (including prefetch buffer) is flushed. The new PC    |
+  |                       | 4 (target is a non-word-aligned      | request will appear on the instruction-side memory          |
+  |                       | non-RVC instruction)                 | interface the same cycle the mret instruction is in the ID  |
+  |                       |                                      | stage.                                                      |
+  +-----------------------+--------------------------------------+-------------------------------------------------------------+
+  | Branch (Not-Taken)    | 2                                    | Any branch where the condition is not met will              |
   |                       |                                      | not stall.                                                  |
   |                       | 3 (cpuctrl.dataindtiming is set)     |                                                             |
   |                       |                                      |                                                             |
@@ -85,9 +91,9 @@ and zero stall on the data-side memory interface.
   |                       | 4 (target is a non-word-aligned      | EX stage and will cause a flush of the IF stage (including  |
   |                       | non-RVC instruction)                 | prefetch buffer) and ID stage.                              |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
-  | Instruction Fence     | 2                                    | The FENCE.I instruction as defined in 'Zifencei' of the     |
+  | Instruction Fence     | 5                                    | The FENCE.I instruction as defined in 'Zifencei' of the     |
   |                       |                                      | RISC-V specification. Internally it is implemented as a     |
-  |                       | 3 (target is a non-word-aligned      | jump to the instruction following the fence. The jump       |
+  |                       | 6 (target is a non-word-aligned      | jump to the instruction following the fence. The jump       |
   |                       | non-RVC instruction)                 | performs the required flushing as described above.          |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
 
@@ -97,4 +103,8 @@ Hazards
 The |corev| experiences a 1 cycle penalty on the following hazards.
 
  * Load data hazard (in case the instruction immediately following a load uses the result of that load)
- * Jump register (jalr) data hazard (in case that a jalr depends on the result of an immediately preceding instruction)
+ * Jump register (jalr) data hazard (in case that a jalr depends on the result of an immediately preceding non-load instruction)
+
+The |corev| experiences a 2 cycle penalty on the following hazards.
+
+ * Jump register (jalr) data hazard (in case that a jalr depends on the result of an immediately preceding load instruction)
