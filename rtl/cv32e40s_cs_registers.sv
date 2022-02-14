@@ -51,6 +51,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter lfsr_cfg_t   LFSR0_CFG        = LFSR_CFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR1_CFG        = LFSR_CFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR2_CFG        = LFSR_CFG_DEFAULT
+  parameter int          DBG_NUM_TRIGGERS = 1 // todo: implement support for DBG_NUM_TRIGGERS != 1
 )
 (
   // Clock and Reset
@@ -59,9 +60,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   input  logic            scan_cg_en_i,
 
   // Hart ID
-  input  logic [31:0]     hart_id_i,
+  input  logic [31:0]     mhartid_i,
+  input  logic [31:0]     mimpid_i,
   output logic [23:0]     mtvec_addr_o,
   output logic [ 1:0]     mtvec_mode_o,
+
+  // Cycle Count
+  output logic [MHPMCOUNTER_WIDTH-1:0] mcycle_o,
 
   // Used for mtvec address
   input  logic [31:0]     mtvec_addr_i,
@@ -140,7 +145,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   localparam logic [31:0] MISA_VALUE = CORE_MISA | (X_EXT ? X_MISA : 32'h0000_0000);
 
   localparam PMP_ADDR_WIDTH = (PMP_GRANULARITY > 0) ? 33 - PMP_GRANULARITY : 32;
-  
+
   // CSR update logic
   logic [31:0] csr_wdata_int;
   logic [31:0] csr_rdata_int;
@@ -349,7 +354,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     illegal_csr_read              = 1'b0;
     umode_mcounteren_illegal_read = 1'b0;
     csr_counter_read_o            = 1'b0;
-    
+
     case (csr_raddr)
       // jvt: Jump vector table
       CSR_JVT:  begin
@@ -460,7 +465,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       end
 
       // mhartid: unique hardware thread id
-      CSR_MHARTID: csr_rdata_int = hart_id_i;
+      CSR_MHARTID: csr_rdata_int = mhartid_i;
+
+      // mimpid: implementation id
+      CSR_MIMPID: csr_rdata_int = mimpid_i;
 
       // mconfigptr: Pointer to configuration data structure. Read only, hardwired to 0
       CSR_MCONFIGPTR: csr_rdata_int = 'b0;
@@ -472,7 +480,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MARCHID: csr_rdata_int = MARCHID;
 
       // unimplemented, read 0 CSRs
-      CSR_MIMPID,
         CSR_MTVAL :
           csr_rdata_int = 'b0;
 
@@ -531,7 +538,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         umode_mcounteren_illegal_read = !mcounteren_q[csr_raddr[4:0]] && (id_ex_pipe_i.priv_lvl == PRIV_LVL_U);
         csr_counter_read_o            = 1'b1;
       end
-      
+
       CSR_MCYCLEH,
       CSR_MINSTRETH,
       CSR_MHPMCOUNTER3H,
@@ -613,7 +620,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       end
 
       default: begin
-        csr_rdata_int = '0;
+        csr_rdata_int    = '0;
         illegal_csr_read = 1'b1;
       end
     endcase
@@ -666,10 +673,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
     mstatus_we      = 1'b0;
     mcause_n        = '{
-                        irq:            csr_wdata_int[31],
-                        exception_code: csr_wdata_int[7:0],
-                        default: 'b0
-                        };
+                         irq:            csr_wdata_int[31],
+                         exception_code: csr_wdata_int[7:0],
+                         default:        'b0
+                       };
     mcause_we       = 1'b0;
     priv_lvl_n      = priv_lvl_q;
     priv_lvl_we     = 1'b0;
@@ -1646,6 +1653,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // |_|   \___|_|  |_|(_)  \____\___/ \__,_|_| |_|\__\___|_|    //
   //                                                             //
   /////////////////////////////////////////////////////////////////
+
+  // Cycle Count Output Signal
+  assign mcycle_o = mhpmcounter_q[0];
 
   // Flop certain events to ease timing
   localparam bit [15:0] HPM_EVENT_FLOP     = 16'b1111_1111_1100_0000;
