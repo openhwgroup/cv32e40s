@@ -152,6 +152,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   assign trans.size  = id_ex_pipe_i.lsu_size;
   assign trans.wdata = id_ex_pipe_i.operand_c;
   assign trans.mode  = PRIV_LVL_M; // Machine mode TODO: connect to priv_lvl
+  assign trans.dbg   = ctrl_fsm_i.debug_mode;
 
   assign trans.atop  = id_ex_pipe_i.lsu_atop;
   assign trans.sext  = id_ex_pipe_i.lsu_sext;
@@ -450,6 +451,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   assign align_trans.wdata   = wdata;
   assign align_trans.atop    = trans.atop;
   assign align_trans.prot    = {trans.mode, 1'b1};      // Transfers from LSU are data transfers
+  assign align_trans.dbg     = trans.dbg;
   assign align_trans.memtype = 2'b00;                   // Memory type is assigned in MPU
 
   // Transaction request generation
