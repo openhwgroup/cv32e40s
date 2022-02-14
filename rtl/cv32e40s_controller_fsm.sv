@@ -87,7 +87,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   output ctrl_fsm_t   ctrl_fsm_o,
 
   // CSR write strobes
-  input logic         xsecure_csr_wr_in_wb_i,
+  input logic         csr_wr_in_wb_flush_i,
 
   // Stage valid/ready signals
   input  logic        if_valid_i,       // IF stage has valid (non-bubble) data for next stage
@@ -639,10 +639,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
             single_step_halt_if_n = 1'b0;
             debug_mode_n  = 1'b0;
-          end else if (xsecure_csr_wr_in_wb_i) begin
-            // xsecure CSRs has impact on pipeline operation. When updated, clear pipeline.
-            // div/divu/rem/remu and branch decisions in EX stage depend on cpuctrl.dataindtiming
-            // Dummy instruction insertion depend on cpuctrl.dummyen/dummyfreq
+          end else if (csr_wr_in_wb_flush_i) begin
+            // Flush pipeline because of CSR update
             ctrl_fsm_o.kill_if = 1'b1;
             ctrl_fsm_o.kill_id = 1'b1;
             ctrl_fsm_o.kill_ex = 1'b1;

@@ -112,7 +112,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output xsecure_ctrl_t   xsecure_ctrl_o,
 
   // CSR write strobes
-  output logic            xsecure_csr_wr_in_wb_o,
+  output logic            csr_wr_in_wb_flush_o,
 
   // debug
   output logic [31:0]     dpc_o,
@@ -229,7 +229,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [PMP_MAX_REGIONS-1:0] pmpncfg_we;
   logic [PMP_NUM_REGIONS-1:0] pmpncfg_locked;
   logic [PMP_NUM_REGIONS-1:0] pmpncfg_rd_error;
- 
+  logic [PMP_NUM_REGIONS-1:0] pmpncfg_wr_addr_match;
+  logic [PMP_NUM_REGIONS-1:0] pmpaddr_wr_addr_match;
+
   logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_n;
   logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_q[PMP_MAX_REGIONS];
   logic [PMP_MAX_REGIONS-1:0] pmp_addr_we_int;
@@ -279,6 +281,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [31:0] csr_wdata;
   logic        csr_en_gated;
   logic        csr_wr_in_wb;
+  logic        xsecure_csr_wr_in_wb;
+  logic        pmp_csr_wr_in_wb;
 
   logic illegal_csr_read;  // Current CSR cannot be read
   logic illegal_csr_write; // Current CSR cannot be written
@@ -1295,12 +1299,25 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                          (csr_op == CSR_OP_SET)   ||
                          (csr_op == CSR_OP_CLEAR));
 
-  assign xsecure_csr_wr_in_wb_o = SECURE &&
+  // xsecure CSRs has impact on pipeline operation. When updated, clear pipeline.
+  // div/divu/rem/remu and branch decisions in EX stage depend on cpuctrl.dataindtiming
+  // Dummy instruction insertion depend on cpuctrl.dummyen/dummyfreq
+  assign xsecure_csr_wr_in_wb   = SECURE &&
                                   csr_wr_in_wb &&
                                   ((csr_waddr == CSR_CPUCTRL)     ||
                                    (csr_waddr == CSR_SECURESEED0) ||
                                    (csr_waddr == CSR_SECURESEED1) ||
                                    (csr_waddr == CSR_SECURESEED2));
+
+  // PMP CSRs affect memory access permissions. When updated, the pipeline must be flushed
+  // to ensure succseeding instructions are executed with correct permissions
+  assign pmp_csr_wr_in_wb = csr_wr_in_wb &&
+                            (|pmpncfg_wr_addr_match ||
+                             |pmpaddr_wr_addr_match ||
+                             (csr_waddr == CSR_MSECCFG));
+
+
+  assign csr_wr_in_wb_flush_o = xsecure_csr_wr_in_wb || pmp_csr_wr_in_wb;
 
   assign csr_rdata_o = csr_rdata_int;
 
@@ -1387,6 +1404,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       for(genvar i=0; i < PMP_MAX_REGIONS; i++)  begin: gen_pmp_csr
 
         if(i < PMP_NUM_REGIONS) begin: pmp_region
+
+
+          assign pmpncfg_wr_addr_match[i] = (csr_waddr == csr_num_e'(CSR_PMPCFG0 + i));
           
           
           
@@ -1439,6 +1459,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                                     !pmpncfg_locked[i] &&
                                     (!pmpncfg_locked[i+1] || pmpncfg_q[i+1].mode != PMP_MODE_TOR);
           end
+
+          assign pmpaddr_wr_addr_match[i] = (csr_waddr == csr_num_e'(CSR_PMPADDR0 + i));
 
           cv32e40s_csr #(
                          .WIDTH      (PMP_ADDR_WIDTH),
