@@ -96,9 +96,9 @@ In Debug Mode, all interrupts are ignored independent of ``mstatus.MIE`` and the
  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
  |              1 |           1021 | Store bus fault NMI (imprecise)                 | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for store          |
  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |            130 | Load parity/checksum fault NMI (imprecise)      | Load parity/checksum fault (imprecise)                          |
+ |              1 |           1022 | Load parity/checksum fault NMI (imprecise)      | Load parity/checksum fault (imprecise)                          |
  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |            131 | Store parity/checksum fault NMI (imprecise)     | Store parity/checksum fault (imprecise)                         |
+ |              1 |           1023 | Store parity/checksum fault NMI (imprecise)     | Store parity/checksum fault (imprecise)                         |
  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
 
 .. note::
