@@ -52,7 +52,7 @@ It follows these specifications:
    https://github.com/riscv/riscv-code-size-reduction/releases/download/V0.70.1-TOOLCHAIN-DEV/Zc_0_70_1.pdf
 
 .. [RISC-V-SMEPMP] PMP Enhancements for memory access and execution prevention on Machine mode, version 1.0, 12/2021,
-   https://github.com/riscv/riscv-tee/blob/main/Smepmp/Smepmp.pdf
+   https://github.com/riscv/riscv-tee/blob/b20fda89e8e05605ca943af5897c0bb7f4db9841/Smepmp/Smepmp.pdf
 
 .. [RISC-V-CRYPTO] RISC-V Cryptography Extensions Volume I, Scalar & Entropy Source Instructions, Version v1.0.0, 2'nd December, 2021: Ratified,
    https://github.com/riscv/riscv-crypto/releases/download/v1.0.0-scalar/riscv-crypto-spec-scalar-v1.0.0.pdf

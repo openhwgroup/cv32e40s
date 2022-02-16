@@ -62,10 +62,10 @@ If multiple interrupts are pending, they are handled in the fixed priority order
 The highest priority is given to the interrupt with the highest ID, except for the Machine Timer Interrupt, which has the lowest priority. So from high to low priority the interrupts are
 ordered as follows: 
 
-* ``store parity/checksum fault NMI (1023)``
-* ``load parity/checksum fault NMI (1022)``
-* ``store bus fault NMI (1021)``
-* ``load bus fault NMI (1020)``
+* ``store parity/checksum fault NMI (1027)``
+* ``load parity/checksum fault NMI (1026)``
+* ``store bus fault NMI (1025)``
+* ``load bus fault NMI (1024)``
 * ``irq_i[31]``
 * ``irq_i[30]``
 * ...
@@ -92,13 +92,13 @@ In Debug Mode, all interrupts are ignored independent of ``mstatus.MIE`` and the
  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
  |              1 |          31-16 | Machine Fast Interrupts                         | ``irq_i[31]``-``irq_i[16]``                                     |
  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |           1020 | Load bus fault NMI (imprecise)                  | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for load           |
+ |              1 |           1024 | Load bus fault NMI (imprecise)                  | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for load           |
  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |           1021 | Store bus fault NMI (imprecise)                 | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for store          |
+ |              1 |           1025 | Store bus fault NMI (imprecise)                 | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for store          |
  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |           1022 | Load parity/checksum fault NMI (imprecise)      | Load parity/checksum fault (imprecise)                          |
+ |              1 |           1026 | Load parity/checksum fault NMI (imprecise)      | Load parity/checksum fault (imprecise)                          |
  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |           1023 | Store parity/checksum fault NMI (imprecise)     | Store parity/checksum fault (imprecise)                         |
+ |              1 |           1027 | Store parity/checksum fault NMI (imprecise)     | Store parity/checksum fault (imprecise)                         |
  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
 
 .. note::
