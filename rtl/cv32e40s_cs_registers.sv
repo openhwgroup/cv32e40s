@@ -50,7 +50,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR0_CFG        = LFSR_CFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR1_CFG        = LFSR_CFG_DEFAULT,
-  parameter lfsr_cfg_t   LFSR2_CFG        = LFSR_CFG_DEFAULT
+  parameter lfsr_cfg_t   LFSR2_CFG        = LFSR_CFG_DEFAULT,
   parameter int          DBG_NUM_TRIGGERS = 1 // todo: implement support for DBG_NUM_TRIGGERS != 1
 )
 (
