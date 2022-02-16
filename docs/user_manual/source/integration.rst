@@ -90,6 +90,7 @@ Instantiation Template
       .data_err_i               (),
       .data_rchk_i              (),
 
+      .mchycle_o                (),
        // Interrupt interface
       .irq_i                    (),
 
@@ -193,9 +194,9 @@ Interfaces
 |                         |                         |     | core via ``fetch_enable_i``                |
 +-------------------------+-------------------------+-----+--------------------------------------------+
 | ``mtvec_addr_i``        | 32                      | in  | ``mtvec`` address. Initial value for the   |
-|                         |                         |     | address part of :ref:`csr-mtvec`.          |
-|                         |                         |     | Must be 4096-byte aligned                  |
-|                         |                         |     | (i.e. ``mtvec_addr_i[11:0]`` = 0).         |
+|                         |                         |     | address part of :ref:`csr-mtvec `.         |
+|                         |                         |     | Must be 128-byte aligned                   |
+|                         |                         |     | (i.e. ``mtvec_addr_i[6:0]`` = 0).          |
 |                         |                         |     | Do not change after enabling core          |
 |                         |                         |     | via ``fetch_enable_i``                     |
 +-------------------------+-------------------------+-----+--------------------------------------------+
@@ -224,6 +225,8 @@ Interfaces
 | ``instr_*``             | Instruction fetch interface, see :ref:`instruction-fetch`                  |
 +-------------------------+----------------------------------------------------------------------------+
 | ``data_*``              | Load-store unit interface, see :ref:`load-store-unit`                      |
++-------------------------+----------------------------------------------------------------------------+
+| ``mcycle_o``            | Cycle Counter Output                                                       |
 +-------------------------+----------------------------------------------------------------------------+
 | ``irq_*``               | Interrupt inputs, see :ref:`exceptions-interrupts`                         |
 +-------------------------+----------------------------------------------------------------------------+
