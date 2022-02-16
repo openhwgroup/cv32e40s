@@ -26,8 +26,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_load_store_unit import cv32e40s_pkg::*;
-  #(parameter bit          A_EXT           = 0,
-    parameter int          PMP_GRANULARITY = 0,
+  #(parameter int          PMP_GRANULARITY = 0,
     parameter int          PMP_NUM_REGIONS = 0,
     parameter int          PMA_NUM_REGIONS = 0,
     parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT})
@@ -606,7 +605,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   cv32e40s_mpu
   #(
     .IF_STAGE           ( 0                    ),
-    .A_EXT              ( A_EXT                ),
     .CORE_RESP_TYPE     ( data_resp_t          ),
     .BUS_RESP_TYPE      ( obi_data_resp_t      ),
     .CORE_REQ_TYPE      ( obi_data_req_t       ),
@@ -619,7 +617,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   (
     .clk                  ( clk                ),
     .rst_n                ( rst_n              ),
-    .atomic_access_i      ( 1'b0               ), // TODO:OE update to support atomic PMA checks
     .misaligned_access_i  ( misaligned_access  ),
     .priv_lvl_i           ( priv_lvl_lsu_i     ),
     .csr_pmp_i            ( csr_pmp_i          ),

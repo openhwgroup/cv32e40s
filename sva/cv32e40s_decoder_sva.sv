@@ -26,14 +26,12 @@
 module cv32e40s_decoder_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
-#(  
-  parameter bit A_EXT     = 1'b0
+#(
 )
 (
   input logic           clk,
   input logic           rst_n,
   input decoder_ctrl_t  decoder_m_ctrl,
-  input decoder_ctrl_t  decoder_a_ctrl,
   input decoder_ctrl_t  decoder_i_ctrl,
   input decoder_ctrl_t  decoder_b_ctrl,
   input decoder_ctrl_t  decoder_ctrl_mux,
@@ -47,7 +45,6 @@ module cv32e40s_decoder_sva
   endproperty
 
   a_m_dec_idle : assert property(p_idle_dec(decoder_m_ctrl)) else `uvm_error("decoder", "Assertion a_m_dec_idle failed")
-  a_a_dec_idle : assert property(p_idle_dec(decoder_a_ctrl)) else `uvm_error("decoder", "Assertion a_a_dec_idle failed")
   a_i_dec_idle : assert property(p_idle_dec(decoder_i_ctrl)) else `uvm_error("decoder", "Assertion a_i_dec_idle failed")
   a_b_dec_idle : assert property(p_idle_dec(decoder_b_ctrl)) else `uvm_error("decoder", "Assertion a_b_dec_idle failed")
   
@@ -60,15 +57,11 @@ module cv32e40s_decoder_sva
 
   a_uncompressed_lsb: assert property(p_uncompressed_lsb) else `uvm_error("decoder", "2 LSBs not 2'b11")
 
-  generate
-    if (!A_EXT) begin : gen_no_a_extension_assertions
-      // Check that A extension opcodes are decoded as illegal when A extension not enabled
-      a_illegal_0 :
-        assert property (@(posedge clk) disable iff (!rst_n)
-          (instr_rdata[6:0] == OPCODE_AMO) |-> (decoder_ctrl_mux.illegal_insn == 'b1))
-        else `uvm_error("decoder", "AMO instruction should be illegal")
-    end
-  endgenerate
+  // Check that A extension opcodes are decoded as illegal because A extension is not implemented
+  a_illegal_0 :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     (instr_rdata[6:0] == OPCODE_AMO) |-> (decoder_ctrl_mux.illegal_insn == 'b1))
+      else `uvm_error("decoder", "AMO instruction should be illegal")
 
   // Ensure that the A operand is only used for certain functional units
   a_alu_op_a_mux_sel :
