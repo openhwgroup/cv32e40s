@@ -723,8 +723,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         // jvt: Jump vector table
         CSR_JVT: begin
           if (ZC_EXT) begin
-            jvt_we = 1'b1;
-          end
+          jvt_we = 1'b1;
+        end
         end
         // mstatus: IE bit
         CSR_MSTATUS: begin
