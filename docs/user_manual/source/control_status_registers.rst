@@ -773,7 +773,7 @@ Machine Counter-Inhibit Register (``mcountinhibit``)
 
 CSR Address: 0x320
 
-Reset Value: Defined
+Reset Value: 0x0000_0005
 
 The performance counter inhibit control register. The default value is to inihibit all implemented counters out of reset.
 The bit returns a read value of 0 for non implemented counters.
