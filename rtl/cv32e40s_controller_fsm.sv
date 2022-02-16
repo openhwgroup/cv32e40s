@@ -49,7 +49,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // From ID stage
   input  if_id_pipe_t if_id_pipe_i,
-  input  logic        alu_en_raw_id_i,            // ALU enable (not gated with deassert)
+  input  logic        alu_en_id_i,                // ALU enable
   input  logic        alu_jmp_id_i,               // ALU jump
   input  logic        sys_en_id_i,
   input  logic        sys_mret_id_i,              // mret in ID stage
@@ -215,8 +215,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Checking validity of jump instruction or mret with if_id_pipe_i.instr_valid.
   // Using the ID stage local instr_valid would bring halt_id and kill_id into the equation
   // causing a path from data_rvalid to instr_addr_o/instr_req_o/instr_memtype_o via the jumps pc_set=1
-  assign jump_in_id = ((alu_jmp_id_i && alu_en_raw_id_i && !ctrl_byp_i.jalr_stall) || // todo: study area and functional impact of using alu_en_id_i instead
-                       (sys_en_id_i && sys_mret_id_i && !ctrl_byp_i.csr_stall)) &&
+  assign jump_in_id = ((alu_jmp_id_i && alu_en_id_i && !ctrl_byp_i.jalr_stall) ||
+                       (sys_mret_id_i && sys_en_id_i && !ctrl_byp_i.csr_stall)) &&
                          if_id_pipe_i.instr_valid;
 
   // Blocking on jump_taken_q, which flags that a jump has already been taken
@@ -463,6 +463,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     ctrl_fsm_o.exception_alert     = 1'b0;
 
     ctrl_fsm_o.mret_jump_id        = 1'b0;
+
+    ctrl_fsm_o.jump_in_id          = jump_in_id;
+    ctrl_fsm_o.jump_taken_id       = jump_taken_id;
+    ctrl_fsm_o.branch_in_ex        = branch_in_ex;
+    ctrl_fsm_o.branch_taken_ex     = branch_taken_ex;
 
     pipe_pc_mux_ctrl               = PC_WB;
 

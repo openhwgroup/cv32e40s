@@ -70,6 +70,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   // Register file write data from EX stage
   input  logic [31:0] rf_wdata_ex_i,
 
+  output logic        alu_en_o,
   output logic        alu_en_raw_o,
   output logic        alu_jmp_o,        // Jump (JAL, JALR)
   output logic        alu_jmpr_o,       // Jump register (JALR)
@@ -678,6 +679,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     end
   endgenerate
 
+  assign alu_en_o     = alu_en;
   assign alu_en_raw_o = alu_en_raw;
   assign alu_jmp_o    = alu_jmp;
   assign alu_jmpr_o   = alu_jmpr;
@@ -688,6 +690,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   assign last_op_o = last_op;
 
   // stall control for multi operation ID instructions (currently only jumps and branches if SECURE=1)
+  // Using if_id_pipe_i.instr_valid instead of the local instr_valid, as halt_id and kill_id are
+  // factored into id_valid_o and id_ready_o regardless of muli_op_id_stall.
   assign multi_op_id_stall = !last_op && (if_id_pipe_i.instr_valid); //todo:ok Zce push/pop will use this
 
   // Stage ready/valid

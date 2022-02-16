@@ -80,6 +80,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // Detect if a SECURE mret would stall on itself
   logic mret_self_stall;
 
+  // Detect if a jumpr would stall on itself
+  logic jumpr_self_stall;
+
   // EX register file write enable
   logic rf_we_ex;
   assign rf_we_ex = id_ex_pipe_i.rf_we && id_ex_pipe_i.instr_valid;
@@ -136,6 +139,10 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
                            ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op) || // mret 1/2 in EX
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_op));  // mret 1/2 in WB
 
+  assign jumpr_self_stall = (alu_jmpr_id_i && alu_en_raw_id_i && last_op_id_i) &&
+                            ((id_ex_pipe_i.alu_jmp && id_ex_pipe_i.alu_en && !id_ex_pipe_i.last_op) ||
+                             (ex_wb_pipe_i.alu_jmp_qual && !ex_wb_pipe_i.last_op));
+
   // Stall ID when WFI is active in EX.
   // Prevent load/store following a WFI in the pipeline
   assign ctrl_byp_o.wfi_stall = (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_wfi_insn && id_ex_pipe_i.instr_valid);
@@ -184,7 +191,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
     // Stall because of jalr path. Stall if a result is to be forwarded to the PC except if result from WB is an ALU result.
     // No need to deassert anything in ID as ID stage is stalled anyway. alu_jmpr_id_i implies rf_re_id_i[0].
-    if (alu_jmpr_id_i && alu_en_raw_id_i && ((rf_we_wb && rf_rd_wb_jalr_match && lsu_en_wb) || (rf_we_ex && rf_rd_ex_jalr_match))) begin
+    if (alu_jmpr_id_i && alu_en_raw_id_i && ((rf_we_wb && rf_rd_wb_jalr_match && lsu_en_wb) || (rf_we_ex && rf_rd_ex_jalr_match)) && !jumpr_self_stall) begin
       ctrl_byp_o.jalr_stall = 1'b1;
     end else begin
       ctrl_byp_o.jalr_stall = 1'b0;

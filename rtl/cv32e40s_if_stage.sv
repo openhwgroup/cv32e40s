@@ -52,8 +52,15 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   input  logic [23:0]   mtvec_addr_i,           // Exception/interrupt address (MSBs)
   input  logic [31:0]   nmi_addr_i,             // NMI address
 
+  input  logic          branch_decision_i,      // Current branch decision from EX
+
+  input  logic          last_op_id_i,
+  input  logic          last_op_ex_i,
+  output logic          pc_err_o,               // Error signal for the pc checker module
+
   input ctrl_fsm_t      ctrl_fsm_i,
   input  logic          trigger_match_i,
+
 
   // Instruction bus interface
   if_c_obi.master       m_c_obi_instr_if,
@@ -243,6 +250,40 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .resp_valid_o         ( bus_resp_valid   ),
     .resp_o               ( bus_resp         ),
     .m_c_obi_instr_if     ( m_c_obi_instr_if )
+  );
+
+  ///////////////
+  // PC checker
+  ///////////////
+  cv32e40s_pc_check
+  pc_check_i
+  (
+    .clk                  ( clk                  ),
+    .rst_n                ( rst_n                ),
+
+    .if_valid_i           ( if_valid_o           ),
+    .id_ready_i           ( id_ready_i           ),
+
+    .pc_if_i              ( pc_if_o              ),
+    .ctrl_fsm_i           ( ctrl_fsm_i           ),
+    .if_id_pipe_i         ( if_id_pipe_o         ),
+    .jump_target_i        ( jump_target_id_i     ),
+    .branch_target_i      ( branch_target_ex_i   ),
+    .branch_decision_i    ( branch_decision_i    ),
+
+    .last_op_id_i         ( last_op_id_i         ),
+    .last_op_ex_i         ( last_op_ex_i         ),
+
+    .mepc_i               ( mepc_i               ),
+    .mtvec_addr_i         ( mtvec_addr_i         ),
+    .dpc_i                ( dpc_i                ),
+
+    .boot_addr_i          ( boot_addr_i          ),
+    .dm_halt_addr_i       ( dm_halt_addr_i       ),
+    .dm_exception_addr_i  ( dm_exception_addr_i  ),
+    .nmi_addr_i           ( nmi_addr_i           ),
+
+    .pc_err_o             ( pc_err_o             )
   );
 
   // Local instr_valid when we have valid output from prefetcher or we are inserting a dummy instruction
