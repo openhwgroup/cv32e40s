@@ -39,7 +39,8 @@ Instantiation Template
       .PMP_MSECCFG_RV           (   PMP_MSECCFG_RV ),
       .PMA_NUM_REGIONS          (                0 ),
       .PMA_CFG                  (        PMA_CFG[] ),
-      .SMCLIC                   (                0 )
+      .SMCLIC                   (                0 ),
+      .SMCLIC_ID_WIDTH          (                0 )
   ) u_core (
       // Clock and reset
       .clk_i                    (),
@@ -90,6 +91,7 @@ Instantiation Template
       .data_err_i               (),
       .data_rchk_i              (),
 
+      .mcycle_o                 (),
        // Interrupt interface
       .irq_i                    (),
 
@@ -169,6 +171,11 @@ Parameters
 +------------------------------+----------------+-----------------+--------------------------------------------------------------------+
 | ``SMCLIC``                   | int (0..1 )    | 0               | Is Smclic supported?                                               |
 +------------------------------+----------------+-----------------+--------------------------------------------------------------------+
+| ``SMCLIC_ID_WIDTH``          | int (6..10 )   | 6               | Width of ``clic_irq_id_i`` and ``clic_irq_id_o``. The maximum      |
+|                              |                |                 | number of supported interrupts in CLIC mode is                     |
+|                              |                |                 | ``2^SMCLIC_ID_WIDTH``. Trap vector table alignment is restricted   |
+|                              |                |                 | to at least ``2^(2+SMCLIC_ID_WIDTH)``, see :ref:`csr-mtvt`.        |
++------------------------------+----------------+-----------------+--------------------------------------------------------------------+
 
 Interfaces
 ----------
@@ -193,9 +200,9 @@ Interfaces
 |                         |                         |     | core via ``fetch_enable_i``                |
 +-------------------------+-------------------------+-----+--------------------------------------------+
 | ``mtvec_addr_i``        | 32                      | in  | ``mtvec`` address. Initial value for the   |
-|                         |                         |     | address part of :ref:`csr-mtvec`.          |
-|                         |                         |     | Must be 4096-byte aligned                  |
-|                         |                         |     | (i.e. ``mtvec_addr_i[11:0]`` = 0).         |
+|                         |                         |     | address part of :ref:`csr-mtvec `.         |
+|                         |                         |     | Must be 128-byte aligned                   |
+|                         |                         |     | (i.e. ``mtvec_addr_i[6:0]`` = 0).          |
 |                         |                         |     | Do not change after enabling core          |
 |                         |                         |     | via ``fetch_enable_i``                     |
 +-------------------------+-------------------------+-----+--------------------------------------------+
@@ -224,6 +231,8 @@ Interfaces
 | ``instr_*``             | Instruction fetch interface, see :ref:`instruction-fetch`                  |
 +-------------------------+----------------------------------------------------------------------------+
 | ``data_*``              | Load-store unit interface, see :ref:`load-store-unit`                      |
++-------------------------+----------------------------------------------------------------------------+
+| ``mcycle_o``            | Cycle Counter Output                                                       |
 +-------------------------+----------------------------------------------------------------------------+
 | ``irq_*``               | Interrupt inputs, see :ref:`exceptions-interrupts`                         |
 +-------------------------+----------------------------------------------------------------------------+
