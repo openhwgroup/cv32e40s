@@ -40,7 +40,10 @@ Instantiation Template
       .PMA_NUM_REGIONS          (                0 ),
       .PMA_CFG                  (        PMA_CFG[] ),
       .SMCLIC                   (                0 ),
-      .SMCLIC_ID_WIDTH          (                0 )
+      .SMCLIC_ID_WIDTH          (                0 ),
+      .LFSR0_CFG                ( LFSR_CFG_DEFAULT ),
+      .LFSR1_CFG                ( LFSR_CFG_DEFAULT ),
+      .LFSR2_CFG                ( LFSR_CFG_DEFAULT )
   ) u_core (
       // Clock and reset
       .clk_i                    (),
@@ -91,7 +94,9 @@ Instantiation Template
       .data_err_i               (),
       .data_rchk_i              (),
 
+      // Cycle Count
       .mcycle_o                 (),
+
        // Interrupt interface
       .irq_i                    (),
 
@@ -129,53 +134,59 @@ Parameters
 .. note::
    The non-default (i.e. non-zero) settings of ``FPU`` have not been verified yet.
 
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| Name                         | Type/Range     | Default         | Description                                                        |
-+==============================+================+=================+====================================================================+
-| ``LIB``                      | int            | 0               | Standard cell library (semantics defined by integrator)            |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``RV32``                     | rv32_e         | RV32I           | Base Integer Instruction Set.                                      |
-|                              |                |                 | ``RV32`` = RV32I: RV32I Base Integer Instruction Set.              |
-|                              |                |                 | ``RV32`` = RV32E: RV32E Base Integer Instruction Set.              |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``B_EXT``                    | b_ext_e        | NONE            | Enable Bit Manipulation support. ``B_EXT`` = B_NONE: No Bit        |
-|                              |                |                 | Manipulation instructions are supported. ``B_EXT`` = ZBA_ZBB_ZBS:  |
-|                              |                |                 | Zba, Zbb and Zbs are supported. ``B_EXT`` = ZBA_ZBB_ZBC_ZBS:       |
-|                              |                |                 | Zba, Zbb, Zbc and Zbs are supported.                               |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``M_EXT``                    | m_ext_e        | M               | Enable Multiply / Divide support. ``M_EXT`` = M_NONE: No multiply /|
-|                              |                |                 | divide instructions are supported. ``M_EXT`` = ZMMUL: The          |
-|                              |                |                 | multiplication subset of the ``M`` extension is supported.         |
-|                              |                |                 | ``M_EXT`` = M: The ``M`` extension is supported.                   |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``DBG_NUM_TRIGGERS``         | int (0..4 )    | 1               | Number of debug triggers, see :ref:`debug-support`                 |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``ZC_EXT``                   | bit            | 0               | Enable Zca, Zcb, Zcmb, Zcmp, Zcmt extension support.               |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``PMA_NUM_REGIONS``          | int (0..16)    | 0               | Number of PMA regions                                              |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``PMA_CFG[]``                | pma_cfg_t      | PMA_R_DEFAULT   | PMA configuration.                                                 |
-|                              |                |                 | Array of pma_cfg_t with PMA_NUM_REGIONS entries, see :ref:`pma`    |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``PMP_GRANULARITY``          | int (0..31)    | 0               | Minimum granularity of PMP address matching                        |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``PMP_NUM_REGIONS``          | int (0..64)    | 0               | Number of PMP regions                                              |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``PMP_PMPNCFG_RV[]``         | pmpncfg_t      | PMPNCFG_DEFAULT | Reset values for ``pmpncfg`` bitfileds in ``pmpcfg`` CSRs.         |
-|                              |                |                 | Array of pmpncfg_t with PMP_NUM_REGIONS entries, see :ref:`pmp`    |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``PMP_PMPADDR_RV[]``         | logic[31:0]    | 0               | Reset values for ``pmpaddr`` CSRs.                                 |
-|                              |                |                 | Array with PMP_NUM_REGIONS entries, see :ref:`pmp`                 |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``PMP_MSECCFG_RV``           | mseccfg_t      | 0               | Reset value for ``mseccfg`` CSR, see :ref:`pmp`                    |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``SMCLIC``                   | int (0..1 )    | 0               | Is Smclic supported?                                               |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
-| ``SMCLIC_ID_WIDTH``          | int (6..10 )   | 6               | Width of ``clic_irq_id_i`` and ``clic_irq_id_o``. The maximum      |
-|                              |                |                 | number of supported interrupts in CLIC mode is                     |
-|                              |                |                 | ``2^SMCLIC_ID_WIDTH``. Trap vector table alignment is restricted   |
-|                              |                |                 | to at least ``2^(2+SMCLIC_ID_WIDTH)``, see :ref:`csr-mtvt`.        |
-+------------------------------+----------------+-----------------+--------------------------------------------------------------------+
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| Name                         | Type/Range     | Default          | Description                                                        |
++==============================+================+==================+====================================================================+
+| ``LIB``                      | int            | 0                | Standard cell library (semantics defined by integrator)            |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``RV32``                     | rv32_e         | RV32I            | Base Integer Instruction Set.                                      |
+|                              |                |                  | ``RV32`` = RV32I: RV32I Base Integer Instruction Set.              |
+|                              |                |                  | ``RV32`` = RV32E: RV32E Base Integer Instruction Set.              |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``B_EXT``                    | b_ext_e        | NONE             | Enable Bit Manipulation support. ``B_EXT`` = B_NONE: No Bit        |
+|                              |                |                  | Manipulation instructions are supported. ``B_EXT`` = ZBA_ZBB_ZBS:  |
+|                              |                |                  | Zba, Zbb and Zbs are supported. ``B_EXT`` = ZBA_ZBB_ZBC_ZBS:       |
+|                              |                |                  | Zba, Zbb, Zbc and Zbs are supported.                               |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``M_EXT``                    | m_ext_e        | M                | Enable Multiply / Divide support. ``M_EXT`` = M_NONE: No multiply /|
+|                              |                |                  | divide instructions are supported. ``M_EXT`` = ZMMUL: The          |
+|                              |                |                  | multiplication subset of the ``M`` extension is supported.         |
+|                              |                |                  | ``M_EXT`` = M: The ``M`` extension is supported.                   |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``DBG_NUM_TRIGGERS``         | int (0..4 )    | 1                | Number of debug triggers, see :ref:`debug-support`                 |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``ZC_EXT``                   | bit            | 0                | Enable Zca, Zcb, Zcmb, Zcmp, Zcmt extension support.               |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``PMA_NUM_REGIONS``          | int (0..16)    | 0                | Number of PMA regions                                              |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``PMA_CFG[]``                | pma_cfg_t      | PMA_R_DEFAULT    | PMA configuration.                                                 |
+|                              |                |                  | Array of pma_cfg_t with PMA_NUM_REGIONS entries, see :ref:`pma`    |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``PMP_GRANULARITY``          | int (0..31)    | 0                | Minimum granularity of PMP address matching                        |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``PMP_NUM_REGIONS``          | int (0..64)    | 0                | Number of PMP regions                                              |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``PMP_PMPNCFG_RV[]``         | pmpncfg_t      | PMPNCFG_DEFAULT  | Reset values for ``pmpncfg`` bitfileds in ``pmpcfg`` CSRs.         |
+|                              |                |                  | Array of pmpncfg_t with PMP_NUM_REGIONS entries, see :ref:`pmp`    |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``PMP_PMPADDR_RV[]``         | logic[31:0]    | 0                | Reset values for ``pmpaddr`` CSRs.                                 |
+|                              |                |                  | Array with PMP_NUM_REGIONS entries, see :ref:`pmp`                 |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``PMP_MSECCFG_RV``           | mseccfg_t      | 0                | Reset value for ``mseccfg`` CSR, see :ref:`pmp`                    |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``SMCLIC``                   | bit            | 0                | Is Smclic supported?                                               |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``SMCLIC_ID_WIDTH``          | int (6..10 )   | 6                | Width of ``clic_irq_id_i`` and ``clic_irq_id_o``. The maximum      |
+|                              |                |                  | number of supported interrupts in CLIC mode is                     |
+|                              |                |                  | ``2^SMCLIC_ID_WIDTH``. Trap vector table alignment is restricted   |
+|                              |                |                  | to at least ``2^(2+SMCLIC_ID_WIDTH)``, see :ref:`csr-mtvt`.        |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``LFSR0``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR0 configuration, see :ref: `xsecure`.                          |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``LFSR1``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR1 configuration, see :ref: `xsecure`.                          |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
+| ``LFSR2``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR2 configuration, see :ref: `xsecure`.                          |
++------------------------------+----------------+------------------+--------------------------------------------------------------------+
 
 Interfaces
 ----------
@@ -200,7 +211,7 @@ Interfaces
 |                         |                         |     | core via ``fetch_enable_i``                |
 +-------------------------+-------------------------+-----+--------------------------------------------+
 | ``mtvec_addr_i``        | 32                      | in  | ``mtvec`` address. Initial value for the   |
-|                         |                         |     | address part of :ref:`csr-mtvec `.         |
+|                         |                         |     | address part of :ref:`csr-mtvec`.          |
 |                         |                         |     | Must be 128-byte aligned                   |
 |                         |                         |     | (i.e. ``mtvec_addr_i[6:0]`` = 0).          |
 |                         |                         |     | Do not change after enabling core          |
