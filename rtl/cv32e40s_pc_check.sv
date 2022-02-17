@@ -122,6 +122,12 @@ assign addr_err = (pc_set_q || (if_id_q && !if_id_pipe_i.instr_meta.dummy)) ? (c
 // Comparator for control flow decision
 // Check if taken jumps, mret and branches are correct by checking the decision
 // in the last cycle of the instructions.
+// Not checking for the cases of:
+// - pc_set_q == 1 && ctrl_fsm_i.pc_set == 1 as this indicates another decision in control flow has taken place
+//   and will override the previous pc_set (interrupts, NMI, debug can be sources for this)
+// - ID stage is halted. This may happen for pending interrupts and debug, and will possibly change the state of
+//   ctrl_fsm_i.branch_in_ex. Unless an interrupt is retracted, jumps and branches will be killed before the
+//   interrupt is taken.
 assign ctrl_flow_taken_err = (((pc_mux_q == PC_JUMP)   && !ctrl_fsm_i.jump_in_id)                          ||
                               ((pc_mux_q == PC_BRANCH) && !(ctrl_fsm_i.branch_in_ex && branch_decision_i)) ||
                               ((pc_mux_q == PC_MRET)   && !ctrl_fsm_i.jump_in_id))                         &&
@@ -145,8 +151,16 @@ always_ff @(posedge clk, negedge rst_n) begin
     compare_enable <= 1'b0;
     if_id_q <= 1'b0;
   end else begin
+    // Signal that a pc_set set was performed.
+    // Exlucde cases of PC_WB_PLUS4 and PC_TRAP_IRQ as the pipeline currently has no easy way to recompute these targets.
+    // Also exclude if ID stage is halted as this indicates interrupt, NMI or debug that will change the program flow and kill
+    // younger instructions.
     pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ)) && !ctrl_fsm_i.halt_id;
+
+    // Set a flag for a valid IF->ID stage transition.
     if_id_q  <= if_valid_i && id_ready_i;
+
+    // On a pc_set, flop the pc_mux and set a sticky compare_enable bit.
     if(ctrl_fsm_i.pc_set) begin
       pc_mux_q <= ctrl_fsm_i.pc_mux;
       compare_enable <= 1'b1;
