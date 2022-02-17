@@ -110,7 +110,7 @@ These parameters are of the type lfsr_cfg_t which has the following fields:
   +------------------+-------------+---------------------------------------------------------------------------------+
   | coeffs           | logic[31:0] | Coefficient controlling output permutation, must be non-zero                    |
   +------------------+-------------+---------------------------------------------------------------------------------+
-  | default_seed     | logic[31:0] | Used as initial seed and in for re-seeding in case of lockup, must be non-zero  |
+  | default_seed     | logic[31:0] | Used as initial seed and for re-seeding in case of lockup, must be non-zero     |
   +------------------+-------------+---------------------------------------------------------------------------------+
 
 Software can periodically re-seed the LFSRs with true random numbers (if available) via the ``secureseed*`` CSRs, making the insertion interval of
