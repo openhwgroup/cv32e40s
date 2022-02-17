@@ -81,8 +81,9 @@ module cv32e40s_controller_fsm_sva
   input logic           nmi_pending_q,
   input dcsr_t          dcsr_i,
   input logic           last_op_id_i,
-  input logic           sys_mret_id_i
-
+  input logic           sys_mret_id_i,
+  input logic           csr_wr_in_wb_flush_i,
+  input logic           lsu_trans_valid
 );
 
 
@@ -505,6 +506,13 @@ endgenerate
                       ctrl_fsm_o.kill_if &&
                       (SECURE ? 1'b1 : ctrl_fsm_o.kill_id))); // For SECURE=1, branch instructions are bot in ID and EX when branch is taken, do not kill ID.
 
+  // When flushing the pipeline due to CSR updates in WB, make sure there we don't initiate transactions on the data interface
+  // and that there are no outstanding transactions from the LSU point of view.
+  // There might still be outstanding transactions in the write buffer, which is why we can't check that data_req_o==0
+  a_csr_wr_in_wb_flush_no_obi:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     (csr_wr_in_wb_flush_i) |-> (lsu_outstanding_cnt == 2'b00) && !lsu_trans_valid)
+      else `uvm_error("controller", "Flushing pipeline when the LSU have outstanding transactions")
 
   // Assert that we don't count dummy instruction retirements
   // Events caused by the dummy instruction shoud be suppressed
