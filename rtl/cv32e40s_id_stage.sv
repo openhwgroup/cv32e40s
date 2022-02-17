@@ -142,7 +142,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   logic                 lsu_we;
   logic [1:0]           lsu_size;
   logic                 lsu_sext;
-  logic [5:0]           lsu_atop;               // Atomic memory instruction
 
   // CSR
   logic                 csr_en;
@@ -433,7 +432,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     .lsu_we_o                        ( lsu_we                    ),
     .lsu_size_o                      ( lsu_size                  ),
     .lsu_sext_o                      ( lsu_sext                  ),
-    .lsu_atop_o                      ( lsu_atop                  ),
 
     // Register file control signals
     .rf_re_o                         ( rf_re                     ),
@@ -501,7 +499,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.lsu_we                 <= 1'b0;
       id_ex_pipe_o.lsu_size               <= 2'b0;
       id_ex_pipe_o.lsu_sext               <= 1'b0;
-      id_ex_pipe_o.lsu_atop               <= 6'b0;
 
       id_ex_pipe_o.sys_en                <= 1'b0;
       id_ex_pipe_o.sys_dret_insn         <= 1'b0;
@@ -581,7 +578,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
           id_ex_pipe_o.lsu_we               <= lsu_we;
           id_ex_pipe_o.lsu_size             <= lsu_size;
           id_ex_pipe_o.lsu_sext             <= lsu_sext;
-          id_ex_pipe_o.lsu_atop             <= lsu_atop;
         end
 
         // Special instructions

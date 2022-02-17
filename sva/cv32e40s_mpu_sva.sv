@@ -165,10 +165,6 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   generate for (genvar i = 0; i < PMA_NUM_REGIONS; i++)
     begin : a_pma_no_illegal_configs
     always_comb begin
-        if (PMA_CFG[i].main == 1'b1) begin
-          a_main_atomic : assert (PMA_CFG[i].atomic == 1'b1)
-            else `uvm_error("mpu", "PMA regions configured as main must also support atomic operations");
-        end
         if (PMA_CFG[i].main == 1'b0) begin
           a_io_noncacheable : assert (PMA_CFG[i].cacheable == 1'b0)
             else `uvm_error("mpu", "PMA regions configured as I/O cannot be defined as cacheable");
@@ -332,7 +328,6 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
     x_err_instr: cross cp_err, cp_instr;
     x_err_bufferable: cross cp_err, cp_bufferable;
     x_err_cacheable: cross cp_err, cp_cacheable;
-    x_err_atomic: cross cp_err, cp_atomic;
   endgroup
   `ifndef FORMAL
     cg_pma cgpma = new;

@@ -110,8 +110,6 @@ module cv32e40s_wrapper
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
   input  logic        data_err_i,
-  output logic [5:0]  data_atop_o,
-  input  logic        data_exokay_i,
 
   // Cycle Count
   output logic [63:0] mcycle_o,
@@ -228,8 +226,8 @@ module cv32e40s_wrapper
                               .sys_mret_insn_id_i  (core_i.id_stage_i.sys_mret_insn),
                               .id_valid_i          (core_i.id_stage_i.id_valid_o),
                               .csr_illegal_i       (core_i.cs_registers_i.csr_illegal_o),
-                              .xif_commit_kill     (core_i.xif_commit_if.commit.commit_kill),
-                              .xif_commit_valid    (core_i.xif_commit_if.commit_valid),
+                              .xif_commit_kill     (1'b0), // todo: remove xif remains
+                              .xif_commit_valid    (1'b0), // todo: remove xif remains
 
                               .last_op_id_i        (core_i.controller_i.last_op_id_i),
                               .*);
@@ -406,8 +404,7 @@ module cv32e40s_wrapper
 
          .instr_pmp_err_if_i       ( 1'b0                          /* PMP not implemented in cv32e40x */  ), // TODO:HB connect
          .lsu_pmp_err_ex_i         ( 1'b0                          /* PMP not implemented in cv32e40x */  ), // TODO:HB connect
-         .lsu_pma_err_atomic_ex_i  ( core_i.load_store_unit_i.mpu_i.pma_i.atomic_access_i && // Todo: Consider making this a signal in the pma
-                                    !core_i.load_store_unit_i.mpu_i.pma_i.pma_cfg_atomic                 ),
+         .lsu_pma_err_atomic_ex_i  ( 1'b0                      /* Atomics not implemented in cv32e40s */  ),
 
          .ex_ready_i               ( core_i.ex_stage_i.ex_ready_o                                         ),
          .ex_valid_i               ( core_i.ex_stage_i.ex_valid_o                                         ),

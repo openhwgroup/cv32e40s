@@ -76,7 +76,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   output logic          lsu_we_o,               // Data memory write enable
   output logic [1:0]    lsu_size_o,             // Data size (byte, half word or word)
   output logic          lsu_sext_o,             // Sign extension on read data from data memory
-  output logic [5:0]    lsu_atop_o,             // Atomic memory access
 
   // Register file related signals
   output logic          rf_we_o,                // Write enable for register file
@@ -205,7 +204,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   assign lsu_we_o           = decoder_ctrl_mux.lsu_we;                       
   assign lsu_size_o         = decoder_ctrl_mux.lsu_size;                     
   assign lsu_sext_o         = decoder_ctrl_mux.lsu_sext;
-  assign lsu_atop_o         = decoder_ctrl_mux.lsu_atop;                     
   assign sys_en             = decoder_ctrl_mux.sys_en;
   assign sys_mret_insn_o    = decoder_ctrl_mux.sys_mret_insn;
   assign sys_dret_insn_o    = decoder_ctrl_mux.sys_dret_insn;

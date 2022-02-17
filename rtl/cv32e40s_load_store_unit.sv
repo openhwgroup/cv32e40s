@@ -146,14 +146,13 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   // Transaction (before aligner)
   // Generate address from operands (atomic memory transactions do not use an address offset computation)
-  assign trans.addr  = id_ex_pipe_i.lsu_atop[5] ? id_ex_pipe_i.alu_operand_a : (id_ex_pipe_i.alu_operand_a + id_ex_pipe_i.alu_operand_b);
+  assign trans.addr  = (id_ex_pipe_i.alu_operand_a + id_ex_pipe_i.alu_operand_b);
   assign trans.we    = id_ex_pipe_i.lsu_we;
   assign trans.size  = id_ex_pipe_i.lsu_size;
   assign trans.wdata = id_ex_pipe_i.operand_c;
   assign trans.mode  = PRIV_LVL_M; // Machine mode TODO: connect to priv_lvl
   assign trans.dbg   = ctrl_fsm_i.debug_mode;
 
-  assign trans.atop  = id_ex_pipe_i.lsu_atop;
   assign trans.sext  = id_ex_pipe_i.lsu_sext;
 
   ///////////////////////////////// BE generation ////////////////////////////////
@@ -444,11 +443,10 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   // todo: As part of the fix for https://github.com/openhwgroup/cv32e40x/issues/388 the following should be used as well:
   // assign align_trans.addr    = split_q ? {trans.addr[31:2], 2'b00} + 'h4 : trans.addr;
 
-  assign align_trans.addr    = trans.atop[5] ? trans.addr : (split_q ? {trans.addr[31:2], 2'b00} + 'h4 : trans.addr);
+  assign align_trans.addr    = split_q ? {trans.addr[31:2], 2'b00} + 'h4 : trans.addr;
   assign align_trans.we      = trans.we;
   assign align_trans.be      = be;
   assign align_trans.wdata   = wdata;
-  assign align_trans.atop    = trans.atop;
   assign align_trans.prot    = {trans.mode, 1'b1};      // Transfers from LSU are data transfers
   assign align_trans.dbg     = trans.dbg;
   assign align_trans.memtype = 2'b00;                   // Memory type is assigned in MPU

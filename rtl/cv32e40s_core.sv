@@ -98,8 +98,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
   input  logic        data_err_i,
-  output logic [5:0]  data_atop_o,
-  input  logic        data_exokay_i,
 
   // Cycle Count
   output logic [63:0] mcycle_o,
@@ -328,12 +326,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign data_prot_o                         = m_c_obi_data_if.req_payload.prot;
   assign data_dbg_o                          = m_c_obi_data_if.req_payload.dbg;
   assign data_wdata_o                        = m_c_obi_data_if.req_payload.wdata;
-  assign data_atop_o                         = m_c_obi_data_if.req_payload.atop;
   assign m_c_obi_data_if.s_gnt.gnt           = data_gnt_i;
   assign m_c_obi_data_if.s_rvalid.rvalid     = data_rvalid_i;
   assign m_c_obi_data_if.resp_payload.rdata  = data_rdata_i;
   assign m_c_obi_data_if.resp_payload.err    = data_err_i;
-  assign m_c_obi_data_if.resp_payload.exokay = data_exokay_i;
 
   assign debug_havereset_o = ctrl_fsm.debug_havereset;
   assign debug_halted_o    = ctrl_fsm.debug_halted;
