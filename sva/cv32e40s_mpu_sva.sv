@@ -33,7 +33,6 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
    input logic        rst_n,
 
    input logic        instr_fetch_access,
-   input logic        atomic_access_i,
    input logic        misaligned_access_i,
    input logic        bus_trans_bufferable,
    input logic        bus_trans_cacheable,
@@ -166,10 +165,6 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   generate for (genvar i = 0; i < PMA_NUM_REGIONS; i++)
     begin : a_pma_no_illegal_configs
     always_comb begin
-        if (PMA_CFG[i].main == 1'b1) begin
-          a_main_atomic : assert (PMA_CFG[i].atomic == 1'b1)
-            else `uvm_error("mpu", "PMA regions configured as main must also support atomic operations");
-        end
         if (PMA_CFG[i].main == 1'b0) begin
           a_io_noncacheable : assert (PMA_CFG[i].cacheable == 1'b0)
             else `uvm_error("mpu", "PMA regions configured as I/O cannot be defined as cacheable");
@@ -216,8 +211,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
     end
   end
   assign pma_expected_err = (instr_fetch_access && !pma_expected_cfg.main)  ||
-                            (misaligned_access_i && !pma_expected_cfg.main) ||
-                            (atomic_access_i && !pma_expected_cfg.atomic);
+                            (misaligned_access_i && !pma_expected_cfg.main);
   a_pma_expect_cfg :
     assert property (@(posedge clk) disable iff (!rst_n) pma_cfg == pma_expected_cfg)
       else `uvm_error("mpu", "RTL cfg don't match SVA expectations")
@@ -225,7 +219,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   generate
     if (bufferable_in_config() && !IS_INSTR_SIDE) begin
     a_pma_expect_bufferable :
-      assert property (@(posedge clk) disable iff (!rst_n) bus_trans_bufferable |-> !load_access && !atomic_access_i && pma_expected_cfg.bufferable)
+      assert property (@(posedge clk) disable iff (!rst_n) bus_trans_bufferable |-> !load_access && pma_expected_cfg.bufferable)
         else `uvm_error("mpu", "expected different bufferable flag")
     end else begin
     a_pma_no_expect_bufferable :
@@ -324,7 +318,6 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
     cp_instr: coverpoint instr_fetch_access;
     cp_bufferable: coverpoint bus_trans_bufferable;
     cp_cacheable: coverpoint bus_trans_cacheable;
-    cp_atomic: coverpoint atomic_access_i;
     cp_addr: coverpoint pma_addr[31:2] {
       bins min = {0};
       bins max = {30'h 3FFF_FFFF};
@@ -335,7 +328,6 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
     x_err_instr: cross cp_err, cp_instr;
     x_err_bufferable: cross cp_err, cp_bufferable;
     x_err_cacheable: cross cp_err, cp_cacheable;
-    x_err_atomic: cross cp_err, cp_atomic;
   endgroup
   `ifndef FORMAL
     cg_pma cgpma = new;

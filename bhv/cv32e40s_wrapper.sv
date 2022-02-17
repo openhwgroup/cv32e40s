@@ -48,10 +48,8 @@ module cv32e40s_wrapper
 #(
   parameter              LIB                          = 0,
   parameter rv32_e       RV32                         = RV32I,
-  parameter bit          A_EXT                        = 0,
   parameter b_ext_e      B_EXT                        = B_NONE,
   parameter m_ext_e      M_EXT                        = M,
-  parameter bit          X_EXT                        = 0,
   parameter int          X_NUM_RS                     = 2,
   parameter int          X_ID_WIDTH                   = 4,
   parameter int          X_MEM_WIDTH                  = 32,
@@ -67,6 +65,7 @@ module cv32e40s_wrapper
   parameter [31:0]       PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
   parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
   parameter bit          SMCLIC                       = 0,
+  parameter int          SMCLIC_ID_WIDTH              = 6,
   parameter int          DBG_NUM_TRIGGERS             = 1,
   parameter int          PMA_NUM_REGIONS              = 0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
@@ -111,8 +110,6 @@ module cv32e40s_wrapper
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
   input  logic        data_err_i,
-  output logic [5:0]  data_atop_o,
-  input  logic        data_exokay_i,
 
   // Cycle Count
   output logic [63:0] mcycle_o,
@@ -120,14 +117,15 @@ module cv32e40s_wrapper
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
 
-  input  logic        clic_irq_i,
-  input  logic [ 9:0] clic_irq_id_i,
-  input  logic [ 7:0] clic_irq_il_i,
-  input  logic [ 1:0] clic_irq_priv_i,
-  input  logic        clic_irq_hv_i,
-  output logic [ 9:0] clic_irq_id_o,
-  output logic        clic_irq_mode_o,
-  output logic        clic_irq_exit_o,
+  // CLIC Interface
+  input  logic                       clic_irq_i,
+  input  logic [SMCLIC_ID_WIDTH-1:0] clic_irq_id_i,
+  input  logic [ 7:0]                clic_irq_il_i,
+  input  logic [ 1:0]                clic_irq_priv_i,
+  input  logic                       clic_irq_hv_i,
+  output logic [SMCLIC_ID_WIDTH-1:0] clic_irq_id_o,
+  output logic                       clic_irq_mode_o,
+  output logic                       clic_irq_exit_o,
 
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
@@ -153,20 +151,6 @@ module cv32e40s_wrapper
 );
 
 
-  // eXtension interface
-  if_xif xif();
-
-  // Tie off cpu xif inputs. CV32E40S does not support xif
-  assign xif.compressed_ready = '0;
-  assign xif.compressed_resp  = '0;
-  assign xif.issue_ready      = '0;
-  assign xif.issue_resp       = '0;
-  assign xif.mem_valid        = '0;
-  assign xif.mem_req          = '0;
-  assign xif.result_valid     = '0;
-  assign xif.result           = '0;
-  
-  
 `ifndef COREV_ASSERT_OFF
 
   // RTL Assertions
@@ -229,7 +213,7 @@ module cv32e40s_wrapper
   bind cv32e40s_controller_fsm:
     core_i.controller_i.controller_fsm_i
       cv32e40s_controller_fsm_sva
-        #(.X_EXT(X_EXT))
+        #(.X_EXT(1'b0))
         controller_fsm_sva   (
                               .lsu_outstanding_cnt (core_i.load_store_unit_i.cnt_q),
                               .rf_we_wb_i          (core_i.wb_stage_i.rf_we_wb_o  ),
@@ -242,8 +226,9 @@ module cv32e40s_wrapper
                               .sys_mret_insn_id_i  (core_i.id_stage_i.sys_mret_insn),
                               .id_valid_i          (core_i.id_stage_i.id_valid_o),
                               .csr_illegal_i       (core_i.cs_registers_i.csr_illegal_o),
-                              .xif_commit_kill     (core_i.xif_commit_if.commit.commit_kill),
-                              .xif_commit_valid    (core_i.xif_commit_if.commit_valid),
+                              .xif_commit_kill     (1'b0), // todo: remove xif remains
+                              .xif_commit_valid    (1'b0), // todo: remove xif remains
+
                               .last_op_id_i        (core_i.controller_i.last_op_id_i),
                               .*);
   bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
@@ -277,8 +262,7 @@ module cv32e40s_wrapper
 
   bind cv32e40s_core:
     core_i cv32e40s_core_sva
-      #(.A_EXT(A_EXT),
-        .PMA_NUM_REGIONS(PMA_NUM_REGIONS))
+      #(.PMA_NUM_REGIONS(PMA_NUM_REGIONS))
       core_sva (// probed cs_registers signals
                 .cs_registers_mie_q               (core_i.cs_registers_i.mie_q),
                 .cs_registers_mepc_n              (core_i.cs_registers_i.mepc_n),
@@ -306,7 +290,7 @@ module cv32e40s_wrapper
                       .ctrl_fsm_ns (core_i.controller_i.controller_fsm_i.ctrl_fsm_ns),
                       .*);
 
-  bind cv32e40s_decoder: core_i.id_stage_i.decoder_i cv32e40s_decoder_sva #(.A_EXT(A_EXT))
+  bind cv32e40s_decoder: core_i.id_stage_i.decoder_i cv32e40s_decoder_sva
     decoder_sva(.clk   (core_i.id_stage_i.clk),
                 .rst_n (core_i.id_stage_i.rst_n),
                 .*);
@@ -420,8 +404,7 @@ module cv32e40s_wrapper
 
          .instr_pmp_err_if_i       ( 1'b0                          /* PMP not implemented in cv32e40x */  ), // TODO:HB connect
          .lsu_pmp_err_ex_i         ( 1'b0                          /* PMP not implemented in cv32e40x */  ), // TODO:HB connect
-         .lsu_pma_err_atomic_ex_i  ( core_i.load_store_unit_i.mpu_i.pma_i.atomic_access_i && // Todo: Consider making this a signal in the pma
-                                    !core_i.load_store_unit_i.mpu_i.pma_i.pma_cfg_atomic                 ),
+         .lsu_pma_err_atomic_ex_i  ( 1'b0                      /* Atomics not implemented in cv32e40s */  ),
 
          .ex_ready_i               ( core_i.ex_stage_i.ex_ready_o                                         ),
          .ex_valid_i               ( core_i.ex_stage_i.ex_valid_o                                         ),
@@ -574,7 +557,6 @@ module cv32e40s_wrapper
         #(
           .LIB                   ( LIB                   ),
           .RV32                  ( RV32                  ),
-          .A_EXT                 ( A_EXT                 ),
           .B_EXT                 ( B_EXT                 ),
           .M_EXT                 ( M_EXT                 ),
           .PMP_GRANULARITY       ( PMP_GRANULARITY       ),
@@ -582,7 +564,6 @@ module cv32e40s_wrapper
           .PMP_PMPNCFG_RV        ( PMP_PMPNCFG_RV        ),
           .PMP_PMPADDR_RV        ( PMP_PMPADDR_RV        ),
           .PMP_MSECCFG_RV        ( PMP_MSECCFG_RV        ),
-          .X_EXT                 ( X_EXT                 ),
           .X_NUM_RS              ( X_NUM_RS              ),
           .X_ID_WIDTH            ( X_ID_WIDTH            ),
           .X_MEM_WIDTH           ( X_MEM_WIDTH           ),
@@ -593,15 +574,10 @@ module cv32e40s_wrapper
           .ZC_EXT                ( ZC_EXT                ),
           .NUM_MHPMCOUNTERS      ( NUM_MHPMCOUNTERS      ),
           .SMCLIC                ( SMCLIC                ),
+          .SMCLIC_ID_WIDTH       ( SMCLIC_ID_WIDTH       ),
           .DBG_NUM_TRIGGERS      ( DBG_NUM_TRIGGERS      ),
           .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),
           .PMA_CFG               ( PMA_CFG               ))
-    core_i (.xif_compressed_if(xif.cpu_compressed),
-            .xif_issue_if(xif.cpu_issue),
-            .xif_commit_if(xif.cpu_commit),
-            .xif_mem_if(xif.cpu_mem),
-            .xif_mem_result_if(xif.cpu_mem_result),
-            .xif_result_if(xif.cpu_result),
-            .*);
+    core_i (.*);
 
 endmodule

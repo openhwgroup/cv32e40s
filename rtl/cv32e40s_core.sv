@@ -33,10 +33,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 #(
   parameter              LIB                          = 0,
   parameter rv32_e       RV32                         = RV32I, // todo: Add support for RV32E
-  parameter bit          A_EXT                        = 0,
   parameter b_ext_e      B_EXT                        = B_NONE,
   parameter m_ext_e      M_EXT                        = M,
-  parameter bit          X_EXT                        = 0,
   parameter int          X_NUM_RS                     = 2,
   parameter int          X_ID_WIDTH                   = 4,
   parameter int          X_MEM_WIDTH                  = 32,
@@ -47,6 +45,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter bit          ZC_EXT                       = 0, // todo: remove once fully implemented
   parameter int          NUM_MHPMCOUNTERS             = 1,
   parameter bit          SMCLIC                       = 0,
+  parameter int          SMCLIC_ID_WIDTH              = 6,
   parameter int          DBG_NUM_TRIGGERS             = 1,
   parameter int          PMA_NUM_REGIONS              = 0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
@@ -99,31 +98,22 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
   input  logic        data_err_i,
-  output logic [5:0]  data_atop_o,
-  input  logic        data_exokay_i,
 
   // Cycle Count
   output logic [63:0] mcycle_o,
 
-  // eXtension interface
-  if_xif.cpu_compressed xif_compressed_if,
-  if_xif.cpu_issue      xif_issue_if,
-  if_xif.cpu_commit     xif_commit_if,
-  if_xif.cpu_mem        xif_mem_if,
-  if_xif.cpu_mem_result xif_mem_result_if,
-  if_xif.cpu_result     xif_result_if,
-
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
 
-  input  logic        clic_irq_i,
-  input  logic [ 9:0] clic_irq_id_i,
-  input  logic [ 7:0] clic_irq_il_i,
-  input  logic [ 1:0] clic_irq_priv_i,
-  input  logic        clic_irq_hv_i,
-  output logic [ 9:0] clic_irq_id_o,
-  output logic        clic_irq_mode_o,
-  output logic        clic_irq_exit_o,
+  // CLIC Interface
+  input  logic                       clic_irq_i,
+  input  logic [SMCLIC_ID_WIDTH-1:0] clic_irq_id_i,
+  input  logic [ 7:0]                clic_irq_il_i,
+  input  logic [ 1:0]                clic_irq_priv_i,
+  input  logic                       clic_irq_hv_i,
+  output logic [SMCLIC_ID_WIDTH-1:0] clic_irq_id_o,
+  output logic                       clic_irq_mode_o,
+  output logic                       clic_irq_exit_o,
 
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
@@ -143,6 +133,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   input  logic        fetch_enable_i,
   output logic        core_sleep_o
 );
+
+  localparam bit X_EXT = 0; // todo: remove with xif
 
   // Number of register file read ports
   // Core will only use two, but X_EXT may mandate 2 or 3
@@ -303,6 +295,18 @@ module cv32e40s_core import cv32e40s_pkg::*;
   if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
   if_c_obi #(.REQ_TYPE(obi_data_req_t), .RESP_TYPE(obi_data_resp_t))  m_c_obi_data_if();
 
+  // todo: remove eXtension interface
+  if_xif xif();
+  assign xif.compressed_ready = '0;
+  assign xif.compressed_resp  = '0;
+  assign xif.issue_ready      = '0;
+  assign xif.issue_resp       = '0;
+  assign xif.mem_valid        = '0;
+  assign xif.mem_req          = '0;
+  assign xif.result_valid     = '0;
+  assign xif.result           = '0;
+
+
   // Connect toplevel OBI signals to internal interfaces
   assign instr_req_o                         = m_c_obi_instr_if.s_req.req;
   assign instr_addr_o                        = m_c_obi_instr_if.req_payload.addr;
@@ -322,12 +326,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign data_prot_o                         = m_c_obi_data_if.req_payload.prot;
   assign data_dbg_o                          = m_c_obi_data_if.req_payload.dbg;
   assign data_wdata_o                        = m_c_obi_data_if.req_payload.wdata;
-  assign data_atop_o                         = m_c_obi_data_if.req_payload.atop;
   assign m_c_obi_data_if.s_gnt.gnt           = data_gnt_i;
   assign m_c_obi_data_if.s_rvalid.rvalid     = data_rvalid_i;
   assign m_c_obi_data_if.resp_payload.rdata  = data_rdata_i;
   assign m_c_obi_data_if.resp_payload.err    = data_err_i;
-  assign m_c_obi_data_if.resp_payload.exokay = data_exokay_i;
 
   assign debug_havereset_o = ctrl_fsm.debug_havereset;
   assign debug_halted_o    = ctrl_fsm.debug_halted;
@@ -424,7 +426,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //////////////////////////////////////////////////
   cv32e40s_if_stage
   #(
-    .A_EXT               ( A_EXT                    ),
     .X_EXT               ( X_EXT                    ),
     .X_ID_WIDTH          ( X_ID_WIDTH               ),
     .PMA_NUM_REGIONS     ( PMA_NUM_REGIONS          ),
@@ -474,7 +475,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lfsr_shift_o        ( lfsr_shift_if            ),
 
     // eXtension interface
-    .xif_compressed_if   ( xif_compressed_if        ),
+    .xif_compressed_if   ( xif.cpu_compressed       ),
     .xif_offloading_id_i ( xif_offloading_id        )
   );
 
@@ -488,7 +489,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   /////////////////////////////////////////////////
   cv32e40s_id_stage
   #(
-    .A_EXT                        ( A_EXT                     ),
     .B_EXT                        ( B_EXT                     ),
     .M_EXT                        ( M_EXT                     ),
     .X_EXT                        ( X_EXT                     ),
@@ -547,7 +547,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lfsr_shift_o                 ( lfsr_shift_id             ),
 
     // eXtension interface
-    .xif_issue_if                 ( xif_issue_if              ),
+    .xif_issue_if                 ( xif.cpu_issue             ),
     .xif_offloading_o             ( xif_offloading_id         )
   );
 
@@ -623,8 +623,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   ////////////////////////////////////////////////////////////////////////////////////////
 
   cv32e40s_load_store_unit
-    #(.A_EXT(A_EXT),
-      .PMP_GRANULARITY(PMP_GRANULARITY),
+    #(.PMP_GRANULARITY(PMP_GRANULARITY),
       .PMP_NUM_REGIONS(PMP_NUM_REGIONS),
       .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
       .PMA_CFG(PMA_CFG))
@@ -672,8 +671,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ready_1_i             ( lsu_ready_wb       ),
 
     // eXtension interface
-    .xif_mem_if            ( xif_mem_if         ),
-    .xif_mem_result_if     ( xif_mem_result_if  )
+    .xif_mem_if            ( xif.cpu_mem        ),
+    .xif_mem_result_if     ( xif.cpu_mem_result )
   );
 
   ////////////////////////////////////////////////////////////////////////////////////////
@@ -714,7 +713,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .wb_valid_o                 ( wb_valid                     ),
 
     // eXtension interface
-    .xif_result_if              ( xif_result_if                )
+    .xif_result_if              ( xif.cpu_result               )
   );
 
   //////////////////////////////////////
@@ -729,7 +728,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   cv32e40s_cs_registers
   #(
-    .A_EXT                      ( A_EXT                  ),
     .M_EXT                      ( M_EXT                  ),
     .X_EXT                      ( X_EXT                  ),
     .X_MISA                     ( X_MISA                 ),
@@ -923,7 +921,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ctrl_fsm_o                     ( ctrl_fsm               ),
 
     // eXtension interface
-    .xif_commit_if                  ( xif_commit_if          ),
+    .xif_commit_if                  ( xif.cpu_commit         ),
     .xif_csr_error_i                ( xif_csr_error_ex       )
   );
 
