@@ -181,11 +181,11 @@ Parameters
 |                              |                |                  | ``2^SMCLIC_ID_WIDTH``. Trap vector table alignment is restricted   |
 |                              |                |                  | to at least ``2^(2+SMCLIC_ID_WIDTH)``, see :ref:`csr-mtvt`.        |
 +------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``LFSR0``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR0 configuration, see :ref: `xsecure`.                          |
+| ``LFSR0``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR0 configuration, see :ref:`xsecure`.                           |
 +------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``LFSR1``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR1 configuration, see :ref: `xsecure`.                          |
+| ``LFSR1``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR1 configuration, see :ref:`xsecure`.                           |
 +------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``LFSR2``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR2 configuration, see :ref: `xsecure`.                          |
+| ``LFSR2``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR2 configuration, see :ref:`xsecure`.                           |
 +------------------------------+----------------+------------------+--------------------------------------------------------------------+
 
 Interfaces
