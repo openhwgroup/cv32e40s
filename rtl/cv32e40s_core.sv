@@ -191,7 +191,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   logic [31:0] csr_rdata;
   logic csr_counter_read;
-  logic xsecure_csr_wr_in_wb;
+  logic csr_wr_in_wb_flush;
 
   privlvl_t     priv_lvl_lsu, priv_lvl;
   privlvlctrl_t priv_lvl_if_ctrl;
@@ -811,7 +811,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lfsr_shift_id_i            ( lfsr_shift_id          ),
 
     // CSR write strobes
-    .xsecure_csr_wr_in_wb_o     ( xsecure_csr_wr_in_wb   ),
+    .csr_wr_in_wb_flush_o       ( csr_wr_in_wb_flush     ),
 
     // debug
     .dpc_o                      ( dpc                    ),
@@ -893,7 +893,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mtvec_mode_i                   ( mtvec_mode             ),
 
     // CSR write strobes
-    .xsecure_csr_wr_in_wb_i         ( xsecure_csr_wr_in_wb   ),
+    .csr_wr_in_wb_flush_i           ( csr_wr_in_wb_flush     ),
 
     // Debug signals
     .debug_req_i                    ( debug_req_i            ),

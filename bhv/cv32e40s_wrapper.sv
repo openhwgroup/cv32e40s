@@ -230,6 +230,7 @@ module cv32e40s_wrapper
                               .xif_commit_valid    (1'b0), // todo: remove xif remains
 
                               .last_op_id_i        (core_i.controller_i.last_op_id_i),
+                              .lsu_trans_valid     (core_i.load_store_unit_i.trans_valid),
                               .*);
   bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
 
