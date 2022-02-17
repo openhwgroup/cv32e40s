@@ -26,7 +26,6 @@ module cv32e40s_core_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
   #(
-    parameter bit A_EXT = 0,
     parameter int PMA_NUM_REGIONS = 0
   )
   (
@@ -374,21 +373,9 @@ always_ff @(posedge clk , negedge rst_ni)
       else `uvm_error("core", "Load instruction classified as bufferable")
 
 
-  generate
-    if (!A_EXT) begin
-      a_atomic_disabled_never_atop :
-        assert property (@(posedge clk) disable iff (!rst_ni)
-                         (data_atop_o == 6'b0))
-          else `uvm_error("core", "Atomic operations should never occur without A-extension enabled")
-    end
-    else begin
-      // Check that atomic operations are always non-bufferable
-      a_atomic_non_bufferable :
-        assert property (@(posedge clk) disable iff (!rst_ni)
-                         (data_req_o && |data_atop_o |-> !data_memtype_o[0]))
-          else `uvm_error("core", "Atomic operation classified as bufferable")
-    end
-  endgenerate
-
+  a_atomic_disabled_never_atop :
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                     (data_atop_o == 6'b0))
+      else `uvm_error("core", "Atomic operations should never occur without A-extension enabled")
 endmodule // cv32e40s_core_sva
 

@@ -32,7 +32,6 @@
 
 module cv32e40s_id_stage import cv32e40s_pkg::*;
 #(
-  parameter bit          A_EXT                  = 0,
   parameter b_ext_e      B_EXT                  = B_NONE,
   parameter m_ext_e      M_EXT                  = M,
   parameter bit          X_EXT                  = 0,
@@ -383,7 +382,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   cv32e40s_decoder
   #(
-    .A_EXT                           ( A_EXT                     ),
     .B_EXT                           ( B_EXT                     ),
     .M_EXT                           ( M_EXT                     ),
     .DEBUG_TRIGGER_EN                ( DEBUG_TRIGGER_EN          )
