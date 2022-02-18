@@ -33,6 +33,7 @@
   `include "cv32e40s_prefetch_unit_sva.sv"
   `include "cv32e40s_sleep_unit_sva.sv"
   `include "cv32e40s_rvfi_sva.sv"
+  `include "cv32e40s_param_sva.sv"
 `endif
 
 `include "cv32e40s_wrapper.vh"
@@ -154,6 +155,16 @@ module cv32e40s_wrapper
 `ifndef COREV_ASSERT_OFF
 
   // RTL Assertions
+
+  bind cv32e40s_core: core_i cv32e40s_param_sva
+    #(
+      .PMP_NUM_REGIONS (PMP_NUM_REGIONS  ),
+      .PMP_PMPNCFG_RV  (PMP_PMPNCFG_RV   ),
+      .PMP_PMPADDR_RV  (PMP_PMPADDR_RV   ),
+      .PMP_MSECCFG_RV  (PMP_MSECCFG_RV   )
+      )
+  param_sva(.*);
+
 
   bind cv32e40s_if_stage:
     core_i.if_stage_i cv32e40s_if_stage_sva if_stage_sva
