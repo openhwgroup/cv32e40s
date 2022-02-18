@@ -311,7 +311,8 @@ module cv32e40s_wrapper
   bind cv32e40s_mpu:
     core_i.if_stage_i.mpu_i
     cv32e40s_mpu_sva
-      #(.PMA_NUM_REGIONS                        (PMA_NUM_REGIONS),
+      #(.PMP_NUM_REGIONS                        (PMP_NUM_REGIONS),
+        .PMA_NUM_REGIONS                        (PMA_NUM_REGIONS),
         .PMA_CFG                                (PMA_CFG),
         .IS_INSTR_SIDE                          (1))
   mpu_if_sva(.pma_addr                          (pma_i.trans_addr_i),
@@ -329,20 +330,21 @@ module cv32e40s_wrapper
   bind cv32e40s_mpu:
     core_i.load_store_unit_i.mpu_i
     cv32e40s_mpu_sva
-      #(.PMA_NUM_REGIONS(PMA_NUM_REGIONS),
-        .PMA_CFG(PMA_CFG),
-        .IS_INSTR_SIDE(0))
-  mpu_lsu_sva(.pma_addr(pma_i.trans_addr_i),
-             .pma_cfg (pma_i.pma_cfg),
-             .obi_memtype                       (core_i.data_memtype_o),
-             .obi_addr                          (core_i.data_addr_o),
-             .obi_req                           (core_i.data_req_o),
-             .obi_gnt                           (core_i.data_gnt_i),
-             .write_buffer_state                (core_i.load_store_unit_i.write_buffer_i.state),
-             .write_buffer_valid_o              (core_i.load_store_unit_i.write_buffer_i.valid_o),
-             .write_buffer_txn_bufferable       (core_i.load_store_unit_i.write_buffer_i.trans_o.memtype[0]),
-             .write_buffer_txn_cacheable        (core_i.load_store_unit_i.write_buffer_i.trans_o.memtype[1]),
-             .*);
+      #(.PMP_NUM_REGIONS                        (PMP_NUM_REGIONS),
+        .PMA_NUM_REGIONS                        (PMA_NUM_REGIONS),
+        .PMA_CFG                                (PMA_CFG),
+        .IS_INSTR_SIDE                          (0))
+  mpu_lsu_sva(.pma_addr                         (pma_i.trans_addr_i),
+              .pma_cfg                          (pma_i.pma_cfg),
+              .obi_memtype                      (core_i.data_memtype_o),
+              .obi_addr                         (core_i.data_addr_o),
+              .obi_req                          (core_i.data_req_o),
+              .obi_gnt                          (core_i.data_gnt_i),
+              .write_buffer_state               (core_i.load_store_unit_i.write_buffer_i.state),
+              .write_buffer_valid_o             (core_i.load_store_unit_i.write_buffer_i.valid_o),
+              .write_buffer_txn_bufferable      (core_i.load_store_unit_i.write_buffer_i.trans_o.memtype[0]),
+              .write_buffer_txn_cacheable       (core_i.load_store_unit_i.write_buffer_i.trans_o.memtype[1]),
+              .*);
 
   bind cv32e40s_lsu_response_filter :
     core_i.load_store_unit_i.response_filter_i

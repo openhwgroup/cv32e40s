@@ -25,7 +25,8 @@
 
 
 module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
-  #(  parameter int PMA_NUM_REGIONS              = 0,
+  #(  parameter int PMP_NUM_REGIONS              = 0,
+      parameter int PMA_NUM_REGIONS              = 0,
       parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
       parameter int unsigned IS_INSTR_SIDE = 0)
   (
@@ -41,6 +42,9 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
    input logic        pma_err,
    input logic [31:0] pma_addr,
    input pma_region_t pma_cfg,
+
+   // PMP signals
+   input pmp_csr_t    csr_pmp_i,
 
    // Core OBI signals
    input logic [ 1:0] obi_memtype,
@@ -366,6 +370,88 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
           else `uvm_error("mpu", "MPU blocking OBI side when not needed")
         end
   endgenerate
+
+
+    // PMP checks
+
+    logic any_pmp_locked;
+    logic exp_rlb_locked_low;
+
+    always_comb begin
+      any_pmp_locked = 1'b0;
+      for(int i=0; i < PMP_NUM_REGIONS; i++) begin
+        if (csr_pmp_i.cfg[i].lock) begin
+          any_pmp_locked = 1'b1;
+        end
+      end
+    end
+
+    always_ff @(posedge clk, negedge rst_n) begin
+      if(!rst_n) begin
+        exp_rlb_locked_low <= 1'b0;
+      end
+      else begin
+        exp_rlb_locked_low <= exp_rlb_locked_low || (any_pmp_locked && !csr_pmp_i.mseccfg.rlb);
+      end
+    end
+
+    generate for (genvar i = 0; i < PMP_NUM_REGIONS; i++)
+    begin : a_pmp_gen
+
+      a_csr_pmp_no_rw_01:
+        assert property (@(posedge clk) disable iff (!rst_n)
+                         !csr_pmp_i.mseccfg.mml && $changed(csr_pmp_i.cfg[i])
+                         |-> {csr_pmp_i.cfg[i].read, csr_pmp_i.cfg[i].write} != 2'b01)
+          else `uvm_error("mpu", "{pmpcfg.read, pmpcfg.write} set to reserved value (RW=01)")
+
+      a_csr_pmp_no_new_mmode_execute:
+        assert property (@(posedge clk) disable iff (!rst_n)
+                         csr_pmp_i.mseccfg.mml && !csr_pmp_i.mseccfg.rlb && $changed(csr_pmp_i.cfg[i])
+                         |->
+                         ({csr_pmp_i.cfg[i].lock, csr_pmp_i.cfg[i].read, csr_pmp_i.cfg[i].write, csr_pmp_i.cfg[i].exec} != 4'b1001) &&
+                         ({csr_pmp_i.cfg[i].lock, csr_pmp_i.cfg[i].read, csr_pmp_i.cfg[i].write, csr_pmp_i.cfg[i].exec} != 4'b1010) &&
+                         ({csr_pmp_i.cfg[i].lock, csr_pmp_i.cfg[i].read, csr_pmp_i.cfg[i].write, csr_pmp_i.cfg[i].exec} != 4'b1011) &&
+                         ({csr_pmp_i.cfg[i].lock, csr_pmp_i.cfg[i].read, csr_pmp_i.cfg[i].write, csr_pmp_i.cfg[i].exec} != 4'b1101))
+          else `uvm_error("mpu", "Violation of Smepmp v1.0 spec, requirement 4b")
+
+      a_csr_pmp_unlock_rlb:
+        assert property (@(posedge clk) disable iff (!rst_n)
+                         (##1 $fell(csr_pmp_i.cfg[i].lock))
+                         |-> csr_pmp_i.mseccfg.rlb)
+          else `uvm_error("mpu", "PMP region unlocked with mseccfg.rlb cleared")
+
+      a_csr_pmp_addr_lock:
+        assert property (@(posedge clk) disable iff (!rst_n)
+                         ($changed(csr_pmp_i.addr[i]))
+                         |-> !(csr_pmp_i.cfg[i].lock && !csr_pmp_i.mseccfg.rlb))
+          else `uvm_error("mpu", "PMP address changed when it should be locked")
+
+      if(i > 0) begin: pmp_tor_lock
+        a_csr_pmp_addr_lock_tor:
+          assert property (@(posedge clk) disable iff (!rst_n)
+                           ($changed(csr_pmp_i.addr[i]))
+                           |-> !((csr_pmp_i.cfg[i+1].mode == PMP_MODE_TOR) && csr_pmp_i.cfg[i+1].lock && !csr_pmp_i.mseccfg.rlb))
+            else `uvm_error("mpu", "PMP address changed when it should be locked through TOR mode on the next PMP region")
+      end
+    end
+    endgenerate
+
+    a_csr_pmp_rlb:
+      assert property (@(posedge clk) disable iff (!rst_n)
+                       ($rose(csr_pmp_i.mseccfg.rlb))
+                       |-> !exp_rlb_locked_low)
+        else `uvm_error("mpu", "mseccfg.rlb set after being locked.")
+
+    a_csr_pmp_mml_sticky:
+      assert property (@(posedge clk) disable iff (!rst_n)
+                       ##1 !$fell(csr_pmp_i.mseccfg.mml))
+        else `uvm_error("mpu", "mseccfg.mml not sticky.")
+
+    a_csr_pmp_mmwp_sticky:
+      assert property (@(posedge clk) disable iff (!rst_n)
+                       ##1 !$fell(csr_pmp_i.mseccfg.mmwp))
+        else `uvm_error("mpu", "mseccfg.mmwp not sticky.")
+
 
 endmodule : cv32e40s_mpu_sva
 
