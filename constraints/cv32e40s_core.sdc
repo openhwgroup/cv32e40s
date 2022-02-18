@@ -121,26 +121,36 @@ set early_input_ports [list \
 # RISC-V OBI Input ports
 set obi_input_ports [list \
     instr_gnt_i \
+    instr_gntpar_i \
     instr_rvalid_i \
+    instr_rvalidpar_i \
     instr_rdata_i* \
+    instr_rchk_i* \
     instr_err_i \
     data_gnt_i \
+    data_gntpar_i \
     data_rvalid_i \
+    data_rvalidpar_i \
     data_rdata_i* \
+    data_rchk_i* \
     data_err_i \
 ]
 
 # RISC-V OBI Output ports
 set obi_output_ports [list \
     instr_req_o \
+    instr_reqpar_o \
     instr_addr_o* \
+    instr_achk_o* \
     instr_memtype_o* \
     instr_prot_o* \
     instr_dbg_o \
     data_req_o \
+    data_reqpar_o \
     data_we_o \
     data_be_o* \
     data_addr_o* \
+    data_achk_o* \
     data_wdata_o* \
     data_memtype_o* \
     data_prot_o* \

@@ -31,32 +31,24 @@
 
 module cv32e40s_core import cv32e40s_pkg::*;
 #(
-  parameter              LIB                          = 0,
-  parameter rv32_e       RV32                         = RV32I, // todo: Add support for RV32E
-  parameter b_ext_e      B_EXT                        = B_NONE,
-  parameter m_ext_e      M_EXT                        = M,
-  parameter int          X_NUM_RS                     = 2,
-  parameter int          X_ID_WIDTH                   = 4,
-  parameter int          X_MEM_WIDTH                  = 32,
-  parameter int          X_RFR_WIDTH                  = 32,
-  parameter int          X_RFW_WIDTH                  = 32,
-  parameter logic [31:0] X_MISA                       = 32'h00000000,
-  parameter logic [1:0]  X_ECS_XS                     = 2'b00,
-  parameter bit          ZC_EXT                       = 0, // todo: remove once fully implemented
-  parameter int          NUM_MHPMCOUNTERS             = 1,
-  parameter bit          SMCLIC                       = 0,
-  parameter int          SMCLIC_ID_WIDTH              = 6,
-  parameter int          DBG_NUM_TRIGGERS             = 1,
-  parameter int          PMA_NUM_REGIONS              = 0,
-  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
-  parameter int          PMP_GRANULARITY              =  0,
-  parameter int          PMP_NUM_REGIONS              =  0,
+  parameter              LIB                                 = 0,
+  parameter rv32_e       RV32                                = RV32I, // todo: Add support for RV32E
+  parameter b_ext_e      B_EXT                               = B_NONE,
+  parameter m_ext_e      M_EXT                               = M,
+  parameter bit          ZC_EXT                              = 0, // todo: remove once fully implemented
+  parameter bit          SMCLIC                              = 0,
+  parameter int          SMCLIC_ID_WIDTH                     = 6,
+  parameter int          DBG_NUM_TRIGGERS                    = 1,
+  parameter int          PMA_NUM_REGIONS                     = 0,
+  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0]        = '{default:PMA_R_DEFAULT},
+  parameter int          PMP_GRANULARITY                     =  0,
+  parameter int          PMP_NUM_REGIONS                     =  0,
   parameter pmpncfg_t    PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0] = '{default:PMPNCFG_DEFAULT},
   parameter [31:0]       PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
   parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
-  parameter lfsr_cfg_t   LFSR0_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter lfsr_cfg_t   LFSR1_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter lfsr_cfg_t   LFSR2_CFG                    = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR0_CFG                           = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR1_CFG                           = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR2_CFG                           = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
 )
 (
   // Clock and Reset
@@ -76,27 +68,37 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Instruction memory interface
   output logic        instr_req_o,
+  output logic        instr_reqpar_o,
   input  logic        instr_gnt_i,
+  input  logic        instr_gntpar_i,
   input  logic        instr_rvalid_i,
+  input  logic        instr_rvalidpar_i,
   output logic [31:0] instr_addr_o,
+  output logic [4:0]  instr_achk_o,
   output logic [1:0]  instr_memtype_o,
   output logic [2:0]  instr_prot_o,
   output logic        instr_dbg_o,
   input  logic [31:0] instr_rdata_i,
+  input  logic [4:0]  instr_rchk_i,
   input  logic        instr_err_i,
 
   // Data memory interface
   output logic        data_req_o,
+  output logic        data_reqpar_o,
   input  logic        data_gnt_i,
+  input  logic        data_gntpar_i,
   input  logic        data_rvalid_i,
+  input  logic        data_rvalidpar_i,
   output logic        data_we_o,
   output logic [3:0]  data_be_o,
   output logic [31:0] data_addr_o,
+  output logic [9:0]  data_achk_o,
   output logic [1:0]  data_memtype_o,
   output logic [2:0]  data_prot_o,
   output logic        data_dbg_o,
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
+  input  logic [4:0]  data_rchk_i,
   input  logic        data_err_i,
 
   // Cycle Count
@@ -134,7 +136,20 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic        core_sleep_o
 );
 
-  localparam bit X_EXT = 0; // todo: remove with xif
+  // todo: remove with xif
+  localparam bit          X_EXT        = 0;
+  localparam int          X_NUM_RS     = 2;
+  localparam int          X_ID_WIDTH   = 4;
+  localparam int          X_MEM_WIDTH  = 32;
+  localparam int          X_RFR_WIDTH  = 32;
+  localparam int          X_RFW_WIDTH  = 32;
+  localparam logic [31:0] X_MISA       = 32'h00000000;
+  localparam logic [ 1:0] X_ECS_XS     = 2'b00;
+
+  // todo: remove when reducing profiling infrastructure
+  parameter int           NUM_MHPMCOUNTERS  = 1;
+
+
 
   // Number of register file read ports
   // Core will only use two, but X_EXT may mandate 2 or 3
@@ -305,6 +320,12 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign xif.mem_req          = '0;
   assign xif.result_valid     = '0;
   assign xif.result           = '0;
+
+  // todo: implement parity signals
+  assign instr_reqpar_o        = 1'b0;
+  assign instr_achk_o          = '0;
+  assign data_reqpar_o         = 1'b0;
+  assign data_achk_o           = '0;
 
 
   // Connect toplevel OBI signals to internal interfaces
