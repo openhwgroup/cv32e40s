@@ -1534,14 +1534,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign pmp_mseccfg_n.mml  = csr_wdata_int[CSR_MSECCFG_MML_BIT]  || pmp_mseccfg_q.mml;
       assign pmp_mseccfg_n.mmwp = csr_wdata_int[CSR_MSECCFG_MMWP_BIT] || pmp_mseccfg_q.mmwp;
 
-      // MSECFG.RLB cannot be set if any PMP region is locked
-      // TODO:OE Spec: When mseccfg.RLB is 0 and pmpcfg.L is 1 in any entry (including disabled entries), then mseccfg.RLB is locked and any further modifications to mseccfg.RLB are ignored (WARL). Ibex version would clear RLB upon MSECCFG write if any region is locked, even if RLB=1.
-
-      // Ibex version: assign pmp_mseccfg_n.rlb = csr_wdata_int[CSR_MSECCFG_RLB_BIT]  && !(|pmpncfg_locked);
 
       // MSECCFG.RLB cannot be set if RLB=0 and any PMP region is locked
       assign pmp_mseccfg_n.rlb  = pmp_mseccfg_q.rlb ? csr_wdata_int[CSR_MSECCFG_RLB_BIT] :
-                                      csr_wdata_int[CSR_MSECCFG_RLB_BIT] && !(|pmpncfg_locked);
+                                  csr_wdata_int[CSR_MSECCFG_RLB_BIT] && !(|pmpncfg_locked);
 
       assign pmp_mseccfg_n.zero0 = '0;
 

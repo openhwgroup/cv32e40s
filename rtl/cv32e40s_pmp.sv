@@ -200,9 +200,6 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
     // When MSECCFG.MMWP is set default deny always, otherwise allow for M-mode, deny for other
     // modes
     access_fault = csr_pmp_i.mseccfg.mmwp || (priv_lvl_i != PRIV_LVL_M);
-    // TODO:OE The spec specifies:
-    // "If no PMP entry matches an S-mode or U-mode access, but at least one PMP entry is implemented, the access fails."
-    // Accesses would fail for all S- and U-mode accesses if no PMP entires are implemented.
 
     // PMP entries are statically prioritized, from 0 to N-1
     // The lowest-numbered PMP entry which matches an address determines accessability
