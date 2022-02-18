@@ -52,7 +52,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   input  logic [23:0]   mtvec_addr_i,           // Exception/interrupt address (MSBs)
   input  logic [31:0]   nmi_addr_i,             // NMI address
 
-  input  logic          branch_decision_i,      // Current branch decision from EX
+  input  logic          branch_decision_ex_i,   // Current branch decision from EX
 
   input  logic          last_op_id_i,
   input  logic          last_op_ex_i,
@@ -267,9 +267,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .pc_if_i              ( pc_if_o              ),
     .ctrl_fsm_i           ( ctrl_fsm_i           ),
     .if_id_pipe_i         ( if_id_pipe_o         ),
-    .jump_target_i        ( jump_target_id_i     ),
-    .branch_target_i      ( branch_target_ex_i   ),
-    .branch_decision_i    ( branch_decision_i    ),
+    .jump_target_id_i     ( jump_target_id_i     ),
+    .branch_target_ex_i   ( branch_target_ex_i   ),
+    .branch_decision_ex_i ( branch_decision_ex_i ),
 
     .last_op_id_i         ( last_op_id_i         ),
     .last_op_ex_i         ( last_op_ex_i         ),

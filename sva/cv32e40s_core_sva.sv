@@ -71,7 +71,7 @@ module cv32e40s_core_sva
   input mcause_t     cs_registers_csr_cause_i, // From controller
   input mcause_t     cs_registers_mcause_q,    // From cs_registers, flopped mcause
   input mstatus_t    cs_registers_mstatus_q,
-  input logic        pc_err,
+  input logic        pc_err_if,
   input logic        csr_err,
   input logic        itf_int_err,
   input logic        rf_ecc_err
@@ -413,8 +413,8 @@ always_ff @(posedge clk , negedge rst_ni)
 
   a_no_pc_err:
     assert property (@(posedge clk) disable iff (!rst_ni)
-                    1'b1 |-> !pc_err)
-          else `uvm_error("core", "pc_err shall be zero.")
+                    1'b1 |-> !pc_err_if)
+          else `uvm_error("core", "pc_err_if shall be zero.")
 
 endmodule // cv32e40s_core_sva
 

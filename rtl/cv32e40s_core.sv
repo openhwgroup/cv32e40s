@@ -246,7 +246,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Major Alert Triggers
   logic        rf_ecc_err;
-  logic        pc_err;
+  logic        pc_err_if;
   logic        csr_err;
   logic        itf_int_err;
 
@@ -403,7 +403,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
        // Alert Triggers
        .ctrl_fsm_i          ( ctrl_fsm          ),
        .rf_ecc_err_i        ( rf_ecc_err        ),
-       .pc_err_i            ( pc_err            ),
+       .pc_err_i            ( pc_err_if         ),
        .csr_err_i           ( csr_err           ),
        .itf_int_err_i       ( itf_int_err       ),
        .lfsr_lockup_i       ( lfsr_lockup       ),
@@ -448,11 +448,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mtvec_addr_i        ( mtvec_addr               ), // Exception/interrupt address (MSBs only)
     .nmi_addr_i          ( nmi_addr_i               ), // NMI address
 
-    .branch_decision_i   ( branch_decision_ex       ),
+    .branch_decision_ex_i( branch_decision_ex       ),
 
     .last_op_id_i        ( last_op_id               ),
     .last_op_ex_i        ( id_ex_pipe.last_op       ),
-    .pc_err_o            ( pc_err                   ),
+    .pc_err_o            ( pc_err_if                ),
 
     .m_c_obi_instr_if    ( m_c_obi_instr_if         ), // Instruction bus interface
 
