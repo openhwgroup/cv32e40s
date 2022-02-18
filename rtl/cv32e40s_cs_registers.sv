@@ -233,6 +233,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [PMP_NUM_REGIONS-1:0] pmpncfg_locked;
   logic [PMP_NUM_REGIONS-1:0] pmpncfg_rd_error;
   logic [PMP_NUM_REGIONS-1:0] pmpncfg_wr_addr_match;
+  logic [PMP_NUM_REGIONS-1:0] pmpncfg_warl_ignore_wr;
   logic [PMP_NUM_REGIONS-1:0] pmpaddr_wr_addr_match;
 
   logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_n;
@@ -1413,19 +1414,31 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
           assign pmpncfg_wr_addr_match[i] = (csr_waddr == csr_num_e'(CSR_PMPCFG0 + i));
           
-          
+          // Smepmp spec version 1.0, 4b: When mseccfg.mml==1, M-mode only or locked shared regions with executable privileges is not possible, and such writes are ignored. Exempt when mseccfg.rlb==1
+          assign pmpncfg_warl_ignore_wr[i] = pmp_mseccfg_q.rlb ? 1'b0 :
+                                             pmp_mseccfg_q.mml &&
+                                             (({pmpncfg_n[i].lock, pmpncfg_n[i].read, pmpncfg_n[i].write, pmpncfg_n[i].exec} == 4'b1001) || // Locked region, M-mode: execute,      S/U mode: none
+                                              ({pmpncfg_n[i].lock, pmpncfg_n[i].read, pmpncfg_n[i].write, pmpncfg_n[i].exec} == 4'b1010) || // Locked region, M-mode: execute,      S/U mode: execute
+                                              ({pmpncfg_n[i].lock, pmpncfg_n[i].read, pmpncfg_n[i].write, pmpncfg_n[i].exec} == 4'b1011) || // Locked region, M-mode: read/execute, S/U mode: execute
+                                              ({pmpncfg_n[i].lock, pmpncfg_n[i].read, pmpncfg_n[i].write, pmpncfg_n[i].exec} == 4'b1101));  // Locked region, M-mode: read/execute, S/U mode: none
           
           // MSECCFG.RLB allows the lock bit to be bypassed
           assign pmpncfg_locked[i] = pmpncfg_q[i].lock && !pmp_mseccfg_q.rlb;
 
           // Qualify PMPCFG write strobe with lock status
-          assign pmpncfg_we[i] = pmpncfg_we_int[i] && !pmpncfg_locked[i];
+          assign pmpncfg_we[i] = pmpncfg_we_int[i] && !(pmpncfg_locked[i] || pmpncfg_warl_ignore_wr[i]);
 
           // Extract PMPCFGi bits from wdata
           always_comb begin
 
             pmpncfg_n[i]       = csr_wdata_int[(i%4)*PMPNCFG_W+:PMPNCFG_W];
             pmpncfg_n[i].zero0 = '0;
+
+            // RW = 01 is a reserved combination, and shall result in RW = 00, unless mseccfg.mml==1
+            if (!pmpncfg_n[i].read && pmpncfg_n[i].write && !pmp_mseccfg_q.mml) begin
+              pmpncfg_n[i].read  = 1'b0;
+              pmpncfg_n[i].write = 1'b0;
+            end
 
             // NA4 mode is not selectable when G > 0, mode is treated as OFF
             unique case (csr_wdata_int[(i%4)*PMPNCFG_W+3+:2])
