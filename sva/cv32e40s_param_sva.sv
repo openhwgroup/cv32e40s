@@ -51,7 +51,6 @@ module cv32e40s_param_sva import cv32e40s_pkg::*; import uvm_pkg::*;
 
       // When mseccfg.mml==0, RW=01 is a reserved combination, and shall be disallowed
       if (!PMP_MSECCFG_RV.mml) begin
-        // Make sure reset value is not a reserved combination
         a_param_pmp_no_rw_01: assert ({PMP_PMPNCFG_RV[i_pmp].read, PMP_PMPNCFG_RV[i_pmp].write} != 2'b01)
           else `uvm_error("param_sva", $sformatf("PMP_PMPNCFG_RV[%2d] illegal value: RW = 01", i_pmp));
       end
@@ -69,8 +68,7 @@ module cv32e40s_param_sva import cv32e40s_pkg::*; import uvm_pkg::*;
 
   // Make sure PMP_NUM_REGIONS is withing supported range
   initial begin
-    a_pmp_valid_num_regions :
-      assert  ((0 <= PMP_NUM_REGIONS) && (PMP_NUM_REGIONS <= 64))
+    a_pmp_valid_num_regions : assert  ((0 <= PMP_NUM_REGIONS) && (PMP_NUM_REGIONS <= 64))
         else `uvm_error("param_sva", "PMP_NUM_REGIONS not within range [0,64]");
   end
 

@@ -426,7 +426,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
                          |-> !(csr_pmp_i.cfg[i].lock && !csr_pmp_i.mseccfg.rlb))
           else `uvm_error("mpu", "PMP address changed when it should be locked")
 
-      if(i > 0) begin: pmp_tor_lock
+      if(i < PMP_NUM_REGIONS-1) begin: pmp_tor_lock
         a_csr_pmp_addr_lock_tor:
           assert property (@(posedge clk) disable iff (!rst_n)
                            ($changed(csr_pmp_i.addr[i]))
