@@ -86,12 +86,12 @@ module cv32e40s_wrapper
   input  logic        instr_rvalid_i,
   input  logic        instr_rvalidpar_i,
   output logic [31:0] instr_addr_o,
-  output logic        instr_achk_o,
+  output logic [4:0]  instr_achk_o,
   output logic [1:0]  instr_memtype_o,
   output logic [2:0]  instr_prot_o,
   output logic        instr_dbg_o,
   input  logic [31:0] instr_rdata_i,
-  input  logic        instr_rchk_i,
+  input  logic [4:0]  instr_rchk_i,
   input  logic        instr_err_i,
 
   // Data memory interface
@@ -104,13 +104,13 @@ module cv32e40s_wrapper
   output logic        data_we_o,
   output logic [3:0]  data_be_o,
   output logic [31:0] data_addr_o,
-  output logic        data_achk_o,
+  output logic [9:0]  data_achk_o,
   output logic [1:0]  data_memtype_o,
   output logic [2:0]  data_prot_o,
   output logic        data_dbg_o,
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
-  input  logic        data_rchk_i,
+  input  logic [4:0]  data_rchk_i,
   input  logic        data_err_i,
 
   // Cycle Count
@@ -131,9 +131,7 @@ module cv32e40s_wrapper
 
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
-  output logic        fencei_flush_reqpar_o,
   input  logic        fencei_flush_ack_i,
-  input  logic        fencei_flush_ackpar_i,
 
   // Security Alerts
   output logic        alert_minor_o,
@@ -141,7 +139,6 @@ module cv32e40s_wrapper
 
   // Debug Interface
   input  logic        debug_req_i,
-  input  logic        debug_reqpar_i,
   output logic        debug_havereset_o,
   output logic        debug_running_o,
   output logic        debug_halted_o,

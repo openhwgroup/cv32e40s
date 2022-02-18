@@ -109,7 +109,6 @@ set clic_output_ports [list \
 # Early Input ports (ideally from register)
 set early_input_ports [list \
     debug_req_i \
-    debug_reqpar_i \
     boot_addr_i* \
     mtvec_addr_i* \
     dm_halt_addr_i* \
@@ -126,14 +125,14 @@ set obi_input_ports [list \
     instr_rvalid_i \
     instr_rvalidpar_i \
     instr_rdata_i* \
-    instr_rchk_i \
+    instr_rchk_i* \
     instr_err_i \
     data_gnt_i \
     data_gntpar_i \
     data_rvalid_i \
     data_rvalidpar_i \
     data_rdata_i* \
-    data_rchk_i \
+    data_rchk_i* \
     data_err_i \
 ]
 
@@ -142,7 +141,7 @@ set obi_output_ports [list \
     instr_req_o \
     instr_reqpar_o \
     instr_addr_o* \
-    instr_achk_o \
+    instr_achk_o* \
     instr_memtype_o* \
     instr_prot_o* \
     instr_dbg_o \
@@ -151,7 +150,7 @@ set obi_output_ports [list \
     data_we_o \
     data_be_o* \
     data_addr_o* \
-    data_achk_o \
+    data_achk_o* \
     data_wdata_o* \
     data_memtype_o* \
     data_prot_o* \
@@ -166,13 +165,11 @@ set sleep_output_ports [list \
 # Fencei handshake output ports
 set fencei_output_ports [list \
     fencei_flush_req_o \
-    fencei_flush_reqpar_o \
 ]
 
 # Fencei handshake input ports
 set fencei_input_ports [list \
     fencei_flush_ack_i \
-    fencei_flush_ackpar_i \
 ]
 
 
