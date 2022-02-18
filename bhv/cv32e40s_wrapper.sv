@@ -50,15 +50,7 @@ module cv32e40s_wrapper
   parameter rv32_e       RV32                         = RV32I,
   parameter b_ext_e      B_EXT                        = B_NONE,
   parameter m_ext_e      M_EXT                        = M,
-  parameter int          X_NUM_RS                     = 2,
-  parameter int          X_ID_WIDTH                   = 4,
-  parameter int          X_MEM_WIDTH                  = 32,
-  parameter int          X_RFR_WIDTH                  = 32,
-  parameter int          X_RFW_WIDTH                  = 32,
-  parameter logic [31:0] X_MISA                       = 32'h00000000,
-  parameter logic [1:0]  X_ECS_XS                     = 2'b00,
   parameter bit          ZC_EXT                       = 0,
-  parameter int          NUM_MHPMCOUNTERS             = 1,
   parameter int          PMP_GRANULARITY              = 0,
   parameter int          PMP_NUM_REGIONS              = 0,
   parameter pmpncfg_t    PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0] = '{default:PMPNCFG_DEFAULT},
@@ -84,31 +76,41 @@ module cv32e40s_wrapper
   input  logic [31:0] mhartid_i,
   input  logic [31:0] mimpid_i,
   input  logic [31:0] dm_exception_addr_i,
-  input logic [31:0]  nmi_addr_i,
+  input  logic [31:0] nmi_addr_i,
 
   // Instruction memory interface
   output logic        instr_req_o,
+  output logic        instr_reqpar_o,
   input  logic        instr_gnt_i,
+  input  logic        instr_gntpar_i,
   input  logic        instr_rvalid_i,
+  input  logic        instr_rvalidpar_i,
   output logic [31:0] instr_addr_o,
+  output logic        instr_achk_o,
   output logic [1:0]  instr_memtype_o,
   output logic [2:0]  instr_prot_o,
   output logic        instr_dbg_o,
   input  logic [31:0] instr_rdata_i,
+  input  logic        instr_rchk_i,
   input  logic        instr_err_i,
 
   // Data memory interface
   output logic        data_req_o,
+  output logic        data_reqpar_o,
   input  logic        data_gnt_i,
+  input  logic        data_gntpar_i,
   input  logic        data_rvalid_i,
+  input  logic        data_rvalidpar_i,
   output logic        data_we_o,
   output logic [3:0]  data_be_o,
   output logic [31:0] data_addr_o,
+  output logic        data_achk_o,
   output logic [1:0]  data_memtype_o,
   output logic [2:0]  data_prot_o,
   output logic        data_dbg_o,
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
+  input  logic        data_rchk_i,
   input  logic        data_err_i,
 
   // Cycle Count
@@ -129,7 +131,9 @@ module cv32e40s_wrapper
 
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
-  input logic         fencei_flush_ack_i,
+  output logic        fencei_flush_reqpar_o,
+  input  logic        fencei_flush_ack_i,
+  input  logic        fencei_flush_ackpar_i,
 
   // Security Alerts
   output logic        alert_minor_o,
@@ -137,6 +141,7 @@ module cv32e40s_wrapper
 
   // Debug Interface
   input  logic        debug_req_i,
+  input  logic        debug_reqpar_i,
   output logic        debug_havereset_o,
   output logic        debug_running_o,
   output logic        debug_halted_o,
@@ -181,7 +186,7 @@ module cv32e40s_wrapper
     );
 
   bind cv32e40s_ex_stage:
-    core_i.ex_stage_i cv32e40s_ex_stage_sva #(.X_EXT(X_EXT)) ex_stage_sva
+    core_i.ex_stage_i cv32e40s_ex_stage_sva ex_stage_sva
     (
       .*
     );
@@ -213,7 +218,6 @@ module cv32e40s_wrapper
   bind cv32e40s_controller_fsm:
     core_i.controller_i.controller_fsm_i
       cv32e40s_controller_fsm_sva
-        #(.X_EXT(1'b0))
         controller_fsm_sva   (
                               .lsu_outstanding_cnt (core_i.load_store_unit_i.cnt_q),
                               .rf_we_wb_i          (core_i.wb_stage_i.rf_we_wb_o  ),
@@ -356,8 +360,6 @@ module cv32e40s_wrapper
 `endif //  `ifndef COREV_ASSERT_OFF
 
     cv32e40s_core_log
-     #(
-          .NUM_MHPMCOUNTERS      ( NUM_MHPMCOUNTERS      ))
     core_log_i(
           .clk_i              ( core_i.id_stage_i.clk              ),
           .ex_wb_pipe_i       ( core_i.ex_wb_pipe                  ),
@@ -564,15 +566,7 @@ module cv32e40s_wrapper
           .PMP_PMPNCFG_RV        ( PMP_PMPNCFG_RV        ),
           .PMP_PMPADDR_RV        ( PMP_PMPADDR_RV        ),
           .PMP_MSECCFG_RV        ( PMP_MSECCFG_RV        ),
-          .X_NUM_RS              ( X_NUM_RS              ),
-          .X_ID_WIDTH            ( X_ID_WIDTH            ),
-          .X_MEM_WIDTH           ( X_MEM_WIDTH           ),
-          .X_RFR_WIDTH           ( X_RFR_WIDTH           ),
-          .X_RFW_WIDTH           ( X_RFW_WIDTH           ),
-          .X_MISA                ( X_MISA                ),
-          .X_ECS_XS              ( X_ECS_XS              ),
           .ZC_EXT                ( ZC_EXT                ),
-          .NUM_MHPMCOUNTERS      ( NUM_MHPMCOUNTERS      ),
           .SMCLIC                ( SMCLIC                ),
           .SMCLIC_ID_WIDTH       ( SMCLIC_ID_WIDTH       ),
           .DBG_NUM_TRIGGERS      ( DBG_NUM_TRIGGERS      ),
