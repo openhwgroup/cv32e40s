@@ -616,6 +616,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .clk                  ( clk                ),
     .rst_n                ( rst_n              ),
     .misaligned_access_i  ( misaligned_access  ),
+    .if_data_access_i     ( 1'b0               ), // Only applicable for IF stage
     .priv_lvl_i           ( priv_lvl_lsu_i     ),
     .csr_pmp_i            ( csr_pmp_i          ),
 
