@@ -25,14 +25,12 @@
 
 module cv32e40s_pma import cv32e40s_pkg::*;
 #(  
-  parameter bit          A_EXT = 0,
   parameter int          PMA_NUM_REGIONS = 0,
   parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
 (
   input  logic [31:0] trans_addr_i,
   input  logic        instr_fetch_access_i, // Indicate that ongoing access is an instruction fetch
-  input  logic        atomic_access_i,      // Indicate that ongoing access is atomic
   input  logic        misaligned_access_i,  // Indicate that ongoing access is part of a misaligned access
   input  logic        load_access_i,        // Indicate that ongoing access is a load
   output logic        pma_err_o,
@@ -44,7 +42,6 @@ module cv32e40s_pma import cv32e40s_pkg::*;
   
   pma_region_t pma_cfg;
   logic [31:0] word_addr;
-  logic pma_cfg_atomic;
 
   // PMA addresses are word addresses
   assign word_addr =  {2'b00, trans_addr_i[31:2]};
@@ -76,25 +73,10 @@ module cv32e40s_pma import cv32e40s_pkg::*;
 
   endgenerate
 
-  // Tie of atomic attribute if A_EXT=0
-  generate
-    if (A_EXT) begin: pma_atomic
-      assign pma_cfg_atomic = pma_cfg.atomic;
-    end
-    else begin: pma_no_atomic
-      assign pma_cfg_atomic = 1'b0;
-    end
-  endgenerate
-  
   // Check transaction based on PMA region config
   always_comb begin
     
     pma_err_o = 1'b0;
-
-    // Check for atomic access
-    if (atomic_access_i && !pma_cfg_atomic) begin
-      pma_err_o = 1'b1;
-    end
 
     // Instruction fetches only allowed in main memory
     if (instr_fetch_access_i && !pma_cfg.main) begin
@@ -108,8 +90,8 @@ module cv32e40s_pma import cv32e40s_pkg::*;
   end
 
   // Set cacheable and bufferable based on PMA region attributes
-  // Instruction fetches, atomic operations and loads are never classified as bufferable
-  assign pma_bufferable_o = pma_cfg.bufferable && !instr_fetch_access_i && !atomic_access_i && !load_access_i;
+  // Instruction fetches and loads are never classified as bufferable
+  assign pma_bufferable_o = pma_cfg.bufferable && !instr_fetch_access_i && !load_access_i;
   assign pma_cacheable_o  = pma_cfg.cacheable;
   
 endmodule

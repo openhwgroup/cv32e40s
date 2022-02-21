@@ -25,7 +25,6 @@
 
 module cv32e40s_mpu import cv32e40s_pkg::*;
   #(  parameter bit          IF_STAGE                     = 1,
-      parameter bit          A_EXT                        = 0,
       parameter type         CORE_REQ_TYPE                = obi_inst_req_t,
       parameter type         CORE_RESP_TYPE               = inst_resp_t,
       parameter type         BUS_RESP_TYPE                = obi_inst_resp_t,
@@ -37,7 +36,6 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    input logic  clk,
    input logic  rst_n,
 
-   input logic  atomic_access_i,     // Indicate that ongoing access is atomic
    input logic  misaligned_access_i, // Indicate that ongoing access is part of a misaligned access
 
    // Interface towards bus interface
@@ -178,15 +176,13 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
 
   // PMA - Physical Memory Attribution
   cv32e40s_pma
-    #(.A_EXT                    ( A_EXT                ),
-      .PMA_NUM_REGIONS          ( PMA_NUM_REGIONS      ),
+    #(.PMA_NUM_REGIONS          ( PMA_NUM_REGIONS      ),
       .PMA_CFG                  ( PMA_CFG              )
   )
   pma_i
     (
     .trans_addr_i               ( core_trans_i.addr    ),
     .instr_fetch_access_i       ( instr_fetch_access   ),
-    .atomic_access_i            ( atomic_access_i      ),
     .misaligned_access_i        ( misaligned_access_i  ),
     .load_access_i              ( load_access          ),
     .pma_err_o                  ( pma_err              ),

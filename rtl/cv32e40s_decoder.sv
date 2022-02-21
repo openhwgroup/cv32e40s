@@ -27,7 +27,6 @@
 
 module cv32e40s_decoder import cv32e40s_pkg::*;
 #(
-  parameter bit          A_EXT                  = 0,
   parameter b_ext_e      B_EXT                  = B_NONE,
   parameter m_ext_e      M_EXT                  = M,
   parameter              DEBUG_TRIGGER_EN       = 1
@@ -77,7 +76,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   output logic          lsu_we_o,               // Data memory write enable
   output logic [1:0]    lsu_size_o,             // Data size (byte, half word or word)
   output logic          lsu_sext_o,             // Sign extension on read data from data memory
-  output logic [5:0]    lsu_atop_o,             // Atomic memory access
 
   // Register file related signals
   output logic          rf_we_o,                // Write enable for register file
@@ -106,7 +104,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
 
   decoder_ctrl_t decoder_i_ctrl;
   decoder_ctrl_t decoder_m_ctrl;
-  decoder_ctrl_t decoder_a_ctrl;
   decoder_ctrl_t decoder_b_ctrl;
   decoder_ctrl_t decoder_ctrl_mux_subdec;
   decoder_ctrl_t decoder_ctrl_mux;
@@ -129,16 +126,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
 
 
   generate
-    if (A_EXT) begin: a_decoder
-      // RV32A extension decoder
-      cv32e40s_a_decoder a_decoder_i
-      (
-        .instr_rdata_i  ( instr_rdata    ),
-        .decoder_ctrl_o ( decoder_a_ctrl )
-      );
-    end else begin: no_a_decoder
-      assign decoder_a_ctrl = DECODER_CTRL_ILLEGAL_INSN;
-    end
 
     if (B_EXT != B_NONE) begin: b_decoder
       // RV32B extension decoder
@@ -177,7 +164,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   begin
     unique case (1'b1)
       !decoder_m_ctrl.illegal_insn : decoder_ctrl_mux_subdec = decoder_m_ctrl; // M decoder got a match
-      !decoder_a_ctrl.illegal_insn : decoder_ctrl_mux_subdec = decoder_a_ctrl; // A decoder got a match
       !decoder_i_ctrl.illegal_insn : decoder_ctrl_mux_subdec = decoder_i_ctrl; // I decoder got a match
       !decoder_b_ctrl.illegal_insn : decoder_ctrl_mux_subdec = decoder_b_ctrl; // B decoder got a match
       default                      : decoder_ctrl_mux_subdec = DECODER_CTRL_ILLEGAL_INSN; // No match from decoders, illegal instruction
@@ -218,7 +204,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   assign lsu_we_o           = decoder_ctrl_mux.lsu_we;                       
   assign lsu_size_o         = decoder_ctrl_mux.lsu_size;                     
   assign lsu_sext_o         = decoder_ctrl_mux.lsu_sext;
-  assign lsu_atop_o         = decoder_ctrl_mux.lsu_atop;                     
   assign sys_en             = decoder_ctrl_mux.sys_en;
   assign sys_mret_insn_o    = decoder_ctrl_mux.sys_mret_insn;
   assign sys_dret_insn_o    = decoder_ctrl_mux.sys_dret_insn;

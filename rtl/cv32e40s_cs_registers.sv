@@ -35,7 +35,6 @@
 
 module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
-  parameter bit          A_EXT            = 0,
   parameter m_ext_e      M_EXT            = M,
   parameter bit          X_EXT            = 0,
   parameter logic [31:0] X_MISA           =  32'h00000000,
@@ -117,7 +116,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output xsecure_ctrl_t   xsecure_ctrl_o,
 
   // CSR write strobes
-  output logic            xsecure_csr_wr_in_wb_o,
+  output logic            csr_wr_in_wb_flush_o,
 
   // debug
   output logic [31:0]     dpc_o,
@@ -134,13 +133,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 );
 
   localparam logic [31:0] CORE_MISA =
-  (32'(A_EXT)      <<  0)  // A - Atomic Instructions extension
-| (32'(1)          <<  2)  // C - Compressed extension
-| (32'(1)          <<  8)  // I - RV32I/64I/128I base ISA
-| (32'(M_EXT == M) << 12)  // M - Integer Multiply/Divide extension
-| (32'(1)          << 20)  // U - User mode implemented
-| (32'(0)          << 23)  // X - Non-standard extensions present
-| (32'(MXL)        << 30); // M-XLEN
+    (32'(1)          <<  2) | // C - Compressed extension
+    (32'(1)          <<  8) | // I - RV32I/64I/128I base ISA
+    (32'(M_EXT == M) << 12) | // M - Integer Multiply/Divide extension
+    (32'(1)          << 20) | // U - User mode implemented
+    (32'(0)          << 23) | // X - Non-standard extensions present
+    (32'(MXL)        << 30); // M-XLEN
 
   localparam logic [31:0] MISA_VALUE = CORE_MISA | (X_EXT ? X_MISA : 32'h0000_0000);
 
@@ -234,7 +232,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [PMP_MAX_REGIONS-1:0] pmpncfg_we;
   logic [PMP_NUM_REGIONS-1:0] pmpncfg_locked;
   logic [PMP_NUM_REGIONS-1:0] pmpncfg_rd_error;
- 
+  logic [PMP_NUM_REGIONS-1:0] pmpncfg_wr_addr_match;
+  logic [PMP_NUM_REGIONS-1:0] pmpncfg_warl_ignore_wr;
+  logic [PMP_NUM_REGIONS-1:0] pmpaddr_wr_addr_match;
+
   logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_n;
   logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_q[PMP_MAX_REGIONS];
   logic [PMP_MAX_REGIONS-1:0] pmp_addr_we_int;
@@ -284,6 +285,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [31:0] csr_wdata;
   logic        csr_en_gated;
   logic        csr_wr_in_wb;
+  logic        xsecure_csr_wr_in_wb;
+  logic        pmp_csr_wr_in_wb;
 
   logic illegal_csr_read;  // Current CSR cannot be read
   logic illegal_csr_write; // Current CSR cannot be written
@@ -1302,12 +1305,25 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                          (csr_op == CSR_OP_SET)   ||
                          (csr_op == CSR_OP_CLEAR));
 
-  assign xsecure_csr_wr_in_wb_o = SECURE &&
+  // xsecure CSRs has impact on pipeline operation. When updated, clear pipeline.
+  // div/divu/rem/remu and branch decisions in EX stage depend on cpuctrl.dataindtiming
+  // Dummy instruction insertion depend on cpuctrl.dummyen/dummyfreq
+  assign xsecure_csr_wr_in_wb   = SECURE &&
                                   csr_wr_in_wb &&
                                   ((csr_waddr == CSR_CPUCTRL)     ||
                                    (csr_waddr == CSR_SECURESEED0) ||
                                    (csr_waddr == CSR_SECURESEED1) ||
                                    (csr_waddr == CSR_SECURESEED2));
+
+  // PMP CSRs affect memory access permissions. When updated, the pipeline must be flushed
+  // to ensure succseeding instructions are executed with correct permissions
+  assign pmp_csr_wr_in_wb = csr_wr_in_wb &&
+                            (|pmpncfg_wr_addr_match ||
+                             |pmpaddr_wr_addr_match ||
+                             (csr_waddr == CSR_MSECCFG));
+
+
+  assign csr_wr_in_wb_flush_o = xsecure_csr_wr_in_wb || pmp_csr_wr_in_wb;
 
   assign csr_rdata_o = csr_rdata_int;
 
@@ -1394,20 +1410,35 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       for(genvar i=0; i < PMP_MAX_REGIONS; i++)  begin: gen_pmp_csr
 
         if(i < PMP_NUM_REGIONS) begin: pmp_region
+
+
+          assign pmpncfg_wr_addr_match[i] = (csr_waddr == csr_num_e'(CSR_PMPCFG0 + i));
           
-          
+          // Smepmp spec version 1.0, 4b: When mseccfg.mml==1, M-mode only or locked shared regions with executable privileges is not possible, and such writes are ignored. Exempt when mseccfg.rlb==1
+          assign pmpncfg_warl_ignore_wr[i] = pmp_mseccfg_q.rlb ? 1'b0 :
+                                             pmp_mseccfg_q.mml &&
+                                             (({pmpncfg_n[i].lock, pmpncfg_n[i].read, pmpncfg_n[i].write, pmpncfg_n[i].exec} == 4'b1001) || // Locked region, M-mode: execute,      S/U mode: none
+                                              ({pmpncfg_n[i].lock, pmpncfg_n[i].read, pmpncfg_n[i].write, pmpncfg_n[i].exec} == 4'b1010) || // Locked region, M-mode: execute,      S/U mode: execute
+                                              ({pmpncfg_n[i].lock, pmpncfg_n[i].read, pmpncfg_n[i].write, pmpncfg_n[i].exec} == 4'b1011) || // Locked region, M-mode: read/execute, S/U mode: execute
+                                              ({pmpncfg_n[i].lock, pmpncfg_n[i].read, pmpncfg_n[i].write, pmpncfg_n[i].exec} == 4'b1101));  // Locked region, M-mode: read/execute, S/U mode: none
           
           // MSECCFG.RLB allows the lock bit to be bypassed
           assign pmpncfg_locked[i] = pmpncfg_q[i].lock && !pmp_mseccfg_q.rlb;
 
           // Qualify PMPCFG write strobe with lock status
-          assign pmpncfg_we[i] = pmpncfg_we_int[i] && !pmpncfg_locked[i];
+          assign pmpncfg_we[i] = pmpncfg_we_int[i] && !(pmpncfg_locked[i] || pmpncfg_warl_ignore_wr[i]);
 
           // Extract PMPCFGi bits from wdata
           always_comb begin
 
             pmpncfg_n[i]       = csr_wdata_int[(i%4)*PMPNCFG_W+:PMPNCFG_W];
             pmpncfg_n[i].zero0 = '0;
+
+            // RW = 01 is a reserved combination, and shall result in RW = 00, unless mseccfg.mml==1
+            if (!pmpncfg_n[i].read && pmpncfg_n[i].write && !pmp_mseccfg_q.mml) begin
+              pmpncfg_n[i].read  = 1'b0;
+              pmpncfg_n[i].write = 1'b0;
+            end
 
             // NA4 mode is not selectable when G > 0, mode is treated as OFF
             unique case (csr_wdata_int[(i%4)*PMPNCFG_W+3+:2])
@@ -1446,6 +1477,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                                     !pmpncfg_locked[i] &&
                                     (!pmpncfg_locked[i+1] || pmpncfg_q[i+1].mode != PMP_MODE_TOR);
           end
+
+          assign pmpaddr_wr_addr_match[i] = (csr_waddr == csr_num_e'(CSR_PMPADDR0 + i));
 
           cv32e40s_csr #(
                          .WIDTH      (PMP_ADDR_WIDTH),
@@ -1514,14 +1547,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign pmp_mseccfg_n.mml  = csr_wdata_int[CSR_MSECCFG_MML_BIT]  || pmp_mseccfg_q.mml;
       assign pmp_mseccfg_n.mmwp = csr_wdata_int[CSR_MSECCFG_MMWP_BIT] || pmp_mseccfg_q.mmwp;
 
-      // MSECFG.RLB cannot be set if any PMP region is locked
-      // TODO:OE Spec: When mseccfg.RLB is 0 and pmpcfg.L is 1 in any entry (including disabled entries), then mseccfg.RLB is locked and any further modifications to mseccfg.RLB are ignored (WARL). Ibex version would clear RLB upon MSECCFG write if any region is locked, even if RLB=1.
-
-      // Ibex version: assign pmp_mseccfg_n.rlb = csr_wdata_int[CSR_MSECCFG_RLB_BIT]  && !(|pmpncfg_locked);
 
       // MSECCFG.RLB cannot be set if RLB=0 and any PMP region is locked
       assign pmp_mseccfg_n.rlb  = pmp_mseccfg_q.rlb ? csr_wdata_int[CSR_MSECCFG_RLB_BIT] :
-                                      csr_wdata_int[CSR_MSECCFG_RLB_BIT] && !(|pmpncfg_locked);
+                                  csr_wdata_int[CSR_MSECCFG_RLB_BIT] && !(|pmpncfg_locked);
 
       assign pmp_mseccfg_n.zero0 = '0;
 

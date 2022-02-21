@@ -89,7 +89,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        csr_counter_read_i,         // A performance counter is read in CSR (EX)
 
   // CSR write stobes
-  input logic          xsecure_csr_wr_in_wb_i,
+  input logic          csr_wr_in_wb_flush_i,
 
   input logic [REGFILE_NUM_READ_PORTS-1:0] rf_re_id_i,
   input rf_addr_t     rf_raddr_id_i[REGFILE_NUM_READ_PORTS],
@@ -163,7 +163,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .lsu_interruptible_i         ( lsu_interruptible_i      ),
 
     // CSR write strobes
-    .xsecure_csr_wr_in_wb_i      ( xsecure_csr_wr_in_wb_i   ),
+    .csr_wr_in_wb_flush_i        ( csr_wr_in_wb_flush_i     ),
 
     // Interrupt Controller Signals
     .irq_req_ctrl_i              ( irq_req_ctrl_i           ),

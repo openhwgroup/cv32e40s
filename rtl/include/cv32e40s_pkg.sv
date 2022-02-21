@@ -864,19 +864,6 @@ typedef enum logic[1:0] {
                          CT_BCH  = 2'b11
                          } bch_jmp_mux_e;
 
-// Atomic operations
-parameter AMO_LR   = 5'b00010;
-parameter AMO_SC   = 5'b00011;
-parameter AMO_SWAP = 5'b00001;
-parameter AMO_ADD  = 5'b00000;
-parameter AMO_XOR  = 5'b00100;
-parameter AMO_AND  = 5'b01100;
-parameter AMO_OR   = 5'b01000;
-parameter AMO_MIN  = 5'b10000;
-parameter AMO_MAX  = 5'b10100;
-parameter AMO_MINU = 5'b11000;
-parameter AMO_MAXU = 5'b11100;
-
 // Decoder control signals
 typedef struct packed {
   logic                              alu_en;
@@ -903,7 +890,6 @@ typedef struct packed {
   logic                              lsu_we;
   logic [1:0]                        lsu_size;
   logic                              lsu_sext;
-  logic [5:0]                        lsu_atop;
   logic                              sys_en;
   logic                              illegal_insn;
   logic                              sys_dret_insn;
@@ -939,7 +925,6 @@ typedef struct packed {
                                                           lsu_we                       : 1'b0,
                                                           lsu_size                     : 2'b00,
                                                           lsu_sext                     : 1'b0,
-                                                          lsu_atop                     : 6'b000000,
                                                           sys_en                       : 1'b0,
                                                           illegal_insn                 : 1'b1,
                                                           sys_dret_insn                : 1'b0,
@@ -1005,14 +990,12 @@ parameter IRQ_MASK = 32'hFFFF0888;
 // main:               Region is defined as main memory (as opposed to I/O memory)
 // bufferable:         Transfers in this region are bufferable
 // cacheable:          Transfers in this region are cacheable
-// atomic:             This region supports atomic transfers
 typedef struct packed {
   logic [31:0] word_addr_low;
   logic [31:0] word_addr_high;
   logic        main;
   logic        bufferable;
   logic        cacheable;
-  logic        atomic;
 } pma_region_t;
 
 // Default attribution when PMA is not configured (PMA_NUM_REGIONS=0) (Address is don't care)
@@ -1020,16 +1003,14 @@ parameter pma_region_t NO_PMA_R_DEFAULT = '{word_addr_low   : 0,
                                             word_addr_high  : 0,
                                             main            : 1'b1,
                                             bufferable      : 1'b0,
-                                            cacheable       : 1'b0,
-                                            atomic          : 1'b1};
+                                            cacheable       : 1'b0};
 
 // Default attribution when PMA is configured (Address is don't care)
 parameter pma_region_t PMA_R_DEFAULT = '{word_addr_low   : 0,
                                          word_addr_high  : 0,
                                          main            : 1'b0,
                                          bufferable      : 1'b0,
-                                         cacheable       : 1'b0,
-                                         atomic          : 1'b0};
+                                         cacheable       : 1'b0};
 
 // MPU status. Used for PMA and PMP
 typedef enum logic [1:0] {
@@ -1136,7 +1117,6 @@ typedef struct packed {
 
 typedef struct packed {
   logic [DATA_ADDR_WIDTH-1:0]     addr;
-  logic [5:0]                     atop;
   logic                           we;
   logic [(DATA_DATA_WIDTH/8)-1:0] be;
   logic [DATA_DATA_WIDTH-1:0]     wdata;
@@ -1148,7 +1128,6 @@ typedef struct packed {
 typedef struct packed {
   logic [DATA_DATA_WIDTH-1:0] rdata;
   logic                       err;
-  logic                       exokay;
 } obi_data_resp_t;
 
 // Data/instruction transfer bundeled with MPU status
@@ -1183,7 +1162,6 @@ typedef struct packed {
 typedef struct packed {
   logic [DATA_ADDR_WIDTH-1:0]     addr;
   logic [1:0]                     size;
-  logic [5:0]                     atop;
   logic                           we;
   logic                           sext;
   logic [DATA_DATA_WIDTH-1:0]     wdata;
@@ -1262,7 +1240,6 @@ typedef struct packed {
   logic         lsu_we;
   logic [1:0]   lsu_size;
   logic         lsu_sext;
-  logic [5:0]   lsu_atop;
 
   // SYS
   logic         sys_en;

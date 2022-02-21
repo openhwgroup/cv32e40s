@@ -39,7 +39,6 @@
 module cv32e40s_core_log import cv32e40s_pkg::*;
 #(
 // todo: log all parameters
-  parameter int NUM_MHPMCOUNTERS =  1
 )
 (
   input logic        clk_i,
@@ -49,11 +48,7 @@ module cv32e40s_core_log import cv32e40s_pkg::*;
 );
 
 `ifndef FORMAL
-  // Log top level parameter values
-  initial
-  begin
-    $display("[cv32e40s_core]: NUM_MHPMCOUNTERS %d", NUM_MHPMCOUNTERS);
-  end
+  // todo: Log top level parameter values
 
   // Log illegal instructions
   always_ff @(negedge clk_i)
