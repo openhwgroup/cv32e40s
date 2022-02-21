@@ -206,6 +206,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
                                                        // Misaligned access to main is allowed, and accesses outside main will
                                                        // result in instruction access fault (which will have priority over
                                                        //  misaligned from I/O fault)
+    .if_data_access_i     ( 1'b0                    ), // Indicate data access from IF stage. TODO: Use for table jumps and CLIC hardware vectoring
     .priv_lvl_i           ( prefetch_priv_lvl       ),
     .csr_pmp_i            ( csr_pmp_i               ),
 
