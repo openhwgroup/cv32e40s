@@ -139,9 +139,11 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
                            ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op) || // mret 1/2 in EX
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_op));  // mret 1/2 in WB
 
+  // Detect if a jumpr instruction is stalling on itself (Can only happen if the last part is in ID and the first in EX)
+  // Any stall due to first part being in WB would be allowed to forward to ID.
   assign jumpr_self_stall = (alu_jmpr_id_i && alu_en_raw_id_i && last_op_id_i) &&
-                            ((id_ex_pipe_i.alu_jmp && id_ex_pipe_i.alu_en && !id_ex_pipe_i.last_op) ||
-                             (ex_wb_pipe_i.alu_jmp_qual && !ex_wb_pipe_i.last_op));
+                            ((id_ex_pipe_i.alu_jmp && id_ex_pipe_i.alu_en && !id_ex_pipe_i.last_op));
+
 
   // Stall ID when WFI is active in EX.
   // Prevent load/store following a WFI in the pipeline

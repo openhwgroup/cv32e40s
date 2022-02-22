@@ -226,6 +226,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Branch taken for valid branch instructions in EX with valid decision
   
   assign branch_in_ex = id_ex_pipe_i.alu_bch && id_ex_pipe_i.alu_en && id_ex_pipe_i.instr_valid;
+  assign ctrl_fsm_o.branch_in_ex_raw = id_ex_pipe_i.alu_bch && id_ex_pipe_i.alu_en;
 
   // Blocking on branch_taken_q, as a branch ha already been taken
   assign branch_taken_ex = branch_in_ex && branch_decision_ex_i && !branch_taken_q;

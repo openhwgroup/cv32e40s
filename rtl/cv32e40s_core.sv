@@ -490,6 +490,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Pipeline handshakes
     .if_valid_o          ( if_valid                 ),
     .id_ready_i          ( id_ready                 ),
+    .id_valid_i          ( id_valid                 ),
+    .ex_ready_i          ( ex_ready                 ),
 
     // CSR registers
     .csr_pmp_i           ( csr_pmp                  ),

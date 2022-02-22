@@ -73,6 +73,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   output logic          if_valid_o,
   input  logic          id_ready_i,
 
+  input  logic          id_valid_i,
+  input  logic          ex_ready_i,
+
   // PMP CSR's
   input pmp_csr_t       csr_pmp_i,
 
@@ -260,6 +263,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
     .if_valid_i           ( if_valid_o           ),
     .id_ready_i           ( id_ready_i           ),
+
+    .id_valid_i           ( id_valid_i           ),
+    .ex_ready_i           ( ex_ready_i           ),
 
     .pc_if_i              ( pc_if_o              ),
     .ctrl_fsm_i           ( ctrl_fsm_i           ),

@@ -1403,6 +1403,7 @@ typedef struct packed {
   logic        jump_in_id;
   logic        jump_taken_id;       // A jump was taken from ID stage
   logic        branch_in_ex;
+  logic        branch_in_ex_raw;    // Branch in EX, not qualified with instr_valid
   logic        branch_taken_ex;     // A branch was taken from EX stage
   
   // Performance counter events

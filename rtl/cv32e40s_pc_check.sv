@@ -37,6 +37,8 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
 
   input  logic        if_valid_i,
   input  logic        id_ready_i,
+  input  logic        id_valid_i,
+  input  logic        ex_ready_i,
   input  logic [31:0] pc_if_i,                // Current IF stage PC
   input  ctrl_fsm_t   ctrl_fsm_i,             // Controller struct
   input  if_id_pipe_t if_id_pipe_i,           // IF/ID pipeline registers
@@ -64,11 +66,14 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
 );
 
 // Flopped versions of pc_set and pc_mux
-logic    pc_set_q; // pc_set was active previous cycle
-logic    if_id_q;  // if_valkd && id_ready was active previous cycle
-pc_mux_e pc_mux_q; // Last value of pc_mux
+logic    pc_set_q;        // pc_set was active previous cycle
+logic    if_id_q;         // if_valid && id_ready was active previous cycle
+logic    jmp_taken_q;     // A jump was taken. Sticky until last part of instruction is done
+logic    bch_taken_q;     // A branch was taken. Sticky until last part of instruction is done
+pc_mux_e pc_mux_q;        // Last value of pc_mux (for address comparison)
 
-logic    compare_enable;
+
+logic    compare_enable_q;
 
 // Expected PC for incremental execution
 logic [31:0] incr_addr;
@@ -83,6 +88,8 @@ logic [31:0] ctrl_flow_addr;
 logic addr_err;
 
 // Control flow decision error
+logic jump_mret_taken_err;
+logic branch_taken_err;
 logic ctrl_flow_err;
 logic ctrl_flow_taken_err;    // Signals error on taken jump/mret/branch
 logic ctrl_flow_untaken_err;  // Signals error on untaken jump/mret/branch
@@ -93,7 +100,8 @@ logic ctrl_flow_untaken_err;  // Signals error on untaken jump/mret/branch
 
 // Set expected address for sequential updates based on address in ID
 // and type of instruction (compressed +2 / uncompressed + 4)
-assign incr_addr = if_id_pipe_i.pc + (if_id_pipe_i.instr_meta.compressed ? 32'd2 : 32'd4);
+assign incr_addr = if_id_pipe_i.pc + (if_id_pipe_i.instr_meta.dummy      ? 32'd0 :
+                                      if_id_pipe_i.instr_meta.compressed ? 32'd2 : 32'd4);
 
 // Control flow address chosen based on flopped ctrl_fsm_i.pc_mux
 // If the pc_mux is glitched, this mux may choose the wrong address
@@ -103,40 +111,46 @@ assign ctrl_flow_addr = (pc_mux_q == PC_JUMP)     ? jump_target_id_i      :
                         (pc_mux_q == PC_BRANCH)   ? branch_target_ex_i    :
                         (pc_mux_q == PC_TRAP_DBD) ? dm_halt_addr_i        :
                         (pc_mux_q == PC_TRAP_DBE) ? dm_exception_addr_i   :
-                        (pc_mux_q == PC_TRAP_NMI) ? nmi_addr_i            :
+                        (pc_mux_q == PC_TRAP_NMI) ? nmi_addr_i            : // todo: remove when nmi_addr_i is removed
                         (pc_mux_q == PC_TRAP_EXC) ? {mtvec_addr_i, 8'h0 } : // Also covered by CSR hardening
                         (pc_mux_q == PC_DRET)     ? dpc_i                 : {boot_addr_i[31:2], 2'b00};
 
 // Choose which address to check vs pc_if, sequential or control flow.
+// Instructions are 16 bit aligned since the core supports the C extension.
+// This tieoff of bit 0 is similar to the connection of the prefetch unit in the if_stage.
 assign check_addr = !pc_set_q ? incr_addr : {ctrl_flow_addr[31:1], 1'b0};
 
 // Comparator for address
 // Comparison is only valid the cycle after pc_set or the cycle
-// after an instruction goes from IF to ID and it is not a dummy.
-assign addr_err = (pc_set_q || (if_id_q && !if_id_pipe_i.instr_meta.dummy)) ? (check_addr != pc_if_i)  : 1'b0;
+// after an instruction goes from IF to ID.
+assign addr_err = (pc_set_q || if_id_q) ? (check_addr != pc_if_i)  : 1'b0;
 
 //////////////////////////////////
 // Decision check
 //////////////////////////////////
 
-// Comparator for control flow decision
-// Check if taken jumps, mret and branches are correct by checking the decision
-// in the last cycle of the instructions.
-// Not checking for the cases of:
-// - pc_set_q == 1 && ctrl_fsm_i.pc_set == 1 as this indicates another decision in control flow has taken place
-//   and will override the previous pc_set (interrupts, NMI, debug can be sources for this)
-// - ID stage is halted. This may happen for pending interrupts and debug, and will possibly change the state of
-//   ctrl_fsm_i.branch_in_ex. Unless an interrupt is retracted, jumps and branches will be killed before the
-//   interrupt is taken.
-assign ctrl_flow_taken_err = (((pc_mux_q == PC_JUMP)   && !ctrl_fsm_i.jump_in_id)                             ||
-                              ((pc_mux_q == PC_BRANCH) && !(ctrl_fsm_i.branch_in_ex && branch_decision_ex_i)) ||
-                              ((pc_mux_q == PC_MRET)   && !ctrl_fsm_i.jump_in_id))                            &&
-                             (pc_set_q && !ctrl_fsm_i.pc_set && !ctrl_fsm_i.halt_id);
+// Check if taken jumps, mret and branches are correct
+// The decision from the second half of the instruction is compared against
+// the decision from the pc_set performed by the first half at least one cycle earlier by the controller.
+// The *taken_q flags remain high until both operations of the instruction has completed,
+// or the stage (ID or EX) has been killed. The comparison will be performed for as long as
+// the instruction stays in ID or EX, including stalls. Using raw version of 'branch_in_ex' to avoid
+// the case where the ID stage could be halted due to interrupts or debug and clear the
+// ctrl_fsm_i.branch_in_ex for the second half. Comparison should still hold for the duration of bch_taken_q, and
+// the taken branch would eventually get killed before interrupt or debug entry.
+assign jump_mret_taken_err = jmp_taken_q && !ctrl_fsm_i.jump_in_id;
+assign branch_taken_err    = bch_taken_q && !(ctrl_fsm_i.branch_in_ex_raw && branch_decision_ex_i)                             ;
 
-// Check if we should have taken a jump, mret or branch when pc_set was not set
-assign ctrl_flow_untaken_err = !pc_set_q &&
-                               ((ctrl_fsm_i.jump_taken_id && last_op_id_i) || // includes mret
-                                (ctrl_fsm_i.branch_taken_ex && last_op_ex_i));
+assign ctrl_flow_taken_err = jump_mret_taken_err || branch_taken_err;
+
+// Check if we should have taken a jump (including mret) or branch when pc_set was not set
+// Jumps and branches shall be taken during the first of the two operations.
+// A glitched jump or branch (that should have been taken) during the first cycle will not result
+// in the jmp_taken_q and bch_taken_q flags to be set. In this case, the controller flags for
+// not doing jumps and branches twice will also not be set, and the second part of the jump/branch
+// may actually be taken by the controller. If this is observed the decision has been glitched.
+assign ctrl_flow_untaken_err = (!jmp_taken_q && (ctrl_fsm_i.jump_taken_id && last_op_id_i)) ||
+                               (!bch_taken_q && (ctrl_fsm_i.branch_taken_ex && branch_decision_ex_i && last_op_ex_i));
                                 
 
 assign ctrl_flow_err = ctrl_flow_taken_err || ctrl_flow_untaken_err;
@@ -146,29 +160,55 @@ assign ctrl_flow_err = ctrl_flow_taken_err || ctrl_flow_untaken_err;
 ///////////
 always_ff @(posedge clk, negedge rst_n) begin
   if (rst_n == 1'b0) begin
-    pc_set_q <= 1'b0;
-    pc_mux_q <= PC_BOOT;
-    compare_enable <= 1'b0;
-    if_id_q <= 1'b0;
+    pc_set_q         <= 1'b0;
+    pc_mux_q         <= PC_BOOT;
+    compare_enable_q <= 1'b0;
+    if_id_q          <= 1'b0;
+    jmp_taken_q      <= 1'b0;
+    bch_taken_q      <= 1'b0;
   end else begin
     // Signal that a pc_set set was performed.
-    // Exlucde cases of PC_WB_PLUS4 and PC_TRAP_IRQ as the pipeline currently has no easy way to recompute these targets.
-    // Also exclude if ID stage is halted as this indicates interrupt, NMI or debug that will change the program flow and kill
-    // younger instructions.
-    pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ)) && !ctrl_fsm_i.halt_id;
+    // Exclude cases of PC_WB_PLUS4 and PC_TRAP_IRQ as the pipeline currently has no easy way to recompute these targets.
+    // Used for the address comparison
+    pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ));
 
     // Set a flag for a valid IF->ID stage transition.
+    // Used for checking sequential PCs.
     if_id_q  <= if_valid_i && id_ready_i;
 
-    // On a pc_set, flop the pc_mux and set a sticky compare_enable bit.
+    // Flag for taken jump
+    // Jumps are taken from ID, and the flag can thus only be cleared when the last part (2/2) of the instruction
+    // is done in the ID stage, or ID stage is killed.
+    if((id_valid_i && ex_ready_i && last_op_id_i) || ctrl_fsm_i.kill_id) begin
+      jmp_taken_q <= 1'b0;
+    end else begin
+      // Set flag for jumps and mret
+      if(ctrl_fsm_i.pc_set && ((ctrl_fsm_i.pc_mux == PC_JUMP) || (ctrl_fsm_i.pc_mux == PC_MRET))) begin
+        jmp_taken_q <= 1'b1;
+      end
+    end
+
+    // Flag for taken branches
+    // Branches are taken from EX, and the flag can thus only be cleared when the last part (2/2) of the instruction
+    // is done in the EX stage, or EX stage is killed.
+    if((id_valid_i && ex_ready_i && last_op_ex_i) || ctrl_fsm_i.kill_ex) begin
+      bch_taken_q <= 1'b0;
+    end else begin
+      // Set flag for branches
+      if(ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_mux == PC_BRANCH)) begin
+        bch_taken_q <= 1'b1;
+      end
+    end
+
+    // On a pc_set, flop the pc_mux and set a sticky compare_enable_q bit.
     if(ctrl_fsm_i.pc_set) begin
       pc_mux_q <= ctrl_fsm_i.pc_mux;
-      compare_enable <= 1'b1;
+      compare_enable_q <= 1'b1;
     end
   end
 end
 
 // Assign error output
-assign pc_err_o = (addr_err || ctrl_flow_err) && compare_enable;
+assign pc_err_o = (addr_err || ctrl_flow_err) && compare_enable_q;
 
 endmodule // cv32e40s_pc_check
