@@ -27,7 +27,7 @@
 module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   #(  parameter int PMP_NUM_REGIONS              = 0,
       parameter int PMA_NUM_REGIONS              = 0,
-      parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
+      parameter pma_cfg_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
       parameter int unsigned IS_INSTR_SIDE = 0)
   (
    input logic        clk,
@@ -41,7 +41,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
    // PMA signals
    input logic        pma_err,
    input logic [31:0] pma_addr,
-   input pma_region_t pma_cfg,
+   input pma_cfg_t    pma_cfg,
 
    // PMP signals
    input pmp_csr_t    csr_pmp_i,
@@ -206,7 +206,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   endgenerate
 
   // RTL vs SVA expectations
-  pma_region_t pma_expected_cfg;
+  pma_cfg_t    pma_expected_cfg;
   logic        pma_expected_err;
   always_comb begin
     pma_expected_cfg = NO_PMA_R_DEFAULT;
