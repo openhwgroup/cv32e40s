@@ -75,10 +75,14 @@ module cv32e40s_core_sva
   // Check that a taken IRQ is actually enabled (e.g. that we do not react to an IRQ that was just disabled in MIE)
   // The actual mie_n value may be different from mie_q if mie is not
   // written to.
+  // Only checking mstatus.mie for interrupts in Machine mode. During User mode, interrupts shall be taken regardsless
+  // of the mstatus.mie bit (but still have to have the interrupt enabled in MIE CSR)
+  // Priv spec: "Interrupts for higher-privilege modes, y>x, are always globally enabled regardless of the setting of the global yIE
+  // bit for the higher-privilege mode. "
   property p_irq_enabled_0;
     @(posedge clk) disable iff (!rst_ni)
     (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_TRAP_IRQ)) |->
-    (mie[exc_cause] && cs_registers_mstatus_q.mie);
+    (mie[exc_cause] && ((priv_lvl == PRIV_LVL_M) ? cs_registers_mstatus_q.mie : 1'b1));
   endproperty
 
   a_irq_enabled_0 : assert property(p_irq_enabled_0) else `uvm_error("core", "Assertion a_irq_enabled_0 failed")
@@ -95,12 +99,14 @@ module cv32e40s_core_sva
 
 // First illegal instruction decoded
 logic         first_illegal_found;
-logic         first_ecall_found;
+logic         first_mmode_ecall_found;
+logic         first_umode_ecall_found;
 logic         first_ebrk_found;
 logic         first_instr_err_found;
 logic         first_instr_mpuerr_found;
 logic [31:0]  expected_illegal_mepc;
-logic [31:0]  expected_ecall_mepc;
+logic [31:0]  expected_mmode_ecall_mepc;
+logic [31:0]  expected_umode_ecall_mepc;
 logic [31:0]  expected_ebrk_mepc;
 logic [31:0]  expected_instr_err_mepc;
 logic [31:0]  expected_instr_mpuerr_mepc;
@@ -109,12 +115,14 @@ always_ff @(posedge clk , negedge rst_ni)
   begin
     if (rst_ni == 1'b0) begin
       first_illegal_found   <= 1'b0;
-      first_ecall_found     <= 1'b0;
+      first_mmode_ecall_found <= 1'b0;
+      first_umode_ecall_found <= 1'b0;
       first_ebrk_found      <= 1'b0;
       first_instr_err_found <= 1'b0;
       first_instr_mpuerr_found <= 1'b0;
       expected_illegal_mepc <= 32'b0;
-      expected_ecall_mepc   <= 32'b0;
+      expected_mmode_ecall_mepc   <= 32'b0;
+      expected_umode_ecall_mepc   <= 32'b0;
       expected_ebrk_mepc    <= 32'b0;
       expected_instr_err_mepc <= 32'b0;
       expected_instr_mpuerr_mepc <= 32'b0;
@@ -130,13 +138,19 @@ always_ff @(posedge clk , negedge rst_ni)
         first_illegal_found   <= 1'b1;
         expected_illegal_mepc <= ex_wb_pipe.pc;
       end
-      // todo: must check for M/U-mode as well, otherwise this will pick up both types of Ecalls
-      if (!first_ecall_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
+      if (!first_mmode_ecall_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn) &&
         !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
-          ex_wb_pipe.sys_en &&  ex_wb_pipe.sys_ecall_insn && !ctrl_debug_mode_n) begin
-        first_ecall_found   <= 1'b1;
-        expected_ecall_mepc <= ex_wb_pipe.pc;
+          ex_wb_pipe.sys_en &&  ex_wb_pipe.sys_ecall_insn && !ctrl_debug_mode_n && (priv_lvl == PRIV_LVL_M)) begin
+        first_mmode_ecall_found   <= 1'b1;
+        expected_mmode_ecall_mepc <= ex_wb_pipe.pc;
+      end
+      if (!first_umode_ecall_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
+        !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn) &&
+        !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
+          ex_wb_pipe.sys_en &&  ex_wb_pipe.sys_ecall_insn && !ctrl_debug_mode_n && (priv_lvl == PRIV_LVL_U)) begin
+        first_umode_ecall_found   <= 1'b1;
+        expected_umode_ecall_mepc <= ex_wb_pipe.pc;
       end
       if (!first_ebrk_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn || (ex_wb_pipe.sys_en && ex_wb_pipe.sys_ecall_insn)) &&
@@ -164,12 +178,14 @@ always_ff @(posedge clk , negedge rst_ni)
 
   // First mepc write for illegal instruction exception
   logic         first_cause_illegal_found;
-  logic         first_cause_ecall_found;
+  logic         first_cause_mmode_ecall_found;
+  logic         first_cause_umode_ecall_found;
   logic         first_cause_ebrk_found;
   logic         first_cause_instr_err_found;
   logic         first_cause_instr_mpuerr_found;
   logic [31:0]  actual_illegal_mepc;
-  logic [31:0]  actual_ecall_mepc;
+  logic [31:0]  actual_mmode_ecall_mepc;
+  logic [31:0]  actual_umode_ecall_mepc;
   logic [31:0]  actual_ebrk_mepc;
   logic [31:0]  actual_instr_err_mepc;
   logic [31:0]  actual_instr_mpuerr_mepc;
@@ -178,12 +194,14 @@ always_ff @(posedge clk , negedge rst_ni)
     begin
       if (rst_ni == 1'b0) begin
         first_cause_illegal_found <= 1'b0;
-        first_cause_ecall_found   <= 1'b0;
+        first_cause_mmode_ecall_found   <= 1'b0;
+        first_cause_umode_ecall_found   <= 1'b0;
         first_cause_ebrk_found    <= 1'b0;
         first_cause_instr_err_found <= 1'b0;
         first_cause_instr_mpuerr_found <= 1'b0;
         actual_illegal_mepc       <= 32'b0;
-        actual_ecall_mepc         <= 32'b0;
+        actual_mmode_ecall_mepc         <= 32'b0;
+        actual_umode_ecall_mepc         <= 32'b0;
         actual_ebrk_mepc          <= 32'b0;
         actual_instr_err_mepc     <= 32'b0;
         actual_instr_mpuerr_mepc  <= 32'b0;
@@ -195,9 +213,13 @@ always_ff @(posedge clk , negedge rst_ni)
             first_cause_illegal_found <= 1'b1;
             actual_illegal_mepc       <= cs_registers_mepc_n;
           end
-          if (!first_cause_ecall_found && (cs_registers_csr_cause_i.exception_code == EXC_CAUSE_ECALL_MMODE) && ctrl_fsm.csr_save_cause) begin
-            first_cause_ecall_found <= 1'b1;
-            actual_ecall_mepc       <= cs_registers_mepc_n;
+          if (!first_cause_mmode_ecall_found && (cs_registers_csr_cause_i.exception_code == EXC_CAUSE_ECALL_MMODE) && ctrl_fsm.csr_save_cause) begin
+            first_cause_mmode_ecall_found <= 1'b1;
+            actual_mmode_ecall_mepc       <= cs_registers_mepc_n;
+          end
+          if (!first_cause_umode_ecall_found && (cs_registers_csr_cause_i.exception_code == EXC_CAUSE_ECALL_UMODE) && ctrl_fsm.csr_save_cause) begin
+            first_cause_umode_ecall_found <= 1'b1;
+            actual_umode_ecall_mepc       <= cs_registers_mepc_n;
           end
           if (!first_cause_ebrk_found && (cs_registers_csr_cause_i.exception_code == EXC_CAUSE_BREAKPOINT) && ctrl_fsm.csr_save_cause) begin
             first_cause_ebrk_found <= 1'b1;
@@ -223,13 +245,22 @@ always_ff @(posedge clk , negedge rst_ni)
 
   a_illegal_mepc : assert property(p_illegal_mepc) else `uvm_error("core", "Assertion a_illegal_mepc failed")
 
-  // Check that mepc is updated with PC of the ECALL instruction
-  property p_ecall_mepc;
+  // Check that mepc is updated with PC of the ECALL instruction during M mode
+  property p_mmode_ecall_mepc;
     @(posedge clk) disable iff (!rst_ni)
-      (first_ecall_found && first_cause_ecall_found) |=> (expected_ecall_mepc == actual_ecall_mepc);
+      (first_mmode_ecall_found && first_cause_mmode_ecall_found) |=> (expected_mmode_ecall_mepc == actual_mmode_ecall_mepc);
   endproperty
 
-  a_ecall_mepc : assert property(p_ecall_mepc) else `uvm_error("core", "Assertion p_ecall_mepc failed")
+  a_mmode_ecall_mepc : assert property(p_mmode_ecall_mepc) else `uvm_error("core", "Assertion p_ecall_mepc failed in machine mode")
+
+
+  // Check that mepc is updated with PC of the ECALL instruction during U mode
+  property p_umode_ecall_mepc;
+    @(posedge clk) disable iff (!rst_ni)
+      (first_umode_ecall_found && first_cause_umode_ecall_found) |=> (expected_umode_ecall_mepc == actual_umode_ecall_mepc);
+  endproperty
+
+  a_umode_ecall_mepc : assert property(p_umode_ecall_mepc) else `uvm_error("core", "Assertion p_ecall_mepc failed in user mode")
 
   // Check that mepc is updated with PC of EBRK instruction
   property p_ebrk_mepc;
