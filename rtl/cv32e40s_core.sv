@@ -253,7 +253,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Major Alert Triggers
   logic        rf_ecc_err;
-  logic        pc_err;
+  logic        pc_err_if;
   logic        csr_err;
   logic        itf_int_err;
 
@@ -268,6 +268,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        trigger_match_if;
 
   // Controller <-> decoder
+  logic        alu_en_id;
   logic        alu_en_raw_id;
   logic        alu_jmp_id;
   logic        alu_jmpr_id;
@@ -415,7 +416,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //                                 //
   /////////////////////////////////////
 
-  assign pc_err          = 1'b0; // todo: connect when hardened pc implemented
   assign itf_int_err     = 1'b0; // todo: connect when interface integrity implemented
 
   cv32e40s_alert
@@ -426,7 +426,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
        // Alert Triggers
        .ctrl_fsm_i          ( ctrl_fsm          ),
        .rf_ecc_err_i        ( rf_ecc_err        ),
-       .pc_err_i            ( pc_err            ),
+       .pc_err_i            ( pc_err_if         ),
        .csr_err_i           ( csr_err           ),
        .itf_int_err_i       ( itf_int_err       ),
        .lfsr_lockup_i       ( lfsr_lockup       ),
@@ -470,9 +470,16 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mtvec_addr_i        ( mtvec_addr               ), // Exception/interrupt address (MSBs only)
     .nmi_addr_i          ( nmi_addr_i               ), // NMI address
 
+    .branch_decision_ex_i( branch_decision_ex       ),
+
+    .last_op_id_i        ( last_op_id               ),
+    .last_op_ex_i        ( id_ex_pipe.last_op       ),
+    .pc_err_o            ( pc_err_if                ),
+
     .m_c_obi_instr_if    ( m_c_obi_instr_if         ), // Instruction bus interface
 
     .if_id_pipe_o        ( if_id_pipe               ),
+    .id_ex_pipe_i        ( id_ex_pipe               ),
 
     .ctrl_fsm_i          ( ctrl_fsm                 ),
     .trigger_match_i     ( trigger_match_if         ),
@@ -484,6 +491,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Pipeline handshakes
     .if_valid_o          ( if_valid                 ),
     .id_ready_i          ( id_ready                 ),
+    .id_valid_i          ( id_valid                 ),
+    .ex_ready_i          ( ex_ready                 ),
+    .ex_valid_i          ( ex_valid                 ),
+    .wb_ready_i          ( wb_ready                 ),
 
     // CSR registers
     .csr_pmp_i           ( csr_pmp                  ),
@@ -544,6 +555,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .rf_wdata_ex_i                ( rf_wdata_ex               ),
     .rf_wdata_wb_i                ( rf_wdata_wb               ),
 
+    .alu_en_o                     ( alu_en_id                 ),
     .alu_en_raw_o                 ( alu_en_raw_id             ),
     .alu_jmp_o                    ( alu_jmp_id                ),
     .alu_jmpr_o                   ( alu_jmpr_id               ),
@@ -880,6 +892,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // from IF/ID pipeline
     .if_id_pipe_i                   ( if_id_pipe             ),
 
+    .alu_en_id_i                    ( alu_en_id              ),
     .alu_en_raw_id_i                ( alu_en_raw_id          ),
     .alu_jmp_id_i                   ( alu_jmp_id             ),
     .alu_jmpr_id_i                  ( alu_jmpr_id            ),

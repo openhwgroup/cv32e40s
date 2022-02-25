@@ -48,6 +48,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   // from IF/ID pipeline
   input  if_id_pipe_t if_id_pipe_i,
+  input  logic        alu_en_id_i,
   input  logic        alu_en_raw_id_i,
   input  logic        alu_jmp_id_i,               // Jump (JAL, JALR)
   input  logic        alu_jmpr_id_i,              // Jump register (JALR)
@@ -139,7 +140,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .if_id_pipe_i                ( if_id_pipe_i             ),
     .id_ready_i                  ( id_ready_i               ),
     .id_valid_i                  ( id_valid_i               ),
-    .alu_en_raw_id_i             ( alu_en_raw_id_i          ),
+    .alu_en_id_i                 ( alu_en_id_i              ),
     .alu_jmp_id_i                ( alu_jmp_id_i             ),
     .sys_en_id_i                 ( sys_en_id_i              ),
     .sys_mret_id_i               ( sys_mret_id_i            ),

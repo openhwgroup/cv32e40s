@@ -33,6 +33,7 @@
   `include "cv32e40s_prefetch_unit_sva.sv"
   `include "cv32e40s_sleep_unit_sva.sv"
   `include "cv32e40s_rvfi_sva.sv"
+  `include "cv32e40s_pc_check_sva.sv"
   `include "cv32e40s_param_sva.sv"
 `endif
 
@@ -172,6 +173,12 @@ module cv32e40s_wrapper
     core_i.if_stage_i cv32e40s_if_stage_sva if_stage_sva
     (
       .m_c_obi_instr_if (core_i.m_c_obi_instr_if), // SVA monitor modport cannot connect to a master modport
+      .*
+    );
+
+  bind cv32e40s_pc_check:
+    core_i.if_stage_i.pc_check_i cv32e40s_pc_check_sva pc_check_sva
+    (
       .*
     );
 

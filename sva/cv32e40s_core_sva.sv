@@ -68,7 +68,12 @@ module cv32e40s_core_sva
   input logic [31:0] cs_registers_mepc_n,
   input mcause_t     cs_registers_csr_cause_i, // From controller
   input mcause_t     cs_registers_mcause_q,    // From cs_registers, flopped mcause
-  input mstatus_t    cs_registers_mstatus_q);
+  input mstatus_t    cs_registers_mstatus_q,
+  input logic        pc_err_if,
+  input logic        csr_err,
+  input logic        itf_int_err,
+  input logic        rf_ecc_err
+  );
 
 
 
@@ -401,6 +406,28 @@ always_ff @(posedge clk , negedge rst_ni)
     assert property (@(posedge clk) disable iff (!rst_ni)
                      (data_req_o && !data_we_o |-> !data_memtype_o[0]))
       else `uvm_error("core", "Load instruction classified as bufferable")
+
+
+  // There should not be any major alerts active at any time
+  a_no_csr_err:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                    1'b1 |-> !csr_err)
+          else `uvm_error("core", "csr_err shall be zero.")
+
+  a_no_ecc_err:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                    1'b1 |-> !rf_ecc_err)
+          else `uvm_error("core", "rf_ecc_err shall be zero.")
+
+  a_no_itf_err:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                    1'b1 |-> !itf_int_err)
+          else `uvm_error("core", "itf_int_err shall be zero.")
+
+  a_no_pc_err:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                    1'b1 |-> !pc_err_if)
+          else `uvm_error("core", "pc_err_if shall be zero.")
 
 endmodule // cv32e40s_core_sva
 
