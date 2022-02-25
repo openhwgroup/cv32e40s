@@ -39,9 +39,12 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
   input  logic        id_ready_i,
   input  logic        id_valid_i,
   input  logic        ex_ready_i,
+  input  logic        ex_valid_i,
+  input  logic        wb_ready_i,
   input  logic [31:0] pc_if_i,                // Current IF stage PC
   input  ctrl_fsm_t   ctrl_fsm_i,             // Controller struct
   input  if_id_pipe_t if_id_pipe_i,           // IF/ID pipeline registers
+  input  id_ex_pipe_t id_ex_pipe_i,           //
   input  logic [31:0] jump_target_id_i,       // Jump target from ID stage
   input  logic [31:0] branch_target_ex_i,     // Branch target from EX stage
   input  logic        branch_decision_ex_i,   // Branch decision from EX stage
@@ -89,7 +92,9 @@ logic addr_err;
 
 // Control flow decision error
 logic jump_mret_taken_err;
+logic jump_mret_untaken_err;
 logic branch_taken_err;
+logic branch_untaken_err;
 logic ctrl_flow_err;
 logic ctrl_flow_taken_err;    // Signals error on taken jump/mret/branch
 logic ctrl_flow_untaken_err;  // Signals error on untaken jump/mret/branch
@@ -130,27 +135,30 @@ assign addr_err = (pc_set_q || if_id_q) ? (check_addr != pc_if_i)  : 1'b0;
 //////////////////////////////////
 
 // Check if taken jumps, mret and branches are correct
-// The decision from the second half of the instruction is compared against
-// the decision from the pc_set performed by the first half at least one cycle earlier by the controller.
-// The *taken_q flags remain high until both operations of the instruction has completed,
-// or the stage (ID or EX) has been killed. The comparison will be performed for as long as
-// the instruction stays in ID or EX, including stalls. Using raw version of 'branch_in_ex' to avoid
-// the case where the ID stage could be halted due to interrupts or debug and clear the
-// ctrl_fsm_i.branch_in_ex for the second half. Comparison should still hold for the duration of bch_taken_q, and
-// the taken branch would eventually get killed before interrupt or debug entry.
-assign jump_mret_taken_err = jmp_taken_q && !ctrl_fsm_i.jump_in_id;
-assign branch_taken_err    = bch_taken_q && !(ctrl_fsm_i.branch_in_ex_raw && branch_decision_ex_i)                             ;
+// Jumps and branches shall be taken during the first cycle of the instruction.
+// If a taken jump or branch is observed (*_taken_q flag is set), a jump or branch
+// instruction must still be in ID (jumps) or EX (branches). Using the _raw signals
+// from the controller disregards any halts or kills that could change instr_valid. The instruction
+// control signals shall still be present in the pipeline stages.
+// Not factoring in last_op_* signals, as this would cause the checks to fail if a jump or branch
+// was stalled such that the taken flags would be set while the first half was still in ID or EX.
+assign jump_mret_taken_err   = jmp_taken_q && !(ctrl_fsm_i.jump_in_id_raw);
+assign branch_taken_err      = bch_taken_q && !(ctrl_fsm_i.branch_in_ex_raw && branch_decision_ex_i);
+
+// Check if jumps or branches should have been taken when the controller did not take them.
+// Since jumps and branches shall be taken during the first operation of the instruction,
+// we cannot observe an untaken jump/branch (*_taken_q is not set) and at the same time have a valid
+// jump or branch instruction with the last_op bit set. Qualifying with registered instr_valid to make sure
+// the instruction was not killed earlier, which would cause the jump or branch to correctly be not taken.
+assign jump_mret_untaken_err = !jmp_taken_q && (ctrl_fsm_i.jump_in_id_raw   && if_id_pipe_i.instr_valid && last_op_id_i);
+assign branch_untaken_err    = !bch_taken_q && (ctrl_fsm_i.branch_in_ex_raw && id_ex_pipe_i.instr_valid && last_op_ex_i && branch_decision_ex_i);
+
 
 assign ctrl_flow_taken_err = jump_mret_taken_err || branch_taken_err;
+assign ctrl_flow_untaken_err = jump_mret_untaken_err || branch_untaken_err;
 
-// Check if we should have taken a jump (including mret) or branch when pc_set was not set
-// Jumps and branches shall be taken during the first of the two operations.
-// A glitched jump or branch (that should have been taken) during the first cycle will not result
-// in the jmp_taken_q and bch_taken_q flags to be set. In this case, the controller flags for
-// not doing jumps and branches twice will also not be set, and the second part of the jump/branch
-// may actually be taken by the controller. If this is observed the decision has been glitched.
-assign ctrl_flow_untaken_err = (!jmp_taken_q && (ctrl_fsm_i.jump_taken_id && last_op_id_i)) ||
-                               (!bch_taken_q && (ctrl_fsm_i.branch_taken_ex && branch_decision_ex_i && last_op_ex_i));
+
+
                                 
 
 assign ctrl_flow_err = ctrl_flow_taken_err || ctrl_flow_untaken_err;
@@ -170,6 +178,7 @@ always_ff @(posedge clk, negedge rst_n) begin
     // Signal that a pc_set set was performed.
     // Exclude cases of PC_WB_PLUS4 and PC_TRAP_IRQ as the pipeline currently has no easy way to recompute these targets.
     // Used for the address comparison
+    // Todo: may stretch this until the target instruction leaves IF stage
     pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ));
 
     // Set a flag for a valid IF->ID stage transition.
@@ -191,7 +200,7 @@ always_ff @(posedge clk, negedge rst_n) begin
     // Flag for taken branches
     // Branches are taken from EX, and the flag can thus only be cleared when the last part (2/2) of the instruction
     // is done in the EX stage, or EX stage is killed.
-    if((id_valid_i && ex_ready_i && last_op_ex_i) || ctrl_fsm_i.kill_ex) begin
+    if((ex_valid_i && wb_ready_i && last_op_ex_i) || ctrl_fsm_i.kill_ex) begin
       bch_taken_q <= 1'b0;
     end else begin
       // Set flag for branches

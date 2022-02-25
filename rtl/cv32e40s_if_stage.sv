@@ -76,6 +76,11 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   input  logic          id_valid_i,
   input  logic          ex_ready_i,
 
+  input  logic          ex_valid_i,
+  input  logic          wb_ready_i,
+
+  input  id_ex_pipe_t   id_ex_pipe_i,
+
   // PMP CSR's
   input pmp_csr_t       csr_pmp_i,
 
@@ -268,9 +273,13 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .id_valid_i           ( id_valid_i           ),
     .ex_ready_i           ( ex_ready_i           ),
 
+    .ex_valid_i           ( ex_valid_i           ),
+    .wb_ready_i           ( wb_ready_i           ),
+
     .pc_if_i              ( pc_if_o              ),
     .ctrl_fsm_i           ( ctrl_fsm_i           ),
     .if_id_pipe_i         ( if_id_pipe_o         ),
+    .id_ex_pipe_i         ( id_ex_pipe_i         ),
     .jump_target_id_i     ( jump_target_id_i     ),
     .branch_target_ex_i   ( branch_target_ex_i   ),
     .branch_decision_ex_i ( branch_decision_ex_i ),

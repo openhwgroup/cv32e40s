@@ -1393,6 +1393,7 @@ typedef struct packed {
 
   logic        mret_jump_id;        // Jump from ID stage due to MRET
   logic        jump_in_id;
+  logic        jump_in_id_raw;
   logic        jump_taken_id;       // A jump was taken from ID stage
   logic        branch_in_ex;
   logic        branch_in_ex_raw;    // Branch in EX, not qualified with instr_valid

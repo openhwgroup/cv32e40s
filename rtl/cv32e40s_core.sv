@@ -479,6 +479,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .m_c_obi_instr_if    ( m_c_obi_instr_if         ), // Instruction bus interface
 
     .if_id_pipe_o        ( if_id_pipe               ),
+    .id_ex_pipe_i        ( id_ex_pipe               ),
 
     .ctrl_fsm_i          ( ctrl_fsm                 ),
     .trigger_match_i     ( trigger_match_if         ),
@@ -492,6 +493,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .id_ready_i          ( id_ready                 ),
     .id_valid_i          ( id_valid                 ),
     .ex_ready_i          ( ex_ready                 ),
+    .ex_valid_i          ( ex_valid                 ),
+    .wb_ready_i          ( wb_ready                 ),
 
     // CSR registers
     .csr_pmp_i           ( csr_pmp                  ),
