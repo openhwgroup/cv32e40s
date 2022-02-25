@@ -26,7 +26,7 @@
 module cv32e40s_pma import cv32e40s_pkg::*;
 #(  
   parameter int          PMA_NUM_REGIONS = 0,
-  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
+  parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
 (
   input  logic [31:0] trans_addr_i,
@@ -40,7 +40,7 @@ module cv32e40s_pma import cv32e40s_pkg::*;
   
   parameter PMA_ADDR_LSB = 0; // TODO:OE experiment and see if this makes a difference
   
-  pma_region_t pma_cfg;
+  pma_cfg_t pma_cfg;
   logic [31:0] word_addr;
 
   // PMA addresses are word addresses

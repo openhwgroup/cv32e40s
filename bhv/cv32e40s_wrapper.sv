@@ -62,7 +62,7 @@ module cv32e40s_wrapper
   parameter int          SMCLIC_ID_WIDTH              = 6,
   parameter int          DBG_NUM_TRIGGERS             = 1,
   parameter int          PMA_NUM_REGIONS              = 0,
-  parameter pma_region_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
+  parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
 (
   // Clock and Reset
@@ -365,6 +365,13 @@ module cv32e40s_wrapper
              #(.PMA_NUM_REGIONS(PMA_NUM_REGIONS),
                .PMA_CFG(PMA_CFG))
       write_buffer_sva(.*);
+
+`ifndef FORMAL
+  bind cv32e40s_rvfi:
+    rvfi_i
+    rvfi_sim_trace
+      tracer_i(.*);
+`endif
 
   bind cv32e40s_rvfi:
     rvfi_i

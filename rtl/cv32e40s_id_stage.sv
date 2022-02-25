@@ -40,7 +40,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 )
 (
   input  logic        clk,                    // Gated clock
-  input  logic        clk_ungated_i,          // Ungated clock
   input  logic        rst_n,
 
   // Jumps and branches
