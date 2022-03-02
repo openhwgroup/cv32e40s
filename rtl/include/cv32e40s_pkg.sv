@@ -598,6 +598,10 @@ parameter MVENDORID_BANK = 25'hC;       // Number of continuation codes
 // Machine Architecture ID (https://github.com/riscv/riscv-isa-manual/blob/master/marchid.md)
 parameter MARCHID = 32'h15;
 
+// MachineImplementation ID
+parameter MIMPID_MAJOR = 4'h0;  // Major ID
+parameter MIMPID_MINOR = 4'h0;  // Minor ID
+
 parameter MTVEC_MODE        = 2'b01;
 parameter NUM_HPM_EVENTS    =   16;
 

@@ -76,7 +76,7 @@ module cv32e40s_wrapper
   input  logic [31:0] mtvec_addr_i,
   input  logic [31:0] dm_halt_addr_i,
   input  logic [31:0] mhartid_i,
-  input  logic [31:0] mimpid_i,
+  input  logic  [3:0] mimpid_patch_i,
   input  logic [31:0] dm_exception_addr_i,
   input  logic [31:0] nmi_addr_i,
 
@@ -427,6 +427,8 @@ module cv32e40s_wrapper
          .lsu_we_id_i              ( core_i.id_stage_i.lsu_we                                             ),
 
          .branch_in_ex_i           ( core_i.controller_i.controller_fsm_i.branch_in_ex                    ),
+         .branch_decision_ex_i     ( core_i.ex_stage_i.branch_decision_o                                  ),
+         .dret_in_ex_i             ( core_i.ex_stage_i.id_ex_pipe_i.sys_dret_insn                         ),
          .lsu_en_ex_i              ( core_i.ex_stage_i.id_ex_pipe_i.lsu_en                                ),
 
          .instr_pmp_err_if_i       ( 1'b0                          /* PMP not implemented in cv32e40x */  ), // TODO:HB connect
@@ -542,7 +544,7 @@ module cv32e40s_wrapper
          .csr_mvendorid_i          ( {MVENDORID_BANK, MVENDORID_OFFSET}                                   ),
          .csr_marchid_i            ( MARCHID                                                              ),
          .csr_mhartid_i            ( core_i.cs_registers_i.mhartid_i                                      ),
-         .csr_mimpid_i             ( core_i.cs_registers_i.mimpid_i                                       ),
+         .csr_mimpid_i             ( core_i.cs_registers_i.mimpid                                         ),
          // TODO Tie relevant signals below to RTL
          .csr_mstatush_n_i         ( '0                                                                   ),
          .csr_mstatush_q_i         ( '0                                                                   ),

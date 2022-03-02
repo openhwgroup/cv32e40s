@@ -52,6 +52,8 @@ module cv32e40s_rvfi
 
    //// EX probes ////
    input logic                                branch_in_ex_i,
+   input logic                                branch_decision_ex_i,
+   input logic                                dret_in_ex_i,
    // LSU
    input logic                                lsu_en_ex_i,
    input logic                                lsu_pmp_err_ex_i,
@@ -212,9 +214,9 @@ module cv32e40s_rvfi
    output logic [ 0:0]                        rvfi_valid,
    output logic [63:0]                        rvfi_order,
    output logic [31:0]                        rvfi_insn,
-   output logic [13:0]                        rvfi_trap,
+   output rvfi_trap_t                         rvfi_trap,
    output logic [ 0:0]                        rvfi_halt,
-   output logic [ 0:0]                        rvfi_intr,
+   output rvfi_intr_t                         rvfi_intr,
    output logic [ 1:0]                        rvfi_mode,
    output logic [ 1:0]                        rvfi_ixl,
    output logic [ 1:0]                        rvfi_nmip,
@@ -453,7 +455,7 @@ module cv32e40s_rvfi
   logic [3:0]        debug_mode;
   logic [3:0] [ 2:0] debug_cause;
   logic [3:0]        instr_pmp_err;
-  logic [3:0]        in_trap;
+  rvfi_intr_t [3:0]  in_trap;
   logic [3:0] [ 4:0] rs1_addr;
   logic [3:0] [ 4:0] rs2_addr;
   logic [3:0] [31:0] rs1_rdata;
@@ -465,6 +467,8 @@ module cv32e40s_rvfi
   logic [31:0]       ex_mem_addr;
   logic [31:0]       ex_mem_wdata;
   mem_err_t [3:0]    mem_err;
+
+  logic              branch_taken_ex;
 
   logic [ 3:0] rvfi_mem_mask_int;
   logic [31:0] rvfi_mem_rdata_d;
@@ -518,6 +522,7 @@ module cv32e40s_rvfi
   logic         pc_mux_debug;
   logic         pc_mux_dret;
   logic         pc_mux_exception;
+  logic         pc_mux_debug_exception;
   logic         pc_mux_interrupt;
   logic         pc_mux_nmi;
 
@@ -544,11 +549,18 @@ module cv32e40s_rvfi
   // The pc_mux signals probe the MUX in the IF stage to extract information about events in the WB stage.
   // These signals are therefore used both in the WB stage to see effects of the executed instruction (e.g. rvfi_trap), and
   // in the IF stage to see the reason for executing the instruction (e.g. rvfi_intr).
-  assign pc_mux_interrupt = (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ);
-  assign pc_mux_nmi       = (ctrl_fsm_i.pc_mux == PC_TRAP_NMI);
-  assign pc_mux_debug     = (ctrl_fsm_i.pc_mux == PC_TRAP_DBD);
-  assign pc_mux_exception = (ctrl_fsm_i.pc_mux == PC_TRAP_EXC) || (ctrl_fsm_i.pc_mux == PC_TRAP_DBE);
-  assign pc_mux_dret      = (ctrl_fsm_i.pc_mux == PC_DRET);
+  assign pc_mux_interrupt       = (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ);
+  assign pc_mux_nmi             = (ctrl_fsm_i.pc_mux == PC_TRAP_NMI);
+  assign pc_mux_debug           = (ctrl_fsm_i.pc_mux == PC_TRAP_DBD);
+  assign pc_mux_exception       = (ctrl_fsm_i.pc_mux == PC_TRAP_EXC) || pc_mux_debug_exception ;
+  // The debug exception for mret is taken in ID (contrary to all other exceptions). In the case where we have a dret in the EX stage at the same time,
+  // this can lead to a situation we take the exception for the mret even though it never reaches the WB stage.
+  // This works in rtl because the exception handler instructions will get killed.
+  // In rvfi this exception needs to be ignored as it comes from an instruction that does not retire.
+  assign pc_mux_debug_exception = (ctrl_fsm_i.pc_mux == PC_TRAP_DBE) && !dret_in_ex_i;
+  assign pc_mux_dret            = (ctrl_fsm_i.pc_mux == PC_DRET);
+
+  assign branch_taken_ex = branch_in_ex_i && branch_decision_ex_i;
 
   // Assign rvfi channels
   assign rvfi_halt = 1'b0; // No instruction causing halt
@@ -557,11 +569,11 @@ module cv32e40s_rvfi
   logic         in_trap_clr;
   // Clear in trap pipeline when it reaches rvfi_intr
   // This is done to avoid reporting already signaled triggers as supressed by debug
-  assign in_trap_clr = wb_valid_i && in_trap[STAGE_WB];
+  assign in_trap_clr = wb_valid_i && in_trap[STAGE_WB].intr;
 
 
   // Set rvfi_trap for instructions causing exception or debug entry.
-  logic [13:0]  rvfi_trap_next;
+  rvfi_trap_t  rvfi_trap_next;
 
   always_comb begin
     rvfi_trap_next = '0;
@@ -570,32 +582,32 @@ module cv32e40s_rvfi
       // All debug entries will set pc_mux_debug but only synchronous debug entries will set wb_valid (and in turn rvfi_valid)
       // as asynchronous entries will kill the WB stage whereas synchronous entries will not.
       // Indicate that the trap is a synchronous trap into debug mode
-      rvfi_trap_next[2:0]  = 3'b101;
+      rvfi_trap_next.debug       = 1'b1;
       // Special case for debug entry from debug mode caused by EBREAK as it is not captured by ctrl_fsm_i.debug_cause
-      rvfi_trap_next[11:9] = ebreak_in_wb_i ? DBG_CAUSE_EBREAK : ctrl_fsm_i.debug_cause;
+      rvfi_trap_next.debug_cause = ebreak_in_wb_i ? DBG_CAUSE_EBREAK : ctrl_fsm_i.debug_cause;
     end
 
     if (pc_mux_exception) begin
       // Indicate synchronous (non-debug entry) trap
-      rvfi_trap_next[2:0] = 3'b011;
-      rvfi_trap_next[8:3] = ctrl_fsm_i.csr_cause.exception_code;
+      rvfi_trap_next.exception       = 1'b1;
+      rvfi_trap_next.exception_cause = ctrl_fsm_i.csr_cause.exception_code;
 
       // Separate exception causes with the same ecseption cause code
       case (ctrl_fsm_i.csr_cause.exception_code)
         EXC_CAUSE_INSTR_FAULT : begin
-          rvfi_trap_next[13:12] = instr_pmp_err[STAGE_WB] ? 2'h1 : 2'h0;
+          rvfi_trap_next.cause_type = instr_pmp_err[STAGE_WB] ? 2'h1 : 2'h0;
         end
         EXC_CAUSE_BREAKPOINT : begin
           // Todo: Add support for trigger match exceptions when implemented in rtl
         end
         EXC_CAUSE_LOAD_FAULT : begin
-          rvfi_trap_next[13:12] = mem_err[STAGE_WB];
+          rvfi_trap_next.cause_type = mem_err[STAGE_WB];
         end
         EXC_CAUSE_STORE_FAULT : begin
-          rvfi_trap_next[13:12] = mem_err[STAGE_WB];
+          rvfi_trap_next.cause_type = mem_err[STAGE_WB];
         end
         default : begin
-          // rvfi_trap_next[13:12] are only set for exception codes that can have multiple causes
+          // rvfi_trap_next.cause_type is only set for exception codes that can have multiple causes
         end
       endcase // case (ctrl_fsm_i.csr_cause.exception_code)
 
@@ -603,14 +615,14 @@ module cv32e40s_rvfi
 
     if(pending_single_step_i && single_step_allowed_i) begin
       // The timing of the single step debug entry does not allow using pc_mux for detection
-      rvfi_trap_next[2:0]  = 3'b101;
-      rvfi_trap_next[11:9] = DBG_CAUSE_STEP;
-      if (pc_mux_exception) begin
-        // Special case, exception in WB and pending single step.
-        // Indicate both non-debug trap and trap into debug mode
-        rvfi_trap_next[2:0]  = 3'b111;
-      end
+      rvfi_trap_next.debug       = 1'b1;
+      rvfi_trap_next.debug_cause = DBG_CAUSE_STEP;
+
+      // In the case of an exception in WB and pending single step, both the exception and the debug flag will be set
     end
+
+    // Set trap bit if there is an exception or debug entry
+    rvfi_trap_next.trap = rvfi_trap_next.exception || rvfi_trap_next.debug;
   end
 
   logic dummy_suppressed_intr;
@@ -706,16 +718,20 @@ module cv32e40s_rvfi
           debug_cause[STAGE_IF] <=  ebreak_in_wb_i ? 3'h1 : ctrl_fsm_i.debug_cause;
 
           // If there is a trap in the pipeline when debug is taken, the trap will be supressed but the side-effects will not.
-          // The succeeding instruction therefore needs to re-trigger the intr bit if it it did not reach the rvfi output.
-          if (|in_trap) begin
-            in_trap[STAGE_IF] <= 1'b1;
-          end
+          // The succeeding instruction therefore needs to re-trigger the intr signals if it it did not reach the rvfi output.
+          in_trap[STAGE_IF] <= in_trap[STAGE_IF].intr ? in_trap[STAGE_IF] :
+                               in_trap[STAGE_ID].intr ? in_trap[STAGE_ID] :
+                               in_trap[STAGE_EX].intr ? in_trap[STAGE_EX] :
+                                                        in_trap[STAGE_WB];
         end
 
         // Picking up trap entry when IF is not valid to propagate for next valid instruction
         // The in trap signal is set for the first instruction of interrupt- and exception handlers (not debug handler)
         if (pc_mux_interrupt || pc_mux_nmi || pc_mux_exception) begin
-          in_trap[STAGE_IF] <= 1'b1;
+          in_trap[STAGE_IF].intr      <= 1'b1;
+          in_trap[STAGE_IF].interrupt <= pc_mux_interrupt || pc_mux_nmi;
+          in_trap[STAGE_IF].exception <= pc_mux_exception;
+          in_trap[STAGE_IF].cause     <= ctrl_fsm_i.csr_cause.exception_code;
         end
       end
 
@@ -751,7 +767,7 @@ module cv32e40s_rvfi
       //// EX Stage ////
       if (ex_valid_i && wb_ready_i) begin
         // Predicting branch target explicitly to avoid predicting asynchronous events
-        pc_wdata   [STAGE_WB] <= branch_in_ex_i ? branch_target_ex_i : pc_wdata[STAGE_EX];
+        pc_wdata   [STAGE_WB] <= branch_taken_ex ? branch_target_ex_i : pc_wdata[STAGE_EX];
         debug_mode [STAGE_WB] <= debug_mode         [STAGE_EX];
         debug_cause[STAGE_WB] <= debug_cause        [STAGE_EX];
         instr_pmp_err[STAGE_WB] <= instr_pmp_err    [STAGE_EX];
