@@ -99,29 +99,20 @@ package cv32e40s_rvfi_pkg;
   } rvfi_csr_map_t;
 
   typedef struct packed {
-    logic [11:0] rvfi_trap;
-    logic        rvfi_halt;
-    logic        rvfi_intr;
-    logic        rvfi_dbg;
-    logic [ 4:0] rvfi_rs1_addr;
-    logic [ 4:0] rvfi_rs2_addr;
-    logic [ 4:0] rvfi_rs3_addr;
-    logic [31:0] rvfi_rs1_rdata;
-    logic [31:0] rvfi_rs2_rdata;
-    logic [31:0] rvfi_rs3_rdata;
-    logic [ 4:0] rvfi_rd_addr;
-    logic [31:0] rvfi_pc_wdata;
-    logic [31:0] rvfi_mem_addr;
-    logic [ 3:0] rvfi_mem_rmask;
-    logic [ 3:0] rvfi_mem_wmask;
-    logic [31:0] rvfi_mem_wdata;
-  } rvfi_instr_t;
-
-  typedef struct packed {
-    logic        valid;
-    logic [63:0] order;
-    logic [31:0] pc_wdata;
+    logic [10:0] cause;
+    logic        interrupt;
+    logic        exception;
+    logic        intr;
   } rvfi_intr_t;
+  
+  typedef struct packed {
+    logic [1:0]  cause_type;
+    logic [2:0]  debug_cause;
+    logic [5:0]  exception_cause;
+    logic        debug;
+    logic        exception;
+    logic        trap;
+  } rvfi_trap_t;
 
 
 endpackage // cv32e40s_rvfi_pkg

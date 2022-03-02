@@ -165,7 +165,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
       trans.mode  = xif_mem_if.mem_req.mode;  // TODO use mode from XIF request or force machine mode?
       trans.dbg   = '0;                       // TODO setup debug triggers
 
-      trans.atop  = '0;
       trans.sext  = '0;
     end else begin
       trans.addr  = (id_ex_pipe_i.alu_operand_a + id_ex_pipe_i.alu_operand_b);
