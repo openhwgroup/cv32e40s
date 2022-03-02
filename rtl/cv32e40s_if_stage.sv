@@ -227,6 +227,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .csr_pmp_i            ( csr_pmp_i               ),
 
     .core_one_txn_pend_n  ( prefetch_one_txn_pend_n ),
+    .core_mpu_err_wait_i  ( 1'b1                    ),
+    .core_mpu_err_o       (                         ), // Unconnected on purpose
     .core_trans_valid_i   ( prefetch_trans_valid    ),
     .core_trans_ready_o   ( prefetch_trans_ready    ),
     .core_trans_i         ( core_trans              ),

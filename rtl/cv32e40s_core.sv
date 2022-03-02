@@ -62,7 +62,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   input  logic [31:0] mtvec_addr_i,
   input  logic [31:0] dm_halt_addr_i,
   input  logic [31:0] mhartid_i,
-  input  logic [31:0] mimpid_i,
+  input  logic  [3:0] mimpid_patch_i,
   input  logic [31:0] dm_exception_addr_i,
   input  logic [31:0] nmi_addr_i,
 
@@ -658,7 +658,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   ////////////////////////////////////////////////////////////////////////////////////////
 
   cv32e40s_load_store_unit
-    #(.PMP_GRANULARITY(PMP_GRANULARITY),
+    #(.X_EXT          (X_EXT          ),
+      .X_ID_WIDTH     (X_ID_WIDTH     ),
+      .PMP_GRANULARITY(PMP_GRANULARITY),
       .PMP_NUM_REGIONS(PMP_NUM_REGIONS),
       .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
       .PMA_CFG(PMA_CFG))
@@ -788,7 +790,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Hart ID from outside
     .mhartid_i                  ( mhartid_i             ),
-    .mimpid_i                   ( mimpid_i              ),
+    .mimpid_patch_i             ( mimpid_patch_i        ),
 
     // Cycle Count
     .mcycle_o                   ( mcycle_o              ),

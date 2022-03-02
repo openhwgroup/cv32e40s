@@ -58,9 +58,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   input  logic            rst_n,
   input  logic            scan_cg_en_i,
 
-  // Hart ID
+  // IDs
   input  logic [31:0]     mhartid_i,
-  input  logic [31:0]     mimpid_i,
+  input  logic  [3:0]     mimpid_patch_i,
+
+  // MTVEC
   output logic [23:0]     mtvec_addr_o,
   output logic [ 1:0]     mtvec_mode_o,
 
@@ -143,6 +145,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   localparam logic [31:0] MISA_VALUE = CORE_MISA | (X_EXT ? X_MISA : 32'h0000_0000);
 
   localparam PMP_ADDR_WIDTH = (PMP_GRANULARITY > 0) ? 33 - PMP_GRANULARITY : 32;
+
+  logic [31:0] mimpid;
 
   // CSR update logic
   logic [31:0] csr_wdata_int;
@@ -319,6 +323,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                      mie_rd_error     ||
                      mepc_rd_error;
 
+  // mimpid CSR
+  assign mimpid = {12'b0, MIMPID_MAJOR, 4'b0, MIMPID_MINOR, 4'b0, mimpid_patch_i};
+
   ////////////////////////////////////////
   // Determine if CSR access is illegal //
   // Both read and write validity is    //
@@ -471,7 +478,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MHARTID: csr_rdata_int = mhartid_i;
 
       // mimpid: implementation id
-      CSR_MIMPID: csr_rdata_int = mimpid_i;
+      CSR_MIMPID: csr_rdata_int = mimpid;
 
       // mconfigptr: Pointer to configuration data structure. Read only, hardwired to 0
       CSR_MCONFIGPTR: csr_rdata_int = 'b0;
