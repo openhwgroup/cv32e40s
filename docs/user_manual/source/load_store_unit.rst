@@ -38,7 +38,7 @@ supported.
   +---------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
   | ``data_we_o``             | output          | Write Enable, high for writes, low for reads. Sent together with ``data_req_o``.                                             |
   +---------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-  | ``data_achk_o[9:0]``      | output          | Checksum for address phase signals                                                                                           |
+  | ``data_achk_o[11:0]``     | output          | Checksum for address phase signals                                                                                           |
   +---------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
   | ``data_rvalid_i``         | input           | ``data_rvalid_i`` will be high for exactly one cycle to signal the end of the response phase of for both read and write      |
   |                           |                 | transactions. For a read transaction ``data_rdata_i`` holds valid data when ``data_rvalid_i`` is high.                       |
@@ -131,11 +131,7 @@ Interface integrity
 -------------------
 
 The |corev| implements interface integrity by the ``data_reqpar_o``, ``data_gntpar_i``, ``data_rvalidpar_i``,
-``data_achk_o`` and ``data_rchk_i`` signals (see [OPENHW-OBI]_ for further details).
-
-.. note::
-
-   Checksum definitions for ``data_achk_o`` and ``data_rchk_i`` will be added later.
+``data_achk_o`` and ``data_rchk_i`` signals (see :ref:`interface-integrity` and [OPENHW-OBI]_ for further details).
 
 .. only:: PMP
 

@@ -161,6 +161,73 @@ Functional unit and FSM hardening
 ---------------------------------
 (Encode critical signals and FSM state such that certain glitch attacks can be detected)
 
+
+.. _interface-integrity:
+
+Interface integrity
+-------------------
+
+The OBI bus interfaces have associated parity and checksum signals:
+
+* |corev| will generate odd parity signals ``instr_reqpar_o`` and ``data_reqpar_o`` for ``instr_req_o`` and ``data_req_o`` respectively.
+* The environment is expected to drive ``instr_gntpar_i``, ``instr_rvalidpar_i``, ``data_gntpar_i`` and ``data_rvalidpar_i`` with odd parity for ``instr_gnt_i``, ``instr_rvalid_i``, ``data_gnt_i`` and ``data_rvalid_i`` respectively.
+* |corev| will generate checksums ``instr_achk_o`` and ``data_achk_o`` for the instruction OBI interface and the data OBI interface respectively with checksums as defined in :numref:`Address phase checksum signal`.
+* The environment is expected to drive ``instr_rchk_i`` and ``data_rchk_i`` for the instruction OBI interface and the data OBI interface respectively with checksums as defined in :numref:`Response phase checksum signal`.
+
+.. table:: Address phase checksum signal
+  :name: Address phase checksum signal
+
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | **Signal**   | **Checksum computation**                        | **Comment**                                                                      |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[0]``  | Odd parity(``addr[7:0]``)                       |                                                                                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[1]``  | Odd parity(``addr[15:8]``)                      |                                                                                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[2]``  | Odd parity(``addr[23:16]``)                     |                                                                                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[3]``  | Odd parity(``addr[31:24]``)                     |                                                                                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[4]``  | Odd parity(``prot[2:0]``, ``memtype[1:0]``)     |                                                                                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[5]``  | Odd parity(``be[3:0]``, ``we``)                 | For the instruction interface ``be[3:0]`` = 4'b1111 and ``we`` = 1'b0 is used.   |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[6]``  | Odd parity(``dbg``)                             |                                                                                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[7]``  | Odd parity(``atop``)                            | ``atop[5:0]`` = 6'b0 as the **A** extension is not implemented.                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[8]``  | Odd parity(``wdata[7:0]``)                      | For the instruction interface ``wdata[7:0]`` = 8'b0.                             |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[9]``  | Odd parity(``wdata[15:8]``)                     | For the instruction interface ``wdata[15:8]`` = 8'b0.                            |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[10]`` | Odd parity(``wdata[23:16]``)                    | For the instruction interface ``wdata[23:16]`` = 8'b0.                           |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``achk[11]`` | Odd parity(``wdata[31:24]``)                    | For the instruction interface ``wdata[31:24]`` = 8'b0.                           |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+
+.. table:: Response phase checksum signal
+  :name: Response phase checksum signal
+
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | **Signal**   | **Checksum computation**                        | **Comment**                                                                      |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``rchk[0]``  | Odd parity(``rdata[7:0]``)                      |                                                                                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``rchk[1]``  | Odd parity(``rdata[15:8]``)                     |                                                                                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``rchk[2]``  | Odd parity(``rdata[23:16]``)                    |                                                                                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``rchk[3]``  | Odd parity(``rdata[31:24]``)                    |                                                                                  |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+  | ``rchk[4]``  | Odd parity(``err``, ``exokay``)                 | ``exokay`` = 1'b0 as the **A** extension is not implemented.                     |
+  +--------------+-------------------------------------------------+----------------------------------------------------------------------------------+
+
+|corev| checks its OBI inputs against the related parity and checksum inputs (i.e. ``instr_gntpar_i``, ``data_gntpar_i``, ``instr_rvalidpar_i``, ``data_rvalidpar_i``, ``instr_rchk_i`` and ``data_rchk_i``) on each ``clk_i``
+cycle while not in reset and generates a pulse on the ``alert_major_o`` pin in cases of parity or checksum violations.
+
+The environment is expected to check the OBI outputs of |corev| against the related parity and checksum outputs (i.e. ``instr_reqpar_o``, ``data_reqpar_o``, ``instr_rchk_o`` and ``data_rchk_o``) on each ``clk_i``
+cycle while not in reset. It is platform defined how the environment reacts in case of parity or checksum violations.
+
 Bus interface hardening
 -----------------------
 Hardware checks are performed to check that the bus protocol is not being violated.

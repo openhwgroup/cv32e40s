@@ -44,7 +44,7 @@ are possible and thus it needs fewer signals.
   +----------------------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
   | ``instr_prot_o[2:0]``      | output          | Protection attributes                                                                                                                             |
   +----------------------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
-  | ``instr_achk_o[4:0]``      | output          | Checksum for address phase signals                                                                                                                |
+  | ``instr_achk_o[11:0]``     | output          | Checksum for address phase signals                                                                                                                |
   +----------------------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
   | ``instr_dbg_o``            | output          | Debug mode access                                                                                                                                 |
   +----------------------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -112,8 +112,4 @@ Interface integrity
 -------------------
 
 The |corev| implements interface integrity by the ``instr_reqpar_o``, ``instr_gntpar_i``, ``instr_rvalidpar_i``,
-``instr_achk_o`` and ``instr_rchk_i`` signals (see [OPENHW-OBI]_ for further details).
-
-.. note::
-
-   Checksum definitions for ``instr_achk_o`` and ``instr_rchk_i`` will be added later.
+``instr_achk_o`` and ``instr_rchk_i`` signals (see see :ref:`interface-integrity` and [OPENHW-OBI]_ for further details).
