@@ -151,7 +151,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
 
   always_ff @(posedge clk, negedge rst_n) begin
     if (rst_n == 1'b0) begin
-      state_q     <= MPU_IDLE;
+      state_q <= MPU_IDLE;
     end
     else begin
       state_q <= state_n;
