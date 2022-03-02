@@ -15,6 +15,7 @@ The configuration array, ``PMA_CFG[]``, must consist of ``PMA_NUM_REGIONS`` entr
     logic        main;
     logic        bufferable;
     logic        cacheable;
+    logic        integrity;
   } pma_cfg_t;
 
 In case of address overlap between PMA regions, the region with the lowest index in ``PMA_CFG[]`` will have priority.
@@ -42,11 +43,25 @@ Accesses to regions marked as cacheable (``cacheable=1``) will result in the OBI
 .. note::
    The PMA must be configured such that accesses to the external debug module are non-cacheable, to enable its program buffer to function correctly.
 
+.. _pma_integrity:
+
+Integrity
+~~~~~~~~~
+Accesses to regions marked with ``integrity=1`` will have their OBI response phase inputs checked against the ``instr_rchk_i`` and ``data_rchk_i`` signals. Accesses to regions marked with ``integrity=0``
+will never leads to instruction parity/checksum fault (see :ref:`exceptions-interrupts`), load parity/checksum fault NMI (see :ref:`exceptions-interrupts`),
+store parity/checksum fault NMI (see :ref:`exceptions-interrupts`) or major alert (see :ref:`interface-integrity`) due to unexpected ``instr_rchk_i`` or ``data_rchk_i`` values.
+
+.. note::
+   ``data_rdata_i`` is never checked against ``data_rchk_i`` for write transactions.
+
+.. note::
+   The ``instr_gntpar_i``, ``instr_rvalidpar_i``, ``data_gntpar_i`` and ``data_rvalidpar_i`` are always checked (also for accesses to regions with ``integrity=0``).
+
 Default attribution
 ~~~~~~~~~~~~~~~~~~~
-If the PMA is deconfigured (``PMA_NUM_REGIONS=0``), the entire memory range will be treated as main memory (``main=1``), non-bufferable (``bufferable=0``) and non-cacheable (``cacheable=0``).
+If the PMA is deconfigured (``PMA_NUM_REGIONS=0``), the entire memory range will be treated as main memory (``main=1``), non-bufferable (``bufferable=0``), non-cacheable (``cacheable=0``) and no integrity (``integrity=0``).
 
-If the PMA is configured (``PMA_NUM_REGIONS > 0``), memory regions not covered by any PMA regions are treated as I/O memory (``main=0``), non-bufferable (``bufferable=0``) and non-cacheable (``cacheable=0``).
+If the PMA is configured (``PMA_NUM_REGIONS > 0``), memory regions not covered by any PMA regions are treated as I/O memory (``main=0``), non-bufferable (``bufferable=0``), non-cacheable (``cacheable=0``) and no integrity (``integrity=0``).
 
 Every instruction fetch, load and store will be subject to PMA checks and failed checks will result in an exception. PMA checks cannot be disabled.
 See :ref:`exceptions-interrupts` for details.
