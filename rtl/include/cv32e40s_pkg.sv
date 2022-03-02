@@ -982,12 +982,14 @@ parameter IRQ_MASK = 32'hFFFF0888;
 // main:               Region is defined as main memory (as opposed to I/O memory)
 // bufferable:         Transfers in this region are bufferable
 // cacheable:          Transfers in this region are cacheable
+// integrity:          Transfers in this region are checked for (rchk) integrity
 typedef struct packed {
   logic [31:0] word_addr_low;
   logic [31:0] word_addr_high;
   logic        main;
   logic        bufferable;
   logic        cacheable;
+  logic        integrity;
 } pma_cfg_t;
 
 // Default attribution when PMA is not configured (PMA_NUM_REGIONS=0) (Address is don't care)
@@ -995,14 +997,16 @@ parameter pma_cfg_t NO_PMA_R_DEFAULT = '{word_addr_low   : 0,
                                          word_addr_high  : 0,
                                          main            : 1'b1,
                                          bufferable      : 1'b0,
-                                         cacheable       : 1'b0};
+                                         cacheable       : 1'b0,
+                                         integrity       : 1'b0};
 
 // Default attribution when PMA is configured (Address is don't care)
 parameter pma_cfg_t PMA_R_DEFAULT = '{word_addr_low   : 0,
                                       word_addr_high  : 0,
                                       main            : 1'b0,
                                       bufferable      : 1'b0,
-                                      cacheable       : 1'b0};
+                                      cacheable       : 1'b0,
+                                      integrity       : 1'b0};
 
 // MPU status. Used for PMA and PMP
 typedef enum logic [1:0] {
