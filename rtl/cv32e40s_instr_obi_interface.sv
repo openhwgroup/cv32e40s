@@ -46,15 +46,16 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   input  obi_inst_req_t  trans_i,
 
   // Transaction response interface
-  output logic           resp_valid_o,             // Note: Consumer is assumed to be 'ready' whenever resp_valid_o = 1
+  output logic           resp_valid_o,          // Note: Consumer is assumed to be 'ready' whenever resp_valid_o = 1
   output obi_inst_resp_t resp_o,
 
   // OBI interface
   if_c_obi.master     m_c_obi_instr_if
-
 );
 
   obi_if_state_e state_q, next_state;
+
+  logic [11:0] achk;                            // Address phase checksum
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI R Channel
@@ -66,14 +67,11 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
   assign resp_valid_o = m_c_obi_instr_if.s_rvalid.rvalid;
   assign resp_o       = m_c_obi_instr_if.resp_payload;
-  
-
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI A Channel
   //////////////////////////////////////////////////////////////////////////////
 
-  
   // OBI A channel registers (to keep A channel stable)
   obi_inst_req_t        obi_a_req_q;
 
@@ -117,14 +115,38 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   always_comb
   begin
     if (state_q == TRANSPARENT) begin
-      m_c_obi_instr_if.s_req.req   = trans_valid_i;              // Do not limit number of outstanding transactions
-      m_c_obi_instr_if.req_payload = trans_i;
+      m_c_obi_instr_if.s_req.req        = trans_valid_i;                // Do not limit number of outstanding transactions
+      m_c_obi_instr_if.req_payload      = trans_i;
+      m_c_obi_instr_if.req_payload.achk = achk;
     end else begin
       // state_q == REGISTERED
-      m_c_obi_instr_if.s_req.req   = 1'b1;                       // Never retract request
+      m_c_obi_instr_if.s_req.req   = 1'b1;                              // Never retract request
       m_c_obi_instr_if.req_payload = obi_a_req_q;
     end
   end
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Integrity // todo: ensure this will not get optimized away
+  //////////////////////////////////////////////////////////////////////////////
+
+  always_comb begin
+    achk = {
+      ~^{8'b0},                                         // wdata[31:24] = 8'b0
+      ~^{8'b0},                                         // wdata[23:16] = 8'b0
+      ~^{8'b0},                                         // wdata[15:8] = 8'b0
+      ~^{8'b0},                                         // wdata[7:0] = 8'b0
+      ~^{6'b0},                                         // atop[5:0] = 6'b0
+      ~^{m_c_obi_instr_if.req_payload.dbg},
+      ~^{4'b1111, 1'b0},                                // be[3:0] = 4'b1111, we = 1'b0
+      ~^{m_c_obi_instr_if.req_payload.prot[2:0], m_c_obi_instr_if.req_payload.memtype[1:0]},
+      ~^{m_c_obi_instr_if.req_payload.addr[31:24]},
+      ~^{m_c_obi_instr_if.req_payload.addr[23:16]},
+      ~^{m_c_obi_instr_if.req_payload.addr[15:8]},
+      ~^{m_c_obi_instr_if.req_payload.addr[7:0]}
+    };
+  end
+
+ assign  m_c_obi_instr_if.s_req.reqpar = !m_c_obi_instr_if.s_req.req;
 
   //////////////////////////////////////////////////////////////////////////////
   // Registers
@@ -151,8 +173,5 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   // transfer has been granted. Note that cv32e40s_obi_interface does not limit
   // the number of outstanding transactions in any way.
   assign trans_ready_o = (state_q == TRANSPARENT);
-
-  
-  
 
 endmodule // cv32e40s_instr_obi_interface

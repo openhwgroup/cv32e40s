@@ -53,6 +53,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   if_c_obi.master     m_c_obi_data_if
 );
 
+  logic [11:0] achk;                            // Address phase checksum
+
   //////////////////////////////////////////////////////////////////////////////
   // OBI R Channel
   //////////////////////////////////////////////////////////////////////////////
@@ -70,9 +72,37 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   // If the incoming transaction itself is stable, then it satisfies the OBI protocol
   // and signals can be passed to/from OBI directly.
-  assign m_c_obi_data_if.s_req.req   = trans_valid_i;
-  assign m_c_obi_data_if.req_payload = trans_i;
+  always_comb
+  begin
+    m_c_obi_data_if.s_req.req        = trans_valid_i;
+    m_c_obi_data_if.req_payload      = trans_i;
+    m_c_obi_data_if.req_payload.achk = achk;
+  end
 
   assign trans_ready_o = m_c_obi_data_if.s_gnt.gnt;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Integrity // todo: ensure this will not get optimized away
+  //////////////////////////////////////////////////////////////////////////////
+
+  always_comb
+  begin
+    achk = {
+      ~^{m_c_obi_data_if.req_payload.wdata[31:24]},
+      ~^{m_c_obi_data_if.req_payload.wdata[23:16]},
+      ~^{m_c_obi_data_if.req_payload.wdata[15:8]},
+      ~^{m_c_obi_data_if.req_payload.wdata[7:0]},
+      ~^{6'b0},                                         // atop[5:0] = 6'b0
+      ~^{m_c_obi_data_if.req_payload.dbg},
+      ~^{m_c_obi_data_if.req_payload.be[3:0], m_c_obi_data_if.req_payload.we},
+      ~^{m_c_obi_data_if.req_payload.prot[2:0], m_c_obi_data_if.req_payload.memtype[1:0]},
+      ~^{m_c_obi_data_if.req_payload.addr[31:24]},
+      ~^{m_c_obi_data_if.req_payload.addr[23:16]},
+      ~^{m_c_obi_data_if.req_payload.addr[15:8]},
+      ~^{m_c_obi_data_if.req_payload.addr[7:0]}
+    };
+  end
+
+  assign m_c_obi_data_if.s_req.reqpar = !m_c_obi_data_if.s_req.req;
 
 endmodule // cv32e40s_data_obi_interface

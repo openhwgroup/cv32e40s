@@ -74,7 +74,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   input  logic        instr_rvalid_i,
   input  logic        instr_rvalidpar_i,
   output logic [31:0] instr_addr_o,
-  output logic [4:0]  instr_achk_o,
+  output logic [11:0] instr_achk_o,
   output logic [1:0]  instr_memtype_o,
   output logic [2:0]  instr_prot_o,
   output logic        instr_dbg_o,
@@ -92,7 +92,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic        data_we_o,
   output logic [3:0]  data_be_o,
   output logic [31:0] data_addr_o,
-  output logic [9:0]  data_achk_o,
+  output logic [11:0] data_achk_o,
   output logic [1:0]  data_memtype_o,
   output logic [2:0]  data_prot_o,
   output logic        data_dbg_o,
@@ -322,25 +322,24 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign xif.result_valid     = '0;
   assign xif.result           = '0;
 
-  // todo: implement parity signals
-  assign instr_reqpar_o        = 1'b0;
-  assign instr_achk_o          = '0;
-  assign data_reqpar_o         = 1'b0;
-  assign data_achk_o           = '0;
-
-
   // Connect toplevel OBI signals to internal interfaces
   assign instr_req_o                         = m_c_obi_instr_if.s_req.req;
+  assign instr_reqpar_o                      = m_c_obi_instr_if.s_req.reqpar;
   assign instr_addr_o                        = m_c_obi_instr_if.req_payload.addr;
   assign instr_memtype_o                     = m_c_obi_instr_if.req_payload.memtype;
   assign instr_prot_o                        = m_c_obi_instr_if.req_payload.prot;
   assign instr_dbg_o                         = m_c_obi_instr_if.req_payload.dbg;
+  assign instr_achk_o                        = m_c_obi_instr_if.req_payload.achk;
   assign m_c_obi_instr_if.s_gnt.gnt          = instr_gnt_i;
+  assign m_c_obi_instr_if.s_gnt.gntpar       = instr_gntpar_i;
   assign m_c_obi_instr_if.s_rvalid.rvalid    = instr_rvalid_i;
+  assign m_c_obi_instr_if.s_rvalid.rvalidpar = instr_rvalidpar_i;
   assign m_c_obi_instr_if.resp_payload.rdata = instr_rdata_i;
   assign m_c_obi_instr_if.resp_payload.err   = instr_err_i;
+  assign m_c_obi_instr_if.resp_payload.rchk  = instr_rchk_i;
 
   assign data_req_o                          = m_c_obi_data_if.s_req.req;
+  assign data_reqpar_o                       = m_c_obi_data_if.s_req.reqpar;
   assign data_we_o                           = m_c_obi_data_if.req_payload.we;
   assign data_be_o                           = m_c_obi_data_if.req_payload.be;
   assign data_addr_o                         = m_c_obi_data_if.req_payload.addr;
@@ -348,10 +347,14 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign data_prot_o                         = m_c_obi_data_if.req_payload.prot;
   assign data_dbg_o                          = m_c_obi_data_if.req_payload.dbg;
   assign data_wdata_o                        = m_c_obi_data_if.req_payload.wdata;
+  assign data_achk_o                         = m_c_obi_data_if.req_payload.achk;
   assign m_c_obi_data_if.s_gnt.gnt           = data_gnt_i;
+  assign m_c_obi_data_if.s_gnt.gntpar        = data_gntpar_i;
   assign m_c_obi_data_if.s_rvalid.rvalid     = data_rvalid_i;
+  assign m_c_obi_data_if.s_rvalid.rvalidpar  = data_rvalidpar_i;
   assign m_c_obi_data_if.resp_payload.rdata  = data_rdata_i;
   assign m_c_obi_data_if.resp_payload.err    = data_err_i;
+  assign m_c_obi_data_if.resp_payload.rchk   = data_rchk_i;
 
   assign debug_havereset_o = ctrl_fsm.debug_havereset;
   assign debug_halted_o    = ctrl_fsm.debug_halted;

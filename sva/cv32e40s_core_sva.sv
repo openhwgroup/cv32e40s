@@ -52,11 +52,40 @@ module cv32e40s_core_sva
   input privlvl_t    priv_lvl_if,
   input privlvl_t    priv_lvl_if_q,
 
-  // probed OBI signals
-  input logic [1:0]  instr_memtype_o,
-  input logic [1:0]  data_memtype_o,
-  input logic        data_req_o,
-  input logic        data_we_o,
+  // Instruction memory interface
+  input  logic        instr_req_o,
+  input  logic        instr_reqpar_o,
+  input  logic        instr_gnt_i,
+  input  logic        instr_gntpar_i,
+  input  logic        instr_rvalid_i,
+  input  logic        instr_rvalidpar_i,
+  input  logic [31:0] instr_addr_o,
+  input  logic [11:0] instr_achk_o,
+  input  logic [1:0]  instr_memtype_o,
+  input  logic [2:0]  instr_prot_o,
+  input  logic        instr_dbg_o,
+  input  logic [31:0] instr_rdata_i,
+  input  logic [4:0]  instr_rchk_i,
+  input  logic        instr_err_i,
+
+  // Data memory interface
+  input  logic        data_req_o,
+  input  logic        data_reqpar_o,
+  input  logic        data_gnt_i,
+  input  logic        data_gntpar_i,
+  input  logic        data_rvalid_i,
+  input  logic        data_rvalidpar_i,
+  input  logic        data_we_o,
+  input  logic [3:0]  data_be_o,
+  input  logic [31:0] data_addr_o,
+  input  logic [11:0] data_achk_o,
+  input  logic [1:0]  data_memtype_o,
+  input  logic [2:0]  data_prot_o,
+  input  logic        data_dbg_o,
+  input  logic [31:0] data_wdata_o,
+  input  logic [31:0] data_rdata_i,
+  input  logic [4:0]  data_rchk_i,
+  input  logic        data_err_i,
 
   // probed controller signals
   input logic        ctrl_debug_mode_n,
@@ -429,5 +458,55 @@ always_ff @(posedge clk , negedge rst_ni)
                     1'b1 |-> !pc_err_if)
           else `uvm_error("core", "pc_err_if shall be zero.")
 
-endmodule // cv32e40s_core_sva
+  // There should be no parity error on output signals
+  logic instr_reqpar_expected;
+  logic data_reqpar_expected;
 
+  assign instr_reqpar_expected = !instr_req_o;
+  assign data_reqpar_expected = !data_req_o;
+
+  a_no_parity_err:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                    1'b1 |-> (instr_reqpar_o == instr_reqpar_expected) && (data_reqpar_o == data_reqpar_expected))
+          else `uvm_error("core", "Parity mismatch.")
+
+  // There should be no checksum error on output signals
+  logic [11:0] instr_achk_expected;
+  logic [11:0] data_achk_expected;
+
+  assign instr_achk_expected = {
+    ~^{8'b0},
+    ~^{8'b0},
+    ~^{8'b0},
+    ~^{8'b0},
+    ~^{6'b0},
+    ~^{instr_dbg_o},
+    ~^{4'b1111, 1'b0},
+    ~^{instr_prot_o[2:0], instr_memtype_o[1:0]},
+    ~^{instr_addr_o[31:24]},
+    ~^{instr_addr_o[23:16]},
+    ~^{instr_addr_o[15:8]},
+    ~^{instr_addr_o[7:0]}
+  };
+
+  assign data_achk_expected = {
+    ~^{data_wdata_o[31:24]},
+    ~^{data_wdata_o[23:16]},
+    ~^{data_wdata_o[15:8]},
+    ~^{data_wdata_o[7:0]},
+    ~^{6'b0},
+    ~^{data_dbg_o},
+    ~^{data_be_o[3:0], data_we_o},
+    ~^{data_prot_o[2:0], data_memtype_o[1:0]},
+    ~^{data_addr_o[31:24]},
+    ~^{data_addr_o[23:16]},
+    ~^{data_addr_o[15:8]},
+    ~^{data_addr_o[7:0]}
+  };
+
+  a_no_checksum_err:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                    1'b1 |-> (instr_achk_o == instr_achk_expected) && (data_achk_o == data_achk_expected))
+          else `uvm_error("core", "Checksum mismatch.")
+
+endmodule // cv32e40s_core_sva

@@ -1085,14 +1085,17 @@ parameter DATA_DATA_WIDTH = 32;
 
 typedef struct packed {
   logic        req;
+  logic        reqpar;
 } obi_req_t;
 
 typedef struct packed {
   logic        gnt;
+  logic        gntpar;
 } obi_gnt_t;
 
 typedef struct packed {
   logic        rvalid;
+  logic        rvalidpar;
 } obi_rvalid_t;
 
 typedef struct packed {
@@ -1100,11 +1103,13 @@ typedef struct packed {
   logic [1:0]                  memtype;
   logic [2:0]                  prot;
   logic                        dbg;
+  logic [11:0]                 achk;
 } obi_inst_req_t;
 
 typedef struct packed {
   logic [INSTR_DATA_WIDTH-1:0] rdata;
   logic                        err;
+  logic [4:0]                  rchk;
 } obi_inst_resp_t;
 
 typedef struct packed {
@@ -1115,11 +1120,13 @@ typedef struct packed {
   logic [1:0]                     memtype;
   logic [2:0]                     prot;
   logic                           dbg;
+  logic [11:0]                    achk;
 } obi_data_req_t;
 
 typedef struct packed {
   logic [DATA_DATA_WIDTH-1:0] rdata;
   logic                       err;
+  logic [4:0]                 rchk;
 } obi_data_resp_t;
 
 // Data/instruction transfer bundeled with MPU status
@@ -1132,7 +1139,7 @@ typedef struct packed {
 parameter inst_resp_t INST_RESP_RESET_VAL = '{
   // Setting rdata[1:0] to 2'b11 to easily assert that all
   // instructions in ID are uncompressed
-  bus_resp    : '{rdata: 32'h3, err: 1'b0},
+  bus_resp    : '{rdata: 32'h3, err: 1'b0, rchk: 5'b0},
   mpu_status  : MPU_OK
 };
 
@@ -1141,7 +1148,8 @@ parameter obi_inst_req_t OBI_INST_REQ_RESET_VAL = '{
   addr    : 'h0,
   memtype : 'h0,
   prot    : {PRIV_LVL_M, 1'b0},
-  dbg     : 1'b0
+  dbg     : 1'b0,
+  achk    : 12'hFFF
 };
 
 // Data transfer bundeled with MPU status
