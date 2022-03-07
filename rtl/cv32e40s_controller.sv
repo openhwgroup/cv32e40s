@@ -31,6 +31,7 @@
 
 module cv32e40s_controller import cv32e40s_pkg::*;
 #(
+  parameter bit          USE_DEPRECATED_FEATURE_SET = 1, // todo: remove once related features are supported by iss
   parameter bit          X_EXT                  = 0,
   parameter int unsigned REGFILE_NUM_READ_PORTS = 2
 )
@@ -120,6 +121,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   // Main FSM and debug FSM
   cv32e40s_controller_fsm
   #(
+    .USE_DEPRECATED_FEATURE_SET  (USE_DEPRECATED_FEATURE_SET),
     .X_EXT                       ( X_EXT                    )
   )
   controller_fsm_i

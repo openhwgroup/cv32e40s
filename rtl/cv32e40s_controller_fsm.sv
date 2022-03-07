@@ -31,6 +31,7 @@
 
 module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 #(
+  parameter bit       USE_DEPRECATED_FEATURE_SET = 1, // todo: remove once related features are supported by iss
   parameter bit       X_EXT           = 0
 )
 (
@@ -55,7 +56,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  logic        sys_mret_id_i,              // mret in ID stage
 
   // From EX stage
-  input  id_ex_pipe_t id_ex_pipe_i,        
+  input  id_ex_pipe_t id_ex_pipe_i,
   input  logic        branch_decision_ex_i,       // branch decision signal from EX ALU
   input  logic        lsu_split_ex_i,             // LSU is splitting misaligned, first half is in EX
 
@@ -132,7 +133,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   logic single_step_halt_if_n;
   logic single_step_halt_if_q; // Halting IF after issuing one insn in single step mode
 
-  
+
   // Events in ID
   logic jump_in_id;
   logic jump_taken_id;
@@ -145,11 +146,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   logic branch_taken_q;
   logic jump_taken_n;
   logic jump_taken_q;
-  
+
   // Events in WB
   logic exception_in_wb;
   logic exception_alert_wb;
-  logic [7:0] exception_cause_wb;
+  logic [10:0] exception_cause_wb;
   logic wfi_in_wb;
   logic fencei_in_wb;
   logic mret_in_wb;
@@ -174,13 +175,13 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Flops for debug cause
   logic [2:0] debug_cause_n;
   logic [2:0] debug_cause_q;
-  
+
   logic [4:0] exc_cause; // id of taken interrupt
 
   logic       fencei_ready;
   logic       fencei_flush_req_set;
   logic       fencei_req_and_ack_q;
-  logic       fencei_ongoing;    
+  logic       fencei_ongoing;
 
   // Pipeline PC mux control
   pipe_pc_mux_e pipe_pc_mux_ctrl;
@@ -199,7 +200,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Once the fencei handshake is initiated, it must complete and the instruction must retire.
   // The instruction retires when fencei_req_and_ack_q = 1
   assign fencei_ongoing = fencei_flush_req_o || fencei_req_and_ack_q;
-  
+
   // Mux selector for vectored IRQ PC
   assign ctrl_fsm_o.m_exc_vec_pc_mux = (mtvec_mode_i == 2'b0) ? 5'h0 : exc_cause;
 
@@ -224,9 +225,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Blocking on jump_taken_q, which flags that a jump has already been taken
   assign jump_taken_id = jump_in_id && !jump_taken_q; // todo: RVFI does not use jump_taken_id (which is not in itself an issue); we should have an assertion showing that the target address remains constant during jump_in_id; same remark for branches
 
-  // EX stage 
+  // EX stage
   // Branch taken for valid branch instructions in EX with valid decision
-  
+
   assign branch_in_ex = id_ex_pipe_i.alu_bch && id_ex_pipe_i.alu_en && id_ex_pipe_i.instr_valid;
   assign ctrl_fsm_o.branch_in_ex_raw = id_ex_pipe_i.alu_bch && id_ex_pipe_i.alu_en;
 
@@ -251,8 +252,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign exception_cause_wb = ex_wb_pipe_i.instr.mpu_status != MPU_OK              ? EXC_CAUSE_INSTR_FAULT     :
                               ex_wb_pipe_i.instr.bus_resp.err                      ? EXC_CAUSE_INSTR_BUS_FAULT :
                               ex_wb_pipe_i.illegal_insn                            ? EXC_CAUSE_ILLEGAL_INSN    :
-                              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn) ? (priv_lvl_i==PRIV_LVL_M ? 
-                                                                                      EXC_CAUSE_ECALL_MMODE : 
+                              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn) ? (priv_lvl_i==PRIV_LVL_M ?
+                                                                                      EXC_CAUSE_ECALL_MMODE :
                                                                                       EXC_CAUSE_ECALL_UMODE )  :
                               (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn)  ? EXC_CAUSE_BREAKPOINT      :
                               (lsu_mpu_status_wb_i == MPU_WR_FAULT)                ? EXC_CAUSE_STORE_FAULT     :
@@ -318,7 +319,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // We can always allow single step when checking for wb_valid_i in 'pending_single_step'
   // - no other instructions should be in the pipeline.
   assign single_step_allowed = 1'b1;
-                             
+
   /*
   Debug spec 1.0.0 (unratified as of Aug 9th '21)
   "If control is transferred to a trap handler while executing the instruction, then Debug Mode is
@@ -329,7 +330,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   Hence, a pending_single_step is asserted if we take an interrupt when we should be stepping.
   For any interruptible instructions (non-LSU), at any stage, we would kill the instruction and jump
   to debug mode without executing any instructions. Interrupt handler's first instruction will be in dpc.
-  
+
   For LSU instructions that may not be killed (if they reach WB of stay in EX for >1 cycles),
   we are not allowed to take interrupts, and we will re-enter debug mode after finishing the LSU.
   Interrupt will then be taken when we enter the next step.
@@ -365,7 +366,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // or single stepping with dcsr.stepie==0 would stall ID stage and we would never get out of debug, resulting in a deadlock.
   assign pending_interrupt = irq_req_ctrl_i && !debug_mode_q && !(dcsr_i.step && !dcsr_i.stepie);
 
-  // Allow interrupts to be taken only if there is no data request in WB, 
+  // Allow interrupts to be taken only if there is no data request in WB,
   // and no trans_valid has been clocked from EX to environment.
   // Offloaded instructions in WB also block, as they cannot be killed after commit_kill=0 (EX stage)
   // LSU instructions which were suppressed due to previous exceptions or trigger match
@@ -496,7 +497,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           ctrl_fsm_ns = BOOT_SET;
         end
       end
-      // BOOT_SET state required to prevent (timing) path from 
+      // BOOT_SET state required to prevent (timing) path from
       // fetch_enable_i via pc_set to instruction interface outputs
       BOOT_SET: begin
         ctrl_fsm_o.instr_req = 1'b1;
@@ -517,7 +518,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
           ctrl_fsm_o.csr_save_cause  = 1'b1;
           ctrl_fsm_o.csr_cause.irq = 1'b1;
+          if (USE_DEPRECATED_FEATURE_SET) begin
+            ctrl_fsm_o.csr_cause.exception_code = nmi_is_store_q ? DEPRECATED_INT_CAUSE_LSU_STORE_FAULT : DEPRECATED_INT_CAUSE_LSU_LOAD_FAULT;
+          end else begin
           ctrl_fsm_o.csr_cause.exception_code = nmi_is_store_q ? INT_CAUSE_LSU_STORE_FAULT : INT_CAUSE_LSU_LOAD_FAULT;
+          end
 
           // Save pc from oldest valid instruction
           if (ex_wb_pipe_i.instr_valid) begin
@@ -639,7 +644,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             ctrl_fsm_o.kill_if = 1'b1;
             ctrl_fsm_o.kill_id = 1'b1;
             ctrl_fsm_o.kill_ex = 1'b1;
-            
+
             ctrl_fsm_o.pc_mux  = PC_DRET;
             ctrl_fsm_o.pc_set  = 1'b1;
 
@@ -681,8 +686,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
             // Jumps in ID (JAL, JALR, mret)
             if (sys_en_id_i && sys_mret_id_i) begin
-              ctrl_fsm_o.pc_mux       = debug_mode_q ? PC_TRAP_DBE : PC_MRET;
-              ctrl_fsm_o.pc_set       = 1'b1;
+              ctrl_fsm_o.pc_mux = debug_mode_q ? PC_TRAP_DBE : PC_MRET;
+              ctrl_fsm_o.pc_set = 1'b1;
               ctrl_fsm_o.mret_jump_id = !debug_mode_q;
             end else begin
               ctrl_fsm_o.pc_mux = PC_JUMP;
@@ -695,7 +700,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           end
 
           // Mret in WB restores CSR regs
-          // 
+          //
           if (mret_in_wb && !ctrl_fsm_o.kill_wb) begin
             ctrl_fsm_o.csr_restore_mret  = !debug_mode_q;
           end
@@ -939,7 +944,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     end
   end
 
-  
+
   /////////////////////
   // Debug state FSM //
   /////////////////////
@@ -1001,7 +1006,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       // TODO: Add assertion to check the following:
       // Every issue interface transaction (whether accepted or not) has an associated commit interface
       // transaction and both interfaces use a matching transaction ordering.
-      
+
       // Commit an offloaded instruction in the first cycle where EX is not halted, or EX is killed.
       //       Only commit when there is an offloaded instruction in EX (accepted or not), and we have not
       //       previously signalled commit for the same instruction. Rejected xif instructions gets killed
