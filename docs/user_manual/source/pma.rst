@@ -47,12 +47,12 @@ Accesses to regions marked as cacheable (``cacheable=1``) will result in the OBI
 
 Integrity
 ~~~~~~~~~
-Accesses to regions marked with ``integrity=1`` will have their OBI response phase inputs checked against the ``instr_rchk_i`` and ``data_rchk_i`` signals. Accesses to regions marked with ``integrity=0``
-will never leads to instruction parity/checksum fault (see :ref:`exceptions-interrupts`), load parity/checksum fault NMI (see :ref:`exceptions-interrupts`),
+Accesses to regions marked with ``integrity=1`` will have their OBI response phase inputs checked against the ``instr_rchk_i`` and ``data_rchk_i`` signals as specified in [OPENHW-OBI]_.
+Accesses to regions marked with ``integrity=0`` will never leads to instruction parity/checksum fault (see :ref:`exceptions-interrupts`), load parity/checksum fault NMI (see :ref:`exceptions-interrupts`),
 store parity/checksum fault NMI (see :ref:`exceptions-interrupts`) or major alert (see :ref:`interface-integrity`) due to unexpected ``instr_rchk_i`` or ``data_rchk_i`` values.
 
 .. note::
-   ``data_rdata_i`` is never checked against ``data_rchk_i`` for write transactions.
+   ``data_rdata_i`` is never checked against ``data_rchk_i`` for write transactions (see [OPENHW-OBI]_).
 
 .. note::
    The ``instr_gntpar_i``, ``instr_rvalidpar_i``, ``data_gntpar_i`` and ``data_rvalidpar_i`` are always checked (also for accesses to regions with ``integrity=0``).
