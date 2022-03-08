@@ -47,7 +47,7 @@ module cv32e40s_rvfi_sva
    input rvfi_intr_t [3:0] in_trap,
    input logic [3:0] [2:0] debug_cause
    );
-  logic [13:0] rvfi_trap_q; // RVFI trap value of the previous valid rvfi instruction
+  rvfi_trap_t rvfi_trap_q; // RVFI trap value of the previous valid rvfi instruction
 
   always_ff @(posedge clk_i, negedge rst_ni) begin
     if (rst_ni == 1'b0) begin
