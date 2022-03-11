@@ -521,7 +521,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           if (USE_DEPRECATED_FEATURE_SET) begin
             ctrl_fsm_o.csr_cause.exception_code = nmi_is_store_q ? DEPRECATED_INT_CAUSE_LSU_STORE_FAULT : DEPRECATED_INT_CAUSE_LSU_LOAD_FAULT;
           end else begin
-          ctrl_fsm_o.csr_cause.exception_code = nmi_is_store_q ? INT_CAUSE_LSU_STORE_FAULT : INT_CAUSE_LSU_LOAD_FAULT;
+            ctrl_fsm_o.csr_cause.exception_code = nmi_is_store_q ? INT_CAUSE_LSU_STORE_FAULT : INT_CAUSE_LSU_LOAD_FAULT;
           end
 
           // Save pc from oldest valid instruction

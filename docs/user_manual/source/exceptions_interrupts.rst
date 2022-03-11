@@ -106,6 +106,11 @@ In Debug Mode, all interrupts are ignored independent of ``mstatus.MIE`` and the
    Load bus fault, store bus fault,  load parity/checksum fault and store parity/checksum fault are handled as imprecise non-maskable interrupts
    (as opposed to precise exceptions).
 
+.. note::
+
+   The NMI vector location is at index 15 of the machine trap vector table for both direct mode and vectored mode (i.e. at {**mtvec[31:7]**, 5'hF, 2'b00}).
+   The NMI vector location therefore does **not** match its exception code.
+
 Interrupt Interface - ``SMCLIC`` == 1
 -------------------------------------
 
@@ -116,19 +121,21 @@ Interrupts - ``SMCLIC`` == 1
 ----------------------------
 
 Although the [RISC-V-SMCLIC]_ specification supports up to 4096 interrupts, |corev| itself supports at most 1024 interrupts. The
-maximum number of supported CLIC interrupts is equal to ``2^SMCLIC_ID_WIDTH``, which can range from 64 to 1024. The ``SMCLIC_ID_WIDTH`` parameter
+maximum number of supported CLIC interrupts is equal to ``2^SMCLIC_ID_WIDTH``, which can range from 32 to 1024. The ``SMCLIC_ID_WIDTH`` parameter
 also dictates the minimum alignment requirement for the trap vector table to ``2^(2+SMCLIC_ID_WIDTH)`` byte boundaries, see :ref:`csr-mtvt`.
 
 Non Maskable Interrupts
 -----------------------
 
-NMIs update ``mepc``, ``mcause`` and ``mstatus`` similar to regular interrupts. However, as the faults that result in NMIs are imprecise, the contents of ``mepc`` is not guaranteed to point to the instruction after the faulted load or store.
+Non Maskable Interrupts (NMIs) update ``mepc``, ``mcause`` and ``mstatus`` similar to regular interrupts. However, as the faults that result in NMIs are imprecise, the contents of ``mepc`` is not guaranteed to point to the instruction after the faulted load or store.
 
 .. note::
 
    Specifically ``mstatus.mie`` will get cleared to 0 when an (unrecoverable) NMI is taken. [RISC-V-PRIV]_ does not specify the behavior of 
    ``mstatus`` in response to NMIs, see https://github.com/riscv/riscv-isa-manual/issues/756. If this behavior is
    specified at a future date, then we will reconsider our implementation.
+
+The NMI vector location is at index 15 of the machine trap vector table for both direct mode and vectored mode (i.e. {**mtvec[31:7]**, 5'hF, 2'b00}).
 
 An NMI will occur when a load or store instruction experiences a bus fault. The fault resulting in an NMI is handled in an imprecise manner, meaning that the instruction that causes the fault is allowed to retire and the associated NMI is taken afterwards.
 NMIs are never masked by the ``MIE`` bit. NMIs are masked however while in debug mode or while single stepping with ``STEPIE`` = 0 in the ``dcsr`` CSR.
@@ -139,7 +146,6 @@ If an NMI becomes pending while in debug mode as described above, the NMI will b
 
 In case of bufferable stores, the NMI is allowed to become visible an arbitrary time after the instruction retirement. As for the case with debugging, this can cause several instructions to retire
 before the NMI becomes visible to the core.
-
 
 When a data bus fault occurs, the first detected fault will be latched and used for ``mcause`` when the NMI is taken. Any new data bus faults occuring while an NMI is pending will be discarded.
 When the NMI handler is entered, new data bus faults may be latched.

@@ -38,7 +38,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter bit          ZC_EXT                              = 0, // todo: remove once fully implemented
   parameter bit          USE_DEPRECATED_FEATURE_SET          = 1, // todo: remove once related features are supported by iss
   parameter bit          SMCLIC                              = 0,
-  parameter int          SMCLIC_ID_WIDTH                     = 6,
+  parameter int          SMCLIC_ID_WIDTH                     = 5,
   parameter int          DBG_NUM_TRIGGERS                    = 1,
   parameter int          PMA_NUM_REGIONS                     = 0,
   parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0]        = '{default:PMA_R_DEFAULT},
@@ -833,8 +833,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .m_irq_enable_o             ( m_irq_enable           ),
     .mepc_o                     ( mepc                   ),
     .mstatus_o                  ( mstatus                ),
- 
-    // PMP CSR's    
+
+    // PMP CSR's
     .csr_pmp_o                  ( csr_pmp                ),
 
     // CSR Parity Error
@@ -859,9 +859,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .trigger_match_o            ( trigger_match_if       ),
 
     .priv_lvl_if_ctrl_o         ( priv_lvl_if_ctrl       ),
-    .priv_lvl_lsu_o             ( priv_lvl_lsu           ),    
+    .priv_lvl_lsu_o             ( priv_lvl_lsu           ),
     .priv_lvl_o                 ( priv_lvl               ),
-   
+
     .pc_if_i                    ( pc_if                  )
   );
 
@@ -944,7 +944,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Register File read, write back and forwards
     .rf_re_id_i                     ( rf_re_id               ),
     .rf_raddr_id_i                  ( rf_raddr_id            ),
-    
+
     // Fencei flush handshake
     .fencei_flush_ack_i             ( fencei_flush_ack_i     ),
     .fencei_flush_req_o             ( fencei_flush_req_o     ),

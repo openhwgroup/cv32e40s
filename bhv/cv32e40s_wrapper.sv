@@ -59,7 +59,7 @@ module cv32e40s_wrapper
   parameter [31:0]       PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
   parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
   parameter bit          SMCLIC                       = 0,
-  parameter int          SMCLIC_ID_WIDTH              = 6,
+  parameter int          SMCLIC_ID_WIDTH              = 5,
   parameter int          DBG_NUM_TRIGGERS             = 1,
   parameter int          PMA_NUM_REGIONS              = 0,
   parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
