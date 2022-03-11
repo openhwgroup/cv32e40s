@@ -53,7 +53,6 @@ Instantiation Template
       // Configuration
       .boot_addr_i              (),
       .mtvec_addr_i             (),
-      .nmi_addr_i               (),
       .dm_halt_addr_i           (),
       .dm_exception_addr_i      (),
       .mhartid_i                (),
@@ -214,11 +213,6 @@ Interfaces
 |                         |                         |     | address part of :ref:`csr-mtvec`.          |
 |                         |                         |     | Must be 128-byte aligned                   |
 |                         |                         |     | (i.e. ``mtvec_addr_i[6:0]`` = 0).          |
-|                         |                         |     | Do not change after enabling core          |
-|                         |                         |     | via ``fetch_enable_i``                     |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``nmi_addr_i``          | 32                      | in  | ``NMI`` address. Target address for NMIs.  |
-|                         |                         |     | Must be word aligned.                      |
 |                         |                         |     | Do not change after enabling core          |
 |                         |                         |     | via ``fetch_enable_i``                     |
 +-------------------------+-------------------------+-----+--------------------------------------------+

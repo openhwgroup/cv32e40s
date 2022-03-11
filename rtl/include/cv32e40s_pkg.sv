@@ -590,7 +590,7 @@ typedef struct packed {
   logic        priv_lvl_set;
   privlvl_t    priv_lvl;
 } privlvlctrl_t;
-  
+
 // Machine Vendor ID - OpenHW JEDEC ID is '2 decimal (bank 13)'
 parameter MVENDORID_OFFSET = 7'h2;      // Final byte without parity bit
 parameter MVENDORID_BANK = 25'hC;       // Number of continuation codes
@@ -1035,7 +1035,7 @@ parameter int unsigned PMPNCFG_W            = 8;
 parameter int unsigned CSR_MSECCFG_MML_BIT  = 0;
 parameter int unsigned CSR_MSECCFG_MMWP_BIT = 1;
 parameter int unsigned CSR_MSECCFG_RLB_BIT  = 2;
-  
+
 // PMP access type
 typedef enum logic [1:0] {
   PMP_ACC_EXEC    = 2'b00,
@@ -1207,7 +1207,7 @@ typedef struct packed
   logic [31:0] id;        // ID of offloaded ins
   logic        accepted;  // Was the offloaded instruction accepted or not?
 } xif_meta_t;
-  
+
 // IF/ID pipeline
 typedef struct packed {
   logic        instr_valid;
@@ -1245,7 +1245,7 @@ typedef struct packed {
   // Operands for multiplier and divider
   logic [31:0]  muldiv_operand_a;
   logic [31:0]  muldiv_operand_b;
-  
+
   // CSR
   logic         csr_en;
   csr_opcode_e  csr_op;
@@ -1357,7 +1357,7 @@ typedef struct packed {
   logic                              wb_data_stall;
 } mhpmevent_t;
 
-  
+
 // Controller Bypass outputs
 typedef struct packed {
   op_fw_mux_e   operand_a_fw_mux_sel;   // Operand A forward mux sel
@@ -1421,7 +1421,7 @@ typedef struct packed {
   logic        branch_in_ex;
   logic        branch_in_ex_raw;    // Branch in EX, not qualified with instr_valid
   logic        branch_taken_ex;     // A branch was taken from EX stage
-  
+
   // Performance counter events
   mhpmevent_t  mhpmevent;
 

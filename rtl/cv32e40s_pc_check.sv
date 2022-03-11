@@ -48,7 +48,7 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
   input  logic [31:0] jump_target_id_i,       // Jump target from ID stage
   input  logic [31:0] branch_target_ex_i,     // Branch target from EX stage
   input  logic        branch_decision_ex_i,   // Branch decision from EX stage
-  
+
   // Last_op inputs
   input  logic        last_op_id_i,
   input  logic        last_op_ex_i,
@@ -57,7 +57,7 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
   input  logic [31:0] mepc_i,
   input  logic [23:0] mtvec_addr_i,
   input  logic [31:0] dpc_i,
-  
+
   // Static core inputs
   input  logic [31:0] boot_addr_i,         // Boot address from toplevel pins
   input  logic [31:0] dm_halt_addr_i,      // Debug address from toplevel pins
@@ -117,7 +117,7 @@ assign ctrl_flow_addr = (pc_mux_q == PC_JUMP)     ? jump_target_id_i      :
                         (pc_mux_q == PC_TRAP_DBD) ? dm_halt_addr_i        :
                         (pc_mux_q == PC_TRAP_DBE) ? dm_exception_addr_i   :
                         (pc_mux_q == PC_TRAP_NMI) ? nmi_addr_i            : // todo: remove when nmi_addr_i is removed
-                        (pc_mux_q == PC_TRAP_EXC) ? {mtvec_addr_i, 8'h0 } : // Also covered by CSR hardening
+                        (pc_mux_q == PC_TRAP_EXC) ? {mtvec_addr_i, 7'h0 } : // Also covered by CSR hardening
                         (pc_mux_q == PC_DRET)     ? dpc_i                 : {boot_addr_i[31:2], 2'b00};
 
 // Choose which address to check vs pc_if, sequential or control flow.
@@ -159,7 +159,7 @@ assign ctrl_flow_untaken_err = jump_mret_untaken_err || branch_untaken_err;
 
 
 
-                                
+
 
 assign ctrl_flow_err = ctrl_flow_taken_err || ctrl_flow_untaken_err;
 
