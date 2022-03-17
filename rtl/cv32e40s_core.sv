@@ -767,6 +767,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   cv32e40s_cs_registers
   #(
+    .LIB                        ( LIB                    ),
     .USE_DEPRECATED_FEATURE_SET (USE_DEPRECATED_FEATURE_SET),
     .M_EXT                      ( M_EXT                  ),
     .X_EXT                      ( X_EXT                  ),

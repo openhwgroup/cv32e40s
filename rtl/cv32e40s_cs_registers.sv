@@ -35,6 +35,7 @@
 
 module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
+  parameter              LIB              = 0,
   parameter bit          USE_DEPRECATED_FEATURE_SET = 1, // todo: remove once related features are supported by iss
   parameter m_ext_e      M_EXT            = M,
   parameter bit          X_EXT            = 0,
@@ -961,6 +962,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   end
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_JVT_MASK),
     .SHADOWCOPY (SECURE),
@@ -976,6 +978,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -990,6 +993,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -1004,6 +1008,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
  cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_DCSR_MASK),
     .SHADOWCOPY (SECURE),
@@ -1019,6 +1024,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -1033,6 +1039,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_MEPC_MASK),
     .SHADOWCOPY (SECURE),
@@ -1048,6 +1055,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_MSCRATCH_MASK),
     .SHADOWCOPY (SECURE),
@@ -1063,6 +1071,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (IRQ_MASK),
     .SHADOWCOPY (SECURE),
@@ -1078,6 +1087,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_MSTATUS_MASK),
     .SHADOWCOPY (SECURE),
@@ -1093,6 +1103,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -1108,6 +1119,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_MTVEC_MASK),
     .SHADOWCOPY (SECURE),
@@ -1126,6 +1138,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
     if (SMCLIC) begin
       cv32e40s_csr #(
+        .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MTVT_MASK),
         .SHADOWCOPY (SECURE),
@@ -1143,6 +1156,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign mnxti_q = 32'h0;
 
       cv32e40s_csr #(
+        .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MINTSTATUS_MASK),
         .SHADOWCOPY (SECURE),
@@ -1157,6 +1171,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_error_o (mintstatus_rd_error)
       );
       cv32e40s_csr #(
+        .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MINTTHRESH_MASK),
         .SHADOWCOPY (SECURE),
@@ -1171,6 +1186,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_error_o (mintthresh_rd_error)
       );
       cv32e40s_csr #(
+        .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MSCRATCHCSW_MASK),
         .SHADOWCOPY (SECURE),
@@ -1185,6 +1201,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_error_o (mscratchcsw_rd_error)
       );
       cv32e40s_csr #(
+        .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MSCRATCHCSWL_MASK),
         .SHADOWCOPY (SECURE),
@@ -1199,6 +1216,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_error_o (mscratchcswl_rd_error)
       );
       cv32e40s_csr #(
+        .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MCLICBASE_MASK),
         .SHADOWCOPY (SECURE),
@@ -1231,6 +1249,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       logic [2:0] lfsr_lockup;
 
       cv32e40s_csr #(
+        .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_CPUCTRL_MASK),
         .SHADOWCOPY (SECURE),
@@ -1340,6 +1359,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // Privledge level register
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      ($bits(privlvl_t)),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (PRIV_LVL_M)
@@ -1463,6 +1483,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           end
 
           cv32e40s_csr #(
+                         .LIB        (LIB),
                          .WIDTH      ($bits(pmpncfg_t)),
                          .MASK       (CSR_PMPNCFG_MASK),
                          .SHADOWCOPY (SECURE),
@@ -1492,6 +1513,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign pmpaddr_wr_addr_match[i] = (csr_waddr == csr_num_e'(CSR_PMPADDR0 + i));
 
           cv32e40s_csr #(
+                         .LIB        (LIB),
                          .WIDTH      (PMP_ADDR_WIDTH),
                          .MASK       (CSR_PMPADDR_MASK),
                          .SHADOWCOPY (SECURE),
@@ -1566,6 +1588,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign pmp_mseccfg_n.zero0 = '0;
 
       cv32e40s_csr #(
+                     .LIB        (LIB),
                      .WIDTH      ($bits(mseccfg_t)),
                      .MASK       (CSR_MSECCFG_MASK),
                      .SHADOWCOPY (SECURE),
@@ -1646,6 +1669,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign tmatch_value_n = csr_wdata_int;
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (TMATCH_CONTROL_RST_VAL)
@@ -1660,6 +1684,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
@@ -1948,6 +1973,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
 
   cv32e40s_csr #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0),
