@@ -8,6 +8,7 @@
 
 
 module cv32e40s_csr #(
+    parameter                 LIB = 0,
     parameter int unsigned    WIDTH = 32,
     parameter bit             SHADOWCOPY = 1'b0,
     parameter bit [WIDTH-1:0] RESETVALUE = '0,
@@ -39,7 +40,9 @@ module cv32e40s_csr #(
       assign shadow_d   = ~wr_data_i;
       assign rd_error_o = rdata_q != ~shadow_q;
 
-      cv32e40s_clock_gate core_clock_gate_i
+      cv32e40s_clock_gate
+        #(.LIB(LIB))
+        core_clock_gate_i
         (.clk_i        ( clk          ),
          .en_i         ( wr_en_i      ),
          .scan_cg_en_i ( scan_cg_en_i ),
@@ -50,11 +53,11 @@ module cv32e40s_csr #(
       for (genvar i = 0; i < WIDTH; i++) begin : gen_csr
         if (MASK[i]) begin : gen_unmasked
           if (RESETVALUE[i] == 1'b1) begin : gen_rv1
-            cv32e40s_sffs sffs_rdatareg  (.clk(clk_gated), .rst_n(rst_n), .d_i(rdata_d[i]),  .q_o(rdata_q[i]));
-            cv32e40s_sffr sffr_shadowreg (.clk(clk_gated), .rst_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
+            cv32e40s_sffs #(.LIB(LIB)) sffs_rdatareg  (.clk(clk_gated), .rst_n(rst_n), .d_i(rdata_d[i]),  .q_o(rdata_q[i]));
+            cv32e40s_sffr #(.LIB(LIB)) sffr_shadowreg (.clk(clk_gated), .rst_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
           end else begin : gen_rv0 // (RESETVALUE[i] == 1'b0)
-            cv32e40s_sffr sffr_rdatareg  (.clk(clk_gated), .rst_n(rst_n), .d_i(rdata_d[i]),  .q_o(rdata_q[i]));
-            cv32e40s_sffs sffs_shadowreg (.clk(clk_gated), .rst_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
+            cv32e40s_sffr #(.LIB(LIB)) sffr_rdatareg  (.clk(clk_gated), .rst_n(rst_n), .d_i(rdata_d[i]),  .q_o(rdata_q[i]));
+            cv32e40s_sffs #(.LIB(LIB)) sffs_shadowreg (.clk(clk_gated), .rst_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
           end
         end else begin : gen_masked
           assign rdata_q[i]  = 1'b0;
