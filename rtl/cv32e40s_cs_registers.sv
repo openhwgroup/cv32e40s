@@ -66,7 +66,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // MTVEC
   output logic [24:0]     mtvec_addr_o,
-  output logic [ 1:0]     mtvec_mode_o,
+  output logic  [1:0]     mtvec_mode_o,
 
   // Cycle Count
   output logic [MHPMCOUNTER_WIDTH-1:0] mcycle_o,
@@ -76,12 +76,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   input  logic            csr_mtvec_init_i,
 
   // IF/ID pipeline
-  input  if_id_pipe_t     if_id_pipe_i,
-  input  logic            sys_en_id_i,
-  input  logic            sys_mret_id_i,
+  input if_id_pipe_t      if_id_pipe_i,
+  input logic             sys_en_id_i,
+  input logic             sys_mret_id_i,
 
   // ID/EX pipeline
-  input  id_ex_pipe_t     id_ex_pipe_i,
+  input id_ex_pipe_t      id_ex_pipe_i,
 
   // EX/WB pipeline
   input  ex_wb_pipe_t     ex_wb_pipe_i,
@@ -388,7 +388,14 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MISA: csr_rdata_int = MISA_VALUE;
 
       // mie: machine interrupt enable
-      CSR_MIE: csr_rdata_int = mie_q;
+      CSR_MIE: begin
+        if (SMCLIC) begin
+          // CLIC mode is assumed when SMCLIC = 1
+          csr_rdata_int = '0;
+        end else begin
+         csr_rdata_int = mie_q;
+        end
+      end
 
       // mtvec: machine trap-handler base address
       CSR_MTVEC: csr_rdata_int = mtvec_q;
@@ -411,10 +418,31 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MEPC: csr_rdata_int = mepc_q;
 
       // mcause: exception cause
-      CSR_MCAUSE: csr_rdata_int = mcause_q;
+      CSR_MCAUSE: begin
+        if (SMCLIC) begin
+          // CLIC mode is assumed when SMCLIC = 1
+          // For CLIC, the mpp and mpie bits from mstatus
+          // are readable via mcause
+          csr_rdata_int = {
+                            mcause_q[31:30],
+                            mstatus_q.mpp,   // 29:28
+                            mstatus_q.mpie,  // 27
+                            mcause_q[26:0]
+                          };
+        end else begin
+          csr_rdata_int = mcause_q;
+        end
+      end
 
       // mip: interrupt pending
-      CSR_MIP: csr_rdata_int = mip;
+      CSR_MIP: begin
+        // CLIC mode is assumed when SMCLIC = 1
+        if (SMCLIC) begin
+          csr_rdata_int = '0;
+        end else begin
+          csr_rdata_int = mip;
+        end
+      end
 
       // mnxti: Next Interrupt Handler Address and Interrupt Enable
       CSR_MNXTI: begin
@@ -669,6 +697,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     dscratch1_n              = csr_wdata_int;
     dscratch1_we             = 1'b0;
 
+    // TODO: add support for SD/XS/FS/VS
     mstatus_n                = '{
                               tw:   csr_wdata_int[MSTATUS_TW_BIT],
                               mprv: csr_wdata_int[MSTATUS_MPRV_BIT],
@@ -677,6 +706,18 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                               mie:  csr_wdata_int[MSTATUS_MIE_BIT],
                               default: 'b0
                             };
+
+    // CLIC mode is assumed when SMCLIC = 1
+    // In CLIC mode, writes to mcause.mpp/mpie is aliased to mstatus.mpp/mpie
+    if (SMCLIC) begin
+      if (mcause_we) begin
+        mstatus_n      = mstatus_q; // Preserve all fields
+
+        // Write mpie and mpp as aliased through mcause
+        mstatus_n.mpie = csr_wdata_int[MCAUSE_MPIE_BIT];
+        mstatus_n.mpp  = csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW];
+      end
+    end
 
     // mstatus.mpp is WARL, make sure only legal values are written
     if ((mstatus_n.mpp != PRIV_LVL_M) && (mstatus_n.mpp != PRIV_LVL_U)) begin
@@ -750,7 +791,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
         // mie: machine interrupt enable
         CSR_MIE: begin
-              mie_we = 1'b1;
+          // CLIC mode is assumed when SMCLIC = 1
+          if (!SMCLIC) begin
+            mie_we = 1'b1;
+          end
         end
         // mtvec: machine trap-handler base address
         CSR_MTVEC: begin
@@ -776,7 +820,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
         // mcause
         CSR_MCAUSE: begin
-                mcause_we = 1'b1;
+            mcause_we = 1'b1;
+            // CLIC mode is assumed when SMCLIC = 1
+            // For CLIC, a write to mcause.mpp or mcause.mpie will write to the
+            // corresponding bits in mstatus as well.
+            if (SMCLIC) begin
+              mstatus_we = 1'b1;
+            end
         end
         CSR_MNXTI: begin
           if (SMCLIC) begin
@@ -1118,6 +1168,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   );
 
 
+
   cv32e40s_csr #(
     .LIB        (LIB),
     .WIDTH      (32),
@@ -1231,7 +1282,22 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_error_o (mclicbase_rd_error)
       );
 
+      assign mie_q  = 32'h0;
+
     end else begin
+      // Only include mie CSR when SMCLIC = 0
+      cv32e40x_csr #(
+        .WIDTH      (32),
+        .SHADOWCOPY (1'b0),
+        .RESETVALUE (32'd0)
+      ) mie_csr_i (
+        .clk      (clk),
+        .rst_n     (rst_n),
+        .wr_data_i  (mie_n),
+        .wr_en_i    (mie_we),
+        .rd_data_o  (mie_q),
+        .rd_error_o (mie_rd_error)
+      );
       assign mtvt_q              = 32'h0;
       assign mtvt_rd_error       = 1'b0;
       assign mnxti_q             = 32'h0;

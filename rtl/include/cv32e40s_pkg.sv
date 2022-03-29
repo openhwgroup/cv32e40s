@@ -612,6 +612,8 @@ parameter MSTATUS_MPP_BIT_HIGH = 12;
 parameter MSTATUS_MPRV_BIT     = 17;
 parameter MSTATUS_TW_BIT       = 21;
 
+parameter MCAUSE_MPIE_BIT      = 27;
+
 // misa
 parameter logic [1:0] MXL = 2'd1; // M-XLEN: XLEN in M-Mode for RV32
 
@@ -625,17 +627,27 @@ typedef struct packed {
 } jvt_t;
 
 typedef struct packed {
-  logic [31:22] zero5;  // Reserved, hardwired zero
-  logic         tw;
-  logic [20:18] zero4;  // Reserved, hardwired zero
-  logic         mprv;
-  logic [16:13] zero3;  // Reserved, hardwired zero
-  logic [12:11] mpp;
-  logic [10:8]  zero2;
+  logic         sd;     // State dirty
+  logic [30:23] zero3;  // Hardwired zero
+  logic         tsr;    // Hardwired zero
+  logic         tw;     // Hardwired zero
+  logic         tvm;    // Hardwired zero
+  logic         mxr;    // Hardwired zero
+  logic         sum;    // Hardwired zero
+  logic         mprv;   // Hardwired zero
+  logic [16:15] xs;     // Other extension context
+  logic [14:13] fs;     // FPU extension context status
+  logic [12:11] mpp;    // Hardwired to 2'b11
+  logic [10:9]  vs;     // Vector extension context status
+  logic         spp;    // Hardwired zero
   logic         mpie;
-  logic [6:4]   zero1; // Reserved, hardwired zero
+  logic         ube;    // Hardwired zero
+  logic         spie;   // Hardwired zero
+  logic         zero2;  // Reserved, hardwired to zero.
   logic         mie;
-  logic [2:0]   zero0; // Reserved, hardwired zero
+  logic         zero1;  // Reserved, hardwired to zero.
+  logic         sie;    // Hardwired to zero
+  logic         zero0;  // Reserved, hardwired zero
 } mstatus_t;
 
 typedef struct packed {
@@ -670,7 +682,9 @@ typedef enum logic [3:0] {
 
 typedef struct packed{
     logic [31:28] xdebugver;
-    logic [27:16] zero2;
+    logic [27:18] zero2;
+    logic         ebreakvs; // Hardwired to zero
+    logic         ebreakvu; // Hardwired to zero
     logic         ebreakm;
     logic         zero1;
     logic         ebreaks;
@@ -679,7 +693,7 @@ typedef struct packed{
     logic         stopcount;
     logic         stoptime;
     logic [8:6]   cause;
-    logic         zero0;
+    logic         v;        // Hardwired to zero
     logic         mprven;
     logic         nmip;
     logic         step;
@@ -688,8 +702,13 @@ typedef struct packed{
 
 typedef struct packed {
   logic           irq;
-  logic [30:11]   zero0;
-  logic [10: 0]   exception_code;
+  logic           minhv;           // CLIC only
+  logic [29:28]   mpp;             // CLIC only, same as mstatus.mpp
+  logic           mpie;            // CLIC only, same as mstatus.mpie
+  logic [26:24]   zero1;           // Reserved, hardwired to zero.
+  logic [23:16]   mpil;            // CLIC only. Previous interrupt level
+  logic [15:12]   zero0;           // Reserved, hardwired to zero.
+  logic [11: 0]   exception_code;  // Bit 11 only used for CLIC, hardwired to zero otherwise
 } mcause_t;
 
 typedef struct packed {
@@ -733,9 +752,7 @@ parameter mintstatus_t MINTSTATUS_RESET_VAL = '{
   uil:   '0};
 
 parameter mstatus_t MSTATUS_RESET_VAL = '{
-  zero5   : 'b0,
   tw      : 1'b0,
-  zero4   : 'b0,
   mprv    : 1'b0,
   zero3   : 'b0,
   mpp     : PRIV_LVL_M,
