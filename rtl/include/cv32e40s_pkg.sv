@@ -634,10 +634,10 @@ typedef struct packed {
   logic         tvm;    // Hardwired zero
   logic         mxr;    // Hardwired zero
   logic         sum;    // Hardwired zero
-  logic         mprv;   // Hardwired zero
+  logic         mprv;
   logic [16:15] xs;     // Other extension context
   logic [14:13] fs;     // FPU extension context status
-  logic [12:11] mpp;    // Hardwired to 2'b11
+  logic [12:11] mpp;
   logic [10:9]  vs;     // Vector extension context status
   logic         spp;    // Hardwired zero
   logic         mpie;
