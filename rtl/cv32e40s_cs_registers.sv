@@ -1123,22 +1123,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   cv32e40s_csr #(
     .LIB        (LIB),
     .WIDTH      (32),
-    .MASK       (IRQ_MASK),
-    .SHADOWCOPY (SECURE),
-    .RESETVALUE (32'd0)
-  ) mie_csr_i (
-    .clk      (clk),
-    .rst_n     (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i  (mie_n),
-    .wr_en_i    (mie_we),
-    .rd_data_o  (mie_q),
-    .rd_error_o (mie_rd_error)
-  );
-
-  cv32e40s_csr #(
-    .LIB        (LIB),
-    .WIDTH      (32),
     .MASK       (CSR_MSTATUS_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (MSTATUS_RESET_VAL)
@@ -1286,18 +1270,22 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
     end else begin
       // Only include mie CSR when SMCLIC = 0
-      cv32e40x_csr #(
+      cv32e40s_csr #(
+        .LIB        (LIB),
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .MASK       (IRQ_MASK),
+        .SHADOWCOPY (SECURE),
         .RESETVALUE (32'd0)
       ) mie_csr_i (
         .clk      (clk),
         .rst_n     (rst_n),
+        .scan_cg_en_i (scan_cg_en_i),
         .wr_data_i  (mie_n),
         .wr_en_i    (mie_we),
         .rd_data_o  (mie_q),
         .rd_error_o (mie_rd_error)
       );
+
       assign mtvt_q              = 32'h0;
       assign mtvt_rd_error       = 1'b0;
       assign mnxti_q             = 32'h0;
