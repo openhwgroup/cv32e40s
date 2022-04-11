@@ -37,7 +37,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    input logic  rst_n,
 
    input logic  misaligned_access_i, // Indicate that ongoing access is part of a misaligned access
-   input logic  if_data_access_i,    // Indicate that ongoing access is a data access from the IF stage
+   input logic  core_if_data_access_i,    // Indicate that ongoing access is a data access from the IF stage
 
    // Interface towards bus interface
    input logic  bus_trans_ready_i,
@@ -60,7 +60,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
 
    // Privilege mode
    input              privlvl_t priv_lvl_i,
-   
+
    // Indication from the core that there will be one pending transaction in the next cycle
    input logic  core_one_txn_pend_n,
 
@@ -88,7 +88,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   logic [33:0] pmp_req_addr;
   logic        instr_fetch_access;
   logic        load_access;
-  
+
   // FSM that will "consume" transfers failing PMA or PMP checks.
   // Upon failing checks, this FSM will prevent the transfer from going out on the bus
   // and wait for all in flight bus transactions to complete while blocking new transfers.
@@ -149,7 +149,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
         mpu_err_trans_valid = 1'b1;
         mpu_status = (state_q == MPU_RE_ERR_RESP) ? MPU_RE_FAULT : MPU_WR_FAULT;
 
-        // Go back to IDLE uncoditionally. 
+        // Go back to IDLE uncoditionally.
         // The core is expected to always be ready for the response
         state_n = MPU_IDLE;
 
@@ -202,9 +202,9 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
     .pma_bufferable_o           ( bus_trans_bufferable ),
     .pma_cacheable_o            ( bus_trans_cacheable  )
   );
-  
+
   assign pmp_req_addr = {2'b00, core_trans_i.addr};
-  
+
   cv32e40s_pmp
     #(// Parameters
       .PMP_GRANULARITY                  (PMP_GRANULARITY),
@@ -226,8 +226,8 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   // Tie to 1'b0 if this MPU is instantiatied in the IF stage
   generate
     if (IF_STAGE) begin: mpu_if
-      assign instr_fetch_access = if_data_access_i ? 1'b0 : 1'b1;
-      assign load_access        = if_data_access_i ? 1'b1 : 1'b0;
+      assign instr_fetch_access = core_if_data_access_i ? 1'b0 : 1'b1;
+      assign load_access        = core_if_data_access_i ? 1'b1 : 1'b0;
       assign core_trans_we      = 1'b0;
       assign pmp_req_type       = if_data_access_i ? PMP_ACC_READ : PMP_ACC_EXEC;
     end
@@ -240,5 +240,5 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   endgenerate
 
 // TODO:OE any way to check that the 2nd access of a failed misalgn will not reach the MPU?
-  
+
 endmodule

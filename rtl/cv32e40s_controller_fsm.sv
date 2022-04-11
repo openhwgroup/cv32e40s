@@ -32,7 +32,9 @@
 module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 #(
   parameter bit       USE_DEPRECATED_FEATURE_SET = 1, // todo: remove once related features are supported by iss
-  parameter bit       X_EXT           = 0
+  parameter bit       X_EXT           = 0,
+  parameter bit       SMCLIC          = 0,
+  parameter int       SMCLIC_ID_WIDTH = 5
 )
 (
   // Clocks and reset
@@ -71,11 +73,14 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  logic        lsu_busy_i,                 // LSU is busy with outstanding transfers
 
   input  logic        lsu_interruptible_i,        // LSU can be interrupted
+  input  logic        lsu_write_buffer_empty_i,   // LSU write buffer state
   // Interrupt Controller Signals
   input  logic        irq_req_ctrl_i,             // irq requst
-  input  logic [4:0]  irq_id_ctrl_i,              // irq id
+  input  logic [9:0]  irq_id_ctrl_i,              // irq id
   input  logic        irq_wu_ctrl_i,              // irq wakeup control
   input  privlvl_t    priv_lvl_i,                 // Current running priviledge level
+  input  logic        irq_clic_shv_i,             // CLIC mode selective hardware vectoring
+  input  logic [7:0]  irq_clic_level_i,           // CLIC mode current interrupt level
 
   // From cs_registers
   input  logic  [1:0] mtvec_mode_i,
@@ -161,6 +166,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   logic pending_nmi;
   logic pending_nmi_early;
+  logic pending_clic_nmi;
   logic pending_debug;
   logic pending_single_step;
   logic pending_interrupt;
@@ -172,11 +178,20 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   logic debug_allowed;
   logic single_step_allowed;
 
+
+
+  // Flag indicating there is a 'live' CLIC pointer in the pipeline
+  // Used to block debug until pointer
+  logic pointer_in_pipeline;
+
+  // Flag for checking if we can to a CLIC pointer fetch
+  logic wbuf_irq_ok;
+
   // Flops for debug cause
   logic [2:0] debug_cause_n;
   logic [2:0] debug_cause_q;
 
-  logic [4:0] exc_cause; // id of taken interrupt
+  logic [10:0] exc_cause; // id of taken interrupt. Max width, unused bits are tied off.
 
   logic       fencei_ready;
   logic       fencei_flush_req_set;
@@ -202,7 +217,14 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign fencei_ongoing = fencei_flush_req_o || fencei_req_and_ack_q;
 
   // Mux selector for vectored IRQ PC
-  assign ctrl_fsm_o.m_exc_vec_pc_mux = (mtvec_mode_i == 2'b0) ? 5'h0 : exc_cause;
+  // Used for both basic mode and CLIC when shv == 0.
+  assign ctrl_fsm_o.mtvec_pc_mux = ((mtvec_mode_i == 2'b0) || ((mtvec_mode_i == 2'b11) && !irq_clic_shv_i)) ? 5'h0 : exc_cause[4:0];
+
+  // CLIC mode vectored PC mux is always the same as exc_cause.
+  assign ctrl_fsm_o.mtvt_pc_mux = exc_cause[9:0];
+
+
+  ////////////////////////////////////////////////////////////////////
 
 
   ////////////////////////////////////////////////////////////////////
@@ -241,22 +263,26 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                                 (lsu_mpu_status_wb_i != MPU_OK))          && ex_wb_pipe_i.instr_valid;
 
   // Exception in WB if the following evaluates to 1
-  assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK)            ||
-                            ex_wb_pipe_i.instr.bus_resp.err                      ||
-                            ex_wb_pipe_i.illegal_insn                            ||
-                            (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn) ||
-                            (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn)  ||
+  // CLIC: bus errors for pointer fetches are treated as NMI, not exceptions.
+  assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK)                              ||
+                            (!ex_wb_pipe_i.instr_meta.clic_ptr && ex_wb_pipe_i.instr.bus_resp.err) ||
+                            ex_wb_pipe_i.illegal_insn                                              ||
+                            (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)                   ||
+                            (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn)                    ||
                             (lsu_mpu_status_wb_i != MPU_OK)) && ex_wb_pipe_i.instr_valid;
 
   // Set exception cause
-  assign exception_cause_wb = ex_wb_pipe_i.instr.mpu_status != MPU_OK              ? EXC_CAUSE_INSTR_FAULT     :
-                              ex_wb_pipe_i.instr.bus_resp.err                      ? EXC_CAUSE_INSTR_BUS_FAULT :
-                              ex_wb_pipe_i.illegal_insn                            ? EXC_CAUSE_ILLEGAL_INSN    :
-                              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn) ? (priv_lvl_i==PRIV_LVL_M ?
-                                                                                      EXC_CAUSE_ECALL_MMODE :
-                                                                                      EXC_CAUSE_ECALL_UMODE )  :
-                              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn)  ? EXC_CAUSE_BREAKPOINT      :
-                              (lsu_mpu_status_wb_i == MPU_WR_FAULT)                ? EXC_CAUSE_STORE_FAULT     :
+  // For CLIC: Pointer fetches with PMA/PMP errors will get the exception code converted to LOAD_FAULT
+  //           Bus errors will be converted to NMI as for regular loads.
+  assign exception_cause_wb = (!ex_wb_pipe_i.instr_meta.clic_ptr && (ex_wb_pipe_i.instr.mpu_status != MPU_OK))  ? EXC_CAUSE_INSTR_FAULT     :
+                              (!ex_wb_pipe_i.instr_meta.clic_ptr && ex_wb_pipe_i.instr.bus_resp.err)            ? EXC_CAUSE_INSTR_BUS_FAULT :
+                              (ex_wb_pipe_i.instr_meta.clic_ptr && (ex_wb_pipe_i.instr.mpu_status != MPU_OK))   ? EXC_CAUSE_LOAD_FAULT      :
+                              ex_wb_pipe_i.illegal_insn                                                         ? EXC_CAUSE_ILLEGAL_INSN    :
+                              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)                              ? (priv_lvl_i==PRIV_LVL_M ?
+                                                                                                                   EXC_CAUSE_ECALL_MMODE :
+                                                                                                                   EXC_CAUSE_ECALL_UMODE )  :
+                              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn)                               ? EXC_CAUSE_BREAKPOINT      :
+                              (lsu_mpu_status_wb_i == MPU_WR_FAULT)                                             ? EXC_CAUSE_STORE_FAULT     :
                               EXC_CAUSE_LOAD_FAULT; // (lsu_mpu_status_wb_i == MPU_RE_FAULT)
 
   // For now we are always allowed to take exceptions once they arrive in WB.
@@ -297,7 +323,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Using flopped version to avoid paths from data_err_i/data_rvalid_i to instr_* outputs
   // Gating the pending signal instead of the allowed signal for debug related conditions, otherwise a pending NMI during debug mode
   // or single stepping with dcsr.stepie==0 would stall ID stage and we would never get out of debug, resulting in a deadlock.
-  assign pending_nmi = nmi_pending_q && !debug_mode_q && !(dcsr_i.step && !dcsr_i.stepie);
+  // CLIC pointer fetches with associated bus errors are treated as NMI. The error bit is taken from ex_wb_pipe and not flopped further.
+  //      This preserves the address of the pointer (ex_wb_pipe.pc) that must be stored to mepc.
+  assign pending_clic_nmi = (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.instr_meta.clic_ptr && ex_wb_pipe_i.instr.bus_resp.err);
+  assign pending_nmi = (nmi_pending_q || pending_clic_nmi) &&
+                       !debug_mode_q && !(dcsr_i.step && !dcsr_i.stepie);
 
   // Early version of the pending_nmi signal, using the unflopped lsu_err_wb_i[0]
   // This signal is used for halting the ID stage in the same cycle as the bus error arrives.
@@ -310,6 +340,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // dcsr.nmip will always see a pending nmi if nmi_pending_q is set.
   // This CSR bit shall not be gated by debug mode or step without stepie
+  // NMI's related to clic pointer load bus errors are not signaled through dcsr.nmip
+  //  This can only happen during machine mode as interrupts are blocked during debug,
+  //  and the dcsr is not readable from machine mode. No need to expose this bit as it will never be visible.
   assign ctrl_fsm_o.pending_nmi = nmi_pending_q;
 
   // Debug //
@@ -337,12 +370,25 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   */
   assign pending_single_step = (!debug_mode_q && dcsr_i.step && (wb_valid_i || ctrl_fsm_o.irq_ack)) && !pending_debug;
 
+
+  // Detect if there is a live CLIC pointer in the pipeline
+  // This should block debug
+  generate
+    if(SMCLIC) begin : gen_clic_pointer_flag
+      // We only need to check EX and WB, as the FSM will only be in FUNCTIONAL state
+      // one cycle after the target CLIC jump has been performed from ID
+      assign pointer_in_pipeline = (id_ex_pipe_i.instr_valid && id_ex_pipe_i.instr_meta.clic_ptr) ||
+                                   (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.instr_meta.clic_ptr);
+    end else begin : gen_basic_pointer_flag
+      assign pointer_in_pipeline = 1'b0;
+    end
+  endgenerate
   // Regular debug will kill insn in WB, do not allow if LSU is not interruptible, a fence.i handshake is taking place
   // or if an offloaded instruction is in WB.
   // LSU will not be interruptible if the outstanding counter != 0, or
   // a trans_valid has been clocked without ex_valid && wb_ready handshake.
   // The cycle after fencei enters WB, the fencei handshake will be initiated. This must complete and the fencei instruction must retire before allowing debug.
-  assign debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb;
+  assign debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && !pointer_in_pipeline;
 
   // Debug pending for any other reason than single step
   assign pending_debug = (trigger_match_in_wb) ||
@@ -374,7 +420,17 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // The cycle after fencei enters WB, the fencei handshake will be initiated. This must complete and the fencei instruction must retire before allowing interrupts.
   // TODO:OK:low May allow interuption of Zce to idempotent memories
 
-  assign interrupt_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb;
+  // todo: generate CLIC, check shv and write buffer status
+  generate
+    if (SMCLIC) begin : gen_clic_wbuf_check
+      // If an interrupt is SHV, the write buffer must be empty before we allow to take the interrupt
+      // The content in the write buffer could be a pointer update.
+      assign wbuf_irq_ok = irq_clic_shv_i ? lsu_write_buffer_empty_i : 1'b1;
+    end else begin : gen_basic_wbuf_check
+      assign wbuf_irq_ok = 1'b1;
+    end
+  endgenerate
+  assign interrupt_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && wbuf_irq_ok;
 
   // Allowing NMI's follow the same rule as regular interrupts.
   assign nmi_allowed = interrupt_allowed;
@@ -433,6 +489,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
     ctrl_fsm_o.irq_ack = 1'b0;
     ctrl_fsm_o.irq_id  = '0;
+    ctrl_fsm_o.irq_level = '0;
     ctrl_fsm_o.dbg_ack = 1'b0;
 
     // IF stage is halted if an instruction has been issued during single step
@@ -463,6 +520,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
     ctrl_fsm_o.csr_save_cause      = 1'b0;
     ctrl_fsm_o.csr_cause           = 32'h0;
+    ctrl_fsm_o.csr_clear_minhv     = 1'b0;
 
     ctrl_fsm_o.exception_alert     = 1'b0;
 
@@ -475,7 +533,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
     pipe_pc_mux_ctrl               = PC_WB;
 
-    exc_cause                      = 5'b0;
+    exc_cause                      = 11'b0;
 
     debug_mode_n                   = debug_mode_q;
     ctrl_fsm_o.debug_csr_save      = 1'b0;
@@ -490,6 +548,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
     fencei_flush_req_set           = 1'b0;
 
+    ctrl_fsm_o.pc_set_clicv        = 1'b0;
     unique case (ctrl_fsm_cs)
       RESET: begin
         ctrl_fsm_o.instr_req = 1'b0;
@@ -554,15 +613,31 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           ctrl_fsm_o.kill_wb = 1'b1;
 
           ctrl_fsm_o.pc_set = 1'b1;
-          ctrl_fsm_o.pc_mux = PC_TRAP_IRQ;
-          exc_cause = irq_id_ctrl_i;
+
+          exc_cause = {1'b0, irq_id_ctrl_i};
 
           ctrl_fsm_o.irq_ack = 1'b1;
           ctrl_fsm_o.irq_id  = irq_id_ctrl_i;
 
           ctrl_fsm_o.csr_save_cause  = 1'b1;
           ctrl_fsm_o.csr_cause.irq = 1'b1;
-          ctrl_fsm_o.csr_cause.exception_code = {3'b000, irq_id_ctrl_i};
+
+
+          if (SMCLIC) begin
+            ctrl_fsm_o.csr_cause.exception_code = {1'b0, irq_id_ctrl_i};
+            ctrl_fsm_o.irq_level = irq_clic_level_i;
+            if (irq_clic_shv_i) begin
+              ctrl_fsm_o.pc_mux = PC_TRAP_CLICV;
+              ctrl_fsm_ns = POINTER_FETCH;
+              ctrl_fsm_o.pc_set_clicv = 1'b1;
+              ctrl_fsm_o.csr_cause.minhv = 1'b1;
+            end else begin
+              ctrl_fsm_o.pc_mux = PC_TRAP_IRQ;
+            end
+          end else begin
+            ctrl_fsm_o.pc_mux = PC_TRAP_IRQ;
+            ctrl_fsm_o.csr_cause.exception_code = {1'b0, irq_id_ctrl_i};
+          end
 
           // Save pc from oldest valid instruction
           if (ex_wb_pipe_i.instr_valid) begin
@@ -689,6 +764,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
               ctrl_fsm_o.pc_mux = debug_mode_q ? PC_TRAP_DBE : PC_MRET;
               ctrl_fsm_o.pc_set = 1'b1;
               ctrl_fsm_o.mret_jump_id = !debug_mode_q;
+              // Todo: if mcause.minhv
+              //       halt ID until EX and WB are empty
+              //       - pc_set_clicv
+              //       state -> POINTER_FETCH
+
             end else begin
               ctrl_fsm_o.pc_mux = PC_JUMP;
               ctrl_fsm_o.pc_set = 1'b1;
@@ -784,6 +864,26 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
         // Enter debug mode next cycle
         debug_mode_n = 1'b1;
         ctrl_fsm_ns = FUNCTIONAL;
+      end
+      // State for CLIC vectoring (and Zc table jumps)
+      // In this state a fetch has been ordered, and the controller
+      // is waiting for the pointer to arrive in the decode stage.
+      POINTER_FETCH: begin
+        if (if_id_pipe_i.instr_meta.clic_ptr && if_id_pipe_i.instr_valid) begin
+          // Function pointer reached ID stage, do another jump
+          // if no faults happened during pointer fetch. (mcause.minhv will stay high for faults)
+          // todo: deal with integrity related faults for E40S.
+          if(!((if_id_pipe_i.instr.mpu_status != MPU_OK) || if_id_pipe_i.instr.bus_resp.err)) begin
+            ctrl_fsm_o.pc_set = 1'b1;
+            ctrl_fsm_o.pc_mux = PC_TRAP_CLICV_TGT;
+            ctrl_fsm_o.kill_if = 1'b1;
+            ctrl_fsm_o.csr_clear_minhv = 1'b1;
+          end
+          // Note: If the pointer fetch faulted (pma/pmp/bus error), an exception or NMI will
+          // be taken once the pointer fetch reachces WB (two cycles after the current)
+          // The FSM must be in the FUNCTIONAL state to take the exception or NMI.
+          ctrl_fsm_ns = FUNCTIONAL;
+        end
       end
       default: begin
         // should never happen
@@ -933,7 +1033,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       // i.e halt_wb due to debug will result in killed WB, while for fence.i it will retire.
       // Note that this event bit is further gated before sent to the actual counters in case
       // other conditions prevent counting.
-      if (ex_valid_i && wb_ready_i && !(lsu_split_ex_i || !id_ex_pipe_i.last_op)) begin
+      // CLIC: Exluding pointer fetches as they are not instructions
+      if (ex_valid_i && wb_ready_i && !(lsu_split_ex_i || !id_ex_pipe_i.last_op || !ex_wb_pipe_i.instr_meta.clic_ptr)) begin
         wb_counter_event <= 1'b1;
       end else begin
         // Keep event flag high while WB is halted, as we don't know if it will retire yet

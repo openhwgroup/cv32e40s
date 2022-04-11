@@ -35,7 +35,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
   parameter int          PMP_GRANULARITY = 0,
   parameter int          PMP_NUM_REGIONS = 0,
-  parameter bit          DUMMY_INSTRUCTIONS = 0
+  parameter bit          DUMMY_INSTRUCTIONS = 0,
+  parameter int unsigned MTVT_ADDR_WIDTH = 26,
+  parameter int          SMCLIC_ID_WIDTH = 5
 )
 (
   input  logic          clk,
@@ -57,6 +59,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   input  logic          last_op_id_i,
   input  logic          last_op_ex_i,
   output logic          pc_err_o,               // Error signal for the pc checker module
+  input  logic [MTVT_ADDR_WIDTH-1:0]   mtvt_addr_i,            // Base address for CLIC vectoring
 
   input ctrl_fsm_t      ctrl_fsm_i,
   input  logic          trigger_match_i,
@@ -107,6 +110,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic              prefetch_valid;
   inst_resp_t        prefetch_instr;
   privlvl_t          prefetch_priv_lvl;
+  logic              prefetch_is_ptr;
 
   logic              illegal_c_insn;
 
@@ -118,6 +122,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic              prefetch_trans_valid;
   logic              prefetch_trans_ready;
   logic [31:0]       prefetch_trans_addr;
+  logic              prefetch_trans_data_access;
   inst_resp_t        prefetch_inst_resp;
   logic              prefetch_one_txn_pend_n;
 
@@ -151,11 +156,14 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       PC_DRET:     branch_addr_n = dpc_i;
       PC_WB_PLUS4: branch_addr_n = ctrl_fsm_i.pipe_pc;                                          // Jump to next instruction forces prefetch buffer reload
       PC_TRAP_EXC: branch_addr_n = {mtvec_addr_i, 7'h0};                                        // All the exceptions go to base address
-      PC_TRAP_IRQ: branch_addr_n = {mtvec_addr_i, ctrl_fsm_i.m_exc_vec_pc_mux, 2'b00};          // interrupts are vectored
+      PC_TRAP_IRQ: branch_addr_n = {mtvec_addr_i, ctrl_fsm_i.mtvec_pc_mux, 2'b00};     // interrupts are vectored
       PC_TRAP_DBD: branch_addr_n = {dm_halt_addr_i[31:2], 2'b0};
       PC_TRAP_DBE: branch_addr_n = {dm_exception_addr_i[31:2], 2'b0};
       PC_TRAP_NMI: branch_addr_n = USE_DEPRECATED_FEATURE_SET ? {nmi_addr_i[31:2], 2'b00} :
                                                                 {mtvec_addr_i, NMI_MTVEC_INDEX, 2'b00};
+      PC_TRAP_CLICV:     branch_addr_n = {mtvt_addr_i, ctrl_fsm_i.mtvt_pc_mux[SMCLIC_ID_WIDTH-1:0], 2'b00};
+      // CLIC spec requires to clear bit 0. This clearing is done in the alignment buffer.
+      PC_TRAP_CLICV_TGT: branch_addr_n = if_id_pipe_o.instr.bus_resp.rdata;
       default:;
     endcase
   end
@@ -179,10 +187,12 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .prefetch_instr_o    ( prefetch_instr              ),
     .prefetch_addr_o     ( pc_if_o                     ),
     .prefetch_priv_lvl_o ( prefetch_priv_lvl           ),
+    .prefetch_is_ptr_o   ( prefetch_is_ptr             ),
 
     .trans_valid_o       ( prefetch_trans_valid        ),
     .trans_ready_i       ( prefetch_trans_ready        ),
     .trans_addr_o        ( prefetch_trans_addr         ),
+    .trans_data_access_o ( prefetch_trans_data_access  ),
 
     .resp_valid_i        ( prefetch_resp_valid         ),
     .resp_i              ( prefetch_inst_resp          ),
@@ -325,9 +335,11 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     instr_meta_n            = '0;
     instr_meta_n.dummy      = dummy_insert;
     instr_meta_n.compressed = dummy_insert ? 1'b0 : instr_compressed_int;
+    instr_meta_n.clic_ptr   = prefetch_is_ptr;
   end
 
   // IF-ID pipeline registers, frozen when the ID stage is stalled
+  // Todo: E40S: We will probably need to prevent dummy instructions between pointer fetcher and the pointer target fetch
   always_ff @(posedge clk, negedge rst_n)
   begin : IF_ID_PIPE_REGISTERS
     if (rst_n == 1'b0) begin
@@ -362,10 +374,11 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   cv32e40s_compressed_decoder
   compressed_decoder_i
   (
-    .instr_i         ( prefetch_instr          ),
-    .instr_o         ( instr_decompressed      ),
-    .is_compressed_o ( instr_compressed_int    ),
-    .illegal_instr_o ( illegal_c_insn          )
+    .instr_i            ( prefetch_instr          ),
+    .instr_is_ptr_i     ( prefetch_is_ptr         ),
+    .instr_o            ( instr_decompressed      ),
+    .is_compressed_o    ( instr_compressed_int    ),
+    .illegal_instr_o    ( illegal_c_insn          )
   );
 
 

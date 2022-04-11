@@ -271,7 +271,7 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
 
       OPCODE_FENCE: begin
         decoder_ctrl_o.sys_en = 1'b1;
-
+        // todo: We may not want the fence handshake for regular (none .i) fences
         unique case (instr_rdata_i[14:12])
           3'b000: begin // FENCE (FENCE.I instead, a bit more conservative)
             // Flush pipeline

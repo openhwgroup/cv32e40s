@@ -27,8 +27,11 @@ module cv32e40s_alignment_buffer_sva
    input logic [0:2]               valid_q,
    input ctrl_fsm_t                ctrl_fsm_i,
    input logic [31:0]              branch_addr_i,
+   input logic                     fetch_branch_o,
    input logic [31:0]              fetch_branch_addr_o,
    input logic                     fetch_valid_o,
+   input logic                     fetch_ready_i,
+   input logic                     fetch_data_access_o,
    input logic [2:0] instr_cnt_n,
    input logic [2:0] instr_cnt_q,
    input logic                     instr_valid_o,
@@ -221,7 +224,7 @@ module cv32e40s_alignment_buffer_sva
   // Check that the buffer does not signal instruction valid when the privilege level is updated
   // Updates to the privilege level shall also clear the buffer
   property p_priv_lvl_change_clear_buf;
-    @(posedge clk) disable iff (!rst_n) 
+    @(posedge clk) disable iff (!rst_n)
       ($changed(instr_priv_lvl_o) |-> !instr_valid_o ##1 (valid_q == '0));
   endproperty
 
@@ -235,7 +238,7 @@ module cv32e40s_alignment_buffer_sva
   // Assert that a privilege level change is always accompanied by pc_set or killing of IF (which will happen upon fence.i)
   // ##1 is to avoid trigging in the first cycle
   property p_priv_lvl_change_pc_set;
-    @(posedge clk) disable iff (!rst_n) 
+    @(posedge clk) disable iff (!rst_n)
       (##1 $changed(instr_priv_lvl_o) |-> ctrl_fsm_i.pc_set || ctrl_fsm_i.kill_if);
   endproperty
 
@@ -273,6 +276,6 @@ module cv32e40s_alignment_buffer_sva
       else
         `uvm_error("Alignment buffer SVA", "Read pointer(2) illegal value")
 
-      
+
 endmodule // cv32e40s_alignment_buffer_sva
 

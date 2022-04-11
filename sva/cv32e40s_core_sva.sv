@@ -45,11 +45,11 @@ module cv32e40s_core_sva
   input logic        irq_ack, // irq ack output
   input ex_wb_pipe_t ex_wb_pipe,
   input id_ex_pipe_t id_ex_pipe,
-  input logic        sys_en_id, 
-  input logic        sys_mret_insn_id, 
+  input logic        sys_en_id,
+  input logic        sys_mret_insn_id,
   input logic        wb_valid,
   input logic        branch_taken_in_ex,
-  
+
   input privlvl_t    priv_lvl,
   input privlvl_t    priv_lvl_if,
   input privlvl_t    priv_lvl_if_q,
@@ -112,18 +112,17 @@ if(SMCLIC) begin
     @(posedge clk)
     |mie == 1'b0;
   endproperty
-
   a_clic_mie_tieoff : assert property(p_clic_mie_tieoff) else `uvm_error("core", "MIE not tied to 0 in CLIC mode")
 
   property p_clic_mip_tieoff;
     @(posedge clk)
     |mip == 1'b0;
   endproperty
-
   a_clic_mip_tieoff : assert property(p_clic_mip_tieoff) else `uvm_error("core", "MIP not tied to 0 in CLIC mode")
 
   //todo: add CLIC related assertions (level thresholds etc)
 end else begin
+  // SMCLIC == 0
   // Check that a taken IRQ is actually enabled (e.g. that we do not react to an IRQ that was just disabled in MIE)
   // The actual mie_n value may be different from mie_q if mie is not
   // written to.
@@ -147,6 +146,14 @@ end else begin
   endproperty
 
   a_irq_enabled_1 : assert property(p_irq_enabled_1) else `uvm_error("core", "Assertion a_irq_enabled_1 failed")
+
+  // Assert that no pointer can be in any pipeline stage when SMCLIC == 0
+  property p_clic_noptr_in_pipeline;
+    @(posedge clk) disable iff (!rst_ni)
+      1'b1 |-> (!if_id_pipe.instr_meta.clic_ptr && !id_ex_pipe.instr_meta.clic_ptr && !ex_wb_pipe.instr_meta.clic_ptr);
+  endproperty
+
+  a_clic_noptr_in_pipeline : assert property(p_clic_noptr_in_pipeline) else `uvm_error("core", "CLIC pointer in pipeline when CLIC is not configured.")
 end // SMCLIC
 
 // First illegal instruction decoded
@@ -395,19 +402,19 @@ always_ff @(posedge clk , negedge rst_ni)
                     |-> (ctrl_fsm.debug_mode && dcsr.step))
     else `uvm_error("core", "Multiple instructions retired during single stepping")
 
-  
-  // Check priviledge level consistency accross the pipeline. 
+
+  // Check priviledge level consistency accross the pipeline.
   // The only scenario where priv_lvl_if_q and priv_lvl are allowed to differ is when there's an MRET in the pipe
   // MRET in ID will immediatly update the priviledge level for the IF stage, but priv_lvl won't be updated until the MRET retires in the WB stage
-  a_priv_lvl_consistency : 
+  a_priv_lvl_consistency :
     assert property (@(posedge clk) disable iff (!rst_ni)
                      (priv_lvl_if_q != priv_lvl) |-> ((sys_en_id && sys_mret_insn_id) || (id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn) || (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn)))
     else `uvm_error("core", "IF priviledge level not consistent with current priviledge level")
-  
+
   // Assert that change to user mode only happens when and MRET is in ID and mstatus.mpp == PRIV_LVL_U
   a_priv_lvl_u_mode_mret:
     assert property (@(posedge clk) disable iff (!rst_ni)
-                     $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_U) |-> 
+                     $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_U) |->
                      ((sys_en_id && sys_mret_insn_id) && if_id_pipe.instr_valid && (cs_registers_mstatus_q.mpp == PRIV_LVL_U)))
     else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
 
@@ -424,10 +431,10 @@ always_ff @(posedge clk , negedge rst_ni)
   // ##1 is to avoid trigging the assertion in cycle 1
   a_priv_lvl_m_mode_exception:
     assert property (@(posedge clk) disable iff (!rst_ni)
-                     ##1 $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_M) |-> 
+                     ##1 $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_M) |->
                      (ctrl_fsm.pc_set && pc_mux_is_trap || ctrl_fsm.kill_if))
     else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
-    
+
   // Assert that all exceptions trap to machine mode, except when in debug mode (todo: revisit when debug related part of user mode is implemented)
   a_priv_lvl_exception :
     assert property (@(posedge clk) disable iff (!rst_ni)
@@ -441,7 +448,7 @@ always_ff @(posedge clk , negedge rst_ni)
                       (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_MRET))
                       |-> (priv_lvl_if == cs_registers_mstatus_q.mpp))
     else `uvm_error("core", "MEPC fetch not performed with priviledge level from mstatus.mpp")
-        
+
   // Check that instruction fetches are always non-bufferable
   a_instr_non_bufferable :
     assert property (@(posedge clk) disable iff (!rst_ni)

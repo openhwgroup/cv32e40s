@@ -83,7 +83,9 @@ module cv32e40s_controller_fsm_sva
   input logic           last_op_id_i,
   input logic           sys_mret_id_i,
   input logic           csr_wr_in_wb_flush_i,
-  input logic           lsu_trans_valid
+  input logic           lsu_trans_valid,
+  input logic           lsu_write_buffer_empty_i,
+  input logic           irq_clic_shv_i
 );
 
 
@@ -144,7 +146,7 @@ module cv32e40s_controller_fsm_sva
       else `uvm_error("controller", "Interrupt taken while oustanding transactions are pending")
 
   // Ensure <stage>.instr_valid is zero following a kill_<prev_stage>
- /* TODO:OK:low Failing when bubble is inserted in ID (id_ready_o==0) when WFI is in EX. 
+ /* TODO:OK:low Failing when bubble is inserted in ID (id_ready_o==0) when WFI is in EX.
             Will investigate how to solve. Agreed that this assertion is maybe too strict. We only need to guarantee that if a stage is killed, that the instruction in that stage never reaches the following stage with instr_valid = 1 (it doesn't need instr_valid of the next stage 0 in the following cycle.
   a_kill_if :
   assert property (@(posedge clk) disable iff (!rst_n)
@@ -187,7 +189,7 @@ module cv32e40s_controller_fsm_sva
 
   // Check that no instructions are valid in ID or EX when a single step is taken
   // In case of interrupt during step, the instruction being stepped could be in any stage, and will get killed.
-  // Exception if first phase of a misaligned LSU gets an MPU error, then 
+  // Exception if first phase of a misaligned LSU gets an MPU error, then
   // the controller will kill the pipeline and jump to debug with dpc set to exception handler,
   // while id_ex_pipe may still contain the valid last phase of the misaligned LSU
   // todo:ok: Add a second assert to check above exception?
@@ -218,12 +220,12 @@ module cv32e40s_controller_fsm_sva
   a_fencei_hndshk_fencei_wb :
     assert property (@(posedge clk) disable iff (!rst_n)
            fencei_flush_req_o |-> fencei_in_wb)
-      else `uvm_error("controller", "Fencei request when no fencei in writeback")    
+      else `uvm_error("controller", "Fencei request when no fencei in writeback")
 
   // Assert that the fencei request is set the cycle after fencei instruction enters WB (if fencei_ready=1 and there are no higher priority events)
   a_fencei_hndshk_req_when_fencei_wb :
     assert property (@(posedge clk) disable iff (!rst_n)
-           $rose(fencei_in_wb && fencei_ready) && !(pending_nmi || (pending_debug && debug_allowed) || (pending_interrupt && interrupt_allowed)) 
+           $rose(fencei_in_wb && fencei_ready) && !(pending_nmi || (pending_debug && debug_allowed) || (pending_interrupt && interrupt_allowed))
                      |=> $rose(fencei_flush_req_o))
       else `uvm_error("controller", "Fencei in WB did not result in fencei_flush_req_o")
 
@@ -240,7 +242,7 @@ module cv32e40s_controller_fsm_sva
     assert property (@(posedge clk) disable iff (!rst_n)
            ##1 $fell(fencei_flush_req_o) |-> wb_valid_i)
       else `uvm_error("controller", "Fencei handshake completion not followed by wb_valid")
-    
+
   // assert that fencei_flush_req_o goes low the cycle after req&&ack
   a_fencei_clear_req :
     assert property (@(posedge clk) disable iff (!rst_n)
@@ -298,7 +300,7 @@ module cv32e40s_controller_fsm_sva
    assert property (@(posedge clk) disable iff (!rst_n)
                     ctrl_fsm_o.mret_jump_id |-> !(csrw_ex_wb && !mret_self_stall))
      else `uvm_error("controller", "Priviledge level updated by MRET in ID while CSR write is present in EX or WB")
-    
+
   // mret in User mode must result in illegal instruction
   a_mret_umode :
     assert property (@(posedge clk) disable iff (!rst_n)
@@ -363,7 +365,7 @@ module cv32e40s_controller_fsm_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      ctrl_fsm_o.mhpmevent.id_jalr_stall |-> ctrl_fsm_o.mhpmevent.id_invalid)
       else `uvm_error("controller", "mhpmevent.id_jalr_stall not a subset of mhpmevent.id_invalid")
-    
+
   // Assert that id_ld_stall is a subset of id_invalid
   a_mhpevent_id_ld_stall_subset:
     assert property (@(posedge clk) disable iff (!rst_n)
@@ -641,5 +643,11 @@ endgenerate
                     (valid_cnt < (retire_at_error ? 2'b10 : 2'b11)))
     else `uvm_error("controller", "NMI handler not taken within two instruction retirements")
 
-endmodule // cv32e40s_controller_fsm_sva
+
+  // When a CLIC SHV interrupt is taken, the write buffer must be empty
+  a_clic_shv_wbuf_empty:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  (irq_clic_shv_i && ctrl_fsm_o.irq_ack) |-> lsu_write_buffer_empty_i)
+    else `uvm_error("controller", "LSU write buffer not empty when fetching CLIC pointer")
+endmodule // cv32e40x_controller_fsm_sva
 

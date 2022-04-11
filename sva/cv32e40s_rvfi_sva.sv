@@ -25,8 +25,11 @@
 
 module cv32e40s_rvfi_sva
   import uvm_pkg::*;
-  import cv32e40s_pkg::*;
-  import cv32e40s_rvfi_pkg::*;
+  import cv32e40x_pkg::*;
+  import cv32e40x_rvfi_pkg::*;
+  #(
+    parameter bit SMCLIC = 0
+  )
   (
    input logic             clk_i,
    input logic             rst_ni,
@@ -36,10 +39,6 @@ module cv32e40s_rvfi_sva
    input rvfi_trap_t       rvfi_trap,
    input logic [2:0]       rvfi_dbg,
 
-   input rvfi_wu_t         rvfi_wu,
-   input logic             rvfi_sleep,
-
-   input logic             core_sleep_i,
    input ctrl_fsm_t        ctrl_fsm_i,
    input logic [31:0]      rvfi_csr_dcsr_rdata,
    input logic [31:0]      rvfi_csr_mcause_rdata,
@@ -70,10 +69,16 @@ module cv32e40s_rvfi_sva
   // Ideally, we should assert that every irq_ack eventually leads to rvfi_intr,
   // but since there can be an infinite delay between irq_ack and rvfi_intr (e.g. because of bus stalls), we're settling for asserting
   // that irq_ack leads to RVFI capturing a trap (in_trap[IF_STAGE] = 1)
-  a_irq_ack_rvfi_capture :
-    assert property (@(posedge clk_i) disable iff (!rst_ni)
-                     (irq_ack |=> in_trap[STAGE_IF].intr))
-      else `uvm_error("rvfi", "irq_ack not captured by RVFI")
+
+  // todo: for CLIC, the irq ack comes when the pointer fetch is initiated
+  // We should probably set in_trap.intr for the first intstruction of the handler, which comes after the second fetch.
+  if (!SMCLIC) begin
+    a_irq_ack_rvfi_capture :
+      assert property (@(posedge clk_i) disable iff (!rst_ni)
+                      (irq_ack |=> in_trap[STAGE_IF].intr))
+        else `uvm_error("rvfi", "irq_ack not captured by RVFI")
+  end
+
 
   // Helper signal, indicating debug cause
   // Special case for debug entry from debug mode caused by EBREAK as it is not captured by debug_cause_i
@@ -191,56 +196,6 @@ module cv32e40s_rvfi_sva
                      ((rvfi_csr_mcause_rdata[7:0] == INT_CAUSE_LSU_LOAD_FAULT) || (rvfi_csr_mcause_rdata[7:0] == INT_CAUSE_LSU_STORE_FAULT)))
       else `uvm_error("rvfi", "dcsr.nmip not followed by rvfi_intr and NMI handler")
 
-
-  // Check that rvfi_sleep is always followed by rvfi_wu
-  a_always_rvfi_wu_after_rvfi_sleep:
-    assert property (@(posedge clk_i) disable iff (!rst_ni)
-                     s_goto_next_rvfi_valid(rvfi_sleep) |-> rvfi_wu.wu)
-      else `uvm_error("rvfi", "rvfi_sleep asserted without being followed by rvfi_wu")
-
-
-  logic previous_instruction_was_sleep;
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-      previous_instruction_was_sleep <= 1'b0;
-    end else begin
-      if ( rvfi_valid ) begin
-        // Store sleep signal from previous valid instruction
-        previous_instruction_was_sleep <= rvfi_sleep;
-      end
-    end
-  end
-
-  // Check that rvfi_wu is only asserted after fist having signalled rvfi_sleep
-  a_always_rvfi_sleep_before_rvfi_wu:
-    assert property (@(posedge clk_i) disable iff (!rst_ni)
-                     (rvfi_wu.wu && rvfi_valid) |-> previous_instruction_was_sleep)
-      else `uvm_error("rvfi", "rvfi_wu asserted without a previous rvfi_sleep")
-
-  // Check that the last instruction before (or at the same time as) core_sleep_o goes high has rvfi_sleep set
-  a_core_sleep_always_preceeded_by_instr_with_rvfi_sleep:
-    assert property (@(posedge clk_i) disable iff (!rst_ni)
-                     core_sleep_i |-> (rvfi_sleep || previous_instruction_was_sleep))
-      else `uvm_error("rvfi", "The last instruction before asserted core_sleep_o did not have rvfi_sleep set")
-
-  // Check that rvfi_sleep is always set when the core is sleeping
-  // This assertion is stricter than needed (behavior only specified for valid insructions)
-  // but is added as a sanity check for this implementation
-  a_always_rvfi_sleep_when_core_sleep:
-    assert property (@(posedge clk_i) disable iff (!rst_ni)
-                     core_sleep_i |-> rvfi_sleep)
-      else `uvm_error("rvfi", "rvfi_sleep not asserted even though core_sleep_o was set")
-
-  a_no_pending_irq_in_csr_at_sleep_entry :
-    assert property (@(posedge clk_i) disable iff (!rst_ni)
-                     (rvfi_sleep && rvfi_valid) |-> !(|(rvfi_csr_mie_rdata & rvfi_csr_mip_rdata)))
-      else `uvm_error("rvfi", "rvfi_sleep set even though mie and mip signal pending interrupt")
-
-  a_no_sleep_if_interrupt_is_pending :
-    assert property (@(posedge clk_i) disable iff (!rst_ni)
-                     (|(rvfi_csr_mie_rdata & rvfi_csr_mip_rdata) && rvfi_valid) |-> !rvfi_sleep)
-      else `uvm_error("rvfi", "rvfi_sleep was set even though mie and mip signal pending interrupt")
-
-endmodule : cv32e40s_rvfi_sva
+endmodule : cv32e40x_rvfi_sva
 
 
