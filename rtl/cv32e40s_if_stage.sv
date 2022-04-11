@@ -210,10 +210,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // TODO: The prot bits are currently not checked for correctness anywhere
   assign core_trans.addr = prefetch_trans_addr;
   assign core_trans.dbg  = ctrl_fsm_i.debug_mode_if;
-  assign core_trans.prot[0] = 1'b0;                     // Transfers from IF stage are instruction transfers
-  assign core_trans.prot[2:1] = PRIV_LVL_M;             // Machine mode. TODO: connect to priv_lvl
-  assign core_trans.memtype = 2'b00;                    // memtype is assigned in the MPU
-  assign core_trans.achk = 12'b0;                       // Integrity signals assigned in bus interface
+  assign core_trans.prot[0] = prefetch_trans_data_access;  // Transfers from IF stage are instruction transfers
+  assign core_trans.prot[2:1] = PRIV_LVL_M;                // Machine mode. TODO: connect to priv_lvl
+  assign core_trans.memtype = 2'b00;                       // memtype is assigned in the MPU
+  assign core_trans.achk = 12'b0;                          // Integrity signals assigned in bus interface
 
   cv32e40s_mpu
   #(
@@ -234,7 +234,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
                                                        // Misaligned access to main is allowed, and accesses outside main will
                                                        // result in instruction access fault (which will have priority over
                                                        //  misaligned from I/O fault)
-    .if_data_access_i     ( 1'b0                    ), // Indicate data access from IF stage. TODO: Use for table jumps and CLIC hardware vectoring
+    .core_if_data_access_i( prefetch_trans_data_access), // Indicate data access from IF stage. TODO: Use for table jumps and CLIC hardware vectoring
     .priv_lvl_i           ( prefetch_priv_lvl       ),
     .csr_pmp_i            ( csr_pmp_i               ),
 

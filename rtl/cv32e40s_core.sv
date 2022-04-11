@@ -774,7 +774,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .wb_valid_o                 ( wb_valid                     ),
 
     // eXtension interface
-    .xif_result_if              ( xif.cpu_result               )
+    .xif_result_if              ( xif.cpu_result               ),
 
     // CSR/CLIC pointer inputs
     .clic_pa_valid_i            ( csr_clic_pa_valid            ),

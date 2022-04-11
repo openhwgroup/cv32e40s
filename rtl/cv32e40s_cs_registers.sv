@@ -53,7 +53,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter lfsr_cfg_t   LFSR0_CFG        = LFSR_CFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR1_CFG        = LFSR_CFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR2_CFG        = LFSR_CFG_DEFAULT,
-  parameter int          DBG_NUM_TRIGGERS = 1 // todo: implement support for DBG_NUM_TRIGGERS != 1
+  parameter int          DBG_NUM_TRIGGERS = 1, // todo: implement support for DBG_NUM_TRIGGERS != 1
   parameter int unsigned MTVT_ADDR_WIDTH  = 26
 )
 (
@@ -725,11 +725,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                               default: 'b0
                             };
 
+    mstatus_we               = 1'b0;
 
     // mstatus.mpp is WARL, make sure only legal values are written
     if ((mstatus_n.mpp != PRIV_LVL_M) && (mstatus_n.mpp != PRIV_LVL_U)) begin
       mstatus_n.mpp = PRIV_LVL_M;
     end
+
+    priv_lvl_n      = priv_lvl_q;
+    priv_lvl_we     = 1'b0;
 
     mtvec_n.addr             = csr_mtvec_init_i ? mtvec_addr_i[31:7] : csr_wdata_int[31:7];
     if (USE_DEPRECATED_FEATURE_SET) begin
@@ -738,6 +742,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
     mtvec_n.zero0            = mtvec_q.zero0;
     mtvec_we                 = csr_mtvec_init_i;
+
+    mcounteren_n    = csr_wdata_int;
+    mcounteren_we   = 1'b0;
 
     if (SMCLIC) begin
       mtvec_n.mode             = mtvec_q.mode; // mode is WARL 0x3 when using CLIC
@@ -1292,7 +1299,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   generate
     if (SMCLIC) begin : smclic_regs
 
-      cv32e40x_csr #(
+      cv32e40s_csr #(
         .WIDTH      (32),
         .SHADOWCOPY (1'b0),
         .RESETVALUE (MTVEC_CLIC_RESET_VAL)
@@ -1304,7 +1311,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_data_o  (mtvec_q),
         .rd_error_o (mtvec_rd_error)
       );
-      cv32e40x_csr #(
+      cv32e40s_csr #(
         .WIDTH      (32),
         .MASK       (CSR_MTVT_MASK),
         .SHADOWCOPY (SECURE),
@@ -1400,7 +1407,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign mie_q  = 32'h0;
 
     end else begin : basic_mode_regs
-      cv32e40x_csr #(
+      cv32e40s_csr #(
         .WIDTH      (32),
         .SHADOWCOPY (1'b0),
         .RESETVALUE (MTVEC_BASIC_RESET_VAL)

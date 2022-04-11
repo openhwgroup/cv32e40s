@@ -34,7 +34,7 @@ module cv32e40s_core_sva
   input logic        rst_ni,
 
   input ctrl_fsm_t   ctrl_fsm,
-  input logic [4:0]  exc_cause,
+  input logic [10:0]  exc_cause,
   input logic [31:0] mie,
   input logic [31:0] mip,
   input dcsr_t       dcsr,

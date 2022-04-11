@@ -649,5 +649,5 @@ endgenerate
   assert property (@(posedge clk) disable iff (!rst_n)
                   (irq_clic_shv_i && ctrl_fsm_o.irq_ack) |-> lsu_write_buffer_empty_i)
     else `uvm_error("controller", "LSU write buffer not empty when fetching CLIC pointer")
-endmodule // cv32e40x_controller_fsm_sva
+endmodule // cv32e40s_controller_fsm_sva
 

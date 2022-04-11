@@ -144,5 +144,5 @@ module cv32e40s_load_store_unit_sva
                   !X_EXT |-> !xif_res_q)
     else `uvm_error("load_store_unit", "XIF transaction result despite X_EXT being disabled")
 
-endmodule // cv32e40x_load_store_unit_sva
+endmodule // cv32e40s_load_store_unit_sva
 

@@ -248,7 +248,7 @@ module cv32e40s_wrapper
                               .last_op_id_i        (core_i.controller_i.last_op_id_i),
                               .lsu_trans_valid     (core_i.load_store_unit_i.trans_valid),
                               .*);
-  bind cv32e40x_cs_registers:        core_i.cs_registers_i              cv32e40x_cs_registers_sva  #(.SMCLIC(SMCLIC)) cs_registers_sva (.*);
+  bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva  #(.SMCLIC(SMCLIC)) cs_registers_sva (.*);
 
   bind cv32e40s_load_store_unit:
     core_i.load_store_unit_i cv32e40s_load_store_unit_sva #(.DEPTH (DEPTH)) load_store_unit_sva (
@@ -374,7 +374,7 @@ module cv32e40s_wrapper
 
   bind cv32e40s_rvfi:
     rvfi_i
-    cv32e40x_rvfi_sva
+    cv32e40s_rvfi_sva
       #(.SMCLIC(SMCLIC))
       rvfi_sva(.irq_ack(core_i.irq_ack),
                .dbg_ack(core_i.dbg_ack),
@@ -392,7 +392,7 @@ module cv32e40s_wrapper
 
       );
 
-    cv32e40x_rvfi
+    cv32e40s_rvfi
       #(.SMCLIC(SMCLIC))
       rvfi_i
         (.clk_i                    ( clk_i                                                                ),
@@ -510,8 +510,8 @@ module cv32e40s_wrapper
          .csr_mip_q_i              ( core_i.cs_registers_i.mip_i                                          ),
          .csr_mip_we_i             ( core_i.cs_registers_i.csr_we_int &&
                                      (core_i.cs_registers_i.csr_waddr == CSR_MIP)                         ),
-         .csr_mnxti_n_i            ( core_i.cs_registers_i.mnxti_n                                        ),
-         .csr_mnxti_q_i            ( core_i.cs_registers_i.mnxti_q                                        ),
+         .csr_mnxti_n_i            ( 1'b0 /*core_i.cs_registers_i.mnxti_n*/                               ), // todo: handle mnxti within RVFI
+         .csr_mnxti_q_i            ( 1'b0 /*core_i.cs_registers_i.mnxti_q */                              ), // todo: handle mnxti within RVFI
          .csr_mnxti_we_i           ( core_i.cs_registers_i.mnxti_we                                       ),
          .csr_mintstatus_n_i       ( core_i.cs_registers_i.mintstatus_n                                   ),
          .csr_mintstatus_q_i       ( core_i.cs_registers_i.mintstatus_q                                   ),

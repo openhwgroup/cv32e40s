@@ -229,7 +229,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
       assign instr_fetch_access = core_if_data_access_i ? 1'b0 : 1'b1;
       assign load_access        = core_if_data_access_i ? 1'b1 : 1'b0;
       assign core_trans_we      = 1'b0;
-      assign pmp_req_type       = if_data_access_i ? PMP_ACC_READ : PMP_ACC_EXEC;
+      assign pmp_req_type       = core_if_data_access_i ? PMP_ACC_READ : PMP_ACC_EXEC;
     end
     else begin: mpu_lsu
       assign instr_fetch_access = 1'b0;

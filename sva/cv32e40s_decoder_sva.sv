@@ -35,7 +35,7 @@ module cv32e40s_decoder_sva
   input decoder_ctrl_t  decoder_i_ctrl,
   input decoder_ctrl_t  decoder_b_ctrl,
   input decoder_ctrl_t  decoder_ctrl_mux,
-  input logic [31:0]    instr_rdata_i,
+  input logic [31:0]    instr_rdata,
   input if_id_pipe_t    if_id_pipe
 );
 
@@ -54,7 +54,7 @@ module cv32e40s_decoder_sva
   // Exclude CLIC pointers
   property p_uncompressed_lsb;
     @(posedge clk) disable iff(!rst_n)
-      !if_id_pipe.instr_meta.clic_ptr |-> (instr_rdata_i[1:0] == 2'b11);
+      !if_id_pipe.instr_meta.clic_ptr |-> (instr_rdata[1:0] == 2'b11);
   endproperty
 
 

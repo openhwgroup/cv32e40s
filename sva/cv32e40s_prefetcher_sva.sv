@@ -177,4 +177,4 @@ module cv32e40s_prefetcher_sva import cv32e40s_pkg::*;
     assert property(p_data_q_no_branch)
     else
       `uvm_error("Prefetcher SVA", "data_q is set on branch.")
-endmodule: cv32e40x_prefetcher_sva
+endmodule: cv32e40s_prefetcher_sva

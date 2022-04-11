@@ -24,7 +24,7 @@
 
 module cv32e40s_cs_registers_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
 #(
     parameter bit SMCLIC = 0
   )
@@ -54,5 +54,5 @@ module cv32e40s_cs_registers_sva
                     1'b1 |-> mtvec_mode_o == 2'b11)
       else `uvm_error("cs_registers", "mtvec_mode is not 2'b11 in CLIC mode")
   end
-endmodule // cv32e40x_cs_registers_sva
+endmodule // cv32e40s_cs_registers_sva
 

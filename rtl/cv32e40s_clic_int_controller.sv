@@ -19,14 +19,14 @@
 // Engineers       Oystein Knauserud -     oystein.knauserud@silabs.com       //
 //                                                                            //
 // Design Name:    CLIC int controller                                        //
-// Project Name:   CV32E40X                                                   //
+// Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Controller for handling CLIC interrupts                    //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_clic_int_controller import cv32e40x_pkg::*;
+module cv32e40s_clic_int_controller import cv32e40s_pkg::*;
 #(
     parameter int SMCLIC_ID_WIDTH = 5
 )
@@ -157,4 +157,4 @@ module cv32e40x_clic_int_controller import cv32e40x_pkg::*;
   assign mnxti_irq_id_o    = clic_irq_id_q;
   assign mnxti_irq_level_o = clic_irq_level_q;
 
-endmodule // cv32e40x_clic_int_controller
+endmodule // cv32e40s_clic_int_controller

@@ -25,8 +25,8 @@
 
 module cv32e40s_rvfi_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
-  import cv32e40x_rvfi_pkg::*;
+  import cv32e40s_pkg::*;
+  import cv32e40s_rvfi_pkg::*;
   #(
     parameter bit SMCLIC = 0
   )
@@ -196,6 +196,6 @@ module cv32e40s_rvfi_sva
                      ((rvfi_csr_mcause_rdata[7:0] == INT_CAUSE_LSU_LOAD_FAULT) || (rvfi_csr_mcause_rdata[7:0] == INT_CAUSE_LSU_STORE_FAULT)))
       else `uvm_error("rvfi", "dcsr.nmip not followed by rvfi_intr and NMI handler")
 
-endmodule : cv32e40x_rvfi_sva
+endmodule : cv32e40s_rvfi_sva
 
 

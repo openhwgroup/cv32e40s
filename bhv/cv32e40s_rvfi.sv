@@ -657,13 +657,6 @@ module cv32e40s_rvfi
   end
 
 
-  // WFI instructions can use two cycles in WB if there are no flopped pending wakeup sources.
-  // In this case their retirement happens in the second cycle, but becuase it makes no difference functionally in rtl,
-  // wb_valid is set in the first WFI cycle to avoid introducing support logic for a multicycle WB stage.
-  // Moving wb_valid to second cycle of WFI instructions in these cases is therefore needed.
-  assign wb_valid_adjusted = (sys_wfi_insn_wb_i && ((ctrl_fsm_ns_i == SLEEP) || (ctrl_fsm_cs_i == SLEEP))) ?
-                             wb_valid_wfi_delayed :
-                             wb_valid_i;
   // WFI instructions retire when their wake-up condition is present.
   // The wake-up condition is only checked in the SLEEP state of the controller FSM.
   assign wb_valid_adjusted = sys_wfi_insn_wb_i ? (ctrl_fsm_cs_i == SLEEP) && (ctrl_fsm_ns_i == FUNCTIONAL) : wb_valid_i;
