@@ -124,12 +124,9 @@ module cv32e40s_wrapper
   // CLIC Interface
   input  logic                       clic_irq_i,
   input  logic [SMCLIC_ID_WIDTH-1:0] clic_irq_id_i,
-  input  logic [ 7:0]                clic_irq_il_i,
+  input  logic [ 7:0]                clic_irq_level_i,
   input  logic [ 1:0]                clic_irq_priv_i,
-  input  logic                       clic_irq_hv_i,
-  output logic [SMCLIC_ID_WIDTH-1:0] clic_irq_id_o,
-  output logic                       clic_irq_mode_o,
-  output logic                       clic_irq_exit_o,
+  input  logic                       clic_irq_shv_i,
 
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
@@ -251,7 +248,7 @@ module cv32e40s_wrapper
                               .last_op_id_i        (core_i.controller_i.last_op_id_i),
                               .lsu_trans_valid     (core_i.load_store_unit_i.trans_valid),
                               .*);
-  bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva cs_registers_sva (.*);
+  bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva  #(.SMCLIC(SMCLIC)) cs_registers_sva (.*);
 
   bind cv32e40s_load_store_unit:
     core_i.load_store_unit_i cv32e40s_load_store_unit_sva #(.DEPTH (DEPTH)) load_store_unit_sva (
@@ -314,6 +311,7 @@ module cv32e40s_wrapper
   bind cv32e40s_decoder: core_i.id_stage_i.decoder_i cv32e40s_decoder_sva
     decoder_sva(.clk   (core_i.id_stage_i.clk),
                 .rst_n (core_i.id_stage_i.rst_n),
+                .if_id_pipe (core_i.if_id_pipe),
                 .*);
 
   // MPU assertions
@@ -377,11 +375,11 @@ module cv32e40s_wrapper
   bind cv32e40s_rvfi:
     rvfi_i
     cv32e40s_rvfi_sva
+      #(.SMCLIC(SMCLIC))
       rvfi_sva(.irq_ack(core_i.irq_ack),
                .dbg_ack(core_i.dbg_ack),
                .ebreak_in_wb_i(core_i.controller_i.controller_fsm_i.ebreak_in_wb),
                .nmi_addr_i(core_i.nmi_addr_i),
-               .core_sleep_i(core_i.core_sleep_o),
                .*);
 
 `endif //  `ifndef COREV_ASSERT_OFF
@@ -395,6 +393,7 @@ module cv32e40s_wrapper
       );
 
     cv32e40s_rvfi
+      #(.SMCLIC(SMCLIC))
       rvfi_i
         (.clk_i                    ( clk_i                                                                ),
          .rst_ni                   ( rst_ni                                                               ),
@@ -464,6 +463,8 @@ module cv32e40s_wrapper
          .single_step_allowed_i    ( core_i.controller_i.controller_fsm_i.single_step_allowed             ),
          .nmi_pending_i            ( core_i.controller_i.controller_fsm_i.nmi_pending_q                   ),
          .nmi_is_store_i           ( core_i.controller_i.controller_fsm_i.nmi_is_store_q                  ),
+         .clic_nmi_pending_i       ( core_i.controller_i.controller_fsm_i.pending_clic_nmi                ),
+         .clic_nmi_is_store_i      ( 1'b0               /* CLIC NMI can only be due to a load*/           ),
          .pending_debug_i          ( core_i.controller_i.controller_fsm_i.pending_debug                   ),
          .debug_mode_q_i           ( core_i.controller_i.controller_fsm_i.debug_mode_q                    ),
          .irq_i                    ( core_i.irq_i & IRQ_MASK                                              ),
@@ -509,8 +510,8 @@ module cv32e40s_wrapper
          .csr_mip_q_i              ( core_i.cs_registers_i.mip_i                                          ),
          .csr_mip_we_i             ( core_i.cs_registers_i.csr_we_int &&
                                      (core_i.cs_registers_i.csr_waddr == CSR_MIP)                         ),
-         .csr_mnxti_n_i            ( core_i.cs_registers_i.mnxti_n                                        ),
-         .csr_mnxti_q_i            ( core_i.cs_registers_i.mnxti_q                                        ),
+         .csr_mnxti_n_i            ( 1'b0 /*core_i.cs_registers_i.mnxti_n*/                               ), // todo: handle mnxti within RVFI
+         .csr_mnxti_q_i            ( 1'b0 /*core_i.cs_registers_i.mnxti_q */                              ), // todo: handle mnxti within RVFI
          .csr_mnxti_we_i           ( core_i.cs_registers_i.mnxti_we                                       ),
          .csr_mintstatus_n_i       ( core_i.cs_registers_i.mintstatus_n                                   ),
          .csr_mintstatus_q_i       ( core_i.cs_registers_i.mintstatus_q                                   ),

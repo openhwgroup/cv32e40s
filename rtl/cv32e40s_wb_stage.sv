@@ -39,7 +39,7 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   input  logic          clk,            // Not used in RTL; only used by assertions
   input  logic          rst_n,          // Not used in RTL; only used by assertions
 
-  // EX/WB pipeline 
+  // EX/WB pipeline
   input  ex_wb_pipe_t   ex_wb_pipe_i,
 
   // Controller
@@ -68,7 +68,11 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   output logic          wb_valid_o,
 
   // eXtension interface
-  if_xif.cpu_result     xif_result_if
+  if_xif.cpu_result     xif_result_if,
+
+  // From cs_registers
+  input logic [31:0]    clic_pa_i,
+  input logic           clic_pa_valid_i
 );
 
   logic                 instr_valid;
@@ -105,7 +109,10 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   // TODO: Could use result interface.rd into account if out of order completion is allowed.
   assign rf_waddr_wb_o  = ex_wb_pipe_i.rf_waddr;
   // TODO: Could use result interface.rd into account if out of order completion is allowed.
-  assign rf_wdata_wb_o  = ex_wb_pipe_i.lsu_en ? lsu_rdata_i : (ex_wb_pipe_i.xif_en ? xif_result_if.result.data : ex_wb_pipe_i.rf_wdata);
+  assign rf_wdata_wb_o  = ex_wb_pipe_i.lsu_en ? lsu_rdata_i               :
+                         (ex_wb_pipe_i.xif_en ? xif_result_if.result.data :
+                         clic_pa_valid_i      ? clic_pa_i                 :
+                         ex_wb_pipe_i.rf_wdata);
 
   //////////////////////////////////////////////////////////////////////////////
   // LSU inputs are valid when LSU is enabled; LSU outputs need to remain valid until downstream stage is ready
@@ -128,11 +135,15 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   //   cannot be used to increment the minstret CSR (as that should not increment for e.g. ecall, ebreak, etc.)
   // - Will be 1 only for the second phase of a split misaligned load/store that completes without MPU errors.
   //   If an MPU error occurs, wb_valid will be 1 due to lsu_exception (for any phase where the error occurs)
-
+  // - Will be 0 for CLIC pointer fetches todo: Do we need wb_valid=1 for faulted pointer fetches for RVFI?
+  // todo: Now wb_valid is high once per instruction. For split LSU and push/pop we want it to go high for every
+  //       operation. RVFI, instret etc would need to factor in the 'last' bit
   assign wb_valid = ((!ex_wb_pipe_i.lsu_en && !xif_waiting) ||    // Non-LSU instructions have valid result in WB, also for exceptions, unless we are waiting for a coprocessor
-                     ( ex_wb_pipe_i.lsu_en && lsu_valid_i)  ||    // LSU instructions have valid result based on data_rvalid_i
+                     ( ex_wb_pipe_i.lsu_en && lsu_valid_i)  ||    // LSU instructions have valid result based on data_rvalid_i 
+                                                                  // todo: ideally a similar line is added here that delays signaling wb_valid until a WFI really retires. 
+                                                                  // This should be checked for bad timing paths. Currently RVFI contains a wb_valid_adjusted signal/hack to achieve the same
                      ( ex_wb_pipe_i.lsu_en && lsu_exception)      // LSU instruction had an exception
-                    ) && instr_valid;
+                    ) && !ex_wb_pipe_i.instr_meta.clic_ptr && instr_valid;
 
   // Only set wb_valid during the last operation of an instruction
   // TODO: We might want to signal wb_valid for all operations (Zce push/pop for instance), but

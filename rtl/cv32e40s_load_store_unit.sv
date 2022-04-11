@@ -48,6 +48,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   // Control outputs
   output logic        busy_o,
   output logic        interruptible_o,
+  output logic        write_buffer_empty_o,
 
   // Stage 0 outputs (EX)
   output logic        lsu_split_0_o,            // Misaligned access is split in two transactions (to controller)
@@ -98,6 +99,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic           buffer_trans_valid;
   logic           buffer_trans_ready;
   obi_data_req_t  buffer_trans;
+
+  logic           buffer_empty;
 
   logic           filter_trans_valid;
   logic           filter_trans_ready;
@@ -566,6 +569,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   assign interruptible_o = !trans_valid_q && (cnt_q == '0);
 
+
   //////////////////////////////////////////////////////////////////////////////
   // Handle bus errors
   //////////////////////////////////////////////////////////////////////////////
@@ -595,10 +599,10 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .clk                  ( clk                ),
     .rst_n                ( rst_n              ),
     .misaligned_access_i  ( misaligned_access  ),
-    .if_data_access_i     ( 1'b0               ), // Only applicable for IF stage
     .priv_lvl_i           ( priv_lvl_lsu_i     ),
     .csr_pmp_i            ( csr_pmp_i          ),
 
+    .core_if_data_access_i( 1'b0               ), // Only applicable for IF stage
     .core_one_txn_pend_n  ( cnt_is_one_next    ),
     .core_mpu_err_wait_i  ( !xif_req           ),
     .core_mpu_err_o       ( xif_mpu_err        ),
@@ -665,9 +669,11 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
     .valid_o            ( bus_trans_valid    ),
     .ready_i            ( bus_trans_ready    ),
-    .trans_o            ( bus_trans          )
+    .trans_o            ( bus_trans          ),
+    .empty_o            ( buffer_empty       )
   );
 
+  assign write_buffer_empty_o = buffer_empty;
   //////////////////////////////////////////////////////////////////////////////
   // OBI interface
   //////////////////////////////////////////////////////////////////////////////
