@@ -1622,7 +1622,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // When an interrupt is taken, the pipeline is killed. The privilege level will be changed, so in case
   // of a privilege level change, we need to use the level in the priv_lvl_if_ctrl_o when mprv is not set.
   // priv_lvl_if_ctrl_o should carry the correct privilege level.
-  assign priv_lvl_clic_ptr_o = mstatus_q.mprv ? privlvl_t'(mstatus_q.mpp) : priv_lvl_if_ctrl_o.priv_lvl;
+  assign
+  always_comb begin
+    if (mstatus_we) begin
+      priv_lvl_clic_ptr_o = mstatus_n.mprv ? privlvl_t'(mstatus_n.mpp) : priv_lvl_if_ctrl_o.priv_lvl;
+    end
+    else begin
+      priv_lvl_clic_ptr_o = mstatus_q.mprv ? privlvl_t'(mstatus_q.mpp) : priv_lvl_if_ctrl_o.priv_lvl;
+    end
+  end
 
 
   // priv_lvl_o indicates the currently active priviledge level (updated when taking an exception, and when MRET is in WB)

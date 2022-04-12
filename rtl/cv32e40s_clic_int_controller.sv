@@ -135,7 +135,7 @@ module cv32e40s_clic_int_controller import cv32e40s_pkg::*;
   // 2: priv mode == current, irq i is max (done in external CLIC), level > max(mintstatus.mil, mintthresh.th)
   // 3: priv mode  < current, irq_i is max (done in external CLIC), level != 0
   //
-  //  Bullet 3 is not applicable as we don't support interrupts in any other mode than macine mode.
+  //  Bullet 3 is not applicable as we don't support interrupts in any other mode than machine mode.
   // todo: can we share the comparator below and flop the result for irq_req_ctrl_o?
   assign irq_wu_ctrl_o = clic_irq_i &&
                          ((priv_lvl_i == PRIV_LVL_M) ? (clic_irq_level_i > effective_irq_level) :
