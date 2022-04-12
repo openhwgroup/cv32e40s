@@ -54,6 +54,7 @@ module cv32e40s_clic_int_controller import cv32e40s_pkg::*;
   input  logic [7:0]                 mintthresh_i,       // Current interrupt threshold from CSR
   input  mintstatus_t                mintstatus_i,       // Current mintstatus from CSR
   input  mcause_t                    mcause_i,           // Current mcause from CSR
+  input  privlvl_t                   priv_lvl_i,         // Current privledge level of core
 
   // To cv32e40x_cs_registers
   output logic                       mnxti_irq_pending_o,// An interrupt is available to the mnxti CSR read
@@ -105,9 +106,13 @@ module cv32e40s_clic_int_controller import cv32e40s_pkg::*;
 
   // Global interrupt enable
   // todo: move logic for m_ie_i from cs_registers to here.
+  //       input mstatus_mie_i
   assign global_irq_enable = m_ie_i;
 
+  // Setting the core effective interrupt level as per clic spec 5.10
+  // Threshold should only block interrupts for the same privilege level.
   assign effective_irq_level = (mintthresh_i > mintstatus_i.mil) ? mintthresh_i : mintstatus_i.mil;
+
   ///////////////////////////
   // Outputs to controller //
   ///////////////////////////
@@ -115,9 +120,10 @@ module cv32e40s_clic_int_controller import cv32e40s_pkg::*;
   // Request to take interrupt if:
   // There is a pending-and-enabled interrupt and interrupts are enabled globally
   // AND the incoming irq level is above the core's current effective interrupt level.
-  // todo: In user mode, machine threshold should not mask interrupts to machine mode
+  // Machine mode interrupts during user mode shall always be taken if their level is > 0
   assign irq_req_ctrl_o = clic_irq_q &&
-                          (clic_irq_level_q > effective_irq_level) &&
+                          ((priv_lvl_i == PRIV_LVL_M) ? (clic_irq_level_q > effective_irq_level) :
+                                                        (clic_irq_level_q > '0)) &&
                           global_irq_enable;
 
   // Pass on interrupt ID
@@ -129,12 +135,11 @@ module cv32e40s_clic_int_controller import cv32e40s_pkg::*;
   // 2: priv mode == current, irq i is max (done in external CLIC), level > max(mintstatus.mil, mintthresh.th)
   // 3: priv mode  < current, irq_i is max (done in external CLIC), level != 0
   //
-  // 1 is applicable for E40S only as E40X only runs in machine mode
-  // 2 is applicable for both E40S and E40X
-  // 3 is not applicable, we support machine mode interrupts only.
-  // todo: implement (2) for E40S.
+  //  Bullet 3 is not applicable as we don't support interrupts in any other mode than machine mode.
   // todo: can we share the comparator below and flop the result for irq_req_ctrl_o?
-  assign irq_wu_ctrl_o = clic_irq_i && (clic_irq_level_i > effective_irq_level);
+  assign irq_wu_ctrl_o = clic_irq_i &&
+                         ((priv_lvl_i == PRIV_LVL_M) ? (clic_irq_level_i > effective_irq_level) :
+                                                       (clic_irq_level_i > '0));
 
   assign irq_clic_shv_o = clic_irq_shv_q;
 

@@ -568,6 +568,8 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
   // Privilege level must be updated immediatly to allow the
   // IF stage to do PMP checks with the correct privilege level
+  // todo: Route priv_lvl through the prefetcher in the same way as fetch_data_access_o.
+  // todo: remove code below and use priv_lvl_ctrl_i.priv_lvl (should be SEC clean)
   assign instr_priv_lvl_o = priv_lvl_ctrl_i.priv_lvl_set ? priv_lvl_ctrl_i.priv_lvl:
                             instr_priv_lvl_q;
 

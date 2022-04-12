@@ -90,6 +90,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   // Privilege mode
   input privlvlctrl_t   priv_lvl_ctrl_i,
+  input privlvl_t       priv_lvl_clic_ptr_i,    // Priv level for CLIC pointers. Must respect mstatus.mprv (done in cs_registers)
 
   // Dummy Instruction Control
   input xsecure_ctrl_t  xsecure_ctrl_i,
@@ -110,6 +111,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic              prefetch_valid;
   inst_resp_t        prefetch_instr;
   privlvl_t          prefetch_priv_lvl;
+  privlvl_t          mpu_priv_lvl;
   logic              prefetch_is_ptr;
 
   logic              illegal_c_insn;
@@ -208,12 +210,15 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   //////////////////////////////////////////////////////////////////////////////
 
   // TODO: The prot bits are currently not checked for correctness anywhere
-  assign core_trans.addr = prefetch_trans_addr;
-  assign core_trans.dbg  = ctrl_fsm_i.debug_mode_if;
-  assign core_trans.prot[0] = prefetch_trans_data_access;  // Transfers from IF stage are instruction transfers
-  assign core_trans.prot[2:1] = PRIV_LVL_M;                // Machine mode. TODO: connect to priv_lvl
-  assign core_trans.memtype = 2'b00;                       // memtype is assigned in the MPU
-  assign core_trans.achk = 12'b0;                          // Integrity signals assigned in bus interface
+  assign core_trans.addr      = prefetch_trans_addr;
+  assign core_trans.dbg       = ctrl_fsm_i.debug_mode_if;
+  assign core_trans.prot[0]   = prefetch_trans_data_access;  // Transfers from IF stage are instruction transfers
+  assign core_trans.prot[2:1] = mpu_priv_lvl;                // Privilege level
+  assign core_trans.memtype   = 2'b00;                       // memtype is assigned in the MPU
+  assign core_trans.achk      = 12'b0;                       // Integrity signals assigned in bus interface
+
+  // For data accesses (CLIC pointer), the priv level must respect mprv as the LSU.
+  assign mpu_priv_lvl = prefetch_trans_data_access ? priv_lvl_clic_ptr_i : prefetch_priv_lvl;
 
   cv32e40s_mpu
   #(
@@ -235,7 +240,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
                                                        // result in instruction access fault (which will have priority over
                                                        //  misaligned from I/O fault)
     .core_if_data_access_i( prefetch_trans_data_access), // Indicate data access from IF stage. TODO: Use for table jumps and CLIC hardware vectoring
-    .priv_lvl_i           ( prefetch_priv_lvl       ),
+    .priv_lvl_i           ( mpu_priv_lvl            ), // todo: this is already encoded in the prot[2:1] bits
     .csr_pmp_i            ( csr_pmp_i               ),
 
     .core_one_txn_pend_n  ( prefetch_one_txn_pend_n ),

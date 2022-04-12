@@ -146,6 +146,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output privlvlctrl_t    priv_lvl_if_ctrl_o,
   output privlvl_t        priv_lvl_lsu_o,
   output privlvl_t        priv_lvl_o,
+  output privlvl_t        priv_lvl_clic_ptr_o,
 
   output mstatus_t        mstatus_o,
 
@@ -1025,7 +1026,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
         // Write mpie and mpp as aliased through mcause
         mstatus_n.mpie = csr_wdata_int[MCAUSE_MPIE_BIT];
-        mstatus_n.mpp  = PRIV_LVL_M; // todo: handle priv mode for E40S
+        mstatus_n.mpp  = csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW];
       end
       // The CLIC pointer address should always be output for an access to MNXTI,
       // but will only contain a nonzero value if a CLIC interrupt is actually pending
@@ -1076,23 +1077,20 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           mepc_we        = 1'b1;
 
           mcause_n       = ctrl_fsm_i.csr_cause;
-          mcause_we      = 1'b1;
-            // Set mcause from controller
-            mcause_n  = ctrl_fsm_i.csr_cause;
 
-            if (SMCLIC) begin
-              // mpil is saved from mintstatus
-              mcause_n.mpil = mintstatus_q.mil;
+          if (SMCLIC) begin
+            // mpil is saved from mintstatus
+            mcause_n.mpil = mintstatus_q.mil;
 
-              // todo: handle exception vs interrupt
-              // Save new interrupt level to mintstatus
-              mintstatus_n.mil = ctrl_fsm_i.irq_level;
-              mintstatus_we = 1'b1;
-            end else begin
-              mcause_n.mpil = '0;
-            end
+            // todo: handle exception vs interrupt
+            // Save new interrupt level to mintstatus
+            mintstatus_n.mil = ctrl_fsm_i.irq_level;
+            mintstatus_we = 1'b1;
+          end else begin
+            mcause_n.mpil = '0;
+          end
 
-            mcause_we = 1'b1;
+          mcause_we = 1'b1;
 
         end
       end //ctrl_fsm_i.csr_save_cause
@@ -1307,6 +1305,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       ) mtvec_csr_i (
         .clk      (clk),
         .rst_n     (rst_n),
+        .scan_cg_en_i (scan_cg_en_i),
         .wr_data_i  (mtvec_n),
         .wr_en_i    (mtvec_we),
         .rd_data_o  (mtvec_q),
@@ -1416,6 +1415,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       ) mtvec_csr_i (
         .clk      (clk),
         .rst_n     (rst_n),
+        .scan_cg_en_i (scan_cg_en_i),
         .wr_data_i  (mtvec_n),
         .wr_en_i    (mtvec_we),
         .rd_data_o  (mtvec_q),
@@ -1619,6 +1619,20 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       priv_lvl_lsu_o = mstatus_q.mprv ? privlvl_t'(mstatus_q.mpp) : id_ex_pipe_i.priv_lvl;
     end
   end
+
+  // Privilege level for CLIC pointer fetches in IF
+  // When an interrupt is taken, the pipeline is killed. The privilege level will be changed, so in case
+  // of a privilege level change, we need to use the level in the priv_lvl_if_ctrl_o when mprv is not set.
+  // priv_lvl_if_ctrl_o should carry the correct privilege level.
+  always_comb begin
+    if (mstatus_we) begin
+      priv_lvl_clic_ptr_o = mstatus_n.mprv ? privlvl_t'(mstatus_n.mpp) : priv_lvl_if_ctrl_o.priv_lvl;
+    end
+    else begin
+      priv_lvl_clic_ptr_o = mstatus_q.mprv ? privlvl_t'(mstatus_q.mpp) : priv_lvl_if_ctrl_o.priv_lvl;
+    end
+  end
+
 
   // priv_lvl_o indicates the currently active priviledge level (updated when taking an exception, and when MRET is in WB)
   assign priv_lvl_o = priv_lvl_q;
