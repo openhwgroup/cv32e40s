@@ -510,8 +510,8 @@ module cv32e40s_wrapper
          .csr_mip_q_i              ( core_i.cs_registers_i.mip_i                                          ),
          .csr_mip_we_i             ( core_i.cs_registers_i.csr_we_int &&
                                      (core_i.cs_registers_i.csr_waddr == CSR_MIP)                         ),
-         .csr_mnxti_n_i            ( 1'b0 /*core_i.cs_registers_i.mnxti_n*/                               ), // todo: handle mnxti within RVFI
-         .csr_mnxti_q_i            ( 1'b0 /*core_i.cs_registers_i.mnxti_q */                              ), // todo: handle mnxti within RVFI
+         .csr_mnxti_n_i            ( '0 /*core_i.cs_registers_i.mnxti_n*/                                 ), // todo: handle mnxti within RVFI
+         .csr_mnxti_q_i            ( '0 /*core_i.cs_registers_i.mnxti_q */                                ), // todo: handle mnxti within RVFI
          .csr_mnxti_we_i           ( core_i.cs_registers_i.mnxti_we                                       ),
          .csr_mintstatus_n_i       ( core_i.cs_registers_i.mintstatus_n                                   ),
          .csr_mintstatus_q_i       ( core_i.cs_registers_i.mintstatus_q                                   ),

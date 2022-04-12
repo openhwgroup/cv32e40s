@@ -221,6 +221,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic csr_wr_in_wb_flush;
 
   privlvl_t     priv_lvl_lsu, priv_lvl;
+  privlvl_t     priv_lvl_clic_ptr;
   privlvlctrl_t priv_lvl_if_ctrl;
 
   mstatus_t     mstatus;
@@ -527,6 +528,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Privilege level
     .priv_lvl_ctrl_i     ( priv_lvl_if_ctrl         ),
+    .priv_lvl_clic_ptr_i ( priv_lvl_clic_ptr        ),
 
     // Dummy Instruction control
     .xsecure_ctrl_i      ( xsecure_ctrl             ),
@@ -900,6 +902,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .priv_lvl_if_ctrl_o         ( priv_lvl_if_ctrl       ),
     .priv_lvl_lsu_o             ( priv_lvl_lsu           ),
     .priv_lvl_o                 ( priv_lvl               ),
+    .priv_lvl_clic_ptr_o        ( priv_lvl_clic_ptr      ),
 
     .pc_if_i                    ( pc_if                  )
   );
@@ -1052,6 +1055,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
         .mintthresh_i         ( mintthresh         ),
         .mintstatus_i         ( mintstatus         ),
         .mcause_i             ( mcause             ),
+        .priv_lvl_i           ( priv_lvl           ),
 
         // To cv32e40x_cs_registers
         .mnxti_irq_pending_o  ( mnxti_irq_pending  ),
