@@ -1300,6 +1300,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     if (SMCLIC) begin : smclic_regs
 
       cv32e40s_csr #(
+        .LIB        (LIB),
         .WIDTH      (32),
         .SHADOWCOPY (1'b0),
         .RESETVALUE (MTVEC_CLIC_RESET_VAL)
@@ -1312,6 +1313,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_error_o (mtvec_rd_error)
       );
       cv32e40s_csr #(
+        .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MTVT_MASK),
         .SHADOWCOPY (SECURE),
