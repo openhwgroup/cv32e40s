@@ -1405,7 +1405,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_error_o (mclicbase_rd_error)
       );
 
-      assign mie_q  = 32'h0;
+      assign mie_q        = 32'h0;
+      assign mie_rd_error = 1'b0;
 
     end else begin : basic_mode_regs
       cv32e40s_csr #(
