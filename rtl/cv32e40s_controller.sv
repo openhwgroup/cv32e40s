@@ -31,7 +31,6 @@
 
 module cv32e40s_controller import cv32e40s_pkg::*;
 #(
-  parameter bit          USE_DEPRECATED_FEATURE_SET = 1, // todo: remove once related features are supported by iss
   parameter bit          X_EXT                  = 0,
   parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
   parameter bit          SMCLIC                 = 0,
@@ -93,6 +92,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   // CSR raddr in ex
   input  logic        csr_counter_read_i,         // A performance counter is read in CSR (EX)
+  input  logic        csr_mnxti_read_i,           // MNXTI is read in CSR (EX)
 
   // CSR write stobes
   input logic          csr_wr_in_wb_flush_i,
@@ -126,7 +126,6 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   // Main FSM and debug FSM
   cv32e40s_controller_fsm
   #(
-    .USE_DEPRECATED_FEATURE_SET  (USE_DEPRECATED_FEATURE_SET),
     .X_EXT                       ( X_EXT                    ),
     .SMCLIC                      ( SMCLIC                   ),
     .SMCLIC_ID_WIDTH             ( SMCLIC_ID_WIDTH          )
@@ -233,6 +232,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
     // From EX
     .csr_counter_read_i         ( csr_counter_read_i       ),
+    .csr_mnxti_read_i           ( csr_mnxti_read_i         ),
 
     // From WB
     .wb_ready_i                 ( wb_ready_i               ),

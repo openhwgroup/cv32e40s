@@ -31,7 +31,6 @@
 
 module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 #(
-  parameter bit       USE_DEPRECATED_FEATURE_SET = 1, // todo: remove once related features are supported by iss
   parameter bit       X_EXT           = 0,
   parameter bit       SMCLIC          = 0,
   parameter int       SMCLIC_ID_WIDTH = 5
@@ -498,7 +497,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     // ID stage is halted for regular stalls (i.e. stalls for which the instruction
     // currently in ID is not ready to be issued yet). Also halted if interrupt or debug pending
     // but not allowed to be taken. This is to create an interruptible bubble in WB.
-    ctrl_fsm_o.halt_id = ctrl_byp_i.jalr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_stall ||
+    ctrl_fsm_o.halt_id = ctrl_byp_i.jalr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_stall || ctrl_byp_i.mnxti_stall ||
                          (pending_interrupt && !interrupt_allowed) ||
                          (pending_debug && !debug_allowed) ||
                          (pending_nmi && !nmi_allowed) ||
@@ -577,11 +576,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
           ctrl_fsm_o.csr_save_cause  = 1'b1;
           ctrl_fsm_o.csr_cause.irq = 1'b1;
-          if (USE_DEPRECATED_FEATURE_SET) begin
-            ctrl_fsm_o.csr_cause.exception_code = nmi_is_store_q ? DEPRECATED_INT_CAUSE_LSU_STORE_FAULT : DEPRECATED_INT_CAUSE_LSU_LOAD_FAULT;
-          end else begin
-            ctrl_fsm_o.csr_cause.exception_code = nmi_is_store_q ? INT_CAUSE_LSU_STORE_FAULT : INT_CAUSE_LSU_LOAD_FAULT;
-          end
+          ctrl_fsm_o.csr_cause.exception_code = nmi_is_store_q ? INT_CAUSE_LSU_STORE_FAULT : INT_CAUSE_LSU_LOAD_FAULT;
 
           // Save pc from oldest valid instruction
           if (ex_wb_pipe_i.instr_valid) begin

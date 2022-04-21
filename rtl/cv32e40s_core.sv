@@ -36,7 +36,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter b_ext_e      B_EXT                               = B_NONE,
   parameter m_ext_e      M_EXT                               = M,
   parameter bit          ZC_EXT                              = 0, // todo: remove once fully implemented
-  parameter bit          USE_DEPRECATED_FEATURE_SET          = 1, // todo: remove once related features are supported by iss
   parameter bit          SMCLIC                              = 0,
   parameter int          SMCLIC_ID_WIDTH                     = 5,
   parameter int          DBG_NUM_TRIGGERS                    = 1,
@@ -65,7 +64,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   input  logic [31:0] mhartid_i,
   input  logic  [3:0] mimpid_patch_i,
   input  logic [31:0] dm_exception_addr_i,
-  input  logic [31:0] nmi_addr_i, // todo: remove once supported by verification
 
   // Instruction memory interface
   output logic        instr_req_o,
@@ -225,6 +223,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   privlvlctrl_t priv_lvl_if_ctrl;
 
   mstatus_t     mstatus;
+  logic csr_mnxti_read;
 
   // CLIC signals for returning pointer addresses
   // when mnxti is accessed
@@ -470,7 +469,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //////////////////////////////////////////////////
   cv32e40s_if_stage
   #(
-    .USE_DEPRECATED_FEATURE_SET (USE_DEPRECATED_FEATURE_SET),
     .X_EXT               ( X_EXT                    ),
     .X_ID_WIDTH          ( X_ID_WIDTH               ),
     .PMA_NUM_REGIONS     ( PMA_NUM_REGIONS          ),
@@ -494,7 +492,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .jump_target_id_i    ( jump_target_id           ), // Jump target address
     .mepc_i              ( mepc                     ), // Exception PC (restore upon return from exception/interrupt)
     .mtvec_addr_i        ( mtvec_addr               ), // Exception/interrupt address (MSBs only)
-    .nmi_addr_i          ( nmi_addr_i               ), // NMI address
     .mtvt_addr_i         ( mtvt_addr                ), // CLIC vector base
 
     .branch_decision_ex_i( branch_decision_ex       ),
@@ -650,6 +647,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // CSR interface
     .csr_rdata_i                ( csr_rdata                    ),
     .csr_illegal_i              ( csr_illegal                  ),
+    .csr_mnxti_read_i           ( csr_mnxti_read               ),
 
     // Branch decision
     .branch_decision_o          ( branch_decision_ex           ),
@@ -796,7 +794,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   cv32e40s_cs_registers
   #(
     .LIB                        ( LIB                    ),
-    .USE_DEPRECATED_FEATURE_SET (USE_DEPRECATED_FEATURE_SET),
     .M_EXT                      ( M_EXT                  ),
     .X_EXT                      ( X_EXT                  ),
     .X_MISA                     ( X_MISA                 ),
@@ -859,6 +856,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Raddr from first stage (EX)
     .csr_counter_read_o         ( csr_counter_read       ),
+    .csr_mnxti_read_o           ( csr_mnxti_read         ),
 
     // Interrupt related control signals
     .mie_o                      ( mie                    ),
@@ -918,7 +916,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   cv32e40s_controller
   #(
-    .USE_DEPRECATED_FEATURE_SET     (USE_DEPRECATED_FEATURE_SET),
     .X_EXT                          ( X_EXT                  ),
     .REGFILE_NUM_READ_PORTS         ( REGFILE_NUM_READ_PORTS ),
     .SMCLIC                         ( SMCLIC                 ),
@@ -936,6 +933,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .id_ex_pipe_i                   ( id_ex_pipe             ),
 
     .csr_counter_read_i             ( csr_counter_read       ),
+    .csr_mnxti_read_i               ( csr_mnxti_read         ),
 
     // From EX/WB pipeline
     .ex_wb_pipe_i                   ( ex_wb_pipe             ),
@@ -1089,6 +1087,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
       // CLIC shv not used in basic mode
       assign irq_clic_shv = 1'b0;
       assign irq_clic_level = 8'h00;
+
+      // CLIC mnxti not used in basic mode
+      assign mnxti_irq_pending = 1'b0;
+      assign mnxti_irq_id      = '0;
+      assign mnxti_irq_level   = '0;
     end
   endgenerate
 

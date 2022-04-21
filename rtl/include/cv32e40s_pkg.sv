@@ -862,11 +862,13 @@ typedef enum logic[1:0] {
                     } alu_op_b_mux_e;
 
 // Immediate b selection
-typedef enum logic[1:0] {
-                         IMMB_I      = 2'b00,
-                         IMMB_S      = 2'b01,
-                         IMMB_U      = 2'b10,
-                         IMMB_PCINCR = 2'b11
+typedef enum logic[2:0] {
+                         IMMB_I      = 3'b000,
+                         IMMB_S      = 3'b001,
+                         IMMB_U      = 3'b010,
+                         IMMB_PCINCR = 3'b011,
+                         IMMB_CIW    = 3'b100,
+                         IMMB_CL    = 3'b101
                          } imm_b_mux_e;
 
 // Operand c selection
@@ -993,10 +995,6 @@ parameter EXC_CAUSE_INSTR_BUS_FAULT = 11'h30;
 
 parameter INT_CAUSE_LSU_LOAD_FAULT  = 11'h400;
 parameter INT_CAUSE_LSU_STORE_FAULT = 11'h401;
-
-// todo: remove once 11bit cause is supported by iss
-parameter DEPRECATED_INT_CAUSE_LSU_LOAD_FAULT  = 11'h80;
-parameter DEPRECATED_INT_CAUSE_LSU_STORE_FAULT = 11'h81;
 
 // Interrupt mask
 parameter IRQ_MASK = 32'hFFFF0888;
@@ -1238,6 +1236,7 @@ typedef struct packed
 typedef struct packed {
   logic        instr_valid;
   inst_resp_t  instr;
+  logic        use_merged_dec; // todo: remove once done with decoder merge
   instr_meta_t instr_meta;
   logic [31:0] pc;
   logic [15:0] compressed_instr;
@@ -1334,6 +1333,7 @@ typedef struct packed {
   csr_opcode_e  csr_op;
   logic [11:0]  csr_addr;
   logic [31:0]  csr_wdata;
+  logic         csr_mnxti_access;
 
   // LSU
   logic         lsu_en;
@@ -1393,6 +1393,7 @@ typedef struct packed {
   logic         load_stall;             // Stall due to load operation
   logic         csr_stall;
   logic         wfi_stall;
+  logic         mnxti_stall;            // Stall due to mnxti CSR access in EX
   logic         minstret_stall;         // Stall due to minstret/h read in EX
   logic         deassert_we;            // Deassert write enable and special insn bits
   logic         xif_exception_stall;    // Stall (EX) if xif insn in WB can cause an exception
