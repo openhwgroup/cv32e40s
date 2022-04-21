@@ -53,6 +53,9 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
   input  logic        last_op_id_i,
   input  logic        last_op_ex_i,
 
+  // CLIC inputs
+  input  logic        prefetch_is_ptr_i,      // Indicates that "instruction" in IF is a pointer
+
   // CSR inputs
   input  logic [31:0] mepc_i,
   input  logic [24:0] mtvec_addr_i,
@@ -180,14 +183,17 @@ always_ff @(posedge clk, negedge rst_n) begin
     bch_taken_q      <= 1'b0;
   end else begin
     // Signal that a pc_set set was performed.
-    // Exclude cases of PC_WB_PLUS4 and PC_TRAP_IRQ as the pipeline currently has no easy way to recompute these targets.
+    // Exclude cases of PC_WB_PLUS4, PC_TRAP_IRQ and CLIC pointers/targets as the pipeline currently has no easy way to recompute these targets.
     // Used for the address comparison
     // Todo: may stretch this until the target instruction leaves IF stage
-    pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ));
+    pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ) ||
+                                       (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV) || (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV_TGT));
 
     // Set a flag for a valid IF->ID stage transition.
     // Used for checking sequential PCs.
-    if_id_q  <= if_valid_i && id_ready_i;
+    // Exlude the case where a pointer goes from IF to ID as to avoid mismatch on addresses
+    // (pointer address may have LSBs that indicate a compressed instruction)
+    if_id_q  <= (if_valid_i && id_ready_i) && !prefetch_is_ptr_i;
 
     // Flag for taken jump
     // Jumps are taken from ID, and the flag can thus only be cleared when the last part (2/2) of the instruction

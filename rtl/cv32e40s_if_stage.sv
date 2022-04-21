@@ -305,6 +305,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .last_op_id_i         ( last_op_id_i         ),
     .last_op_ex_i         ( last_op_ex_i         ),
 
+    .prefetch_is_ptr_i    ( prefetch_is_ptr      ),
+
     .mepc_i               ( mepc_i               ),
     .mtvec_addr_i         ( mtvec_addr_i         ),
     .dpc_i                ( dpc_i                ),
