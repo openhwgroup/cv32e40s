@@ -183,7 +183,7 @@ always_ff @(posedge clk, negedge rst_n) begin
     bch_taken_q      <= 1'b0;
   end else begin
     // Signal that a pc_set set was performed.
-    // Exclude cases of PC_WB_PLUS4 and PC_TRAP_IRQ as the pipeline currently has no easy way to recompute these targets.
+    // Exclude cases of PC_WB_PLUS4, PC_TRAP_IRQ and CLIC pointers/targets as the pipeline currently has no easy way to recompute these targets.
     // Used for the address comparison
     // Todo: may stretch this until the target instruction leaves IF stage
     pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ) ||
