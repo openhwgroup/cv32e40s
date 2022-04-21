@@ -102,8 +102,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   logic       div_en;
   logic       sys_en;
 
-  logic [31:0] instr_rdata;
-
   decoder_ctrl_t decoder_i_ctrl;
   decoder_ctrl_t decoder_m_ctrl;
   decoder_ctrl_t decoder_b_ctrl;

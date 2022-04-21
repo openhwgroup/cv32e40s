@@ -280,9 +280,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // PC checker
   ///////////////
   cv32e40s_pc_check
-  #(
-    .USE_DEPRECATED_FEATURE_SET (USE_DEPRECATED_FEATURE_SET)
-  )
   pc_check_i
   (
     .clk                  ( clk                  ),
@@ -315,7 +312,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .boot_addr_i          ( boot_addr_i          ),
     .dm_halt_addr_i       ( dm_halt_addr_i       ),
     .dm_exception_addr_i  ( dm_exception_addr_i  ),
-    .nmi_addr_i           ( nmi_addr_i           ),
 
     .pc_err_o             ( pc_err_o             )
   );
@@ -365,7 +361,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       if (if_valid_o && id_ready_i) begin
         if_id_pipe_o.instr_valid      <= 1'b1;
         if_id_pipe_o.instr            <= dummy_insert ? dummy_instr : instr_decompressed;
-        if_id_pipe_o.use_merged_dec   <= use_merged_dec;
+        if_id_pipe_o.use_merged_dec   <= dummy_insert ?        1'b0 : use_merged_dec;
         if_id_pipe_o.instr_meta       <= instr_meta_n;
         if_id_pipe_o.illegal_c_insn   <= dummy_insert ?        1'b0 : illegal_c_insn;
         if_id_pipe_o.pc               <= pc_if_o;
