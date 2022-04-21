@@ -31,6 +31,9 @@
 
 
 module cv32e40s_pc_check import cv32e40s_pkg::*;
+#(
+  parameter bit          USE_DEPRECATED_FEATURE_SET = 1 // todo: remove once related features are supported by iss
+)
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -99,6 +102,17 @@ logic ctrl_flow_err;
 logic ctrl_flow_taken_err;    // Signals error on taken jump/mret/branch
 logic ctrl_flow_untaken_err;  // Signals error on untaken jump/mret/branch
 
+logic [31:0] nmi_addr;
+
+// todo: remove generate when USE_DEPRECATED_FEATURE_SET is removed
+generate
+  if(USE_DEPRECATED_FEATURE_SET) begin : gen_deprecated_nmi_addr
+    assign nmi_addr = {nmi_addr_i[31:2], 2'b00};
+  end else begin : gen_deprecated_nmi_addr
+    assign nmi_addr = {mtvec_addr_i, NMI_MTVEC_INDEX, 2'b00};
+  end
+endgenerate
+
 //////////////////////////////////////////
 // PC checking
 //////////////////////////////////////////
@@ -116,7 +130,7 @@ assign ctrl_flow_addr = (pc_mux_q == PC_JUMP)     ? jump_target_id_i      :
                         (pc_mux_q == PC_BRANCH)   ? branch_target_ex_i    :
                         (pc_mux_q == PC_TRAP_DBD) ? dm_halt_addr_i        :
                         (pc_mux_q == PC_TRAP_DBE) ? dm_exception_addr_i   :
-                        (pc_mux_q == PC_TRAP_NMI) ? nmi_addr_i            : // todo: remove when nmi_addr_i is removed
+                        (pc_mux_q == PC_TRAP_NMI) ? nmi_addr              :
                         (pc_mux_q == PC_TRAP_EXC) ? {mtvec_addr_i, 7'h0 } : // Also covered by CSR hardening
                         (pc_mux_q == PC_DRET)     ? dpc_i                 : {boot_addr_i[31:2], 2'b00};
 

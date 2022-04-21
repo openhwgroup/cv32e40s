@@ -282,6 +282,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // PC checker
   ///////////////
   cv32e40s_pc_check
+  #(
+    .USE_DEPRECATED_FEATURE_SET (USE_DEPRECATED_FEATURE_SET)
+  )
   pc_check_i
   (
     .clk                  ( clk                  ),
