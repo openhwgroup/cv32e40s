@@ -28,7 +28,6 @@
 
 module cv32e40s_if_stage import cv32e40s_pkg::*;
 #(
-  parameter bit          USE_DEPRECATED_FEATURE_SET = 1, // todo: remove once related features are supported by iss
   parameter bit          X_EXT           = 0,
   parameter int          X_ID_WIDTH      = 4,
   parameter int          PMA_NUM_REGIONS = 0,
@@ -52,7 +51,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   input  logic [31:0]   jump_target_id_i,       // Jump target address
   input  logic [31:0]   mepc_i,                 // Exception PC (restore upon return from exception/interrupt)
   input  logic [24:0]   mtvec_addr_i,           // Exception/interrupt address (MSBs)
-  input  logic [31:0]   nmi_addr_i,             // NMI address
 
   input  logic          branch_decision_ex_i,   // Current branch decision from EX
 
@@ -118,6 +116,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   inst_resp_t        instr_decompressed;
   logic              instr_compressed_int;
+  logic              use_merged_dec;
 
   // Transaction signals to/from obi interface
   logic              prefetch_resp_valid;
@@ -161,8 +160,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       PC_TRAP_IRQ: branch_addr_n = {mtvec_addr_i, ctrl_fsm_i.mtvec_pc_mux, 2'b00};     // interrupts are vectored
       PC_TRAP_DBD: branch_addr_n = {dm_halt_addr_i[31:2], 2'b0};
       PC_TRAP_DBE: branch_addr_n = {dm_exception_addr_i[31:2], 2'b0};
-      PC_TRAP_NMI: branch_addr_n = USE_DEPRECATED_FEATURE_SET ? {nmi_addr_i[31:2], 2'b00} :
-                                                                {mtvec_addr_i, NMI_MTVEC_INDEX, 2'b00};
+      PC_TRAP_NMI: branch_addr_n = {mtvec_addr_i, NMI_MTVEC_INDEX, 2'b00};
       PC_TRAP_CLICV:     branch_addr_n = {mtvt_addr_i, ctrl_fsm_i.mtvt_pc_mux[SMCLIC_ID_WIDTH-1:0], 2'b00};
       // CLIC spec requires to clear bit 0. This clearing is done in the alignment buffer.
       PC_TRAP_CLICV_TGT: branch_addr_n = if_id_pipe_o.instr.bus_resp.rdata;
@@ -282,9 +280,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // PC checker
   ///////////////
   cv32e40s_pc_check
-  #(
-    .USE_DEPRECATED_FEATURE_SET (USE_DEPRECATED_FEATURE_SET)
-  )
   pc_check_i
   (
     .clk                  ( clk                  ),
@@ -317,7 +312,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .boot_addr_i          ( boot_addr_i          ),
     .dm_halt_addr_i       ( dm_halt_addr_i       ),
     .dm_exception_addr_i  ( dm_exception_addr_i  ),
-    .nmi_addr_i           ( nmi_addr_i           ),
 
     .pc_err_o             ( pc_err_o             )
   );
@@ -353,6 +347,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     if (rst_n == 1'b0) begin
       if_id_pipe_o.instr_valid      <= 1'b0;
       if_id_pipe_o.instr            <= INST_RESP_RESET_VAL;
+      if_id_pipe_o.use_merged_dec   <= 1'b0;
       if_id_pipe_o.instr_meta       <= '0;
       if_id_pipe_o.pc               <= '0;
       if_id_pipe_o.illegal_c_insn   <= 1'b0;
@@ -366,6 +361,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       if (if_valid_o && id_ready_i) begin
         if_id_pipe_o.instr_valid      <= 1'b1;
         if_id_pipe_o.instr            <= dummy_insert ? dummy_instr : instr_decompressed;
+        if_id_pipe_o.use_merged_dec   <= dummy_insert ?        1'b0 : use_merged_dec;
         if_id_pipe_o.instr_meta       <= instr_meta_n;
         if_id_pipe_o.illegal_c_insn   <= dummy_insert ?        1'b0 : illegal_c_insn;
         if_id_pipe_o.pc               <= pc_if_o;
@@ -386,6 +382,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .instr_is_ptr_i     ( prefetch_is_ptr         ),
     .instr_o            ( instr_decompressed      ),
     .is_compressed_o    ( instr_compressed_int    ),
+    .use_merged_dec_o   ( use_merged_dec          ),
     .illegal_instr_o    ( illegal_c_insn          )
   );
 

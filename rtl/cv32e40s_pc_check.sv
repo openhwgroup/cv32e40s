@@ -31,9 +31,6 @@
 
 
 module cv32e40s_pc_check import cv32e40s_pkg::*;
-#(
-  parameter bit          USE_DEPRECATED_FEATURE_SET = 1 // todo: remove once related features are supported by iss
-)
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -65,7 +62,6 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
   input  logic [31:0] boot_addr_i,         // Boot address from toplevel pins
   input  logic [31:0] dm_halt_addr_i,      // Debug address from toplevel pins
   input  logic [31:0] dm_exception_addr_i, // Debug exception from toplevel pins
-  input  logic [31:0] nmi_addr_i,          // NMI address from toplevel pins
 
   // Error output
   output logic        pc_err_o             // Error flag
@@ -104,14 +100,8 @@ logic ctrl_flow_untaken_err;  // Signals error on untaken jump/mret/branch
 
 logic [31:0] nmi_addr;
 
-// todo: remove generate when USE_DEPRECATED_FEATURE_SET is removed
-generate
-  if(USE_DEPRECATED_FEATURE_SET) begin : gen_deprecated_nmi_addr
-    assign nmi_addr = {nmi_addr_i[31:2], 2'b00};
-  end else begin : gen_deprecated_nmi_addr
-    assign nmi_addr = {mtvec_addr_i, NMI_MTVEC_INDEX, 2'b00};
-  end
-endgenerate
+assign nmi_addr = {mtvec_addr_i, NMI_MTVEC_INDEX, 2'b00};
+
 
 //////////////////////////////////////////
 // PC checking

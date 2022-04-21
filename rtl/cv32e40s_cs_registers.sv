@@ -36,7 +36,6 @@
 module cv32e40s_cs_registers import cv32e40s_pkg::*;
 #(
   parameter              LIB              = 0,
-  parameter bit          USE_DEPRECATED_FEATURE_SET = 1, // todo: remove once related features are supported by iss
   parameter m_ext_e      M_EXT            = M,
   parameter bit          X_EXT            = 0,
   parameter logic [31:0] X_MISA           =  32'h00000000,
@@ -96,6 +95,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // To controller bypass logic
   output logic            csr_counter_read_o,
+  output logic            csr_mnxti_read_o,
 
   // Interface to registers (SRAM like)
   output logic [31:0]     csr_rdata_o,
@@ -382,6 +382,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     illegal_csr_read              = 1'b0;
     umode_mcounteren_illegal_read = 1'b0;
     csr_counter_read_o            = 1'b0;
+    csr_mnxti_read_o   = 1'b0;
 
     case (csr_raddr)
       // jvt: Jump vector table
@@ -467,6 +468,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           // For mnxti, this is actually mstatus. The value written back to the GPR will be the address of
           // the function pointer to the interrupt handler. This is muxed in the WB stage.
           csr_rdata_int = mstatus_q;
+          csr_mnxti_read_o = 1'b1;
         end else begin
           csr_rdata_int    = '0;
           illegal_csr_read = 1'b1;
@@ -737,10 +739,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     priv_lvl_we     = 1'b0;
 
     mtvec_n.addr             = csr_mtvec_init_i ? mtvec_addr_i[31:7] : csr_wdata_int[31:7];
-    if (USE_DEPRECATED_FEATURE_SET) begin
-      mtvec_n.addr[7]        = 1'b0; // todo : remove
-    end
-
     mtvec_n.zero0            = mtvec_q.zero0;
     mtvec_we                 = csr_mtvec_init_i;
 
