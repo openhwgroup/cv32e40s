@@ -82,7 +82,7 @@ module cv32e40s_register_file_wrapper import cv32e40s_pkg::*;
        );
 
   generate for (genvar i = 0; i < REGFILE_NUM_READ_PORTS; i++)
-    assign rdata_o[i] = (rf_data_t)'(rf_rdata[i][REGFILE_DATA_WIDTH-1:0]);
+    assign rdata_o[i] = rf_data_t'(rf_rdata[i][REGFILE_DATA_WIDTH-1:0]);
   endgenerate
 
   generate
