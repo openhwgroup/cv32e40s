@@ -158,6 +158,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   localparam int unsigned MTVT_ADDR_WIDTH = 32 - MTVT_LSB;
 
   logic [31:0]       pc_if;             // Program counter in IF stage
+  logic              ptr_in_if;         // IF stage contains a pointer
 
   // Jump and branch target and decision (EX->IF)
   logic [31:0] jump_target_id;
@@ -477,6 +478,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .PMP_NUM_REGIONS     ( PMP_NUM_REGIONS           ),
     .DUMMY_INSTRUCTIONS  ( SECURE                    ),
     .MTVT_ADDR_WIDTH     ( MTVT_ADDR_WIDTH          ),
+    .SMCLIC              ( SMCLIC                   ),
     .SMCLIC_ID_WIDTH     ( SMCLIC_ID_WIDTH          )
   )
   if_stage_i
@@ -511,6 +513,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .pc_if_o             ( pc_if                    ),
     .csr_mtvec_init_o    ( csr_mtvec_init_if        ),
     .if_busy_o           ( if_busy                  ),
+    .ptr_in_if_o         ( ptr_in_if                ),
 
     // Pipeline handshakes
     .if_valid_o          ( if_valid                 ),
@@ -902,7 +905,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .priv_lvl_o                 ( priv_lvl               ),
     .priv_lvl_clic_ptr_o        ( priv_lvl_clic_ptr      ),
 
-    .pc_if_i                    ( pc_if                  )
+    .pc_if_i                    ( pc_if                  ),
+    .ptr_in_if_i                ( ptr_in_if              )
   );
 
   ////////////////////////////////////////////////////////////////////
@@ -1041,21 +1045,21 @@ module cv32e40s_core import cv32e40s_pkg::*;
         .clic_irq_priv_i      ( clic_irq_priv_i    ),
         .clic_irq_shv_i       ( clic_irq_shv_i     ),
 
-        // To cv32e40x_controller
+        // To cv32e40s_controller
         .irq_req_ctrl_o       ( irq_req_ctrl       ),
         .irq_id_ctrl_o        ( irq_id_ctrl        ),
         .irq_wu_ctrl_o        ( irq_wu_ctrl        ),
         .irq_clic_shv_o       ( irq_clic_shv       ),
         .irq_clic_level_o     ( irq_clic_level     ),
 
-        // From cv32e40x_cs_registers
+        // From cv32e40s_cs_registers
         .m_ie_i               ( m_irq_enable       ),
         .mintthresh_i         ( mintthresh         ),
         .mintstatus_i         ( mintstatus         ),
         .mcause_i             ( mcause             ),
         .priv_lvl_i           ( priv_lvl           ),
 
-        // To cv32e40x_cs_registers
+        // To cv32e40s_cs_registers
         .mnxti_irq_pending_o  ( mnxti_irq_pending  ),
         .mnxti_irq_id_o       ( mnxti_irq_id       ),
         .mnxti_irq_level_o    ( mnxti_irq_level    )
