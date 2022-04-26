@@ -418,6 +418,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   assign align_trans.prot    = {trans.mode, 1'b1};      // Transfers from LSU are data transfers
   assign align_trans.dbg     = trans.dbg;
   assign align_trans.memtype = 2'b00;                   // Memory type is assigned in MPU
+  assign align_trans.achk    = 12'h000;                 // Set in data_obi_interface, tie off here.
 
   // Transaction request generation
   // OBI compatible (avoids combinatorial path from data_rvalid_i to data_req_o). Multiple trans_* transactions can be
