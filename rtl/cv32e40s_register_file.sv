@@ -48,6 +48,9 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
     input logic                           we_i [REGFILE_NUM_WRITE_PORTS]
    );
 
+  // When implemented, reset registers with valid ECC (w/every other ecc bit inverted)
+  localparam logic [REGFILE_WORD_WIDTH-1:0] RF_REG_RV = (SECURE) ? {6'b10_1010, 32'h0} : 32'h0;
+
   // integer register file
   logic [REGFILE_WORD_WIDTH-1:0]          mem       [REGFILE_NUM_WORDS];
   logic [REGFILE_WORD_WIDTH-1:0]          mem_gated [REGFILE_NUM_WORDS];
@@ -58,10 +61,9 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
   //-----------------------------------------------------------------------------
   //-- READ : Read address decoder RAD
   //-----------------------------------------------------------------------------
-
   generate
     if (SECURE) begin
-      assign mem_gated[0] = dummy_instr_id_i ? mem[0] : '0;
+      assign mem_gated[0] = dummy_instr_id_i ? mem[0] : RF_REG_RV;
       for (genvar addr=1; addr < REGFILE_NUM_WORDS; addr++) begin
         assign mem_gated[addr] = mem[addr];
       end
@@ -100,7 +102,7 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
     if (SECURE) begin
       always_ff @(posedge clk or negedge rst_n) begin
         if(~rst_n) begin
-          mem[0] <= '0;
+          mem[0] <= RF_REG_RV;
         end else begin
           if (dummy_instr_wb_i) begin
             for(int j=0; j<REGFILE_NUM_WRITE_PORTS; j++) begin : dummy_rf_write_ports
@@ -109,7 +111,7 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
               end
             end
           end else begin
-            mem[0] <= '0;
+            mem[0] <= RF_REG_RV;
           end
         end
       end
@@ -117,10 +119,10 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
       always_ff @(posedge clk or negedge rst_n) begin
         if(~rst_n) begin
           // R0 is nil
-          mem[0] <= '0;
+          mem[0] <= RF_REG_RV;
         end else begin
           // R0 is nil
-          mem[0] <= '0;
+          mem[0] <= RF_REG_RV;
         end
       end
     end
@@ -132,7 +134,7 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
       always_ff @(posedge clk, negedge rst_n)
       begin : register_write_behavioral
         if (rst_n==1'b0) begin
-          mem[i] <= '0;
+          mem[i] <= RF_REG_RV;
         end else begin
           // Highest indexed write port will have priority
           for(int j=0; j<REGFILE_NUM_WRITE_PORTS; j++) begin : rf_write_ports

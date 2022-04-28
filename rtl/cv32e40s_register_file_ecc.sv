@@ -102,13 +102,15 @@ module cv32e40s_register_file_ecc import cv32e40s_pkg::*;
 
   always_comb begin
     for (integer i = 0; i < REGFILE_NUM_WRITE_PORTS; i++) begin
-      // Masking in hamming pattern to select wdata bits for parity calculation
+      // Masking in hamming pattern (with half the bits inverted) to select wdata bits for parity calculation
       ecc[i][0] = ^(wdata_i[i] & 32'b0101_0110_1010_1010_1010_1101_0101_1011);
       ecc[i][1] = ^(wdata_i[i] & 32'b1001_1011_0011_0011_0011_0110_0110_1101);
       ecc[i][2] = ^(wdata_i[i] & 32'b1110_0011_1100_0011_1100_0111_1000_1110);
       ecc[i][3] = ^(wdata_i[i] & 32'b0000_0011_1111_1100_0000_0111_1111_0000);
       ecc[i][4] = ^(wdata_i[i] & 32'b0000_0011_1111_1111_1111_1000_0000_0000);
       ecc[i][5] = ^(wdata_i[i] & 32'b1111_1100_0000_0000_0000_0000_0000_0000);
+
+      ecc[i]   ^= 6'b10_1010; // Invert every other bit
 
       // Add Error Code to write data
       rf_wdata_o[i] = {ecc[i], wdata_i[i]};
@@ -132,9 +134,11 @@ module cv32e40s_register_file_ecc import cv32e40s_pkg::*;
       syndrome[i][4] = ^(rdata_i[i] & 38'b01_0000_0000_0011_1111_1111_1111_1000_0000_0000);
       syndrome[i][5] = ^(rdata_i[i] & 38'b10_0000_1111_1100_0000_0000_0000_0000_0000_0000);
 
+      syndrome[i]   ^= 6'b10_1010; // Invert every other bit
+
       // Using syndrome for 2-bit detection instead of 1-bit correction
-      // The Error Correcting Code for a 0-word is 6'h0, so all words will have a valid ECC out of reset.
-      ecc_err_o |= |syndrome[i];
+      // The syndrome should always be 0 if there are no errors
+      ecc_err_o      |= |syndrome[i];
 
     end
   end
