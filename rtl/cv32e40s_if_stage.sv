@@ -118,7 +118,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   inst_resp_t        instr_decompressed;
   logic              instr_compressed_int;
-  logic              use_merged_dec;
 
   // Transaction signals to/from obi interface
   logic              prefetch_resp_valid;
@@ -357,7 +356,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     if (rst_n == 1'b0) begin
       if_id_pipe_o.instr_valid      <= 1'b0;
       if_id_pipe_o.instr            <= INST_RESP_RESET_VAL;
-      if_id_pipe_o.use_merged_dec   <= 1'b0;
       if_id_pipe_o.instr_meta       <= '0;
       if_id_pipe_o.pc               <= '0;
       if_id_pipe_o.illegal_c_insn   <= 1'b0;
@@ -371,7 +369,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       if (if_valid_o && id_ready_i) begin
         if_id_pipe_o.instr_valid      <= 1'b1;
         if_id_pipe_o.instr            <= dummy_insert ? dummy_instr : instr_decompressed;
-        if_id_pipe_o.use_merged_dec   <= dummy_insert ?        1'b0 : use_merged_dec;
         if_id_pipe_o.instr_meta       <= instr_meta_n;
         if_id_pipe_o.illegal_c_insn   <= dummy_insert ?        1'b0 : illegal_c_insn;
         if_id_pipe_o.pc               <= pc_if_o;
@@ -392,7 +389,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .instr_is_ptr_i     ( prefetch_is_ptr         ),
     .instr_o            ( instr_decompressed      ),
     .is_compressed_o    ( instr_compressed_int    ),
-    .use_merged_dec_o   ( use_merged_dec          ),
     .illegal_instr_o    ( illegal_c_insn          )
   );
 

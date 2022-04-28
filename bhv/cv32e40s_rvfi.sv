@@ -80,6 +80,7 @@ module cv32e40s_rvfi
    input logic                                is_dummy_instr_wb_i,
    input logic                                csr_en_wb_i,
    input logic                                sys_wfi_insn_wb_i,
+   input logic                                sys_en_wb_i,
    // Register writes
    input logic                                rf_we_wb_i,
    input logic [4:0]                          rf_addr_wb_i,
@@ -659,7 +660,7 @@ module cv32e40s_rvfi
 
   // WFI instructions retire when their wake-up condition is present.
   // The wake-up condition is only checked in the SLEEP state of the controller FSM.
-  assign wb_valid_adjusted = sys_wfi_insn_wb_i ? (ctrl_fsm_cs_i == SLEEP) && (ctrl_fsm_ns_i == FUNCTIONAL) : wb_valid_i;
+  assign wb_valid_adjusted = (sys_en_wb_i && sys_wfi_insn_wb_i) ? (ctrl_fsm_cs_i == SLEEP) && (ctrl_fsm_ns_i == FUNCTIONAL) : wb_valid_i;
 
   // Pipeline stage model //
 
@@ -1005,9 +1006,9 @@ module cv32e40s_rvfi
   // MIP is read in EX by CSR instructions, evaluated combinatorically in WB by the WFI instruction,
   // and is evaluated in WB for all other instructions
   assign ex_csr_rdata_d.mip                  = csr_mip_q_i;
-  assign rvfi_csr_rdata_d.mip                = csr_en_wb_i       ? ex_csr_rdata.mip :
-                                               sys_wfi_insn_wb_i ?            irq_i :
-                                                                        csr_mip_q_i;
+  assign rvfi_csr_rdata_d.mip                = csr_en_wb_i                        ? ex_csr_rdata.mip :
+                                               (sys_en_wb_i && sys_wfi_insn_wb_i) ?            irq_i :
+                                                                                          csr_mip_q_i;
   assign rvfi_csr_wdata_d.mip                = csr_mip_n_i;
   assign rvfi_csr_wmask_d.mip                = csr_mip_we_i ? '1 : '0;
 
