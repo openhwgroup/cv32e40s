@@ -43,7 +43,10 @@ It follows these specifications:
    https://github.com/riscv/riscv-debug-spec/blob/b659d7dc7f578e1a2a76f9e62a5eec0f2d80045c/riscv-debug-stable.pdf
 
 .. [RISC-V-SMCLIC] "Smclic" Core-Local Interrupt Controller (CLIC) RISC-V Privileged Architecture Extension, version 0.9-draft, 3/15/2022,
-   https://github.com/riscv/riscv-fast-interrupt/blob/af247be97888f759c61a00800f86171f28151820/clic.pdf 
+   https://github.com/riscv/riscv-fast-interrupt/blob/af247be97888f759c61a00800f86171f28151820/clic.pdf
+
+.. [RISC-V-SMSTATEEN] RISC-V State Enable Extension, Smstateen, Version 0.6.3-70b1471, 2021-10-13: frozen,
+   https://github.com/riscv/riscv-state-enable/releases/download/v0.6.3/Smstateen.pdf
 
 .. [RISC-V-ZBA_ZBB_ZBC_ZBS] RISC-V Bit Manipulation ISA-extensions, Version 1.0.0-38-g865e7a7, 2021-06-28,
    https://github.com/riscv/riscv-bitmanip/releases/download/1.0.0/bitmanip-1.0.0-38-g865e7a7.pdf
@@ -177,6 +180,7 @@ Most content of the RISC-V privileged specification is optional.
 * Trap handling supporting direct mode or vectored mode as described at :ref:`exceptions-interrupts`
 * Physical Memory Attribution (PMA) as described in :ref:`pma`
 * Physical Memory Protection ([RISC-V-SMEPMP]_)
+* State enable ([RISC-V-SMSTATEEN]_)
 
 Synthesis guidelines
 --------------------
