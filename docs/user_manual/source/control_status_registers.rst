@@ -228,7 +228,23 @@ instruction exception.
     +-------------------+----------------+------------+------------+----------------------------------------------------+
     | 0x30A             | ``menvcfg``    | MRW        |            | Machine Environment Configuration (lower 32 bits)  |
     +-------------------+----------------+------------+------------+----------------------------------------------------+
+    | 0x30C             | ``mstateen0``  | MRW        |            | Machine state enable 0 (lower 32 bits)             |
+    +-------------------+----------------+------------+------------+----------------------------------------------------+
+    | 0x30D             | ``mstateen1``  | MRW        |            | Machine state enable 1 (lower 32 bits)             |
+    +-------------------+----------------+------------+------------+----------------------------------------------------+
+    | 0x30E             | ``mstateen2``  | MRW        |            | Machine state enable 2 (lower 32 bits)             |
+    +-------------------+----------------+------------+------------+----------------------------------------------------+
+    | 0x30F             | ``mstateen3``  | MRW        |            | Machine state enable 3 (lower 32 bits)             |
+    +-------------------+----------------+------------+------------+----------------------------------------------------+
     | 0x31A             | ``menvcfgh``   | MRW        |            | Machine Environment Configuration (upper 32 bits)  |
+    +-------------------+----------------+------------+------------+----------------------------------------------------+
+    | 0x31C             | ``mstateen0h`` | MRW        |            | Machine state enable 0 (upper 32 bits)             |
+    +-------------------+----------------+------------+------------+----------------------------------------------------+
+    | 0x31D             | ``mstateen1h`` | MRW        |            | Machine state enable 1 (upper 32 bits)             |
+    +-------------------+----------------+------------+------------+----------------------------------------------------+
+    | 0x31E             | ``mstateen2h`` | MRW        |            | Machine state enable 2 (upper 32 bits)             |
+    +-------------------+----------------+------------+------------+----------------------------------------------------+
+    | 0x31F             | ``mstateen3h`` | MRW        |            | Machine state enable 3 (upper 32 bits)             |
     +-------------------+----------------+------------+------------+----------------------------------------------------+
 
 .. only:: PMP
@@ -390,8 +406,6 @@ level):
     | 4:0         | RW        | Accrued Exceptions (``fflags``)                                        |
     +-------------+-----------+------------------------------------------------------------------------+
 
-
-
 .. _csr-jvt:
 
 Jump Vector Table (``jvt``)
@@ -419,6 +433,8 @@ Detailed:
 
 Table jump base vector and control register
 
+.. note::
+   Memory writes to the ``jvt`` based vector table require an instruction barrier (``fence.i``) to guarantee that they are visible to the instruction fetch (see :ref:`fencei` and [RISC-V-UNPRIV]_).
 
 .. _csr-mstatus:
 
@@ -663,6 +679,9 @@ are supported.
 
 The NMI vector location is at index 15 of the machine trap vector table for both direct mode and vectored mode (i.e. at {**mtvec[31:7]**, 5'hF, 2'b00}).
 
+.. note::
+   Memory writes to the ``mtvec`` based vector table require an instruction barrier (``fence.i``) to guarantee that they are visible to the instruction fetch (see :ref:`fencei` and [RISC-V-UNPRIV]_).
+
 .. _csr-mtvec-smclic:
 
 Machine Trap-Vector Base Address (``mtvec``) - ``SMCLIC`` == 1
@@ -689,6 +708,9 @@ Detailed:
   +---------+------------------+---------------------------------------------------------------------------------------------------------------+
 
 The initial value of ``mtvec`` is equal to {**mtvec_addr_i[31:7]**, 5'b0, 2'b11}.
+
+.. note::
+   Memory writes to the ``mtvec`` based vector table require an instruction barrier (``fence.i``) to guarantee that they are visible to the instruction fetch (see :ref:`fencei` and [RISC-V-UNPRIV]_).
 
 .. _csr-mtvt:
 
@@ -727,6 +749,9 @@ Detailed:
    The ``mtvt`` CSR holds the base address of the trap vector table, which has its alignment restricted to both at least 64-bytes and to
    ``2^(2+SMCLIC_ID_WIDTH)`` bytes or greater power-of-two boundary. For example if ``SMCLIC_ID_WIDTH`` = 8, then 256 CLIC interrupts are supported and the trap vector table
    is aligned to 1024 bytes, and therefore **BASE[9:6]** will be WARL (0x0).
+
+.. note::
+   Memory writes to the ``mtvt`` based vector table require an instruction barrier (``fence.i``) to guarantee that they are visible to the instruction fetch (see :ref:`fencei` and [RISC-V-UNPRIV]_).
 
 Machine Status (``mstatush``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -888,6 +913,74 @@ Detailed:
     | 31:0  | WARL (0x0) | Hardwired to 0.                                                  |
     +-------+------------+------------------------------------------------------------------+
 
+  Machine State Enable 0 (``mstateen0``)
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  CSR Address: 0x30C
+
+  Reset Value: 0x0000_0000
+
+  Detailed:
+
+  +-------+------------+------------------------------------------------------------------+
+  | Bit#  | R/W        | Description                                                      |
+  +=======+============+==================================================================+
+  | 31:0  | WARL (0x0) | Hardwired to 0.                                                  |
+  +-------+------------+------------------------------------------------------------------+
+  | 2     | RW         | Controls user mode access to the ``jvt`` CSR.                    |
+  +-------+------------+------------------------------------------------------------------+
+  | 1:0   | WARL (0x0) | Hardwired to 0.                                                  |
+  +-------+------------+------------------------------------------------------------------+
+
+  .. note::
+
+     The bit position for controlling access to the ``jvt`` CSR is not yet ratified and open to change.
+
+  Machine State Enable 1 (``mstateen1``)
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  CSR Address: 0x30D
+
+  Reset Value: 0x0000_0000
+
+  Detailed:
+
+  +-------+------------+------------------------------------------------------------------+
+  | Bit#  | R/W        | Description                                                      |
+  +=======+============+==================================================================+
+  | 31:0  | WARL (0x0) | Hardwired to 0.                                                  |
+  +-------+------------+------------------------------------------------------------------+
+
+  Machine State Enable 2 (``mstateen2``)
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  CSR Address: 0x30E
+
+  Reset Value: 0x0000_0000
+
+  Detailed:
+
+  +-------+------------+------------------------------------------------------------------+
+  | Bit#  | R/W        | Description                                                      |
+  +=======+============+==================================================================+
+  | 31:0  | WARL (0x0) | Hardwired to 0.                                                  |
+  +-------+------------+------------------------------------------------------------------+
+
+  Machine State Enable 3 (``mstateen3``)
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  CSR Address: 0x30F
+
+  Reset Value: 0x0000_0000
+
+  Detailed:
+
+  +-------+------------+------------------------------------------------------------------+
+  | Bit#  | R/W        | Description                                                      |
+  +=======+============+==================================================================+
+  | 31:0  | WARL (0x0) | Hardwired to 0.                                                  |
+  +-------+------------+------------------------------------------------------------------+
+
   Machine Environment Configuration (``menvcfgh``)
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -908,6 +1001,66 @@ Detailed:
     +------+-------------+---------------------------------------------------------------+
     | 30:0 | WPRI (0x0)  | Reserved. Hardwired to 0.                                     |
     +------+-------------+---------------------------------------------------------------+
+
+  Machine State Enable 0 (``mstateen0h``)
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  CSR Address: 0x31C
+
+  Reset Value: 0x0000_0000
+
+  Detailed:
+
+  +-------+------------+------------------------------------------------------------------+
+  | Bit#  | R/W        | Description                                                      |
+  +=======+============+==================================================================+
+  | 31:0  | WARL (0x0) | Hardwired to 0.                                                  |
+  +-------+------------+------------------------------------------------------------------+
+
+  Machine State Enable 1 (``mstateen1h``)
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  CSR Address: 0x31D
+
+  Reset Value: 0x0000_0000
+
+  Detailed:
+
+  +-------+------------+------------------------------------------------------------------+
+  | Bit#  | R/W        | Description                                                      |
+  +=======+============+==================================================================+
+  | 31:0  | WARL (0x0) | Hardwired to 0.                                                  |
+  +-------+------------+------------------------------------------------------------------+
+
+  Machine State Enable 2 (``mstateen2h``)
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  CSR Address: 0x31E
+
+  Reset Value: 0x0000_0000
+
+  Detailed:
+
+  +-------+------------+------------------------------------------------------------------+
+  | Bit#  | R/W        | Description                                                      |
+  +=======+============+==================================================================+
+  | 31:0  | WARL (0x0) | Hardwired to 0.                                                  |
+  +-------+------------+------------------------------------------------------------------+
+
+  Machine State Enable 3 (``mstateen3h``)
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  CSR Address: 0x31F
+
+  Reset Value: 0x0000_0000
+
+  Detailed:
+
+  +-------+------------+------------------------------------------------------------------+
+  | Bit#  | R/W        | Description                                                      |
+  +=======+============+==================================================================+
+  | 31:0  | WARL (0x0) | Hardwired to 0.                                                  |
+  +-------+------------+------------------------------------------------------------------+
 
 Machine Counter-Inhibit Register (``mcountinhibit``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -949,7 +1102,6 @@ Detailed:
 .. table::
   :widths: 10 20 70
   :class: no-scrollbar-table
-
   +-------+-------------+---------------------------------------------------------------+
   | Bit#  |  R/W        | Definition                                                    |
   +=======+=============+===============================================================+
