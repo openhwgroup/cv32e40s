@@ -19,6 +19,7 @@
   `include "cv32e40s_cs_registers_sva.sv"
   `include "cv32e40s_decoder_sva.sv"
   `include "cv32e40s_div_sva.sv"
+  `include "cv32e40s_register_file_sva.sv"
   `include "cv32e40s_dummy_instr_sva.sv"
   `include "cv32e40s_if_stage_sva.sv"
   `include "cv32e40s_id_stage_sva.sv"
@@ -177,6 +178,10 @@ module cv32e40s_wrapper
     (
       .*
     );
+
+  bind cv32e40s_register_file:
+    core_i.register_file_wrapper_i.register_file_i cv32e40s_register_file_sva
+      #(.REGFILE_NUM_READ_PORTS (REGFILE_NUM_READ_PORTS)) register_file_sva (.*);
 
   generate
     if (SECURE) begin
