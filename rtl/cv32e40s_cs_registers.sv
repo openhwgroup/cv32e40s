@@ -743,7 +743,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mtvec_n.zero0            = mtvec_q.zero0;
     mtvec_we                 = csr_mtvec_init_i;
 
-    mcounteren_n    = csr_wdata_int;
+    mcounteren_n    = csr_wdata_int & CSR_MCOUNTEREN_MASK;
     mcounteren_we   = 1'b0;
 
     if (SMCLIC) begin
@@ -2195,16 +2195,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   end
 
   //  Counter enable register: mcounteren
-  //  mcounteren[2:0] = {IR, TM, CY}. time (TM) is not implemented
-  localparam logic [31:0] MCOUNTEREN_MASK = {{(29-NUM_MHPMCOUNTERS){1'b0}},{(NUM_MHPMCOUNTERS){1'b1}},3'b101};
-
-
   cv32e40s_csr #(
     .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0),
-    .MASK       (MCOUNTEREN_MASK)
+    .MASK       (CSR_MCOUNTEREN_MASK)
   ) mcounteren_csr_i (
     .clk        (clk),
     .rst_n      (rst_n),
