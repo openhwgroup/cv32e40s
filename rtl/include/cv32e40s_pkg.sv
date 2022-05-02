@@ -520,7 +520,7 @@ typedef enum logic[11:0] {
   CSR_SECURESEED2    = 12'hBFC
 } csr_num_e;
 
-// CSR Bit Implementation Masks for hardened registers
+// CSR Bit Implementation Masks
 parameter CSR_JVT_MASK          = ~32'h0;
 parameter CSR_DCSR_MASK         = 32'b1111_0000_0000_0000_1000_1001_1100_0111; // NMI bit taken from ctrl_fsm
 parameter CSR_MEPC_MASK         = ~32'b1;
@@ -538,6 +538,7 @@ parameter CSR_CPUCTRL_MASK      = 32'h000F000F;
 parameter CSR_PMPNCFG_MASK      = ~8'h0;
 parameter CSR_PMPADDR_MASK      = ~32'h0;
 parameter CSR_MSECCFG_MASK      = 32'h00000007;
+parameter CSR_MCOUNTEREN_MASK   = 32'h0;
 
 // CSR operations
 
