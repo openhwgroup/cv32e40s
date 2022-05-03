@@ -155,7 +155,8 @@ Parameters
 | ``PMA_CFG[]``                | pma_cfg_t      | PMA_R_DEFAULT    | PMA configuration.                                                 |
 |                              |                |                  | Array of pma_cfg_t with PMA_NUM_REGIONS entries, see :ref:`pma`    |
 +------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``PMP_GRANULARITY``          | int (0..31)    | 0                | Minimum granularity of PMP address matching                        |
+| ``PMP_GRANULARITY``          | int (0..31)    | 0                | Sets minimum granularity of PMP address matching to                |
+|                              |                |                  | 2 :sup:`PMP_GRANULARITY+2` bytes.                                  |
 +------------------------------+----------------+------------------+--------------------------------------------------------------------+
 | ``PMP_NUM_REGIONS``          | int (0..64)    | 0                | Number of PMP regions                                              |
 +------------------------------+----------------+------------------+--------------------------------------------------------------------+
