@@ -534,7 +534,7 @@ parameter CSR_MSCRATCHCSW_MASK  = ~32'h0;
 parameter CSR_MSCRATCHCSWL_MASK = ~32'h0;
 parameter CSR_MCLICBASE_MASK    = 32'hFFFFF000;
 parameter CSR_MSCRATCH_MASK     = ~32'h0;
-parameter CSR_CPUCTRL_MASK      = 32'h000F000F;
+parameter CSR_CPUCTRL_MASK      = 32'h000F0007;
 parameter CSR_PMPNCFG_MASK      = ~8'h0;
 parameter CSR_PMPADDR_MASK      = ~32'h0;
 parameter CSR_MSECCFG_MASK      = 32'h00000007;
@@ -563,8 +563,7 @@ parameter int unsigned CSR_MFIX_BIT_HIGH = 31;
 typedef struct packed {
   logic [31:20] zero1;
   logic [19:16] rnddummyfreq;
-  logic [15: 4] zero0;
-  logic         rnddata;
+  logic [15: 3] zero0;
   logic         rndhint;
   logic         rnddummy;
   logic         dataindtiming;
