@@ -231,8 +231,42 @@ The OBI bus interfaces have associated parity and checksum signals:
    bits against ``rchk[3:0]`` for read transactions (see [OPENHW-OBI]_).
 
 |corev| checks its OBI inputs against the related parity and checksum inputs (i.e. ``instr_gntpar_i``, ``data_gntpar_i``, ``instr_rvalidpar_i``, ``data_rvalidpar_i``, ``instr_rchk_i``
-and ``data_rchk_i``) as specified in [OPENHW-OBI]_ and generates a pulse on the ``alert_major_o`` pin in cases of parity or checksum violations. The ``instr_rchk_i`` and ``data_rchk_i``
-checks are only performed if so configured in the PMA (see :ref:`pma_integrity`).
+and ``data_rchk_i``) as specified in [OPENHW-OBI]_. The ``instr_gntpar_i``, ``data_gntpar_i``, ``instr_rvalidpar_i`` and ``data_rvalidpar_i`` checks are always enabled.
+
+The ``instr_rchk_i`` and ``data_rchk_i`` checks are only enabled for PMA regions that have their integrity attribute set to 1 (see :ref:`pma_integrity`).
+
+Any ``instr_gntpar_i`` or ``instr_rvalidpar_i`` mismatch (which per definition can only occur while not in reset) will trigger an alert on ``alert_major_o``. If the mismatch occurs during the instruction fetch
+interval (i.e. from ``instr_req_o`` = 1 to ``instr_rvalid_i`` = 1) and the instructions is attempted for execution, then a precise exception is triggered (specifically an instruction parity fault with exception code 49).
+
+Any ``data_gntpar_i`` or ``data_rvalidpar_i`` mismatch (which per definition can only occur while not in reset) will trigger an alert on ``alert_major_o``. If the mismatch occurs during the load/store fetch
+interval (i.e. from ``data_req_o`` = 1 to ``data_rvalid_i`` = 1, implying also that the load/store is attempted for execution), then an imprecise NMI is triggered (specifically a load/store parity fault NMI with exception code 1026/1027).
+
+Any ``instr_rchk_i`` related mismatch (which can only occur when enabled via the PMA) (and which per definition can only occur when ``instr_rvalid_i`` = 1) will trigger an alert on ``alert_major_o``.
+If the instructions is attempted for execution, then a precise exception is triggered (specifically an instruction checksum fault with exception code 49).
+
+Any ``data_rchk_i`` related mismatch (which can only occur when enabled via the PMA) (and which per definition can only occur when ``data_rvalid_i`` = 1) will trigger an alert on ``alert_major_o``.
+If the load/store is attempted for execution (which is the case since ``data_rvalid_i`` = 1), then an imprecise NMI is triggered (specifically a load/store checksum fault NMI with exception code 1026/1027).
+
+:numref:`Basic interrupt architecture interface signals` summarizes the handling of parity and checksum faults.
+
+.. table:: Parity and checksum faults
+  :name: Parity and checksum faults
+
+  +-------------------------------------------+-------------------+--------------------------------------------+-------------------------------------------------+-------------------------------------------------+
+  | **Checked signals**                       | **Enabled**       | **Triggers alert on alert_major_o**        | **Triggers synchronous exception**              | **Triggers NMI**                                |
+  +-------------------------------------------+-------------------+--------------------------------------------+-------------------------------------------------+-------------------------------------------------+
+  | ``instr_gntpar_i``, ``instr_rvalidpar_i`` | Always            | Upon mismatch when not in reset            | Upon execution of an instruction with mismatch  | N/A                                             |
+  |                                           |                   |                                            | occuring during its instruction fecth interval  |                                                 |
+  +-------------------------------------------+-------------------+--------------------------------------------+-------------------------------------------------+-------------------------------------------------+
+  | ``data_gntpar_i``, ``data_rvalidpar_i``   | Always            | Upon mismatch when not in reset            | N/A                                             | Upon execution of a load/store with mismatch    |
+  |                                           |                   |                                            |                                                 | occuring during its load/store fecth interval   |
+  +-------------------------------------------+-------------------+--------------------------------------------+-------------------------------------------------+-------------------------------------------------+
+  | ``instr_rchk_i``                          | Via integrity PMA | Upon mismatch when ``instr_rvalid_i`` = 1  | Upon execution of an instruction with mismatch  | N/A                                             |
+  |                                           |                   |                                            | when ``instr_rvalid_i`` = 1                     |                                                 |
+  +-------------------------------------------+-------------------+--------------------------------------------+-------------------------------------------------+-------------------------------------------------+
+  | ``data_rchk_i``                           | Via integrity PMA | Upon mismatch when ``data_rvalid_i`` = 1   | N/A                                             | Upon execution of load/store with mismatch      |
+  |                                           |                   |                                            |                                                 | when ``data_rvalid_i`` = 1                      |
+  +-------------------------------------------+-------------------+--------------------------------------------+-------------------------------------------------+-------------------------------------------------+
 
 The environment is expected to check the OBI outputs of |corev| against the related parity and checksum outputs (i.e. ``instr_reqpar_o``, ``data_reqpar_o``, ``instr_rchk_o`` and
 ``data_rchk_o``) as specified in [OPENHW-OBI]_. It is platform defined how the environment reacts in case of parity or checksum violations.
