@@ -25,21 +25,30 @@ Security alerts
 These outputs can be used by external hardware to trigger security incident responses like for example a system wide reset or a memory erase.
 A security output is high for every clock cycle that the related security issue persists.
 
-The following issues result in a major security alert:
+The following issues result in a major security alert on ``alert_major_o``:
 
 * Register file ECC error
 * Hardened PC error
 * Hardened CSR error
 * Interface integrity error
 
-The following issues result in a minor security alert:
+.. note::
+
+   Interface integrity errors can be reported on ``alert_major_o`` even if no corresponding exception or NMI occurs. 
+
+The following issues result in a minor security alert on ``alert_minor_o``:
 
 * LFSR0, LFSR1, LFSR2 lockup
-* Instruction access fault
-* Illegal instruction
-* Load access fault
-* Store/AMO access fault
-* Instruction bus fault
+* Instruction access fault (only when triggering the related exception)
+* Illegal instruction (only when triggering the related exception)
+* Load access fault (only when triggering the related exception)
+* Store/AMO access fault (only when triggering the related exception)
+* Instruction bus fault (only when triggering the related exception)
+* Instruction parity/checksum fault (only when triggering the related exception)
+* Store parity/checksum fault (only when triggering the related NMI).
+* Load parity/checksum fault NMI (only when triggering the related NMI).
+* Store bus fault NMI (only when triggering the related NMI).
+* Load bus fault NMI (only when triggering the related NMI).
 
 Data independent timing
 -----------------------
@@ -99,11 +108,10 @@ The initial seed and output permutation for the LFSRs can be set using the follo
 * ``LFSR1_CFG`` for LFSR1.
 * ``LFSR2_CFG`` for LFSR2.
 
-These parameters are of the type lfsr_cfg_t which has the following fields:
+These parameters are of the type ``lfsr_cfg_t`` which are described in :numref:`LFSR Configuration Type lfsr_cfg_t`.
 
-
-.. table:: LFSR Configuration Type
-  :name: lfsr_cfg_t
+.. table:: LFSR Configuration Type lfsr_cfg_t
+  :name: LFSR Configuration Type lfsr_cfg_t
 
   +------------------+-------------+---------------------------------------------------------------------------------+
   | **Field**        | **Type**    | **Description**                                                                 |
