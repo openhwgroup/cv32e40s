@@ -1580,16 +1580,14 @@ Detailed:
 +-------------+-----------+------------------------------------------------------------------------+
 |   Bit #     |   R/W     |   Description                                                          |
 +=============+===========+========================================================================+
-| 31:20       | R (0x0)   | Reserved                                                               |
+| 31:20       | R (0x0)   | Reserved. Hardwired to 0.                                              |
 +-------------+-----------+------------------------------------------------------------------------+
 | 19:16       | RW        | **RNDDUMMYFREQ:** Frequency control for dummy instruction insertion.   |
 |             |           | Dummy instruction inserted every n instructions where n is a range     |
 |             |           | set based on the value written to this register where:                 |
 |             |           | 0x0 = 1-4, 0x3 = 1-8, 0x7 = 1-16, 0xF = 1-32, 0x1F = 1-64              |
 +-------------+-----------+------------------------------------------------------------------------+
-| 15:4        | R (0x0)   | Reserved                                                               |
-+-------------+-----------+------------------------------------------------------------------------+
-| 3           | RW        | **RNDDATA:** Feed random data to unused functional units. (1 = enable) |
+| 15:3        | R (0x0)   | Reserved. Hardwired to 0.                                              |
 +-------------+-----------+------------------------------------------------------------------------+
 | 2           | RW        | **RNDHINT:** Replace SLT hint by a random instruction without register |
 |             |           | fileside effects (1 = enable).                                         |
