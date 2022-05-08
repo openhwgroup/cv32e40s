@@ -71,11 +71,6 @@ module cv32e40s_id_stage_sva
   input logic           last_op
 );
 
-    // the instruction delivered to the ID stage should always be valid
-    a_valid_instr :
-      assert property (@(posedge clk)
-                       (if_id_pipe_i.instr_valid & (~if_id_pipe_i.illegal_c_insn)) |-> (!$isunknown(instr)) )
-        else `uvm_error("id_stage", $sformatf("%t, Instruction is valid, but has at least one X", $time));
 /* todo: check and fix/remove
       // Check that instruction after taken branch is flushed (more should actually be flushed, but that is not checked here)
       // and that EX stage is ready to receive flushed instruction immediately

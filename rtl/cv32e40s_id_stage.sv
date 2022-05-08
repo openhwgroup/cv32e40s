@@ -73,11 +73,10 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   output logic        alu_jmp_o,        // Jump (JAL, JALR)
   output logic        alu_jmpr_o,       // Jump register (JALR)
 
-  output logic        sys_en_o,
   output logic        sys_mret_insn_o,
   output logic        sys_wfi_insn_o,
   output logic        last_op_o,
-  output logic        csr_en_o,
+  output logic        csr_en_raw_o,
   output csr_opcode_e csr_op_o,
 
   // RF interface -> controller
@@ -146,6 +145,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   // CSR
   logic                 csr_en;
+  logic                 csr_en_raw;
   csr_opcode_e          csr_op;
 
   // SYS
@@ -209,7 +209,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   assign instr_valid = if_id_pipe_i.instr_valid && !ctrl_fsm_i.kill_id && !ctrl_fsm_i.halt_id;
 
-  assign sys_en_o = sys_en;
   assign sys_mret_insn_o = sys_mret_insn;
   assign sys_wfi_insn_o  = sys_wfi_insn;
 
@@ -451,6 +450,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
     // CSR
     .csr_en_o                        ( csr_en                    ),
+    .csr_en_raw_o                    ( csr_en_raw                ),
     .csr_op_o                        ( csr_op                    ),
     .mstatus_i                       ( mstatus_i                 ),
 
@@ -704,7 +704,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   assign alu_jmp_o    = alu_jmp;
   assign alu_jmpr_o   = alu_jmpr;
 
-  assign csr_en_o = csr_en;
+  assign csr_en_raw_o = csr_en_raw;
   assign csr_op_o = csr_op;
 
   assign last_op_o = last_op;

@@ -45,11 +45,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   input ex_wb_pipe_t  ex_wb_pipe_i,
 
   // From ID
-  input  logic        alu_en_raw_id_i,            // ALU enable (not gated with deassert) // todo: study area and functional impact of using alu_en_id_i instead
   input  logic        alu_jmpr_id_i,              // ALU jump register (JALR)
-  input  logic        sys_en_id_i,
   input  logic        sys_mret_id_i,              // mret in ID
-  input  logic        csr_en_id_i,                // CSR in ID
+  input  logic        csr_en_raw_id_i,            // CSR in ID (not gated with deassert)
   input  csr_opcode_e csr_op_id_i,                // CSR opcode (ID) // todo: Not used (is this on purpose or should it be used here?)
   input  logic        sys_wfi_id_i,               // WFI instruction in ID
   input  logic        last_op_id_i,
@@ -72,11 +70,11 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_ex_hz;
   logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_wb_hz;
 
-  // Detect CSR read in ID (implicit and explicit)
-  logic csr_read_in_id;
+  logic                              csr_write_in_ex_wb;        // Detect CSR write in EX or WB (implicit and explicit)
 
-  // Detect CSR write in EX or WB (implicit and explicit)
-  logic csr_write_in_ex_wb;
+  logic                              rf_we_ex;                  // EX register file write enable
+  logic                              rf_we_wb;                  // WB register file write enable
+  logic                              lsu_en_wb;                 // WB lsu_en
 
   // Detect if a SECURE mret would stall on itself
   logic mret_self_stall;
@@ -84,28 +82,36 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // Detect if a jumpr would stall on itself
   logic jumpr_self_stall;
 
-  // EX register file write enable
-  logic rf_we_ex;
-  assign rf_we_ex = id_ex_pipe_i.rf_we && id_ex_pipe_i.instr_valid;
-
-  // WB register file write enable
-  logic rf_we_wb;
-  assign rf_we_wb = ex_wb_pipe_i.rf_we && ex_wb_pipe_i.instr_valid;
-
-  // WB lsu_en
-  logic lsu_en_wb;
-  assign lsu_en_wb = ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid;
-
-  // EX rf_waddr
-  rf_addr_t  rf_waddr_ex;
-  assign rf_waddr_ex = id_ex_pipe_i.rf_waddr;
-
-  // WB rf_waddr
-  // TODO: If XIF OoO is allowed, we need to look at WB stage outputs instead
-  rf_addr_t  rf_waddr_wb;
-  assign rf_waddr_wb = ex_wb_pipe_i.rf_waddr;
+  logic                              sys_mret_unqual_id;        // MRET in ID (not qualified with sys_en)
+  logic                              csr_exp_unqual_id;         // Explicit CSR in ID (not qualified with csr_en)
+  logic                              csr_unqual_id;             // Explicit or implicit CSR in ID (not qualified)
+  logic                              jmpr_unqual_id;            // JALR in ID (not qualified with alu_en)
 
   // todo: make all qualifiers here, and use those signals later in the file
+
+  assign rf_we_ex = id_ex_pipe_i.rf_we && id_ex_pipe_i.instr_valid;
+  assign rf_we_wb = ex_wb_pipe_i.rf_we && ex_wb_pipe_i.instr_valid;
+  assign lsu_en_wb = ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid;
+
+  assign rf_waddr_ex = id_ex_pipe_i.rf_waddr;
+  assign rf_waddr_wb = ex_wb_pipe_i.rf_waddr; // TODO: If XIF OoO is allowed, we need to look at WB stage outputs instead
+
+  // The following unqualified signals are such that they can have a false positive (but no false negative).
+  //
+  // There are two reasons why these signals are considered unqualified:
+  // - The corresponding _en signal is not used
+  // - A raw _en signal is used (i.e. deassert_we is ignored)
+  //
+  // This can lead to stall cycles (via jalr_stall or csr_stall) when they should not actually be needed.
+  // Such cases are however rare as the difference between qualified and unqualified signals will only
+  // occur in case that deassert_we = 1. Permanent stalls are avoided because the EX, WB stages will
+  // eventually empty out removing that reasons for stall conditions.
+
+  assign sys_mret_unqual_id = sys_mret_id_i && if_id_pipe_i.instr_valid;
+  assign csr_exp_unqual_id = csr_en_raw_id_i && if_id_pipe_i.instr_valid;
+  assign jmpr_unqual_id = alu_jmpr_id_i && if_id_pipe_i.instr_valid;
+
+  assign csr_unqual_id = csr_exp_unqual_id || sys_mret_unqual_id;
 
   /////////////////////////////////////////////////////////////
   //  ____  _        _ _    ____            _             _  //
@@ -125,8 +131,6 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
   // todo:low:Above loop reasoning only applies to halt_id; for other pipeline stages a local instr_valid signal can maybe be used.
 
-  assign csr_read_in_id = (csr_en_id_i || (sys_en_id_i && sys_mret_id_i) || (sys_en_id_i && sys_wfi_id_i)) && if_id_pipe_i.instr_valid;
-
   // Detect when a CSR insn  in in EX or WB
   // mret and dret implicitly writes to CSR. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.
 
@@ -136,13 +140,13 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
                               );
 
   // Detect if an a secure mret has its last phase (2/2) in ID while the first is in EX or WB.
-  assign mret_self_stall = (sys_en_id_i && sys_mret_id_i && last_op_id_i) && // MRET 2/2 in ID
+  assign mret_self_stall = (sys_mret_unqual_id && last_op_id_i) && // MRET 2/2 in ID
                            ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op) || // mret 1/2 in EX
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_op));  // mret 1/2 in WB
 
   // Detect if a jumpr instruction is stalling on itself (Can only happen if the last part is in ID and the first in EX)
   // Any stall due to first part being in WB would be allowed to forward to ID.
-  assign jumpr_self_stall = (alu_jmpr_id_i && alu_en_raw_id_i && last_op_id_i) &&
+  assign jumpr_self_stall = (jmpr_unqual_id && last_op_id_i) &&
                             ((id_ex_pipe_i.alu_jmp && id_ex_pipe_i.alu_en && !id_ex_pipe_i.last_op));
 
 
@@ -171,8 +175,8 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     end
   endgenerate
 
-  // JALR rs1 match (rf_re_id_i[0] implied by alu_jmpr_id_i).
-  // Not qualified yet with JALR (alu_jmpr_id_i && alu_en_raw_id_i) nor with read enable (implied by JALR)
+  // JALR rs1 match (rf_re_id_i[0] implied by JALR).
+  // Not qualified yet with JALR instruction nor with read enable (implied by JALR)
   assign rf_rd_ex_jalr_match = (rf_waddr_ex == rf_raddr_id_i[0]) && |rf_raddr_id_i[0];
   assign rf_rd_wb_jalr_match = (rf_waddr_wb == rf_raddr_id_i[0]) && |rf_raddr_id_i[0];
 
@@ -201,11 +205,11 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     end
 
     // Stall because of jalr path. Stall if a result is to be forwarded to the PC except if result from WB is an ALU result.
-    // No need to deassert anything in ID as ID stage is stalled anyway. alu_jmpr_id_i implies rf_re_id_i[0].
+    // No need to deassert anything in ID as ID stage is stalled anyway. JALR implies rf_re_id_i[0].
     // Also stalling when a CSR access to MNXTI is in WB. This is because the jalr forward uses the ex_wb_pipe.rf_wdata as data,
     // and forwarding the CSR result (pointer address for mnxti) would need the forward mux to also include the pointer address from cs_registers.
     // Cannot use wb_stage.rf_wdata_o due to the timing path from the data OBI.
-    if ((alu_jmpr_id_i && alu_en_raw_id_i) &&
+    if (jmpr_unqual_id &&
          ((rf_we_wb && rf_rd_wb_jalr_match && lsu_en_wb) ||
           (rf_we_wb && rf_rd_wb_jalr_match && (ex_wb_pipe_i.csr_mnxti_access && ex_wb_pipe_i.csr_en)) ||
           (rf_we_ex && rf_rd_ex_jalr_match)) && !jumpr_self_stall) begin
@@ -215,8 +219,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     end
 
     // Stall because of CSR read (direct or implied) in ID while CSR (implied or direct) is written in EX/WB
-    // Secure mret which stalls on itself is excluded to avoid uneeded bubbles.
-    if (csr_read_in_id && csr_write_in_ex_wb && !mret_self_stall) begin
+    if (csr_unqual_id && csr_write_in_ex_wb) begin
       ctrl_byp_o.csr_stall = 1'b1;
     end
 
@@ -257,7 +260,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
     // Forwarding WB->ID for the jump register path
     // Only used if WB is writing back an ALU result. No forwarding for load result because of timing reasons.
-    // Non qualified rf_rd_wb_jalr_match is used as it is a don't care if alu_jmpr_id_i = 0 or jalr_stall = 1.
+    // Non qualified rf_rd_wb_jalr_match is used as it is a don't care if jmpr_unqual_id = 0 or jalr_stall = 1.
     if (rf_we_wb) begin
       if (rf_rd_wb_jalr_match) begin
         ctrl_byp_o.jalr_fw_mux_sel = SELJ_FW_WB;
