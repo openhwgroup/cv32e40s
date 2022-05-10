@@ -1173,7 +1173,7 @@ Match Control Type 6 (``mcontrol6``)
 
 CSR Address: 0x7A1
 
-Reset Value: 0x6800_1044
+Reset Value: 0x6800_1000
 
 Accessible in Debug Mode or M-Mode, depending on **TDATA1.DMODE**.
 
@@ -1229,7 +1229,7 @@ Exception Trigger (``etrigger``)
 
 CSR Address: 0x7A1
 
-Reset Value: 0x5800_0201
+Reset Value: 0x5800_0001
 
 Accessible in Debug Mode or M-Mode, depending on **TDATA1.DMODE**.
 
