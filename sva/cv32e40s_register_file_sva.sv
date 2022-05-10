@@ -66,7 +66,7 @@ module cv32e40s_register_file_sva
         a_check_rdata_source_ecc_helper:
 
           assert property (@(posedge clk) disable iff (!rst_n)
-                           (rdata_o[rf_rp] inside mem_gated))
+                           (rdata_o[rf_rp] inside {mem_gated}))
             else `uvm_error("register_file", "Rdata not in memory")
 
         // Check read port ECC

@@ -49,7 +49,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
 
   // ALU signals
   output logic          alu_en_o,               // ALU enable
-  output logic          alu_en_raw_o,           // ALU enable without deassert
   output logic          alu_bch_o,              // ALU branch (ALU used for comparison)
   output logic          alu_jmp_o,              // ALU jump (JALR, JALR) (ALU used to compute LR)
   output logic          alu_jmpr_o,             // ALU jump register (JALR) (ALU used to compute LR)
@@ -67,7 +66,8 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   output logic          div_en_o,               // Perform division
 
   // CSR
-  output logic          csr_en_o,               // Enable access to CSR
+  output logic          csr_en_o,               // CSR enable
+  output logic          csr_en_raw_o,           // CSR enable without deassert
   output csr_opcode_e   csr_op_o,               // Operation to perform on CSR
   input  mstatus_t      mstatus_i,              // Current mstatus
 
@@ -87,7 +87,10 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   output imm_b_mux_e    imm_b_mux_sel_o,        // Immediate selection for operand b
   output bch_jmp_mux_e  bch_jmp_mux_sel_o,      // Branch / jump target selection
 
-  input  ctrl_fsm_t     ctrl_fsm_i              // Control signal from controller_fsm
+  input  ctrl_fsm_t     ctrl_fsm_i,              // Control signal from controller_fsm,
+
+  // Raw outputs for pc_check todo: can we rewrite pc_check to avoid them?
+  output logic          alu_en_raw_o
 );
 
   // write enable/request control
@@ -225,6 +228,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   // Suppress special instruction/illegal instruction bits
   assign illegal_insn_o = deassert_we_i ? 1'b0 : decoder_ctrl_mux.illegal_insn;
 
-  assign alu_en_raw_o = alu_en;
+  assign csr_en_raw_o = csr_en;
 
+  assign alu_en_raw_o = alu_en;
 endmodule // cv32e40s_decoder

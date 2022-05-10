@@ -34,7 +34,7 @@ module cv32e40s_core_sva
   input logic        rst_ni,
 
   input ctrl_fsm_t   ctrl_fsm,
-  input logic [10:0]  exc_cause,
+  input logic [10:0] exc_cause,
   input logic [31:0] mie,
   input logic [31:0] mip,
   input dcsr_t       dcsr,
@@ -98,7 +98,7 @@ module cv32e40s_core_sva
   input logic          rf_we_wb,
 
   input logic        alu_jmpr_id_i,
-  input logic        alu_en_raw_id_i,
+  input logic        alu_en_id_i,
 
 
   // probed controller signals
@@ -146,7 +146,7 @@ end else begin
   property p_irq_enabled_0;
     @(posedge clk) disable iff (!rst_ni)
     (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_TRAP_IRQ)) |->
-    (mie[exc_cause] && ((priv_lvl == PRIV_LVL_M) ? cs_registers_mstatus_q.mie : 1'b1));
+    (mie[exc_cause] && ((priv_lvl == PRIV_LVL_M) ? (cs_registers_mstatus_q.mie && (exc_cause[10:5] == 6'b0)) : 1'b1));
   endproperty
 
   a_irq_enabled_0 : assert property(p_irq_enabled_0) else `uvm_error("core", "Assertion a_irq_enabled_0 failed")
@@ -536,7 +536,7 @@ end
     logic [31:0] opa;
     @(posedge clk) disable iff (!rst_ni)
     (id_stage_id_valid && ex_ready && (alu_op_a_mux_sel_id_i == OP_A_REGA_OR_FWD) && (ctrl_byp.operand_a_fw_mux_sel == SEL_FW_EX), opa=operand_a_id_i)
-    |=> (opa == rf_wdata_wb) && (rf_we_wb || (ctrl_fsm.kill_id || ctrl_fsm.halt_id));
+    |=> (opa == rf_wdata_wb) && (rf_we_wb || (ctrl_fsm.kill_ex || ctrl_fsm.halt_ex));
   endproperty
 
   a_opa_fwd_ex: assert property (p_opa_fwd_ex)
@@ -546,7 +546,7 @@ end
   property p_opa_fwd_wb;
     @(posedge clk) disable iff (!rst_ni)
     (id_stage_id_valid && ex_ready && (alu_op_a_mux_sel_id_i == OP_A_REGA_OR_FWD) && (ctrl_byp.operand_a_fw_mux_sel == SEL_FW_WB))
-    |-> (operand_a_id_i == rf_wdata_wb) && (rf_we_wb || (ctrl_fsm.kill_id || ctrl_fsm.halt_id));
+    |-> (operand_a_id_i == rf_wdata_wb) && rf_we_wb;
   endproperty
 
   a_opa_fwd_wb: assert property (p_opa_fwd_wb)
@@ -557,7 +557,7 @@ end
     logic [31:0] opb;
     @(posedge clk) disable iff (!rst_ni)
     (id_stage_id_valid && ex_ready && (alu_op_b_mux_sel_id_i == OP_B_REGB_OR_FWD) && (ctrl_byp.operand_b_fw_mux_sel == SEL_FW_EX), opb=operand_b_id_i)
-    |=> (opb == rf_wdata_wb) && (rf_we_wb || (ctrl_fsm.kill_id || ctrl_fsm.halt_id));
+    |=> (opb == rf_wdata_wb) && (rf_we_wb || (ctrl_fsm.kill_ex || ctrl_fsm.halt_ex));
   endproperty
 
   a_opb_fwd_ex: assert property (p_opb_fwd_ex)
@@ -567,7 +567,7 @@ end
   property p_opb_fwd_wb;
     @(posedge clk) disable iff (!rst_ni)
     (id_stage_id_valid && ex_ready && (alu_op_b_mux_sel_id_i == OP_B_REGB_OR_FWD) && (ctrl_byp.operand_b_fw_mux_sel == SEL_FW_WB))
-    |-> (operand_b_id_i == rf_wdata_wb) && (rf_we_wb || (ctrl_fsm.kill_id || ctrl_fsm.halt_id));
+    |-> (operand_b_id_i == rf_wdata_wb) && rf_we_wb;
   endproperty
 
   a_opb_fwd_wb: assert property (p_opb_fwd_wb)
@@ -576,7 +576,7 @@ end
   // Check that data forwarded from WB to a JALR instruction in ID is actully written to the RF
   property p_jalr_fwd;
     @(posedge clk) disable iff (!rst_ni)
-    (alu_jmpr_id_i && alu_en_raw_id_i) && (ctrl_byp.jalr_fw_mux_sel == SELJ_FW_WB) && !ctrl_byp.jalr_stall
+    (alu_jmpr_id_i && alu_en_id_i && if_id_pipe.instr_valid) && (ctrl_byp.jalr_fw_mux_sel == SELJ_FW_WB) && !ctrl_byp.jalr_stall
     |->
     (jalr_fw_id_i == rf_wdata_wb) && (rf_we_wb || (ctrl_fsm.kill_id || ctrl_fsm.halt_id));
   endproperty
