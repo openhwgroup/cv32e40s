@@ -479,7 +479,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .DUMMY_INSTRUCTIONS  ( SECURE                    ),
     .MTVT_ADDR_WIDTH     ( MTVT_ADDR_WIDTH          ),
     .SMCLIC              ( SMCLIC                   ),
-    .SMCLIC_ID_WIDTH     ( SMCLIC_ID_WIDTH          )
+    .SMCLIC_ID_WIDTH     ( SMCLIC_ID_WIDTH          ),
+    .ZC_EXT              ( ZC_EXT                   ),
+    .M_EXT               ( M_EXT                    )
   )
   if_stage_i
   (
@@ -552,6 +554,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .B_EXT                        ( B_EXT                     ),
     .M_EXT                        ( M_EXT                     ),
     .X_EXT                        ( X_EXT                     ),
+    .ZC_EXT                       ( ZC_EXT                    ),
     .REGFILE_NUM_READ_PORTS       ( REGFILE_NUM_READ_PORTS    )
   )
   id_stage_i

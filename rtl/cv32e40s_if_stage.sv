@@ -37,7 +37,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   parameter bit          DUMMY_INSTRUCTIONS = 0,
   parameter int unsigned MTVT_ADDR_WIDTH = 26,
   parameter bit          SMCLIC          = 1'b0,
-  parameter int          SMCLIC_ID_WIDTH = 5
+  parameter int          SMCLIC_ID_WIDTH = 5,
+  parameter bit          ZC_EXT          = 0,
+  parameter m_ext_e      M_EXT           = M
 )
 (
   input  logic          clk,
@@ -383,6 +385,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   end
 
   cv32e40s_compressed_decoder
+  #(
+      .ZC_EXT ( ZC_EXT ),
+      .M_EXT  ( M_EXT  )
+  )
   compressed_decoder_i
   (
     .instr_i            ( prefetch_instr          ),
