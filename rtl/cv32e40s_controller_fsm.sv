@@ -53,7 +53,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  if_id_pipe_t if_id_pipe_i,
   input  logic        alu_en_id_i,                // ALU enable
   input  logic        alu_jmp_id_i,               // ALU jump
-  input  logic        sys_en_id_i,
   input  logic        sys_mret_id_i,              // mret in ID stage
 
   // From EX stage
@@ -255,7 +254,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Blocking on branch_taken_q, as a jump has already been taken
   assign jump_taken_id = jump_in_id && !jump_taken_q;
 
-  assign ctrl_fsm_o.jump_in_id_raw = (alu_jmp_id_i && alu_en_id_i) || (sys_mret_id_i && sys_en_id_i && !debug_mode_q);
+  assign ctrl_fsm_o.jump_in_id_raw = (jmp_unqual_id || sys_mret_unqual_id) && !debug_mode_q;
 
  // todo: RVFI does not use jump_taken_id (which is not in itself an issue); we should have an assertion showing that the target address remains constant during jump_in_id; same remark for branches
 

@@ -76,6 +76,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   logic                              rf_we_wb;                  // WB register file write enable
   logic                              lsu_en_wb;                 // WB lsu_en
 
+  rf_addr_t                          rf_waddr_ex;               // EX rf_waddr
+  rf_addr_t                          rf_waddr_wb;               // WB rf_waddr
+
   // Detect if a SECURE mret would stall on itself
   logic mret_self_stall;
 
@@ -86,6 +89,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   logic                              csr_exp_unqual_id;         // Explicit CSR in ID (not qualified with csr_en)
   logic                              csr_unqual_id;             // Explicit or implicit CSR in ID (not qualified)
   logic                              jmpr_unqual_id;            // JALR in ID (not qualified with alu_en)
+  logic                              sys_wfi_unqual_id;         // WFI in ID (not qualified with sys_en)
 
   // todo: make all qualifiers here, and use those signals later in the file
 
@@ -110,8 +114,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   assign sys_mret_unqual_id = sys_mret_id_i && if_id_pipe_i.instr_valid;
   assign csr_exp_unqual_id = csr_en_raw_id_i && if_id_pipe_i.instr_valid;
   assign jmpr_unqual_id = alu_jmpr_id_i && if_id_pipe_i.instr_valid;
+  assign sys_wfi_unqual_id = sys_wfi_id_i && if_id_pipe_i.instr_valid;
 
-  assign csr_unqual_id = csr_exp_unqual_id || sys_mret_unqual_id;
+  assign csr_unqual_id = csr_exp_unqual_id || sys_mret_unqual_id || sys_wfi_unqual_id;
 
   /////////////////////////////////////////////////////////////
   //  ____  _        _ _    ____            _             _  //
@@ -219,7 +224,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     end
 
     // Stall because of CSR read (direct or implied) in ID while CSR (implied or direct) is written in EX/WB
-    if (csr_unqual_id && csr_write_in_ex_wb) begin
+    if (csr_unqual_id && csr_write_in_ex_wb && !mret_self_stall) begin
       ctrl_byp_o.csr_stall = 1'b1;
     end
 
