@@ -3,21 +3,20 @@
 Xsecure extension
 =================
 
-.. note::
+|corev| has a custom extension called Xsecure, which encompass the following security related features:
 
-   Some Xsecure features have not been implemented yet.
+* Security alerts (:ref:`security-alerts`)
+* Data independent timing (:ref:`data-independent-timing`)
+* Dummy instruction insertion (:ref:`dummy-instruction-insertion`)
+* Random instruction for hint (:ref:`random-instruction-for-hint`)
+* Register file ECC (:ref:`register-file-ecc`)
+* Hardened PC (:ref:`hardened-pc`)
+* Hardened CSRs (:ref:`hardened-csrs`)
+* Interface integrity (:ref:`interface-integrity`)
+* Bus protocol hardening (:ref:`bus-protocol-hardening`)
+* Reduction of profiling infrastructure (:ref:`reduction-of-profiling-infrastructure`)
 
-|corev| has a custom extension called Xsecure, which encompass the following categories of security related features:
-
-* Anti-tampering features
-
-  * Protection against glitch attacks
-  * Control flow integrity
-  * Autonomous (hardware-based, low latency) response mechanisms
-
-* Reduction of side channel leakage
-
-.. _security_alerts:
+.. _security-alerts:
 
 Security alerts
 ---------------
@@ -50,6 +49,8 @@ The following issues result in a minor security alert on ``alert_minor_o``:
 * Store bus fault NMI (only when triggering the related NMI).
 * Load bus fault NMI (only when triggering the related NMI).
 
+.. _data-independent-timing:
+
 Data independent timing
 -----------------------
 Data independent timing is enabled by setting the ``dataindtiming`` bit in the ``cpuctrl`` CSR.
@@ -70,11 +71,13 @@ Similarly the target address of branches and jumps will still provide a timing s
 
 These timing side-channels can largely be mitigated by imposing (branch target and data) alignment restrictions on the used software.
 
+.. _dummy-instruction-insertion:
+
 Dummy instruction insertion
 ---------------------------
 
 Dummy instructions are inserted at random intervals into the execution pipeline if enabled via the ``rnddummy`` bit in the ``cpuctrl`` CSR.
-The dummy instructions have no functional impact on processor state, but add difficult-to-predict timing and power disruptions to the executed code.
+The dummy instructions have no functional impact on the processor state, but add difficult-to-predict timing and power disruptions to the executed code.
 This disruption makes it more difficult for an attacker to infer what is being executed, and also makes it more difficult to execute precisely timed fault injection attacks.
 
 The frequency of injected instructions can be tuned via the ``rnddummyfreq`` bits in the ``cpuctrl`` CSR.
@@ -99,7 +102,7 @@ The frequency of injected instructions can be tuned via the ``rnddummyfreq`` bit
 Other ``rnddummyfreq`` values are legal as well, but will have a less predictable performance impact.
 
 The frequency of the dummy instruction insertion is randomized using an LFSR (LFSR0). The dummy instruction itself is also randomized based on LFSR0
-and is constrained to ADD, MUL, AND and BLTU opcodes. The source data for the dummy instructions is obtained from LFSRs (LFSR1 and LFSR2) as opposed to sourcing
+and is constrained to ``add``, ``mul``, and ``bltu`` instructions. The source data for the dummy instructions is obtained from LFSRs (LFSR1 and LFSR2) as opposed to sourcing
 it from the register file.
 
 The initial seed and output permutation for the LFSRs can be set using the following parameters from the |corev| top-level:
@@ -131,16 +134,35 @@ dummy instructions much harder to predict.
 .. note::
   Dummy instructions do affect the cycle count as visible via the ``mcycle`` CSR, but they are not counted as retired instructions (so they do not affect the ``minstret`` CSR).
 
+.. _random-instruction-for-hint:
+
+Random instruction for hint
+---------------------------
+
+The ``slt x0, rs1, rs2`` RV32I custom use hint is replaced by a random instruction if enabled via the ``rndhint`` bit in the ``cpuctrl`` CSR (and will act as a regular ``nop`` otherwise).
+The random instruction has no functional impact on the processor state (i.e. it is functionally equivalent to a ``nop``, but it can result in different
+cycle count, instruction fetch and power behavior). The random instruction is randomized based on LFSR0 and is constrained to
+``add``, ``mul``, and ``bltu`` instructions. The source data for the random instruction is obtained from LFSRs (LFSR1 and LFSR2) as opposed
+to sourcing it from the register file.
+
+.. note::
+  The ``slt x0, rs1, rs2`` instruction affects the cycle count and retired instruction counts as as visible via the ``mcycle`` CSR and ``minstret`` CSR,
+  independent of the value of the ``rndhint`` bit.
+
+.. _register-file-ecc:
+
 Register file ECC
 -----------------
 ECC checking is added to all reads of the register file, where a checksum is stored for each register file word.
 All 1-bit and 2-bit errors will be detected. This can be useful to detect fault injection attacks since the register file covers a reasonably large area of |corev|.
-No attempt is made to correct detected errors, but a major alert is raised upon a detected error for the system to take action (see :ref:`security_alerts`).
+No attempt is made to correct detected errors, but a major alert is raised upon a detected error for the system to take action (see :ref:`security-alerts`).
 
 .. note::
   This feature is logically redundant and might get partially or fully optimized away during synthesis.
   Special care might be needed and the final netlist must be checked to ensure that the ECC and correction logic is still present.
   A netlist test for this feature is recommended.
+
+.. _hardened-pc:
 
 Hardened PC
 -----------
@@ -157,24 +179,19 @@ Hardened CSRs
 Critical CSRs (``jvt``, ``mstatus``, ``mtvec``, ``pmpcfg``, ``pmpaddr*``, ``mseccfg*``, ``cpuctrl``, ``dcsr``, ``mie``, ``mepc``,
 ``mtvt``, ``mscratch``, ``mintstatus``, ``mintthresh``, ``mscratchcsw``, ``mscratchcswl`` and ``mclicbase``)
 have extra glitch detection enabled.
-For these registers a second copy of the register is added which stores a complemented version of the main CSR data. A constant check is made that the two copies are consistent, and a major alert is signaled if not (see :ref:`security_alerts`).
+For these registers a second copy of the register is added which stores a complemented version of the main CSR data. A constant check is made that the two copies are consistent, and a major alert is signaled if not (see :ref:`security-alerts`).
 
 .. note::
   The shadow copies are logically redundant and are therefore likely to be optimized away during synthesis.
   Special care in the synthesis script is necessary (see :ref:`register-cells`) and the final netlist must be checked to ensure that the shadow copies are still present.
   A netlist test for this feature is recommended.
 
-Functional unit and FSM hardening
----------------------------------
-(Encode critical signals and FSM state such that certain glitch attacks can be detected)
-
-
 .. _interface-integrity:
 
 Interface integrity
 -------------------
 
-The OBI bus interfaces have associated parity and checksum signals:
+The OBI (see [OPENHW-OBI]_) bus interfaces have associated parity and checksum signals:
 
 * |corev| will generate odd parity signals ``instr_reqpar_o`` and ``data_reqpar_o`` for ``instr_req_o`` and ``data_req_o`` respectively.
 * The environment is expected to drive ``instr_gntpar_i``, ``instr_rvalidpar_i``, ``data_gntpar_i`` and ``data_rvalidpar_i`` with odd parity for ``instr_gnt_i``, ``instr_rvalid_i``, ``data_gnt_i`` and ``data_rvalid_i`` respectively.
@@ -279,9 +296,18 @@ If the load/store is attempted for execution (which is the case since ``data_rva
 The environment is expected to check the OBI outputs of |corev| against the related parity and checksum outputs (i.e. ``instr_reqpar_o``, ``data_reqpar_o``, ``instr_rchk_o`` and
 ``data_rchk_o``) as specified in [OPENHW-OBI]_. It is platform defined how the environment reacts in case of parity or checksum violations.
 
-Bus interface hardening
------------------------
-Hardware checks are performed to check that the bus protocol is not being violated.
+.. _bus-protocol-hardening:
+
+Bus protocol hardening
+----------------------
+
+The OBI protocol (see [OPENHW-OBI]_) is used as the protocol for both the instruction interface and data interface of the |corev|. With respect to its
+handshake signals (``req``, ``gnt``, ``rvalid``) the main protocol violation is to receive a response while there is no corresponding outstanding transaction.
+
+An alert is raised on ``alert_major_o`` when ``instr_rvalid_i`` = 1 is received while there are no outstanding OBI instruction transactions.
+An alert is raised on ``alert_major_o`` when ``data_rvalid_i`` = 1 is received while there are no outstanding OBI data transactions.
+
+.. _reduction-of-profiling-infrastructure:
 
 Reduction of profiling infrastructure
 -------------------------------------
