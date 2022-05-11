@@ -80,6 +80,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   output logic        csr_en_raw_o,
   output csr_opcode_e csr_op_o,
 
+  output logic        sys_en_o,
+
   // RF interface -> controller
   output logic [REGFILE_NUM_READ_PORTS-1:0] rf_re_o,
   output rf_addr_t    rf_raddr_o[REGFILE_NUM_READ_PORTS],
@@ -702,6 +704,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   endgenerate
 
   assign alu_en_o     = alu_en;
+  assign sys_en_o     = sys_en;
   assign alu_en_raw_o = alu_en_raw;
   assign alu_jmp_o    = alu_jmp;
   assign alu_jmpr_o   = alu_jmpr;

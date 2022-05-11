@@ -51,9 +51,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // From ID stage
   input  if_id_pipe_t if_id_pipe_i,
-  input  logic        alu_en_id_i,                // ALU enable
-  input  logic        alu_jmp_id_i,               // ALU jump
-  input  logic        sys_mret_id_i,              // mret in ID stage
+  input  logic        alu_jmp_id_i,               // Jump in ID
+  input  logic        sys_mret_id_i,              // mret in ID
+  input  logic        alu_en_id_i,                // alu_en qualifier for jumps
+  input  logic        sys_en_id_i,                // sys_en qualifier for mret
 
   // From EX stage
   input  id_ex_pipe_t id_ex_pipe_i,
@@ -137,8 +138,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   logic single_step_halt_if_q; // Halting IF after issuing one insn in single step mode
 
   // ID signals
-  logic sys_mret_unqual_id;             // MRET in ID (not qualified with sys_en)
-  logic jmp_unqual_id;                  // JAL, JALR in ID (not qualified with alu_en)
+  logic sys_mret_id;             // MRET in ID
+  logic jmp_id;                  // JAL, JALR in ID
   logic jump_in_id;
   logic jump_taken_id;
 
@@ -174,6 +175,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Flags for allowing interrupt and debug
   logic exception_allowed;
   logic interrupt_allowed;
+  logic nmi_allowed;
   logic debug_allowed;
   logic single_step_allowed;
 
@@ -237,24 +239,25 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // ID stage
 
   // A jump is taken in ID for jump instructions, and also for mret instructions
-  // Checking validity of jump/mret instruction with if_id_pipe_i.instr_valid.
+  // Checking validity of jump/mret instruction with if_id_pipe_i.instr_valid and the respective alu_en/sys_en.
   // Using the ID stage local instr_valid would bring halt_id and kill_id into the equation
   // causing a path from data_rvalid to instr_addr_o/instr_req_o/instr_memtype_o via pc_set.
-  //
-  // Note that alu_jmp_id_i and sys_mret_id_i are used in a non-qualified manner (i.e. not
-  // gated with the corresponding enable signals). This can lead to jumps being taken from
-  // ID when the actual jump/mret is not really enabled. The instructions fetched from such
-  // jump/mret will get flushed.
 
-  assign sys_mret_unqual_id = sys_mret_id_i && if_id_pipe_i.instr_valid;
-  assign jmp_unqual_id = alu_jmp_id_i && if_id_pipe_i.instr_valid;
 
-  assign jump_in_id = (jmp_unqual_id && !ctrl_byp_i.jalr_stall) || (sys_mret_unqual_id && !ctrl_byp_i.csr_stall);
+
+  assign sys_mret_id = sys_en_id_i && sys_mret_id_i && if_id_pipe_i.instr_valid;
+  assign jmp_id      = alu_en_id_i && alu_jmp_id_i  && if_id_pipe_i.instr_valid;
+
+  assign jump_in_id = (jmp_id && !ctrl_byp_i.jalr_stall) || (sys_mret_id && !ctrl_byp_i.csr_stall);
 
   // Blocking on branch_taken_q, as a jump has already been taken
   assign jump_taken_id = jump_in_id && !jump_taken_q;
 
-  assign ctrl_fsm_o.jump_in_id_raw = (jmp_unqual_id || sys_mret_unqual_id) && !debug_mode_q;
+  // Signalling jump or mret in ID stage to the pc_check module.
+  // Excluding debug mode for mret as an mret in debug mode will take an exception
+  // using a different pc_mux (PC_TRAP_DBE) than mrets in machine mode (PC_JUMP)
+  // Mrets in debug will be checked by the pc_check module comparing IF PC with dm_excption_addr_i.
+  assign ctrl_fsm_o.jump_in_id_raw = jmp_id || (sys_mret_id && !debug_mode_q);
 
  // todo: RVFI does not use jump_taken_id (which is not in itself an issue); we should have an assertion showing that the target address remains constant during jump_in_id; same remark for branches
 
@@ -772,13 +775,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           end else if (jump_taken_id) begin
             // Jumps in ID (JAL, JALR, mret)
 
-            // False positives can occur here because the signals
-            // feeding into jump_taken_id are not qualified.
-
             // kill_if
             ctrl_fsm_o.kill_if = 1'b1;
 
-            if (sys_mret_unqual_id) begin
+            if (sys_mret_id) begin
               ctrl_fsm_o.pc_mux = debug_mode_q ? PC_TRAP_DBE : PC_MRET;
               ctrl_fsm_o.pc_set = 1'b1;
               ctrl_fsm_o.mret_jump_id = !debug_mode_q;
