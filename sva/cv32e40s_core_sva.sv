@@ -116,7 +116,13 @@ module cv32e40s_core_sva
   input logic        pc_err_if,
   input logic        csr_err,
   input logic        itf_int_err,
-  input logic        rf_ecc_err
+  input logic        rf_ecc_err,
+
+  input logic        sys_mret_unqual_id_bypass,
+  input logic        jmpr_unqual_id_bypass,
+  input logic        mret_self_stall_bypass,
+  input logic        jumpr_self_stall_bypass,
+  input logic        last_op_id_i
   );
 
 
@@ -627,5 +633,27 @@ end
     assert property (@(posedge clk) disable iff (!rst_ni)
                     1'b1 |-> (instr_achk_o == instr_achk_expected) && (data_achk_o == data_achk_expected))
           else `uvm_error("core", "Checksum mismatch.")
+
+// Helper logic for qualified mret_self_stall, should be the same as unqualified.
+logic mret_self_stall_qual;
+assign mret_self_stall_qual = ((sys_en_id && sys_mret_unqual_id_bypass && last_op_id_i) && // MRET 2/2 in ID
+                              ((id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn && !id_ex_pipe.last_op && id_ex_pipe.instr_valid) || // mret 1/2 in EX
+                               (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn && !ex_wb_pipe.last_op && ex_wb_pipe.instr_valid))) &&  // mret 1/2 in WB
+                               !(id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn && id_ex_pipe.last_op && id_ex_pipe.instr_valid);
+a_mret_self_stall_qual:
+  assert property (@(posedge clk) disable iff (!rst_ni)
+                  1'b1 |-> (mret_self_stall_qual == mret_self_stall_bypass))
+        else `uvm_error("core", "mret_self_stall mismatch.")
+
+// Helper logic for qualified jumpr_self_stall, should be the same as unqualified.
+logic jumpr_self_stall_qual;
+assign jumpr_self_stall_qual = (alu_en_id_i && jmpr_unqual_id_bypass && last_op_id_i) &&
+                              ((id_ex_pipe.alu_jmp && id_ex_pipe.alu_en && !id_ex_pipe.last_op && id_ex_pipe.instr_valid));
+
+a_jumpr_self_stall_qual:
+  assert property (@(posedge clk) disable iff (!rst_ni)
+                  1'b1 |-> (jumpr_self_stall_qual == jumpr_self_stall_bypass))
+        else `uvm_error("core", "jumpr_self_stall mismatch.")
+
 
 endmodule // cv32e40s_core_sva
