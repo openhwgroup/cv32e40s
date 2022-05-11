@@ -314,6 +314,11 @@ module cv32e40s_wrapper
                 .alu_en_id_i                      (core_i.id_stage_i.alu_en),
                 .alu_jmpr_id_i                    (core_i.alu_jmpr_id),
                 .irq_ack                          (core_i.irq_ack),
+                .sys_mret_unqual_id_bypass        (core_i.controller_i.bypass_i.sys_mret_unqual_id),
+                .jmpr_unqual_id_bypass            (core_i.controller_i.bypass_i.jmpr_unqual_id),
+                .mret_self_stall_bypass           (core_i.controller_i.bypass_i.mret_self_stall),
+                .jumpr_self_stall_bypass          (core_i.controller_i.bypass_i.jumpr_self_stall),
+                .last_op_id_i                     (core_i.id_stage_i.last_op),
                 .*);
 
   bind cv32e40s_sleep_unit:

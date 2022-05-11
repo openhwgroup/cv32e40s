@@ -144,15 +144,30 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
                               (ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn)))
                               );
 
-  // Detect if an a secure mret has its last phase (2/2) in ID while the first is in EX or WB.
-  assign mret_self_stall = (sys_mret_unqual_id && last_op_id_i) && // MRET 2/2 in ID
-                           ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op) || // mret 1/2 in EX
-                            (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_op));  // mret 1/2 in WB
+  // Detect if a secure mret has its last phase (2/2) in ID while the first is in EX or WB.
+  // Used to avoid csr_stall in the case where an mret would stall on itself.
+  // Using unqualified sys_mret_unqual_id and qualified sys_en/sys_mret_insn from EX and WB.
+  // Using qualified or unqualified from ID does not matter for the value of the self_stall (assert in core_sva).
+  // ctrl_byp_o.deassert_we needs to be 1 for the sys_en to be deasserted, and this cannot
+  // happen for the last part (ID) if it didn't already happen to the first part (EX or WB).
+  //
+  // Last line excludes setting the self stall signal in case a last part of an mret is in EX stage.
+  // - Last part of mret in EX means any mret in ID must a different mret instruction.
+  // - This mret must then be flagged as faulted (deassert_we=1) for it to have last_op_id_i set. Any csr_stall will then be active, although
+  // - the instruction will not do any side effects and eventually take an exception when it reaches WB.
+  assign mret_self_stall = ((sys_mret_unqual_id && last_op_id_i) && // MRET 2/2 in ID
+                           ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op && id_ex_pipe_i.instr_valid) ||    // mret 1/2 in EX
+                            (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_op && ex_wb_pipe_i.instr_valid))) &&  // mret 1/2 in WB
+                            !(id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && id_ex_pipe_i.last_op && id_ex_pipe_i.instr_valid);
+
 
   // Detect if a jumpr instruction is stalling on itself (Can only happen if the last part is in ID and the first in EX)
   // Any stall due to first part being in WB would be allowed to forward to ID.
+  // ctrl_byp_o.deassert_we needs to be 1 for the alu_en to be deasserted, and this cannot
+  // happen for the last part (ID) if it didn't already happen to the first part (EX or WB).
+  // Using unqualified or qualified jumpr get the same result. (Assert in core_sva)
   assign jumpr_self_stall = (jmpr_unqual_id && last_op_id_i) &&
-                            ((id_ex_pipe_i.alu_jmp && id_ex_pipe_i.alu_en && !id_ex_pipe_i.last_op));
+                            ((id_ex_pipe_i.alu_jmp && id_ex_pipe_i.alu_en && !id_ex_pipe_i.last_op && id_ex_pipe_i.instr_valid));
 
 
   // Stall ID when WFI is active in EX.
