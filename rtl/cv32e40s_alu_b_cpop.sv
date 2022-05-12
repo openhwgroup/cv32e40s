@@ -42,4 +42,4 @@ module cv32e40s_alu_b_cpop
     end
   endgenerate
 
-endmodule // alu_b_cpop
+endmodule

@@ -150,4 +150,4 @@ module cv32e40s_prefetcher
     end
   end
 
-endmodule // cv32e40s_prefetcher
+endmodule

@@ -88,10 +88,7 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   output imm_b_mux_e    imm_b_mux_sel_o,        // Immediate selection for operand b
   output bch_jmp_mux_e  bch_jmp_mux_sel_o,      // Branch / jump target selection
 
-  input  ctrl_fsm_t     ctrl_fsm_i,              // Control signal from controller_fsm,
-
-  // Raw outputs for pc_check todo: can we rewrite pc_check to avoid them?
-  output logic          alu_en_raw_o
+  input  ctrl_fsm_t     ctrl_fsm_i              // Control signal from controller_fsm,
 );
 
   // write enable/request control
@@ -233,5 +230,4 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
 
   assign csr_en_raw_o = csr_en;
 
-  assign alu_en_raw_o = alu_en;
-endmodule // cv32e40s_decoder
+endmodule

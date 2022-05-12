@@ -303,4 +303,4 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // Stall EX if offloaded instruction in WB may trigger an exception
   assign ctrl_byp_o.xif_exception_stall = ex_wb_pipe_i.xif_en && ex_wb_pipe_i.xif_meta.exception && ex_wb_pipe_i.instr_valid;
 
-endmodule // cv32e40s_controller_bypass
+endmodule

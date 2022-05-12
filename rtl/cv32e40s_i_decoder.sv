@@ -377,4 +377,4 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
 
   end // always_comb
 
-endmodule : cv32e40s_i_decoder
+endmodule
