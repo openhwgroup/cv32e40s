@@ -70,7 +70,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   input  logic [31:0] rf_wdata_ex_i,
 
   output logic        alu_en_o,
-  output logic        alu_en_raw_o,
   output logic        alu_jmp_o,        // Jump (JAL, JALR)
   output logic        alu_jmpr_o,       // Jump register (JALR)
 
@@ -125,7 +124,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   // ALU Control
   logic                 alu_en;
-  logic                 alu_en_raw;
   logic                 alu_bch;
   logic                 alu_jmp;
   logic                 alu_jmpr;
@@ -435,7 +433,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
     // ALU
     .alu_en_o                        ( alu_en                    ),
-    .alu_en_raw_o                    ( alu_en_raw                ),
     .alu_bch_o                       ( alu_bch                   ),
     .alu_jmp_o                       ( alu_jmp                   ),
     .alu_jmpr_o                      ( alu_jmpr                  ),
@@ -705,7 +702,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   assign alu_en_o     = alu_en;
   assign sys_en_o     = sys_en;
-  assign alu_en_raw_o = alu_en_raw;
   assign alu_jmp_o    = alu_jmp;
   assign alu_jmpr_o   = alu_jmpr;
 
