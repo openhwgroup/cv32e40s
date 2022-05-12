@@ -444,5 +444,4 @@ module cv32e40s_compressed_decoder import cv32e40s_pkg::*;
     end // instr_is_pointer_i
   end // always_comb
 
-
 endmodule

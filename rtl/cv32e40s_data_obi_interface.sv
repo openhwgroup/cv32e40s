@@ -97,4 +97,4 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   assign m_c_obi_data_if.s_req.reqpar = !m_c_obi_data_if.s_req.req;
 
-endmodule // cv32e40s_data_obi_interface
+endmodule

@@ -452,4 +452,4 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     end
   endgenerate
 
-endmodule // cv32e40s_if_stage
+endmodule

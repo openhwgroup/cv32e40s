@@ -487,4 +487,4 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   // is a functional unit living in EX) and then typically a cycle later the result would get
   // written from ex_wb_pipe_i.rf_wdata into the registerfile.
 
-endmodule // cv32e40s_ex_stage
+endmodule

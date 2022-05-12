@@ -35,7 +35,7 @@ module cv32e40s_m_decoder import cv32e40s_pkg::*;
    input logic [31:0] instr_rdata_i,
    output             decoder_ctrl_t decoder_ctrl_o
    );
-  
+
   always_comb
   begin
 
@@ -44,10 +44,10 @@ module cv32e40s_m_decoder import cv32e40s_pkg::*;
     decoder_ctrl_o.illegal_insn = 1'b0;
 
     unique case (instr_rdata_i[6:0])
-     
+
       OPCODE_OP: begin
 
-        // Common signals for all MUL/DIV 
+        // Common signals for all MUL/DIV
         decoder_ctrl_o.rf_we    = 1'b1;
         decoder_ctrl_o.rf_re[0] = 1'b1;
         decoder_ctrl_o.rf_re[1] = 1'b1;
@@ -123,14 +123,14 @@ module cv32e40s_m_decoder import cv32e40s_pkg::*;
         endcase
 
       end // case: OPCODE_OP
-      
+
       default: begin
         // No match
         decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
       end
-      
+
     endcase // unique case (instr_rdata_i[6:0])
-    
+
   end // always_comb
 
-endmodule : cv32e40s_m_decoder
+endmodule

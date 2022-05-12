@@ -120,5 +120,4 @@ module cv32e40s_int_controller import cv32e40s_pkg::*;
 
   end
 
-
-endmodule // cv32e40s_int_controller
+endmodule
