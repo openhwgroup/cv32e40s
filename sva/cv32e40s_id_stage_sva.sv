@@ -68,7 +68,7 @@ module cv32e40s_id_stage_sva
   input ctrl_byp_t      ctrl_byp_i,
   input mstatus_t       mstatus_i,
   input logic           xif_insn_accept,
-  input logic           last_op
+  input logic           last_sec_op
 );
 
 /* todo: check and fix/remove
@@ -181,7 +181,7 @@ module cv32e40s_id_stage_sva
   // Check that second part of a multicycle mret does not stall on the first part of the same instruction
   a_mret_self_stall :
     assert property (@(posedge clk) disable iff (!rst_n)
-                      (sys_en && sys_mret_insn && last_op) &&
+                      (sys_en && sys_mret_insn && last_sec_op) &&
                       ((id_ex_pipe_o.sys_en && id_ex_pipe_o.sys_mret_insn) ||
                        (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn))
                        |-> !ctrl_byp_i.csr_stall)
