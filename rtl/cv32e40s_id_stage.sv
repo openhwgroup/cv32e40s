@@ -75,7 +75,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   output logic        sys_mret_insn_o,
   output logic        sys_wfi_insn_o,
-  output logic        last_op_o,
+  output logic        last_sec_op_o,
   output logic        csr_en_raw_o,
   output csr_opcode_e csr_op_o,
 
@@ -191,7 +191,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   logic                 multi_op_id_stall;
 
   // Indicate last part of a multi operation instruction
-  logic                 last_op;
+  logic                 last_sec_op;
 
   logic                 illegal_insn;
 
@@ -216,7 +216,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
 
   // Ensures one shift of the operand LFSRs for each dummy instruction in ID
-  assign lfsr_shift_o    = (id_valid_o && ex_ready_i) && if_id_pipe_i.instr_meta.dummy && last_op;
+  assign lfsr_shift_o    = (id_valid_o && ex_ready_i) && if_id_pipe_i.instr_meta.dummy && last_sec_op;
 
   assign instr = if_id_pipe_i.instr.bus_resp.rdata;
   assign c_instr = if_id_pipe_i.compressed_instr;
@@ -551,7 +551,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.instr_meta             <= '0;
       id_ex_pipe_o.trigger_match          <= 1'b0;
 
-      id_ex_pipe_o.last_op                <= 1'b0;
+      id_ex_pipe_o.last_sec_op            <= 1'b0;
     end else begin
       // normal pipeline unstall case
       if (id_valid_o && ex_ready_i) begin
@@ -650,7 +650,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
         id_ex_pipe_o.xif_meta.accepted      <= xif_insn_accept;
 
         // Multi operation
-        id_ex_pipe_o.last_op                <= last_op;
+        id_ex_pipe_o.last_sec_op            <= last_sec_op;
 
       end else if (ex_ready_i) begin
         id_ex_pipe_o.instr_valid            <= 1'b0;
@@ -670,7 +670,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       assign jmp_bch_insn = ((alu_jmp || alu_bch) && alu_en) || (sys_mret_insn && sys_en);
 
       // Detect last operation of current instruction.
-      assign last_op = jmp_bch_insn ? (multi_op_cnt == JMP_BCH_CYCLES - 1)
+      assign last_sec_op = jmp_bch_insn ? (multi_op_cnt == JMP_BCH_CYCLES - 1)
                                     : 1'b1;
 
       // Count number of operations performed by an instruction.
@@ -679,7 +679,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
           multi_op_cnt <= MULTI_OP_CNT_WIDTH'(0);
         end else begin
           if(id_valid_o && ex_ready_i) begin
-            if(last_op) begin
+            if(last_sec_op) begin
               // Last operation is done, reset counter
               multi_op_cnt <= MULTI_OP_CNT_WIDTH'(0);
             end else begin
@@ -696,7 +696,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       end
 
     end else begin : nonsecure_ctrl_flow // !SECURE
-      assign last_op = 1'b1;
+      assign last_sec_op = 1'b1;
     end
   endgenerate
 
@@ -708,12 +708,12 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   assign csr_en_raw_o = csr_en_raw;
   assign csr_op_o = csr_op;
 
-  assign last_op_o = last_op;
+  assign last_sec_op_o = last_sec_op;
 
   // stall control for multi operation ID instructions (currently only jumps and branches if SECURE=1)
   // Using if_id_pipe_i.instr_valid instead of the local instr_valid, as halt_id and kill_id are
   // factored into id_valid_o and id_ready_o regardless of muli_op_id_stall.
-  assign multi_op_id_stall = !last_op && (if_id_pipe_i.instr_valid); //todo:ok Zce push/pop will use this
+  assign multi_op_id_stall = !last_sec_op && (if_id_pipe_i.instr_valid); //todo:ok Zce push/pop will use this
 
   // Stage ready/valid
   //

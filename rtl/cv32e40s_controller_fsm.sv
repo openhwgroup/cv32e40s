@@ -314,11 +314,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign fencei_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_fencei_insn && ex_wb_pipe_i.instr_valid;
 
   // mret in wb
-  // Factoring in last_op. This will always be 1 for SECURE=0, but for SECURE=1 mrets will span two cycles
+  // Factoring in last_sec_op. This will always be 1 for SECURE=0, but for SECURE=1 mrets will span two cycles
   // and the mstatus and privilege level writes should only be done during the last cycle.
   // If an mret would write to the mstatus during the first half, we would not be able to kill it due to debug or interrupts
   // until the second part finished.
-  assign mret_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.last_op && ex_wb_pipe_i.instr_valid;
+  assign mret_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.last_sec_op && ex_wb_pipe_i.instr_valid;
 
   // dret in wb
   assign dret_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_dret_insn && ex_wb_pipe_i.instr_valid;
@@ -930,7 +930,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     // The branch_taken flag is used to prevent multiple 'pc_set' for the same branch instruction
     // in case it stays multiple cycles in EX.
     // The flag is cleared when a new instruction enters EX and EX contains the last operation of an instruction (branch is done).
-    // New instruction from ID to EX is detected by checking id_ex_pipe.last_op==1 when the ID/EX handshake is performed.
+    // New instruction from ID to EX is detected by checking id_ex_pipe.last_sec_op==1 when the ID/EX handshake is performed.
     // NB! It should not be needed to include the branch_taken_q flag, but the assertion checking for no
     // back-to-back branches cannot converge without it.
     //
@@ -942,13 +942,13 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     // | target+1 | target   | B 2/2  | B 1/2 |  <- branch_taken_q = 1
     // | target+2 | target+1 | target | B 2/2 |  <- branch_taken_q = 0
     // | target+2 | target+1 | target | B 2/2 |  <- branch_taken_q = 0
-    if ((id_valid_i && ex_ready_i && id_ex_pipe_i.last_op && branch_taken_q) || ctrl_fsm_o.kill_ex) begin
+    if ((id_valid_i && ex_ready_i && id_ex_pipe_i.last_sec_op && branch_taken_q) || ctrl_fsm_o.kill_ex) begin
       branch_taken_n = 1'b0;
     end
 
     // Clear jump_taken flag when a new instruction enters the ID stage, or ID is killed.
     // The flag has ID stage timing, and thus when a new instruction enters ID
-    // the flag must be cleared. IF stage has no 'last_op' output, as the instructions
+    // the flag must be cleared. IF stage has no 'last_sec_op' output, as the instructions
     // are only split into sub operations in the ID stage.
     // Jump_taken_q flag not strictly needed, but added to get same semantics as for branches.
     if ((if_valid_i && id_ready_i && jump_taken_q) || ctrl_fsm_o.kill_id) begin
@@ -1063,7 +1063,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       // Note that this event bit is further gated before sent to the actual counters in case
       // other conditions prevent counting.
       // CLIC: Exluding pointer fetches as they are not instructions
-      if (ex_valid_i && wb_ready_i && !(lsu_split_ex_i || !id_ex_pipe_i.last_op || ex_wb_pipe_i.instr_meta.clic_ptr)) begin
+      if (ex_valid_i && wb_ready_i && !(lsu_split_ex_i || !id_ex_pipe_i.last_sec_op || ex_wb_pipe_i.instr_meta.clic_ptr)) begin
         wb_counter_event <= 1'b1;
       end else begin
         // Keep event flag high while WB is halted, as we don't know if it will retire yet

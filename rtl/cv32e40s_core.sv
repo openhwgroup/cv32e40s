@@ -293,7 +293,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        sys_en_id;
   logic        sys_mret_insn_id;
   logic        sys_wfi_insn_id;
-  logic        last_op_id;
+  logic        last_sec_op_id;
   logic        csr_en_id;
   logic        csr_en_raw_id;
   csr_opcode_e csr_op_id;
@@ -501,8 +501,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     .branch_decision_ex_i( branch_decision_ex       ),
 
-    .last_op_id_i        ( last_op_id               ),
-    .last_op_ex_i        ( id_ex_pipe.last_op       ),
+    .last_sec_op_id_i    ( last_sec_op_id           ),
+    .last_sec_op_ex_i    ( id_ex_pipe.last_sec_op   ),
     .pc_err_o            ( pc_err_if                ),
 
     .m_c_obi_instr_if    ( m_c_obi_instr_if         ), // Instruction bus interface
@@ -592,7 +592,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .alu_jmpr_o                   ( alu_jmpr_id               ),
     .sys_mret_insn_o              ( sys_mret_insn_id          ),
     .sys_wfi_insn_o               ( sys_wfi_insn_id           ),
-    .last_op_o                    ( last_op_id                ),
+    .last_sec_op_o                ( last_sec_op_id            ),
 
     .csr_en_raw_o                 ( csr_en_raw_id             ),
     .csr_op_o                     ( csr_op_id                 ),
@@ -958,7 +958,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_en_raw_id_i                ( csr_en_raw_id          ),
     .csr_op_id_i                    ( csr_op_id              ),
     .sys_wfi_id_i                   ( sys_wfi_insn_id        ),
-    .last_op_id_i                   ( last_op_id             ),
+    .last_sec_op_id_i               ( last_sec_op_id         ),
 
     // LSU
     .lsu_split_ex_i                 ( lsu_split_ex           ),

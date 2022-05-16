@@ -57,8 +57,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   input  logic          branch_decision_ex_i,   // Current branch decision from EX
 
-  input  logic          last_op_id_i,
-  input  logic          last_op_ex_i,
+  input  logic          last_sec_op_id_i,
+  input  logic          last_sec_op_ex_i,
   output logic          pc_err_o,               // Error signal for the pc checker module
   input  logic [MTVT_ADDR_WIDTH-1:0]   mtvt_addr_i,            // Base address for CLIC vectoring
 
@@ -304,8 +304,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .branch_target_ex_i   ( branch_target_ex_i   ),
     .branch_decision_ex_i ( branch_decision_ex_i ),
 
-    .last_op_id_i         ( last_op_id_i         ),
-    .last_op_ex_i         ( last_op_ex_i         ),
+    .last_sec_op_id_i     ( last_sec_op_id_i     ),
+    .last_sec_op_ex_i     ( last_sec_op_ex_i     ),
 
     .prefetch_is_ptr_i    ( prefetch_is_ptr      ),
 

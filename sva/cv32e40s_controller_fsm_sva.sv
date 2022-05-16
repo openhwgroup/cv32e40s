@@ -82,7 +82,7 @@ module cv32e40s_controller_fsm_sva
   input logic           nmi_is_store_q,
   input logic           nmi_pending_q,
   input dcsr_t          dcsr_i,
-  input logic           last_op_id_i,
+  input logic           last_sec_op_id_i,
   input logic           sys_mret_id_i,
   input logic           csr_wr_in_wb_flush_i,
   input logic           lsu_trans_valid,
@@ -274,9 +274,9 @@ module cv32e40s_controller_fsm_sva
 
   // Detect if the last part of a secure mret is in ID while the first part is in EX or WB
   logic mret_self_stall;
-  assign mret_self_stall = (sys_en_id_i && sys_mret_id_i && last_op_id_i) && // MRET 2/2 in ID
-                      ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op) || // mret 1/2 in EX
-                       (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_op));  // mret 1/2 in WB
+  assign mret_self_stall = (sys_en_id_i && sys_mret_id_i && last_sec_op_id_i) && // MRET 2/2 in ID
+                      ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_sec_op) || // mret 1/2 in EX
+                       (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_sec_op));  // mret 1/2 in WB
 
   // Check that WFI is stalled in ID if CSR writes (explicit and implicit)
   // are present in EX or WB
