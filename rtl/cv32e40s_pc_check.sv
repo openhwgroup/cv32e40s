@@ -186,8 +186,9 @@ always_ff @(posedge clk, negedge rst_n) begin
     // Exclude cases of PC_WB_PLUS4, PC_TRAP_IRQ and CLIC pointers/targets as the pipeline currently has no easy way to recompute these targets.
     // Used for the address comparison
     // Todo: may stretch this until the target instruction leaves IF stage
+    // todo: Should possibly check PC_POINTER for table jumps?
     pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ) ||
-                                       (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV) || (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV_TGT));
+                                       (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV) || (ctrl_fsm_i.pc_mux == PC_POINTER));
 
     // Set a flag for a valid IF->ID stage transition.
     // Used for checking sequential PCs.

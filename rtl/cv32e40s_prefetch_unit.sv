@@ -50,7 +50,6 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   output logic        trans_valid_o,
   input  logic        trans_ready_i,
   output logic [31:0] trans_addr_o,
-  output logic        trans_data_access_o,
 
   input  logic        resp_valid_i,
   input  inst_resp_t  resp_i,
@@ -68,6 +67,7 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   logic [31:0] fetch_branch_addr;
   logic        fetch_data_access;
   logic        fetch_ptr_access;
+  logic        fetch_ptr_access_resp;
 
 
 
@@ -88,14 +88,12 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
     .fetch_branch_addr_i      ( fetch_branch_addr    ),
     .fetch_valid_i            ( fetch_valid          ),
     .fetch_ready_o            ( fetch_ready          ),
-    .fetch_data_access_i      ( fetch_data_access    ),
-    .fetch_ptr_access_o       ( fetch_ptr_access     ),
+    .fetch_ptr_access_i       ( fetch_ptr_access     ),
+    .fetch_ptr_access_o       ( fetch_ptr_resp       ),
 
     .trans_valid_o            ( trans_valid_o        ),
     .trans_ready_i            ( trans_ready_i        ),
-    .trans_addr_o             ( trans_addr_o         ),
-    .trans_data_access_o      ( trans_data_access_o  )
-
+    .trans_addr_o             ( trans_addr_o         )
   );
 
 
@@ -116,8 +114,8 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
     .fetch_ready_i        ( fetch_ready            ),
     .fetch_branch_o       ( fetch_branch           ),
     .fetch_branch_addr_o  ( fetch_branch_addr      ),
-    .fetch_data_access_o  ( fetch_data_access      ),
-    .fetch_ptr_access_i   ( fetch_ptr_access       ),
+    .fetch_ptr_access_o   ( fetch_ptr_access       ),
+    .fetch_ptr_access_i   ( fetch_ptr_resp         ),
 
     .resp_valid_i         ( resp_valid_i           ),
     .resp_i               ( resp_i                 ),
