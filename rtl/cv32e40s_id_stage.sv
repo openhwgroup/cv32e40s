@@ -35,7 +35,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   parameter b_ext_e      B_EXT                  = B_NONE,
   parameter m_ext_e      M_EXT                  = M,
   parameter bit          X_EXT                  = 0,
-  parameter bit          ZC_EXT                 = 0,
   parameter              DEBUG_TRIGGER_EN       = 1,
   parameter int unsigned REGFILE_NUM_READ_PORTS = 2
 )
@@ -410,7 +409,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   #(
     .B_EXT                           ( B_EXT                     ),
     .M_EXT                           ( M_EXT                     ),
-    .ZC_EXT                          ( ZC_EXT                    ),
     .DEBUG_TRIGGER_EN                ( DEBUG_TRIGGER_EN          )
   )
   decoder_i
@@ -552,11 +550,13 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.trigger_match          <= 1'b0;
 
       id_ex_pipe_o.last_sec_op            <= 1'b0;
+      id_ex_pipe_o.last_op                <= 1'b0;
     end else begin
       // normal pipeline unstall case
       if (id_valid_o && ex_ready_i) begin
         id_ex_pipe_o.priv_lvl     <= if_id_pipe_i.priv_lvl;
         id_ex_pipe_o.instr_valid  <= 1'b1;
+        id_ex_pipe_o.last_op      <= 1'b1;
 
         // Operands
         if (alu_op_a_mux_sel != OP_A_NONE) begin

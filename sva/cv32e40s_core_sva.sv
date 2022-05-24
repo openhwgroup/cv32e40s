@@ -50,6 +50,7 @@ module cv32e40s_core_sva
   input logic        sys_mret_insn_id,
   input logic        wb_valid,
   input logic        branch_taken_in_ex,
+  input logic        last_op_wb,
 
   input privlvl_t    priv_lvl,
   input privlvl_t    priv_lvl_if,
@@ -244,10 +245,8 @@ always_ff @(posedge clk , negedge rst_ni)
         expected_instr_err_mepc <= ex_wb_pipe.pc;
       end
 
-      // CLIC pointers generate data errors, exluding to avoid cause mismatch. todo: make separate asserts for clicptr exceptions.
-      // todo: if CLIC spec changes from data to instruction fetch for pointer, this must change again.
       if (!first_instr_mpuerr_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
-         !(ctrl_fsm.pc_mux == PC_TRAP_NMI) && !(ex_wb_pipe.instr_meta.clic_ptr) &&
+         !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           (ex_wb_pipe.instr.mpu_status != MPU_OK) && !ctrl_debug_mode_n) begin
         first_instr_mpuerr_found   <= 1'b1;
         expected_instr_mpuerr_mepc <= ex_wb_pipe.pc;
@@ -445,7 +444,7 @@ end
   // Check that only a single instruction can retire during single step
   a_single_step_retire :
   assert property (@(posedge clk) disable iff (!rst_ni)
-                    (wb_valid && dcsr.step && !ctrl_fsm.debug_mode)
+                    (wb_valid && last_op_wb && dcsr.step && !ctrl_fsm.debug_mode)
                     ##1 wb_valid [->1]
                     |-> (ctrl_fsm.debug_mode && dcsr.step))
     else `uvm_error("core", "Multiple instructions retired during single stepping")
@@ -638,7 +637,7 @@ end
 logic mret_self_stall_qual;
 assign mret_self_stall_qual = ((sys_en_id && sys_mret_unqual_id_bypass && last_sec_op_id_i) && // MRET 2/2 in ID
                               ((id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn && !id_ex_pipe.last_sec_op && id_ex_pipe.instr_valid) || // mret 1/2 in EX
-                               (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn && !ex_wb_pipe.last_sec_op && ex_wb_pipe.instr_valid))) &&  // mret 1/2 in WB
+                               (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn && !ex_wb_pipe.last_op     && ex_wb_pipe.instr_valid))) &&  // mret 1/2 in WB
                                !(id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn && id_ex_pipe.last_sec_op && id_ex_pipe.instr_valid);
 a_mret_self_stall_qual:
   assert property (@(posedge clk) disable iff (!rst_ni)

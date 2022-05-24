@@ -1242,8 +1242,9 @@ typedef struct packed {
   logic        illegal_c_insn;
   privlvl_t    priv_lvl;
   logic        trigger_match;
-  logic [31:0] xif_id;  // ID of offloaded instruction
-  logic [31:0] ptr;  // Flops to hold 32-bit pointer
+  logic [31:0] xif_id;           // ID of offloaded instruction
+  logic [31:0] ptr;              // Flops to hold 32-bit pointer
+  logic        last_op;          // Last part of multi operation instruction
 } if_id_pipe_t;
 
 // ID/EX pipeline
@@ -1314,6 +1315,7 @@ typedef struct packed {
 
   // Indicate that this is the last operation of a multi operation instruction
   logic         last_sec_op;
+  logic         last_op;
 
 } id_ex_pipe_t;
 
@@ -1360,8 +1362,7 @@ typedef struct packed {
   logic         xif_en;           // Instruction has been offloaded via eXtension interface
   xif_meta_t    xif_meta;         // xif meta struct
 
-  // Indicate that this is the last operation of a multi operation instruction
-  logic         last_sec_op;
+  logic         last_op;
 } ex_wb_pipe_t;
 
 // Performance counter events
@@ -1492,7 +1493,7 @@ typedef struct packed {
   typedef enum logic {TRANSPARENT, REGISTERED} obi_if_state_e;
 
   // Enum used for configuration of B extension
-  typedef enum logic [1:0] {B_NONE, ZBA_ZBB_ZBS, ZBA_ZBB_ZBC_ZBS} b_ext_e;
+  typedef enum logic [1:0] {B_NONE, ZBA_ZBB, ZBA_ZBB_ZBS, ZBA_ZBB_ZBC_ZBS} b_ext_e;
 
   // Enum used for configuration of M extension
   typedef enum logic [1:0] {M_NONE, M, ZMMUL} m_ext_e;
