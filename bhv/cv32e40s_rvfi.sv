@@ -80,6 +80,7 @@ module cv32e40s_rvfi
    input logic                                csr_en_wb_i,
    input logic                                sys_wfi_insn_wb_i,
    input logic                                sys_en_wb_i,
+   input logic                                last_op_wb_i,
    // Register writes
    input logic                                rf_we_wb_i,
    input logic [4:0]                          rf_addr_wb_i,
@@ -99,8 +100,6 @@ module cv32e40s_rvfi
    input logic                                single_step_allowed_i,
    input logic                                nmi_pending_i,          // regular NMI pending
    input logic                                nmi_is_store_i,         // regular NMI type
-   input logic                                clic_nmi_pending_i,     // NMI due to CLIC vector load is pending
-   input logic                                clic_nmi_is_store_i,    // NMI type due to CLIC vector load
    input logic                                pending_debug_i,
    input logic                                debug_mode_q_i,
 
@@ -659,7 +658,8 @@ module cv32e40s_rvfi
 
   // WFI instructions retire when their wake-up condition is present.
   // The wake-up condition is only checked in the SLEEP state of the controller FSM.
-  assign wb_valid_adjusted = (sys_en_wb_i && sys_wfi_insn_wb_i) ? (ctrl_fsm_cs_i == SLEEP) && (ctrl_fsm_ns_i == FUNCTIONAL) : wb_valid_i;
+  // Other instructions retire when their last suboperation is done in WB.
+  assign wb_valid_adjusted = (sys_en_wb_i && sys_wfi_insn_wb_i) ? (ctrl_fsm_cs_i == SLEEP) && (ctrl_fsm_ns_i == FUNCTIONAL) : wb_valid_i && last_op_wb_i;
 
   // Pipeline stage model //
 
@@ -865,7 +865,7 @@ module cv32e40s_rvfi
     end
   end // always_ff @
 
-  assign rvfi_nmip = {(nmi_is_store_i || clic_nmi_is_store_i), (nmi_pending_i || clic_nmi_pending_i)};
+  assign rvfi_nmip = {nmi_is_store_i, nmi_pending_i};
 
   // Capture possible performance counter writes during WB, before wb_valid
   // If counter write happens before wb_valid (e.g. LSU stalled waiting for rvalid or WFI that is in WB multiple cycles),

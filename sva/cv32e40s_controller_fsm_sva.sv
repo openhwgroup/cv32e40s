@@ -86,8 +86,8 @@ module cv32e40s_controller_fsm_sva
   input logic           sys_mret_id_i,
   input logic           csr_wr_in_wb_flush_i,
   input logic           lsu_trans_valid,
-  input logic           lsu_write_buffer_empty_i,
-  input logic           irq_clic_shv_i
+  input logic           irq_clic_shv_i,
+  input logic           last_op_wb_i
 );
 
 
@@ -275,8 +275,8 @@ module cv32e40s_controller_fsm_sva
   // Detect if the last part of a secure mret is in ID while the first part is in EX or WB
   logic mret_self_stall;
   assign mret_self_stall = (sys_en_id_i && sys_mret_id_i && last_sec_op_id_i) && // MRET 2/2 in ID
-                      ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_sec_op) || // mret 1/2 in EX
-                       (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_sec_op));  // mret 1/2 in WB
+                      ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && !id_ex_pipe_i.last_op) || // mret 1/2 in EX
+                       (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && !ex_wb_pipe_i.last_op));      // mret 1/2 in WB
 
   // Check that WFI is stalled in ID if CSR writes (explicit and implicit)
   // are present in EX or WB
@@ -626,7 +626,7 @@ endgenerate
       valid_cnt <= '0;
     end else begin
       if(bus_error_latched) begin
-        if(wb_valid_i && !ctrl_fsm_o.debug_mode && !(dcsr_i.step && !dcsr_i.stepie)) begin
+        if(wb_valid_i && last_op_wb_i && !ctrl_fsm_o.debug_mode && !(dcsr_i.step && !dcsr_i.stepie)) begin
           valid_cnt <= valid_cnt + 1'b1;
         end
       end else begin
@@ -648,11 +648,6 @@ endgenerate
     else `uvm_error("controller", "NMI handler not taken within two instruction retirements")
 
 if (SMCLIC) begin
-  // When a CLIC SHV interrupt is taken, the write buffer must be empty
-  a_clic_shv_wbuf_empty:
-  assert property (@(posedge clk) disable iff (!rst_n)
-                  (irq_clic_shv_i && ctrl_fsm_o.irq_ack) |-> lsu_write_buffer_empty_i)
-    else `uvm_error("controller", "LSU write buffer not empty when fetching CLIC pointer")
 
   // After a pc_set to PC_TRAP_CLICV, only the following jump targets are allowed:
   // PC_POINTER : Normal execution, the pointer target is being fetched

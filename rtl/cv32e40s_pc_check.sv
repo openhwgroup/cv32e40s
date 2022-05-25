@@ -50,8 +50,8 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
   input  logic        branch_decision_ex_i,   // Branch decision from EX stage
 
   // Last_op inputs
-  input  logic        last_sec_op_id_i,
-  input  logic        last_sec_op_ex_i,
+  input  logic        last_sec_op_id_i,       // Using last_sec_op from ID (may harden tablejump suboperations which are not 'last_op')
+  input  logic        last_op_ex_i,           // Using last_op from EX, only used for hardening of branches where last_sec_op == last_op
 
   // CLIC inputs
   input  logic        prefetch_is_ptr_i,      // Indicates that "instruction" in IF is a pointer
@@ -158,7 +158,7 @@ assign branch_taken_err      = bch_taken_q && !(ctrl_fsm_i.branch_in_ex_raw && b
 // jump or branch instruction with the last_sec_op bit set. Qualifying with registered instr_valid to make sure
 // the instruction was not killed earlier, which would cause the jump or branch to correctly be not taken.
 assign jump_mret_untaken_err = !jmp_taken_q && (ctrl_fsm_i.jump_in_id_raw   && if_id_pipe_i.instr_valid && last_sec_op_id_i);
-assign branch_untaken_err    = !bch_taken_q && (ctrl_fsm_i.branch_in_ex_raw && id_ex_pipe_i.instr_valid && last_sec_op_ex_i && branch_decision_ex_i);
+assign branch_untaken_err    = !bch_taken_q && (ctrl_fsm_i.branch_in_ex_raw && id_ex_pipe_i.instr_valid && last_op_ex_i && branch_decision_ex_i);
 
 
 assign ctrl_flow_taken_err = jump_mret_taken_err || branch_taken_err;
@@ -211,7 +211,7 @@ always_ff @(posedge clk, negedge rst_n) begin
     // Flag for taken branches
     // Branches are taken from EX, and the flag can thus only be cleared when the last part (2/2) of the instruction
     // is done in the EX stage, or EX stage is killed.
-    if((ex_valid_i && wb_ready_i && last_sec_op_ex_i) || ctrl_fsm_i.kill_ex) begin
+    if((ex_valid_i && wb_ready_i && last_op_ex_i) || ctrl_fsm_i.kill_ex) begin
       bch_taken_q <= 1'b0;
     end else begin
       // Set flag for branches

@@ -28,6 +28,7 @@
 
 module cv32e40s_if_stage import cv32e40s_pkg::*;
 #(
+  parameter b_ext_e      B_EXT           = B_NONE,
   parameter bit          X_EXT           = 0,
   parameter int          X_ID_WIDTH      = 4,
   parameter int          PMA_NUM_REGIONS = 0,
@@ -39,7 +40,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   parameter bit          SMCLIC          = 1'b0,
   parameter int          SMCLIC_ID_WIDTH = 5,
   parameter bit          ZC_EXT          = 0,
-  parameter m_ext_e      M_EXT           = M
+  parameter m_ext_e      M_EXT           = M_NONE
 )
 (
   input  logic          clk,
@@ -58,7 +59,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   input  logic          branch_decision_ex_i,   // Current branch decision from EX
 
   input  logic          last_sec_op_id_i,
-  input  logic          last_sec_op_ex_i,
   output logic          pc_err_o,               // Error signal for the pc checker module
   input  logic [MTVT_ADDR_WIDTH-1:0]   mtvt_addr_i,            // Base address for CLIC vectoring
 
@@ -305,7 +305,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .branch_decision_ex_i ( branch_decision_ex_i ),
 
     .last_sec_op_id_i     ( last_sec_op_id_i     ),
-    .last_sec_op_ex_i     ( last_sec_op_ex_i     ),
+    .last_op_ex_i         ( id_ex_pipe_i.last_op ),
 
     .prefetch_is_ptr_i    ( prefetch_is_ptr      ),
 
@@ -360,6 +360,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       if_id_pipe_o.priv_lvl         <= PRIV_LVL_M;
       if_id_pipe_o.trigger_match    <= 1'b0;
       if_id_pipe_o.xif_id           <= '0;
+      if_id_pipe_o.last_op          <= 1'b0;
     end else begin
       // Valid pipeline output if we are valid AND the
       // alignment buffer has a valid instruction
@@ -372,6 +373,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
         if_id_pipe_o.priv_lvl         <= prefetch_priv_lvl;
         if_id_pipe_o.trigger_match    <= dummy_insert ?        1'b0 : trigger_match_i; // Block trigger for dummy instructions to avoid double trigger
         if_id_pipe_o.xif_id           <= xif_id;
+        if_id_pipe_o.last_op          <= 1'b1;
 
         if (prefetch_is_ptr) begin
           // Update pointer value
@@ -393,6 +395,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   cv32e40s_compressed_decoder
   #(
       .ZC_EXT ( ZC_EXT ),
+      .B_EXT  ( B_EXT  ),
       .M_EXT  ( M_EXT  )
   )
   compressed_decoder_i
