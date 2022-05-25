@@ -1314,7 +1314,6 @@ typedef struct packed {
   xif_meta_t    xif_meta;         // xif meta struct
 
   // Indicate that this is the last operation of a multi operation instruction
-  logic         last_sec_op;
   logic         last_op;
 
 } id_ex_pipe_t;

@@ -636,9 +636,9 @@ end
 // Helper logic for qualified mret_self_stall, should be the same as unqualified.
 logic mret_self_stall_qual;
 assign mret_self_stall_qual = ((sys_en_id && sys_mret_unqual_id_bypass && last_sec_op_id_i) && // MRET 2/2 in ID
-                              ((id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn && !id_ex_pipe.last_sec_op && id_ex_pipe.instr_valid) || // mret 1/2 in EX
+                              ((id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn && !id_ex_pipe.last_op && id_ex_pipe.instr_valid) || // mret 1/2 in EX
                                (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn && !ex_wb_pipe.last_op     && ex_wb_pipe.instr_valid))) &&  // mret 1/2 in WB
-                               !(id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn && id_ex_pipe.last_sec_op && id_ex_pipe.instr_valid);
+                               !(id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn && id_ex_pipe.last_op && id_ex_pipe.instr_valid);
 a_mret_self_stall_qual:
   assert property (@(posedge clk) disable iff (!rst_ni)
                   1'b1 |-> (mret_self_stall_qual == mret_self_stall_bypass))
@@ -647,7 +647,7 @@ a_mret_self_stall_qual:
 // Helper logic for qualified jumpr_self_stall, should be the same as unqualified.
 logic jumpr_self_stall_qual;
 assign jumpr_self_stall_qual = (alu_en_id_i && jmpr_unqual_id_bypass && last_sec_op_id_i) &&
-                              ((id_ex_pipe.alu_jmp && id_ex_pipe.alu_en && !id_ex_pipe.last_sec_op && id_ex_pipe.instr_valid));
+                              ((id_ex_pipe.alu_jmp && id_ex_pipe.alu_en && !id_ex_pipe.last_op && id_ex_pipe.instr_valid));
 
 a_jumpr_self_stall_qual:
   assert property (@(posedge clk) disable iff (!rst_ni)

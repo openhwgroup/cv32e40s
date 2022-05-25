@@ -197,6 +197,9 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   // Local instruction valid qualifier
   logic                 instr_valid;
 
+  // Last operation of instruction (including secure operations)
+  logic                 last_op;
+
   // eXtension interface signals
   logic                 xif_en;
   logic                 xif_waiting;
@@ -549,14 +552,13 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.instr_meta             <= '0;
       id_ex_pipe_o.trigger_match          <= 1'b0;
 
-      id_ex_pipe_o.last_sec_op            <= 1'b0;
       id_ex_pipe_o.last_op                <= 1'b0;
     end else begin
       // normal pipeline unstall case
       if (id_valid_o && ex_ready_i) begin
         id_ex_pipe_o.priv_lvl     <= if_id_pipe_i.priv_lvl;
         id_ex_pipe_o.instr_valid  <= 1'b1;
-        id_ex_pipe_o.last_op      <= 1'b1;
+        id_ex_pipe_o.last_op      <= last_op;
 
         // Operands
         if (alu_op_a_mux_sel != OP_A_NONE) begin
@@ -649,9 +651,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
         id_ex_pipe_o.xif_meta.dualwrite     <= xif_dualwrite;
         id_ex_pipe_o.xif_meta.accepted      <= xif_insn_accept;
 
-        // Multi operation
-        id_ex_pipe_o.last_sec_op            <= last_sec_op;
-
       end else if (ex_ready_i) begin
         id_ex_pipe_o.instr_valid            <= 1'b0;
       end
@@ -699,6 +698,10 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       assign last_sec_op = 1'b1;
     end
   endgenerate
+
+  // Only signal 'last_op' when the incoming instruction is a last_op AND the hardening logic for jumps and
+  // branches also have a 'last_sec_op'
+  assign last_op = if_id_pipe_i.last_op && last_sec_op;
 
   assign alu_en_o     = alu_en;
   assign sys_en_o     = sys_en;

@@ -920,7 +920,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     // | target+1 | target   | B 2/2  | B 1/2 |  <- branch_taken_q = 1
     // | target+2 | target+1 | target | B 2/2 |  <- branch_taken_q = 0
     // | target+2 | target+1 | target | B 2/2 |  <- branch_taken_q = 0
-    if ((id_valid_i && ex_ready_i && id_ex_pipe_i.last_sec_op && branch_taken_q) || ctrl_fsm_o.kill_ex) begin
+    if ((id_valid_i && ex_ready_i && id_ex_pipe_i.last_op && branch_taken_q) || ctrl_fsm_o.kill_ex) begin
       branch_taken_n = 1'b0;
     end
 

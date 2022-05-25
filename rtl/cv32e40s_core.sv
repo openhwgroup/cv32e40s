@@ -506,7 +506,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .branch_decision_ex_i( branch_decision_ex       ),
 
     .last_sec_op_id_i    ( last_sec_op_id           ),
-    .last_sec_op_ex_i    ( id_ex_pipe.last_sec_op   ),
     .pc_err_o            ( pc_err_if                ),
 
     .m_c_obi_instr_if    ( m_c_obi_instr_if         ), // Instruction bus interface

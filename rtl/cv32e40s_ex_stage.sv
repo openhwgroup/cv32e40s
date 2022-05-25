@@ -199,7 +199,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
 
   // Detect last operation. Both last_op and last_sec_op must be true
   // Both parts of a split misaligned load/store will reach WB, but only the second half will be marked with "last_op"
-  assign last_op_o = (id_ex_pipe_i.lsu_en && lsu_split_i) ? 1'b0 : (id_ex_pipe_i.last_op && id_ex_pipe_i.last_sec_op);
+  assign last_op_o = (id_ex_pipe_i.lsu_en && lsu_split_i) ? 1'b0 : id_ex_pipe_i.last_op;
 
   ////////////////////////////
   //     _    _    _   _    //
