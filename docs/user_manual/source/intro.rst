@@ -51,8 +51,8 @@ It follows these specifications:
 .. [RISC-V-ZBA_ZBB_ZBC_ZBS] RISC-V Bit Manipulation ISA-extensions, Version 1.0.0-38-g865e7a7, 2021-06-28,
    https://github.com/riscv/riscv-bitmanip/releases/download/1.0.0/bitmanip-1.0.0-38-g865e7a7.pdf
 
-.. [RISC-V-ZCA_ZCB_ZCMB_ZCMP_ZCMT] RISC-V Standard Extension for the **Zca**, **Zcb**, **Zcmb**, **Zcmp**, **Zcmt** subsets of **Zc**, v0.70.1, 29f0511 (not ratified yet),
-   https://github.com/riscv/riscv-code-size-reduction/releases/download/V0.70.1-TOOLCHAIN-DEV/Zc_0_70_1.pdf
+.. [RISC-V-ZCA_ZCB_ZCMB_ZCMP_ZCMT] RISC-V Standard Extension for the **Zca**, **Zcb**, **Zcmb**, **Zcmp**, **Zcmt** subsets of **Zc**, v0.70.4, 5022e25 (not ratified yet),
+   https://github.com/riscv/riscv-code-size-reduction/releases/download/V0.70.4-TOOLCHAIN-DEV/Zc.pdf
 
 .. [RISC-V-SMEPMP] PMP Enhancements for memory access and execution prevention on Machine mode, version 1.0, 12/2021,
    https://github.com/riscv/riscv-tee/blob/b20fda89e8e05605ca943af5897c0bb7f4db9841/Smepmp/Smepmp.pdf
@@ -111,24 +111,24 @@ In addition, the following standard instruction set extensions are available fro
      - always enabled
 
    * - **Zca**: Subset of the standard **Zc** Code-Size Reduction extension consisting of a subset of **C** with the FP load/stores removed.
-     - v0.70.1 (not ratified yet; version will change)
-     - optionally enabled with the ``ZC_EXT`` parameter
+     - v0.70.4 (not ratified yet; version will change)
+     - always enabled
 
    * - **Zcb**: Subset of the standard **Zc** Code-Size Reduction extension consisting of simple operations.
-     - v0.70.1 (not ratified yet; version will change)
-     - optionally enabled with the ``ZC_EXT`` parameter
+     - v0.70.4 (not ratified yet; version will change)
+     - always enabled
 
    * - **Zcmb**: Subset of the standard **Zc** Code-Size Reduction extension consisting of load/store byte/half which overlap with **c.fld**, **c.fldsp**, **c.fsd**.
-     - v0.70.1 (not ratified yet; version will change)
-     - optionally enabled with the ``ZC_EXT`` parameter
+     - v0.70.4 (not ratified yet; version will change)
+     - always enabled
 
    * - **Zcmp**: Subset of the standard **Zc** Code-Size Reduction extension consisting of push/pop and double move which overlap with **c.fsdsp**.
-     - v0.70.1 (not ratified yet; version will change)
-     - optionally enabled with the ``ZC_EXT`` parameter
+     - v0.70.4 (not ratified yet; version will change)
+     - always enabled
 
    * - **Zcmt**: Subset of the standard **Zc** Code-Size Reduction extension consisting of table jump.
-     - v0.70.1 (not ratified yet; version will change)
-     - optionally enabled with the ``ZC_EXT`` parameter
+     - v0.70.4 (not ratified yet; version will change)
+     - always enabled
 
    * - **Zba**: Bit Manipulation Address calculation instructions
      - Version 1.0.0
