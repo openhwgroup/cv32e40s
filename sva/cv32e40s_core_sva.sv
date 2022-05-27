@@ -655,4 +655,18 @@ a_jumpr_self_stall_qual:
         else `uvm_error("core", "jumpr_self_stall mismatch.")
 
 
-endmodule // cv32e40s_core_sva
+
+  // Check that a table jump in ID is stalled when a CSR is written in EX or WB (could be JVT being written)
+  property p_tbljmp_stall;
+    @(posedge clk) disable iff (!rst_ni)
+    (id_ex_pipe.instr_valid && id_ex_pipe.csr_en) ||
+    (ex_wb_pipe.instr_valid && ex_wb_pipe.csr_en)
+    |->
+    !ctrl_fsm.pc_set_tbljmp;
+  endproperty;
+
+  a_tbljmp_stall: assert property(p_tbljmp_stall)
+    else `uvm_error("core", "Table jump not stalled while CSR is written");
+
+endmodule
+
