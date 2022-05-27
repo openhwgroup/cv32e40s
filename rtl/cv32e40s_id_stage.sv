@@ -210,6 +210,9 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   logic                 xif_dualwrite;
   logic                 xif_loadstore;
 
+  // Signal for detection of first operation (of two) of table jumps.
+  logic                 tbljmp_first;
+
   assign instr_valid = if_id_pipe_i.instr_valid && !ctrl_fsm_i.kill_id && !ctrl_fsm_i.halt_id;
 
   assign sys_mret_insn_o = sys_mret_insn;
@@ -271,6 +274,9 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   // Destination register seclection
   //---------------------------------------------------------------------------
   assign rf_waddr = instr[REG_D_MSB:REG_D_LSB];
+
+  // Detect first half of table jumps
+  assign tbljmp_first = if_id_pipe_i.instr_meta.tbljmp ? !if_id_pipe_i.last_op : 1'b0;
 
   //////////////////////////////////////////////////////////////////
   //      _                         _____                    _    //
@@ -473,7 +479,10 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     .bch_jmp_mux_sel_o               ( bch_jmp_mux_sel           ),
 
     // From controller fsm
-    .ctrl_fsm_i                      ( ctrl_fsm_i                )
+    .ctrl_fsm_i                      ( ctrl_fsm_i                ),
+
+    // Table jump related signals
+    .tbljmp_first_i                  ( tbljmp_first              )
   );
 
   // Speculatively read all source registers for illegal instr, might be required by coprocessor

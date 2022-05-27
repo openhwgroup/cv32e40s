@@ -84,6 +84,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   input logic             sys_en_id_i,
   input logic             sys_mret_id_i,
 
+  // JVT to IF stage
+  output logic [JVT_ADDR_WIDTH-1:0] jvt_addr_o,
+
   // ID/EX pipeline
   input id_ex_pipe_t      id_ex_pipe_i,
 
@@ -691,7 +694,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   always_comb
   begin
 
-    jvt_n                    = '0;
+    jvt_n                    = {csr_wdata_int[31:10], 10'b0000000000};
     jvt_we                   = 1'b0;
 
     mscratch_n               = csr_wdata_int;
@@ -1167,6 +1170,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     .rd_data_o  (jvt_q),
     .rd_error_o (jvt_rd_error)
   );
+
+  assign jvt_addr_o = jvt_q.base [31:32-JVT_ADDR_WIDTH];
 
   cv32e40s_csr #(
     .LIB        (LIB),
