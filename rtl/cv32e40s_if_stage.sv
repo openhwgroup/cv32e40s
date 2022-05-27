@@ -326,6 +326,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .mepc_i               ( mepc_i               ),
     .mtvec_addr_i         ( mtvec_addr_i         ),
     .dpc_i                ( dpc_i                ),
+    .jvt_addr_i           ( jvt_addr_i           ),
 
     .boot_addr_i          ( boot_addr_i          ),
     .dm_halt_addr_i       ( dm_halt_addr_i       ),

@@ -60,6 +60,7 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
   input  logic [31:0] mepc_i,
   input  logic [24:0] mtvec_addr_i,
   input  logic [31:0] dpc_i,
+  input  logic [JVT_ADDR_WIDTH-1:0] jvt_addr_i,
 
   // Static core inputs
   input  logic [31:0] boot_addr_i,         // Boot address from toplevel pins
@@ -118,6 +119,7 @@ assign incr_addr = if_id_pipe_i.pc + (if_id_pipe_i.instr_meta.dummy      ? 32'd0
 // Control flow address chosen based on flopped ctrl_fsm_i.pc_mux
 // If the pc_mux is glitched, this mux may choose the wrong address
 // and an address comparison error is likely to happen.
+
 assign ctrl_flow_addr = (pc_mux_q == PC_JUMP)     ? jump_target_id_i      :
                         (pc_mux_q == PC_MRET)     ? mepc_i                :
                         (pc_mux_q == PC_BRANCH)   ? branch_target_ex_i    :
@@ -125,7 +127,9 @@ assign ctrl_flow_addr = (pc_mux_q == PC_JUMP)     ? jump_target_id_i      :
                         (pc_mux_q == PC_TRAP_DBE) ? dm_exception_addr_i   :
                         (pc_mux_q == PC_TRAP_NMI) ? nmi_addr              :
                         (pc_mux_q == PC_TRAP_EXC) ? {mtvec_addr_i, 7'h0 } : // Also covered by CSR hardening
-                        (pc_mux_q == PC_DRET)     ? dpc_i                 : {boot_addr_i[31:2], 2'b00};
+                        (pc_mux_q == PC_DRET)     ? dpc_i                 :
+                        (pc_mux_q == PC_POINTER)  ? if_id_pipe_i.ptr      : // Only for Zc, gated by not raising pc_set_q for CLIC pointers.
+                        (pc_mux_q == PC_TBLJUMP)  ? {jvt_addr_i, ctrl_fsm_i.jvt_pc_mux, 2'b00} : {boot_addr_i[31:2], 2'b00};
 
 // Choose which address to check vs pc_if, sequential or control flow.
 // Instructions are 16 bit aligned since the core supports the C extension.
@@ -183,12 +187,13 @@ always_ff @(posedge clk, negedge rst_n) begin
     bch_taken_q      <= 1'b0;
   end else begin
     // Signal that a pc_set set was performed.
-    // Exclude cases of PC_WB_PLUS4, PC_TRAP_IRQ and CLIC pointers/targets as the pipeline currently has no easy way to recompute these targets.
+    // Exclude cases of PC_WB_PLUS4, PC_TRAP_IRQ and CLIC pointers as the pipeline currently has no easy way to recompute these targets.
+    // Pointers (if_id_pipe.ptr) should already be hardened by parity checks.
     // Used for the address comparison
     // Todo: may stretch this until the target instruction leaves IF stage
-    // todo: Should possibly check PC_POINTER for table jumps?
     pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ) ||
-                                       (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV) || (ctrl_fsm_i.pc_mux == PC_POINTER));
+                                       (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV) ||
+                                       ((ctrl_fsm_i.pc_mux == PC_POINTER) && !if_id_pipe_i.instr_meta.tbljmp));
 
     // Set a flag for a valid IF->ID stage transition.
     // Used for checking sequential PCs.
@@ -203,7 +208,9 @@ always_ff @(posedge clk, negedge rst_n) begin
       jmp_taken_q <= 1'b0;
     end else begin
       // Set flag for jumps and mret
-      if(ctrl_fsm_i.pc_set && ((ctrl_fsm_i.pc_mux == PC_JUMP) || (ctrl_fsm_i.pc_mux == PC_MRET))) begin
+      // Both operations of a table jump counts as a jump (instruction word remain the same, only the pointer field change)
+      if(ctrl_fsm_i.pc_set && ((ctrl_fsm_i.pc_mux == PC_JUMP) || (ctrl_fsm_i.pc_mux == PC_MRET) ||
+        (ctrl_fsm_i.pc_mux == PC_TBLJUMP) || ((ctrl_fsm_i.pc_mux == PC_POINTER) && if_id_pipe_i.instr_meta.tbljmp))) begin
         jmp_taken_q <= 1'b1;
       end
     end
