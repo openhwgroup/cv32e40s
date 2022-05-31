@@ -406,7 +406,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
         // No update to tbljmp flag, we want flag to be high for both operations.
         if (!prefetch_is_tbljmp_ptr) begin
           if_id_pipe_o.pc                    <= pc_if_o;
-          if_id_pipe_o.instr_meta.compressed <= dummy_insert ? 1'b0 : instr_compressed_int;;
+          if_id_pipe_o.instr_meta.compressed <= dummy_insert ? 1'b0 : instr_compressed_int;
           if_id_pipe_o.instr_meta.tbljmp     <= tbljmp;
 
           // Only update compressed_instr for compressed instructions
@@ -453,7 +453,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // (not cleared on faulted fetches). A faulted fetch should not be decoded to anything and thus tbljmp is cleared.
   // One could instead set the instruction word itself to all zeros or another illegal instruction on known fetch faults,
   // but this may impact timing more than suppressing control bits.
-  assign tbljmp = (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK)) ? 1'b0 : tbljmp_raw;
+  // Also clear tbljmp for dummy instructions, as this signal is used to calculate last_op.
+  assign tbljmp = (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK)) ? 1'b0 :
+                  dummy_insert ? 1'b0 : tbljmp_raw;
 
 
   //---------------------------------------------------------------------------
