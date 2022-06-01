@@ -96,6 +96,9 @@ package cv32e40s_rvfi_pkg;
     logic                         [31:0] mseccfg;
     logic                         [31:0] mseccfgh;
     logic                         [31:0] mconfigptr;
+    logic                         [31:0] menvcfg;
+    logic                         [31:0] menvcfgh;
+    logic                         [31:0] cpuctrl;
   } rvfi_csr_map_t;
 
   typedef struct packed {
@@ -104,14 +107,14 @@ package cv32e40s_rvfi_pkg;
     logic        interrupt;
     logic        wu;
   } rvfi_wu_t;
-  
+
   typedef struct packed {
     logic [10:0] cause;
     logic        interrupt;
     logic        exception;
     logic        intr;
   } rvfi_intr_t;
-  
+
   typedef struct packed {
     logic [1:0]  cause_type;
     logic [2:0]  debug_cause;
