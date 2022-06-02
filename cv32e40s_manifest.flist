@@ -79,5 +79,7 @@ ${DESIGN_RTL_DIR}/cv32e40s_lfsr.sv
 ${DESIGN_RTL_DIR}/../bhv/cv32e40s_sim_sffr.sv
 ${DESIGN_RTL_DIR}/../bhv/cv32e40s_sim_sffs.sv
 ${DESIGN_RTL_DIR}/../bhv/cv32e40s_sim_clock_gate.sv
+${DESIGN_RTL_DIR}/../bhv/cv32e40s_rvfi_instr_obi.sv
+${DESIGN_RTL_DIR}/../bhv/cv32e40s_rvfi_data_obi.sv
 ${DESIGN_RTL_DIR}/../bhv/cv32e40s_rvfi.sv
 ${DESIGN_RTL_DIR}/../bhv/rvfi_sim_trace.sv

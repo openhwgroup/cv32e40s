@@ -14,11 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
-// CV32E40X RVFI instruction OBI interface (aligns instruction OBI signals to IF timing)
+// CV32E40S RVFI instruction OBI interface (aligns instruction OBI signals to IF timing)
 //
 // Contributors: Arjan Bink <arjan.bink@silabs.com>
 
-module cv32e40x_rvfi_instr_obi import cv32e40x_pkg::*; import cv32e40x_rvfi_pkg::*;
+module cv32e40s_rvfi_instr_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg::*;
 (
   input  logic                          clk,
   input  logic                          rst_n,
@@ -44,7 +44,7 @@ module cv32e40x_rvfi_instr_obi import cv32e40x_pkg::*; import cv32e40x_rvfi_pkg:
 
   // Read/write pointers
   logic [PTR_WIDTH-1:0]         rptr_q, rptr_n;                                 // Pointer to FIFO entry to be read
-  logic [PTR_WIDTH-1:0]         rptr_q_inc;                                     // Next read pointer (needed if instruction word is split over two entries) 
+  logic [PTR_WIDTH-1:0]         rptr_q_inc;                                     // Next read pointer (needed if instruction word is split over two entries)
   logic [PTR_WIDTH-1:0]         wptr_req_q, wptr_req_n;                         // Pointer to FIFO (address phase) entry to be written
   logic [PTR_WIDTH-1:0]         wptr_resp_q, wptr_resp_n;                       // Pointer to FIFO (response phase) entry to be written
   logic [PTR_WIDTH:0]           cnt_q, cnt_n;                                   // Number of FIFO entries including incoming entries
@@ -98,7 +98,7 @@ module cv32e40x_rvfi_instr_obi import cv32e40x_pkg::*; import cv32e40x_rvfi_pkg:
   // If an OBI transavyion has been started (req = 1), but not yet acceppted (gnt = 1),
   // then it is not yet counted as outstanding, but it should be flushed nonetheless upon
   // an IF kill.
-  
+
   assign flush_cnt = started_q ? outstanding_cnt_q + 1'b1 : outstanding_cnt_q;
 
   // The RVFI instruction OBI FIFO tracks reads, writes and flushes of the alignment
@@ -135,7 +135,7 @@ module cv32e40x_rvfi_instr_obi import cv32e40x_pkg::*; import cv32e40x_rvfi_pkg:
   begin
     fifo_req_n = fifo_q[wptr_req_q];
     fifo_req_n.req_payload = m_c_obi_instr_if.req_payload;
-    wptr_req_n = wptr_req_q + 1'b1; 
+    wptr_req_n = wptr_req_q + 1'b1;
   end
 
   // Next response phase signals to FIFO
@@ -143,7 +143,7 @@ module cv32e40x_rvfi_instr_obi import cv32e40x_pkg::*; import cv32e40x_rvfi_pkg:
   begin
     fifo_resp_n = fifo_q[wptr_resp_q];
     fifo_resp_n.resp_payload = m_c_obi_instr_if.resp_payload;
-    wptr_resp_n = wptr_resp_q + 1'b1; 
+    wptr_resp_n = wptr_resp_q + 1'b1;
   end
 
   //////////////////////////////////////////////////////////////////////////////

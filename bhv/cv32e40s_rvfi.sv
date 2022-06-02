@@ -605,7 +605,7 @@ module cv32e40s_rvfi
   `include "cv32e40s_rvfi_trace.svh"
 `endif
 
-  cv32e40x_rvfi_instr_obi
+  cv32e40s_rvfi_instr_obi
   rvfi_instr_obi_i
   (
     .clk                        ( clk_i                         ),
@@ -622,7 +622,7 @@ module cv32e40s_rvfi
     .obi_instr                  ( obi_instr_if                  )
   );
 
-  cv32e40x_rvfi_data_obi
+  cv32e40s_rvfi_data_obi
   rvfi_data_obi_i
   (
     .clk                        ( clk_i                 ),

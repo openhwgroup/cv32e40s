@@ -14,11 +14,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
-// CV32E40X RVFI data OBI interface (aligns data OBI signals to WB timing)
+// CV32E40S RVFI data OBI interface (aligns data OBI signals to WB timing)
 //
 // Contributors: Arjan Bink <arjan.bink@silabs.com>
 
-module cv32e40x_rvfi_data_obi import cv32e40x_pkg::*; import cv32e40x_rvfi_pkg::*;
+module cv32e40s_rvfi_data_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg::*;
 (
   input  logic                          clk,
   input  logic                          rst_n
