@@ -61,11 +61,9 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
 );
 
-
   // FIFO_DEPTH set to 3 as the alignment_buffer will need 3 to function correctly
   localparam DEPTH                     = 3;
   localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(DEPTH);
-
 
   // Counter for number of instructions in the FIFO
   // FIFO_ADDR_DEPTH defines number of words
@@ -77,7 +75,6 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   logic [FIFO_ADDR_DEPTH-1:0] outstanding_cnt_n, outstanding_cnt_q;
   logic outstanding_count_up;
   logic outstanding_count_down;
-
 
   // number of complete instructions in resp_data
   logic [1:0] n_incoming_ins;
@@ -145,7 +142,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
   // Signal aligned branch to the prefetcher
   assign fetch_branch_o = ctrl_fsm_i.pc_set;
-  assign fetch_branch_addr_o = {branch_addr_i[31:2], 2'b00};
+  assign fetch_branch_addr_o = {branch_addr_i[31:1], 1'b0};
 
   //////////////////
   // FIFO signals //
@@ -361,21 +358,20 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
   always_comb begin
     outstanding_cnt_n = outstanding_cnt_q;
-      case ({outstanding_count_up, outstanding_count_down})
-        2'b00  : begin
-          outstanding_cnt_n = outstanding_cnt_q;
-        end
-        2'b01  : begin
-          outstanding_cnt_n = outstanding_cnt_q - 1'b1;
-        end
-        2'b10  : begin
-          outstanding_cnt_n = outstanding_cnt_q + 1'b1;
-        end
-        2'b11  : begin
-          outstanding_cnt_n = outstanding_cnt_q;
-        end
-      endcase
-    //end
+    case ({outstanding_count_up, outstanding_count_down})
+      2'b00 : begin
+        outstanding_cnt_n = outstanding_cnt_q;
+      end
+      2'b01 : begin
+        outstanding_cnt_n = outstanding_cnt_q - 1'b1;
+      end
+      2'b10 : begin
+        outstanding_cnt_n = outstanding_cnt_q + 1'b1;
+      end
+      2'b11 : begin
+        outstanding_cnt_n = outstanding_cnt_q;
+      end
+    endcase
   end
 
 
