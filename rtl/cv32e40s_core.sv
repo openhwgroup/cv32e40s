@@ -408,9 +408,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //                                                     |___/                                //
   //////////////////////////////////////////////////////////////////////////////////////////////
 
-  logic        clk;
-  logic        fetch_enable;
-
   cv32e40s_sleep_unit
   #(
     .LIB                        ( LIB                  )
