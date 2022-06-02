@@ -101,7 +101,6 @@ module cv32e40s_core_sva
   input logic        alu_jmpr_id_i,
   input logic        alu_en_id_i,
 
-
   // probed controller signals
   input logic        ctrl_debug_mode_n,
   input logic        ctrl_pending_debug,
@@ -125,7 +124,6 @@ module cv32e40s_core_sva
   input logic        jumpr_self_stall_bypass,
   input logic        last_sec_op_id_i
   );
-
 
 if(SMCLIC) begin
   property p_clic_mie_tieoff;
@@ -495,6 +493,12 @@ end
                       (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_MRET))
                       |-> (priv_lvl_if == cs_registers_mstatus_q.mpp))
     else `uvm_error("core", "MEPC fetch not performed with priviledge level from mstatus.mpp")
+
+  // Check that instruction fetches are always word aligned
+  a_instr_addr_word_aligned :
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                     (instr_addr_o[1:0] == 2'b00))
+      else `uvm_error("core", "Instruction fetch not word aligned")
 
   // Check that instruction fetches are always non-bufferable
   a_instr_non_bufferable :

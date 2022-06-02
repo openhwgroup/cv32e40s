@@ -158,8 +158,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
   localparam int unsigned MTVT_LSB = ((SMCLIC_ID_WIDTH + 2) < 6) ? 6 : (SMCLIC_ID_WIDTH + 2);
   localparam int unsigned MTVT_ADDR_WIDTH = 32 - MTVT_LSB;
 
-  logic [31:0]       pc_if;             // Program counter in IF stage
-  logic              ptr_in_if;         // IF stage contains a pointer
+  logic         clk;                    // Gated clock
+  logic         fetch_enable;
+
+  logic [31:0]  pc_if;                  // Program counter in IF stage
+  logic         ptr_in_if;              // IF stage contains a pointer
 
   // Jump and branch target and decision (EX->IF)
   logic [31:0] jump_target_id;
@@ -356,7 +359,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Connect toplevel OBI signals to internal interfaces
   assign instr_req_o                         = m_c_obi_instr_if.s_req.req;
   assign instr_reqpar_o                      = m_c_obi_instr_if.s_req.reqpar;
-  assign instr_addr_o                        = m_c_obi_instr_if.req_payload.addr;
+  assign instr_addr_o                        = {m_c_obi_instr_if.req_payload.addr[31:2], 2'b0};
   assign instr_memtype_o                     = m_c_obi_instr_if.req_payload.memtype;
   assign instr_prot_o                        = m_c_obi_instr_if.req_payload.prot;
   assign instr_dbg_o                         = m_c_obi_instr_if.req_payload.dbg;
@@ -396,8 +399,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign irq_id  = ctrl_fsm.irq_id;
   assign dbg_ack = ctrl_fsm.dbg_ack;
 
-
-
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
   //  / ___| | ___   ___| | __ |  \/  | __ _ _ __   __ _  __ _  ___ _ __ ___   ___ _ __ | |_  //
@@ -406,9 +407,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //  \____|_|\___/ \___|_|\_\ |_|  |_|\__,_|_| |_|\__,_|\__, |\___|_| |_| |_|\___|_| |_|\__| //
   //                                                     |___/                                //
   //////////////////////////////////////////////////////////////////////////////////////////////
-
-  logic        clk;
-  logic        fetch_enable;
 
   cv32e40s_sleep_unit
   #(
@@ -620,7 +618,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .xif_offloading_o             ( xif_offloading_id         )
   );
 
-
   /////////////////////////////////////////////////////
   //   _______  __  ____ _____  _    ____ _____      //
   //  | ____\ \/ / / ___|_   _|/ \  / ___| ____|     //
@@ -682,7 +679,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ex_valid_o                 ( ex_valid                     ),
     .wb_ready_i                 ( wb_ready                     ),
     .last_op_o                  ( last_op_ex                   )
-);
+  );
 
   ////////////////////////////////////////////////////////////////////////////////////////
   //    _     ___    _    ____    ____ _____ ___  ____  _____   _   _ _   _ ___ _____   //
@@ -1040,6 +1037,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //  \___/_| |_|\__(_)  \____/\___/|_| |_|\__|_|  \___/|_|_|\___|_|    //
   //                                                                    //
   ////////////////////////////////////////////////////////////////////////
+
   generate
     if (SMCLIC) begin : gen_clic_interrupt
       assign mip          = '0;
@@ -1114,7 +1112,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     end
   endgenerate
 
-    /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
   //  ____  _____ ____ ___ ____ _____ _____ ____  ____   //
   // |  _ \| ____/ ___|_ _/ ___|_   _| ____|  _ \/ ___|  //
   // | |_) |  _|| |  _ | |\___ \ | | |  _| | |_) \___ \  //

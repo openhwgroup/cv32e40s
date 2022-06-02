@@ -165,3 +165,4 @@ Transactions in the write buffer must be completed before the |corev| is able to
  * Retire a ``fence`` instruction
  * Retire a ``fence.i`` instruction
  * Enter SLEEP mode
+
