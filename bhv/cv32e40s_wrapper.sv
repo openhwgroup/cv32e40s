@@ -628,7 +628,25 @@ module cv32e40s_wrapper
          .csr_secureseed1_we_i     ( core_i.cs_registers_i.secureseed1_we                                 ),
          .csr_secureseed2_n_i      ( core_i.cs_registers_i.secureseed2_n                                  ),
          .csr_secureseed2_q_i      ( core_i.cs_registers_i.secureseed2_rdata                              ),
-         .csr_secureseed2_we_i     ( core_i.cs_registers_i.secureseed2_we                                 )
+         .csr_secureseed2_we_i     ( core_i.cs_registers_i.secureseed2_we                                 ),
+         .csr_mstateen0_n_i        ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen0_q_i        ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen0_we_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen1_n_i        ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen1_q_i        ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen1_we_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen2_n_i        ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen2_q_i        ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen2_we_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen0h_n_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen0h_q_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen0h_we_i      ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen1h_n_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen1h_q_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen1h_we_i      ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen2h_n_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen2h_q_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen2h_we_i      ( '0                                    /* TODO: connect            */ )
 
 
 `ifdef RISCV_FORMAL
