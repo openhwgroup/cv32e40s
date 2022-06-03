@@ -307,7 +307,7 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
 
               12'h302:  // mret
               begin
-                if (priv_lvl_i != PRIV_LVL_M) begin
+                if ((priv_lvl_i != PRIV_LVL_M) || ctrl_fsm_i.debug_mode) begin
                   decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
                 end else begin
                   decoder_ctrl_o.sys_mret_insn = 1'b1;
