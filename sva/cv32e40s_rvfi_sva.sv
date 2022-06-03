@@ -203,7 +203,7 @@ end
                      ((rvfi_csr_mcause_rdata[10:0] == INT_CAUSE_LSU_LOAD_FAULT) || (rvfi_csr_mcause_rdata[10:0] == INT_CAUSE_LSU_STORE_FAULT)))
       else `uvm_error("rvfi", "dcsr.nmip not followed by rvfi_intr and NMI handler")
 
-  /*
+  /* todo: add back in
   // Check that cv32e40x_rvfi_instr_obi tracks alignment buffer
   a_rvfi_instr_obi_addr:
     assert property (@(posedge clk_i) disable iff (!rst_ni)
