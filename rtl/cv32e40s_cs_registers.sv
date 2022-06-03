@@ -334,7 +334,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         xsecure_csr_wr_in_wb;
   logic                         pmp_csr_wr_in_wb;
 
-  logic                         mscratch_rd_error;                              // todo: use
+  logic                         mscratch_rd_error;
   logic                         mstatus_rd_error;
   logic                         mtvec_rd_error;
   logic [PMP_NUM_REGIONS-1:0]   pmpncfg_rd_error;
@@ -345,14 +345,14 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         dcsr_rd_error;
   logic                         mie_rd_error;
   logic                         mepc_rd_error;
-  logic                         mtvt_rd_error;                                  // todo: use
-  logic                         mintstatus_rd_error;                            // todo: use
-  logic                         mintthresh_rd_error;                            // todo: use
-  logic                         mclicbase_rd_error;                             // todo: use
-  logic                         mscratchcsw_rd_error;                           // todo: use
-  logic                         mscratchcswl_rd_error;                          // todo: use
-  logic                         jvt_rd_error;                                   // todo: use
-  logic                         priv_lvl_rd_error;                              // todo: use
+  logic                         mtvt_rd_error;
+  logic                         mintstatus_rd_error;
+  logic                         mintthresh_rd_error;
+  logic                         mclicbase_rd_error;
+  logic                         mscratchcsw_rd_error;
+  logic                         mscratchcswl_rd_error;
+  logic                         jvt_rd_error;
+  logic                         priv_lvl_rd_error;
 
   logic                         tdata1_rd_error;                                // Not used
   logic                         tdata2_rd_error;                                // Not used
@@ -378,14 +378,23 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // CSR write operations in WB, actual csr_we_int may still become 1'b0 in case of CSR_OP_READ
   assign csr_en_gated    = ex_wb_pipe_i.csr_en && instr_valid;
 
-  // Combine all CSR Read error outputs
-  assign csr_err_o = mstatus_rd_error ||
-                     mtvec_rd_error   ||
-                     pmp_rd_error     ||
-                     cpuctrl_rd_error ||
-                     dcsr_rd_error    ||
-                     mie_rd_error     ||
-                     mepc_rd_error;
+  // Combine all CSR read error outputs
+  assign csr_err_o = mscratch_rd_error ||
+    mstatus_rd_error ||
+    mtvec_rd_error ||
+    pmp_rd_error ||
+    cpuctrl_rd_error ||
+    dcsr_rd_error ||
+    mie_rd_error ||
+    mepc_rd_error ||
+    mtvt_rd_error ||
+    mintstatus_rd_error ||
+    mintthresh_rd_error ||
+    mclicbase_rd_error ||
+    mscratchcsw_rd_error ||
+    mscratchcswl_rd_error ||
+    jvt_rd_error ||
+    priv_lvl_rd_error;
 
   ////////////////////////////////////////
   // Determine if CSR access is illegal //
@@ -801,16 +810,16 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   always_comb
   begin
 
-    jvt_n         = {csr_wdata_int[31:10], 10'b0000000000};
+    jvt_n         = csr_wdata_int & CSR_JVT_MASK;
     jvt_we        = 1'b0;
 
     mscratch_n    = csr_wdata_int;
     mscratch_we   = 1'b0;
 
-    mepc_n        = csr_wdata_int & ~32'b1;
+    mepc_n        = csr_wdata_int & CSR_MEPC_MASK;
     mepc_we       = 1'b0;
 
-    dpc_n         = csr_wdata_int & ~32'b1;
+    dpc_n         = csr_wdata_int & CSR_DPC_MASK;
     dpc_we        = 1'b0;
 
     dcsr_n        = '{
@@ -1609,7 +1618,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       #(
         .LIB        (LIB),
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .MASK       (CSR_MTVEC_CLIC_MASK),
+        .SHADOWCOPY (SECURE),
         .RESETVALUE (MTVEC_CLIC_RESET_VAL)
       )
       mtvec_csr_i
@@ -1740,8 +1750,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       cv32e40s_csr
       #(
+        .LIB        (LIB),
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .MASK       (CSR_MTVEC_BASIC_MASK),
+        .SHADOWCOPY (SECURE),
         .RESETVALUE (MTVEC_BASIC_RESET_VAL)
       )
       mtvec_csr_i
@@ -1918,7 +1930,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   #(
     .LIB        (LIB),
     .WIDTH      ($bits(privlvl_t)),
-    .SHADOWCOPY (1'b0),
+    .MASK       (CSR_PRV_LVL_MASK),
+    .SHADOWCOPY (SECURE),
     .RESETVALUE (PRIV_LVL_M)
   )
   priv_lvl_i

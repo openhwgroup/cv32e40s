@@ -521,24 +521,27 @@ typedef enum logic[11:0] {
 } csr_num_e;
 
 // CSR Bit Implementation Masks
-parameter CSR_JVT_MASK          = ~32'h0;
+parameter CSR_JVT_MASK          = 32'hFFFFFC00;
 parameter CSR_DCSR_MASK         = 32'b1111_0000_0000_0000_1000_1001_1100_0111; // NMI bit taken from ctrl_fsm
-parameter CSR_MEPC_MASK         = ~32'b1;
+parameter CSR_MEPC_MASK         = 32'hFFFFFFFE;
+parameter CSR_DPC_MASK          = 32'hFFFFFFFE;
 //        CSR_MIE_MASK          = IRQ_MASK;
 parameter CSR_MSTATUS_MASK      = 32'b0000_0000_0010_0010_0001_1000_1000_1000;
-parameter CSR_MTVEC_MASK        = 32'hFFFFFF01;
+parameter CSR_MTVEC_BASIC_MASK  = 32'hFFFFFF81;
+parameter CSR_MTVEC_CLIC_MASK   = 32'hFFFFFF83;
 parameter CSR_MTVT_MASK         = 32'hFFFFFFE0;
 parameter CSR_MINTSTATUS_MASK   = 32'hFF000000;
 parameter CSR_MINTTHRESH_MASK   = 32'h000000FF;
-parameter CSR_MSCRATCHCSW_MASK  = ~32'h0;
-parameter CSR_MSCRATCHCSWL_MASK = ~32'h0;
+parameter CSR_MSCRATCHCSW_MASK  = 32'hFFFFFFFF;
+parameter CSR_MSCRATCHCSWL_MASK = 32'hFFFFFFFF;
 parameter CSR_MCLICBASE_MASK    = 32'hFFFFF000;
-parameter CSR_MSCRATCH_MASK     = ~32'h0;
+parameter CSR_MSCRATCH_MASK     = 32'hFFFFFFFF;
 parameter CSR_CPUCTRL_MASK      = 32'h000F0007;
-parameter CSR_PMPNCFG_MASK      = ~8'h0;
-parameter CSR_PMPADDR_MASK      = ~32'h0;
+parameter CSR_PMPNCFG_MASK      = 8'hFF;
+parameter CSR_PMPADDR_MASK      = 32'hFFFFFFFF;
 parameter CSR_MSECCFG_MASK      = 32'h00000007;
-parameter CSR_MCOUNTEREN_MASK   = 32'h0;
+parameter CSR_MCOUNTEREN_MASK   = 32'h00000000;
+parameter CSR_PRV_LVL_MASK      = 32'hFFFFFFFF;
 
 // CSR operations
 

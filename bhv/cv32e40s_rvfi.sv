@@ -199,8 +199,8 @@ module cv32e40s_rvfi
    // performance counters
    //  cycle,  instret,  hpcounter,  cycleh,  instreth,  hpcounterh
    // mcycle, minstret, mhpcounter, mcycleh, minstreth, mhpcounterh
-   input logic [31:0] [31:0]                  csr_mhpmcounter_n_i,
-   input logic [31:0] [31:0]                  csr_mhpmcounter_q_i,
+   input logic [31:0] [63:0]                  csr_mhpmcounter_n_i,
+   input logic [31:0] [63:0]                  csr_mhpmcounter_q_i,
    input logic [31:0] [1:0]                   csr_mhpmcounter_we_i,
 
    input logic [31:0]                         csr_mvendorid_i,
