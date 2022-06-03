@@ -229,9 +229,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic csr_counter_read;
   logic csr_wr_in_wb_flush;
 
-  privlvl_t     priv_lvl_lsu, priv_lvl;
+  privlvl_t     priv_lvl_lsu;
   privlvl_t     priv_lvl_clic_ptr;
   privlvlctrl_t priv_lvl_if_ctrl;
+
+  privlvl_t     priv_lvl;
 
   logic         csr_mnxti_read;
 

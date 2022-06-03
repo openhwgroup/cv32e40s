@@ -649,6 +649,7 @@ module cv32e40s_wrapper
          .csr_mstateen2h_we_i      ( '0                                    /* TODO: connect            */ )
 
 
+
 `ifdef RISCV_FORMAL
          ,`RVFI_CONN
 `else
