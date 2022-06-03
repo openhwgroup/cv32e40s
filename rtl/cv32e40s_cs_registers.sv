@@ -27,9 +27,7 @@
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
-// Description:    Control and Status Registers (CSRs) loosely following the  //
-//                 RiscV draft priviledged instruction set spec (v1.9)        //
-//                 Added Floating point support                               //
+// Description:    Control and Status Registers (CSRs)                        //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -57,326 +55,312 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 )
 (
   // Clock and Reset
-  input  logic            clk,
-  input  logic            rst_n,
-  input  logic            scan_cg_en_i,
+  input  logic                          clk,
+  input  logic                          rst_n,
+  input  logic                          scan_cg_en_i,
 
-  // IDs
-  input  logic [31:0]     mhartid_i,
-  input  logic  [3:0]     mimpid_patch_i,
+  // Configuration
+  input  logic [31:0]                   mhartid_i,
+  input  logic  [3:0]                   mimpid_patch_i,
+  input  logic [31:0]                   mtvec_addr_i,
+  input  logic                          csr_mtvec_init_i,
 
-  // MTVEC
-  output logic [24:0]     mtvec_addr_o,
-  output logic  [1:0]     mtvec_mode_o,
+  // CSRs
+  output dcsr_t                         dcsr_o,
+  output logic [31:0]                   dpc_o,
+  output logic [JVT_ADDR_WIDTH-1:0]     jvt_addr_o,
+  output mcause_t                       mcause_o,
+  output logic [63:0]                   mcycle_o,
+  output logic [31:0]                   mepc_o,
+  output logic [31:0]                   mie_o,
+  output mintstatus_t                   mintstatus_o,
+  output logic [7:0]                    mintthresh_o,
+  output mstatus_t                      mstatus_o,
+  output logic [24:0]                   mtvec_addr_o,
+  output logic  [1:0]                   mtvec_mode_o,
+  output logic [MTVT_ADDR_WIDTH-1:0]    mtvt_addr_o,
 
-  // MTVT
-  output logic [MTVT_ADDR_WIDTH-1:0]     mtvt_addr_o,
-
-  // Cycle Count
-  output logic [MHPMCOUNTER_WIDTH-1:0] mcycle_o,
-
-  // Used for mtvec address
-  input  logic [31:0]     mtvec_addr_i,
-  input  logic            csr_mtvec_init_i,
+  output privlvl_t                      priv_lvl_o,
+  output privlvlctrl_t                  priv_lvl_if_ctrl_o,
+  output privlvl_t                      priv_lvl_lsu_o,
+  output privlvl_t                      priv_lvl_clic_ptr_o,
 
   // IF/ID pipeline
-  input if_id_pipe_t      if_id_pipe_i,
-  input logic             sys_en_id_i,
-  input logic             sys_mret_id_i,
-
-  // JVT to IF stage
-  output logic [JVT_ADDR_WIDTH-1:0] jvt_addr_o,
+  input logic                           sys_en_id_i,
+  input logic                           sys_mret_id_i,
 
   // ID/EX pipeline
-  input id_ex_pipe_t      id_ex_pipe_i,
+  input id_ex_pipe_t                    id_ex_pipe_i,
+  output logic                          csr_illegal_o,
 
   // EX/WB pipeline
-  input  ex_wb_pipe_t     ex_wb_pipe_i,
+  input  ex_wb_pipe_t                   ex_wb_pipe_i,
 
-  // From controller FSM
-  input  ctrl_fsm_t       ctrl_fsm_i,
+  // From controller_fsm
+  input  ctrl_fsm_t                     ctrl_fsm_i,
 
-  // To controller bypass logic
-  output logic            csr_counter_read_o,
-  output logic            csr_mnxti_read_o,
+  // To controller_bypass
+  output logic                          csr_counter_read_o,
+  output logic                          csr_mnxti_read_o,
 
-  // Interface to registers (SRAM like)
-  output logic [31:0]     csr_rdata_o,
-
-  // To EX stage
-  output logic            csr_illegal_o, // 1'b1 for illegal CSR access.
-
-  // To WB stage
-  output logic            clic_pa_valid_o,   // CSR read data is an address to a function pointer
-  output logic [31:0]     clic_pa_o,         // Address to CLIC function pointer
+  // Interface to CSRs (SRAM like)
+  output logic [31:0]                   csr_rdata_o,
 
   // Interrupts
-  output logic [31:0]     mie_o,
-  input  logic [31:0]     mip_i,
-  output logic            m_irq_enable_o,
-  output logic [7:0]      mintthresh_o,
-  output mintstatus_t     mintstatus_o,
-  output mcause_t         mcause_o,
+  input  logic [31:0]                   mip_i,
+  input  logic                          mnxti_irq_pending_i,
+  input  logic [SMCLIC_ID_WIDTH-1:0]    mnxti_irq_id_i,
+  input  logic [7:0]                    mnxti_irq_level_i,
+  output logic                          clic_pa_valid_o,        // CSR read data is an address to a function pointer
+  output logic [31:0]                   clic_pa_o,              // Address to CLIC function pointer
 
-  input  logic                       mnxti_irq_pending_i,
-  input  logic [SMCLIC_ID_WIDTH-1:0] mnxti_irq_id_i,
-  input  logic [7:0]                 mnxti_irq_level_i,
+  // PMP
+  output pmp_csr_t                      csr_pmp_o,
 
-  output logic [31:0]     mepc_o,
-
-  // PMP CSR's
-  output pmp_csr_t        csr_pmp_o,
-
-  // Read Error
-  output logic            csr_err_o,
-
-  // LFSR lockup
-  output logic            lfsr_lockup_o,
-  input  logic            lfsr_shift_if_i,
-  input  logic            lfsr_shift_id_i,
-
-  // Xsecure control
-  output xsecure_ctrl_t   xsecure_ctrl_o,
+  // Xsecure
+  output logic                          csr_err_o,
+  output logic                          lfsr_lockup_o,
+  input  logic                          lfsr_shift_if_i,
+  input  logic                          lfsr_shift_id_i,
+  output xsecure_ctrl_t                 xsecure_ctrl_o,
 
   // CSR write strobes
-  output logic            csr_wr_in_wb_flush_o,
+  output logic                          csr_wr_in_wb_flush_o,
 
-  // debug
-  output logic [31:0]     dpc_o,
-  output dcsr_t           dcsr_o,
-  output logic            trigger_match_o,
-
-  output privlvlctrl_t    priv_lvl_if_ctrl_o,
-  output privlvl_t        priv_lvl_lsu_o,
-  output privlvl_t        priv_lvl_o,
-  output privlvl_t        priv_lvl_clic_ptr_o,
-
-  output mstatus_t        mstatus_o,
-
-  input  logic [31:0]     pc_if_i,
-  input  logic            ptr_in_if_i
+  // Debug
+  input  logic [31:0]                   pc_if_i,
+  input  logic                          ptr_in_if_i,
+  output logic                          trigger_match_o
 );
+
+  localparam bit PMP = SECURE;
+
+  localparam PMP_ADDR_WIDTH = (PMP_GRANULARITY > 0) ? 33 - PMP_GRANULARITY : 32;
+
+  localparam bit USER = SECURE;
 
   localparam logic [31:0] CORE_MISA =
     (32'(1)          <<  2) | // C - Compressed extension
     (32'(1)          <<  8) | // I - RV32I/64I/128I base ISA
     (32'(M_EXT == M) << 12) | // M - Integer Multiply/Divide extension
-    (32'(1)          << 20) | // U - User mode implemented
+    (32'(USER)       << 20) | // U - User mode implemented
     (32'(0)          << 23) | // X - Non-standard extensions present
     (32'(MXL)        << 30); // M-XLEN
 
   localparam logic [31:0] MISA_VALUE = CORE_MISA | (X_EXT ? X_MISA : 32'h0000_0000);
 
-  localparam PMP_ADDR_WIDTH = (PMP_GRANULARITY > 0) ? 33 - PMP_GRANULARITY : 32;
-
   // CSR update logic
-  logic [31:0]  csr_wdata_int;
-  logic [31:0]  csr_rdata_int;
-  logic         csr_we_int;
+  logic [31:0]                  csr_wdata_int;
+  logic [31:0]                  csr_rdata_int;
+  logic                         csr_we_int;
+
+  csr_opcode_e                  csr_op;
+  csr_num_e                     csr_waddr;
+  csr_num_e                     csr_raddr;
+  logic [31:0]                  csr_wdata;
+  logic                         csr_en_gated;
+
+  logic                         illegal_csr_read;                               // Current CSR cannot be read
+  logic                         illegal_csr_write;                              // Current CSR cannot be written
+
+  logic                         instr_valid;                                    // Local instr_valid
+
+  logic                         unused_signals;
 
   // Interrupt control signals
-  logic [31:0]  mepc_q, mepc_n, mepc_rdata;
-  logic         mepc_we;
-  logic         mepc_rd_error;
+  logic [31:0]                  mepc_q, mepc_n, mepc_rdata;
+  logic                         mepc_we;
 
   // Trigger
-  logic [31:0]  tselect_q, tselect_n, tselect_rdata;
-  logic         tselect_we;                                                     // Not used in RTL (used by RVFI)
+  logic [31:0]                  tselect_q, tselect_n, tselect_rdata;
+  logic                         tselect_we;                                     // Not used in RTL (used by RVFI)
 
-  logic [31:0]  tdata1_q, tdata1_n, tdata1_rdata;
-  logic         tdata1_we;
-  logic         tdata1_rd_error;
+  logic [31:0]                  tdata1_q, tdata1_n, tdata1_rdata;
+  logic                         tdata1_we;
 
-  logic [31:0]  tdata2_q, tdata2_n, tdata2_rdata;
-  logic         tdata2_we;
-  logic         tdata2_rd_error;
+  logic [31:0]                  tdata2_q, tdata2_n, tdata2_rdata;
+  logic                         tdata2_we;
 
-  logic [31:0]  tdata3_n, tdata3_rdata;                                         // No CSR module instance
-  logic         tdata3_we;
+  logic [31:0]                  tdata3_n, tdata3_rdata;                         // No CSR module instance
+  logic                         tdata3_we;
 
-  logic [31:0]  tinfo_q, tinfo_n, tinfo_rdata;
-  logic         tinfo_we;                                                       // Not used in RTL (used by RVFI)
+  logic [31:0]                  tinfo_q, tinfo_n, tinfo_rdata;
+  logic                         tinfo_we;                                       // Not used in RTL (used by RVFI)
 
-  logic [31:0]  tcontrol_n, tcontrol_rdata;                                     // No CSR module instance
-  logic         tcontrol_we;                                                    // Not used in RTL (used by RVFI)
+  logic [31:0]                  tcontrol_n, tcontrol_rdata;                     // No CSR module instance
+  logic                         tcontrol_we;                                    // Not used in RTL (used by RVFI)
 
   // Debug
-  dcsr_t        dcsr_q, dcsr_n, dcsr_rdata;
-  logic         dcsr_we;
-  logic         dcsr_rd_error;
+  dcsr_t                        dcsr_q, dcsr_n, dcsr_rdata;
+  logic                         dcsr_we;
 
-  logic [31:0]  dpc_q, dpc_n, dpc_rdata;
-  logic         dpc_we;
-  logic         dpc_rd_error;
+  logic [31:0]                  dpc_q, dpc_n, dpc_rdata;
+  logic                         dpc_we;
 
-  logic [31:0]  dscratch0_q, dscratch0_n, dscratch0_rdata;
-  logic         dscratch0_we;
-  logic         dscratch0_rd_error;
+  logic [31:0]                  dscratch0_q, dscratch0_n, dscratch0_rdata;
+  logic                         dscratch0_we;
 
-  logic [31:0]  dscratch1_q, dscratch1_n, dscratch1_rdata;
-  logic         dscratch1_we;
-  logic         dscratch1_rd_error;
+  logic [31:0]                  dscratch1_q, dscratch1_n, dscratch1_rdata;
+  logic                         dscratch1_we;
 
-  logic [31:0]  mscratch_q, mscratch_n, mscratch_rdata;
-  logic         mscratch_we;
-  logic         mscratch_rd_error;
+  logic [31:0]                  mscratch_q, mscratch_n, mscratch_rdata;
+  logic                         mscratch_we;
 
-  jvt_t         jvt_q, jvt_n, jvt_rdata;
-  logic         jvt_we;
-  logic         jvt_rd_error;
+  jvt_t                         jvt_q, jvt_n, jvt_rdata;
+  logic                         jvt_we;
 
-  mstatus_t     mstatus_q, mstatus_n, mstatus_rdata;
-  logic         mstatus_we;
-  logic         mstatus_rd_error;
+  mstatus_t                     mstatus_q, mstatus_n, mstatus_rdata;
+  logic                         mstatus_we;
 
-  logic [31:0]  mstatush_n, mstatush_rdata;                                     // No CSR module instance
-  logic         mstatush_we;                                                    // Not used in RTL (used by RVFI)
+  logic [31:0]                  mstatush_n, mstatush_rdata;                     // No CSR module instance
+  logic                         mstatush_we;                                    // Not used in RTL (used by RVFI)
 
-  logic [31:0]  misa_n, misa_rdata;                                             // No CSR module instance
-  logic         misa_we;                                                        // Not used in RTL (used by RVFI)
+  logic [31:0]                  misa_n, misa_rdata;                             // No CSR module instance
+  logic                         misa_we;                                        // Not used in RTL (used by RVFI)
 
-  mcause_t      mcause_q, mcause_n, mcause_rdata;
-  logic         mcause_we;
-  logic         mcause_rd_error;
+  mcause_t                      mcause_q, mcause_n, mcause_rdata;
+  logic                         mcause_we;
 
-  mtvec_t       mtvec_q, mtvec_n, mtvec_rdata;
-  logic         mtvec_we;
-  logic         mtvec_rd_error;
+  mtvec_t                       mtvec_q, mtvec_n, mtvec_rdata;
+  logic                         mtvec_we;
 
-  mtvt_t        mtvt_q, mtvt_n, mtvt_rdata;
-  logic         mtvt_we;
-  logic         mtvt_rd_error;
+  mtvt_t                        mtvt_q, mtvt_n, mtvt_rdata;
+  logic                         mtvt_we;
 
-  logic [31:0]  mcounteren_q, mcounteren_n, mcounteren_rdata;
-  logic         mcounteren_we;
-  logic         mcounteren_rd_error;
+  logic [31:0]                  mnxti_rdata;                                    // No CSR module instance
+  logic                         mnxti_we;
 
-  logic [31:0]  mnxti_rdata;                                                    // No CSR module instance
-  logic         mnxti_we;
+  mintstatus_t                  mintstatus_q, mintstatus_n, mintstatus_rdata;
+  logic                         mintstatus_we;
 
-  mintstatus_t  mintstatus_q, mintstatus_n, mintstatus_rdata;
-  logic         mintstatus_we;
-  logic         mintstatus_rd_error;
+  logic [31:0]                  mintthresh_q, mintthresh_n, mintthresh_rdata;
+  logic                         mintthresh_we;
 
-  logic [31:0]  mintthresh_q, mintthresh_n, mintthresh_rdata;
-  logic         mintthresh_we;
-  logic         mintthresh_rd_error;
+  logic [31:0]                  mscratchcsw_q, mscratchcsw_n, mscratchcsw_rdata;
+  logic                         mscratchcsw_we;
 
-  logic [31:0]  mscratchcsw_q, mscratchcsw_n, mscratchcsw_rdata;
-  logic         mscratchcsw_we;
+  logic [31:0]                  mscratchcswl_q, mscratchcswl_n, mscratchcswl_rdata;
+  logic                         mscratchcswl_we;
 
-  logic [31:0]  mscratchcswl_q, mscratchcswl_n, mscratchcswl_rdata;
-  logic         mscratchcswl_we;
+  logic [31:0]                  mclicbase_q, mclicbase_n, mclicbase_rdata;
+  logic                         mclicbase_we;
 
-  logic [31:0]  mclicbase_q, mclicbase_n, mclicbase_rdata;
-  logic         mclicbase_we;
+  logic [31:0]                  mip_n, mip_rdata;                               // No CSR module instance
+  logic                         mip_we;                                         // Not used in RTL (used by RVFI)
 
-  logic [31:0]  mip_n, mip_rdata;                                               // No CSR module instance
-  logic         mip_we;                                                         // Not used in RTL (used by RVFI)
+  logic [31:0]                  mie_q, mie_n, mie_rdata;                        // Bits are masked according to IRQ_MASK
+  logic                         mie_we;
 
-  logic [31:0]  mie_q, mie_n, mie_rdata;                                        // Bits are masked according to IRQ_MASK
-  logic         mie_we;
-  logic         mie_rd_error;
+  logic [31:0]                  mvendorid_n, mvendorid_rdata;                   // No CSR module instance
+  logic                         mvendorid_we;                                   // Always 0 (MRO), not used in RTL (used by RVFI)
 
-  logic [31:0]  mvendorid_n, mvendorid_rdata;                                   // No CSR module instance
-  logic         mvendorid_we;                                                   // Always 0 (MRO), not used in RTL (used by RVFI)
+  logic [31:0]                  marchid_n, marchid_rdata;                       // No CSR module instance
+  logic                         marchid_we;                                     // Always 0 (MRO), not used in RTL (used by RVFI)
 
-  logic [31:0]  marchid_n, marchid_rdata;                                       // No CSR module instance
-  logic         marchid_we;                                                     // Always 0 (MRO), not used in RTL (used by RVFI)
+  logic [31:0]                  mimpid_n, mimpid_rdata;                         // No CSR module instance
+  logic                         mimpid_we;                                      // Always 0 (MRO), not used in RTL (used by RVFI)
 
-  logic [31:0]  mimpid_n, mimpid_rdata;                                         // No CSR module instance
-  logic         mimpid_we;                                                      // Always 0 (MRO), not used in RTL (used by RVFI)
+  logic [31:0]                  mhartid_n, mhartid_rdata;                       // No CSR module instance
+  logic                         mhartid_we;                                     // Always 0 (MRO), not used in RTL (used by RVFI)
 
-  logic [31:0]  mhartid_n, mhartid_rdata;                                       // No CSR module instance
-  logic         mhartid_we;                                                     // Always 0 (MRO), not used in RTL (used by RVFI)
+  logic [31:0]                  mconfigptr_n, mconfigptr_rdata;                 // No CSR module instance
+  logic                         mconfigptr_we;                                  // Always 0 (MRO), not used in RTL (used by RVFI)
 
-  logic [31:0]  mconfigptr_n, mconfigptr_rdata;                                 // No CSR module instance
-  logic         mconfigptr_we;                                                  // Always 0 (MRO), not used in RTL (used by RVFI)
+  logic [31:0]                  mtval_n, mtval_rdata;                           // No CSR module instance
+  logic                         mtval_we;                                       // Not used in RTL (used by RVFI)
 
-  logic [31:0]  mtval_n, mtval_rdata;                                           // No CSR module instance
-  logic         mtval_we;                                                       // Not used in RTL (used by RVFI)
+  logic [31:0]                  mcounteren_q, mcounteren_n, mcounteren_rdata;
+  logic                         mcounteren_we;
 
-  pmpncfg_t                   pmpncfg_n[PMP_MAX_REGIONS];
-  pmpncfg_t                   pmpncfg_q[PMP_MAX_REGIONS];
-  pmpncfg_t                   pmpncfg_rdata[PMP_MAX_REGIONS];
-  logic [PMP_MAX_REGIONS-1:0] pmpncfg_we_int;
-  logic [PMP_MAX_REGIONS-1:0] pmpncfg_we;
-  logic [PMP_NUM_REGIONS-1:0] pmpncfg_locked;
-  logic [PMP_NUM_REGIONS-1:0] pmpncfg_rd_error;
-  logic [PMP_NUM_REGIONS-1:0] pmpncfg_wr_addr_match;
-  logic [PMP_NUM_REGIONS-1:0] pmpncfg_warl_ignore_wr;
-  logic [PMP_NUM_REGIONS-1:0] pmpaddr_wr_addr_match;
+  pmpncfg_t                     pmpncfg_n[PMP_MAX_REGIONS];
+  pmpncfg_t                     pmpncfg_q[PMP_MAX_REGIONS];
+  pmpncfg_t                     pmpncfg_rdata[PMP_MAX_REGIONS];
+  logic [PMP_MAX_REGIONS-1:0]   pmpncfg_we_int;
+  logic [PMP_MAX_REGIONS-1:0]   pmpncfg_we;
+  logic [PMP_NUM_REGIONS-1:0]   pmpncfg_locked;
+  logic [PMP_NUM_REGIONS-1:0]   pmpncfg_wr_addr_match;
+  logic [PMP_NUM_REGIONS-1:0]   pmpncfg_warl_ignore_wr;
+  logic [PMP_NUM_REGIONS-1:0]   pmpaddr_wr_addr_match;
 
-  logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_n;
-  logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_q[PMP_MAX_REGIONS];
-  logic [PMP_ADDR_WIDTH-1:0]  pmp_addr_rdata[PMP_MAX_REGIONS];
-  logic [PMP_MAX_REGIONS-1:0] pmp_addr_we_int;
-  logic [PMP_MAX_REGIONS-1:0] pmp_addr_we;
-  logic [PMP_NUM_REGIONS-1:0] pmp_addr_rd_error;
+  logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_n;
+  logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_q[PMP_MAX_REGIONS];
+  logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_rdata[PMP_MAX_REGIONS];
+  logic [PMP_MAX_REGIONS-1:0]   pmp_addr_we_int;
+  logic [PMP_MAX_REGIONS-1:0]   pmp_addr_we;
 
-  mseccfg_t                   pmp_mseccfg_n;
-  mseccfg_t                   pmp_mseccfg_q;
-  mseccfg_t                   pmp_mseccfg_rdata;
-  logic                       pmp_mseccfg_we;
-  logic                       pmp_mseccfg_rd_error;
+  mseccfg_t                     pmp_mseccfg_n;
+  mseccfg_t                     pmp_mseccfg_q;
+  mseccfg_t                     pmp_mseccfg_rdata;
+  logic                         pmp_mseccfg_we;
 
-  mseccfg_t                   pmp_mseccfgh_n;                                    // No CSR module instance
-  mseccfg_t                   pmp_mseccfgh_rdata;
-  logic                       pmp_mseccfgh_we;                                   // Not used in RTL (used by RVFI)
+  mseccfg_t                     pmp_mseccfgh_n;                                 // No CSR module instance
+  mseccfg_t                     pmp_mseccfgh_rdata;
+  logic                         pmp_mseccfgh_we;                                // Not used in RTL (used by RVFI)
 
-  logic [31:0]                menvcfgh_n, menvcfgh_rdata;                        // No CSR module instance
-  logic                       menvcfgh_we;                                       // Not used in RTL (used by RVFI)
+  logic [31:0]                  menvcfgh_n, menvcfgh_rdata;                     // No CSR module instance
+  logic                         menvcfgh_we;                                    // Not used in RTL (used by RVFI)
 
-  logic [31:0]                menvcfg_n, menvcfg_rdata;                          // No CSR module instance
-  logic                       menvcfg_we;                                        // Not used in RTL (used by RVFI)
+  logic [31:0]                  menvcfg_n, menvcfg_rdata;                       // No CSR module instance
+  logic                         menvcfg_we;                                     // Not used in RTL (used by RVFI)
 
-  logic                       pmp_rd_error;
+  cpuctrl_t                     cpuctrl_n, cpuctrl_q, cpuctrl_rdata;
+  logic                         cpuctrl_we;
 
-  privlvl_t                   priv_lvl_n, priv_lvl_q, priv_lvl_rdata;
-  logic                       priv_lvl_we;
-  logic                       priv_lvl_error;
-  logic [1:0]                 priv_lvl_q_int;
+  logic [31:0]                  secureseed0_n, secureseed1_n, secureseed2_n;
+  logic                         secureseed0_we, secureseed1_we, secureseed2_we;
+  logic [31:0]                  secureseed0_rdata, secureseed1_rdata, secureseed2_rdata;
 
-  logic                       umode_mcounteren_illegal_read;
-  logic                       illegal_csr_write_priv, illegal_csr_read_priv;
-
-  cpuctrl_t                   cpuctrl_n, cpuctrl_q, cpuctrl_rdata;
-  logic                       cpuctrl_we;
-  logic                       cpuctrl_rd_error;
-
-  logic [31:0]                secureseed0_n, secureseed1_n, secureseed2_n;
-  logic                       secureseed0_we, secureseed1_we, secureseed2_we;
-  logic [31:0]                secureseed0_rdata, secureseed1_rdata, secureseed2_rdata;                               // common rdata as all return 0
+  privlvl_t                     priv_lvl_n, priv_lvl_q, priv_lvl_rdata;
+  logic                         priv_lvl_we;
+  logic [1:0]                   priv_lvl_q_int;
 
   // Performance Counter Signals
-  logic [31:0] [MHPMCOUNTER_WIDTH-1:0] mhpmcounter_q;                    // performance counters
-  logic [31:0] [MHPMCOUNTER_WIDTH-1:0] mhpmcounter_n;                    // performance counters next value
-  logic [31:0] [MHPMCOUNTER_WIDTH-1:0] mhpmcounter_rdata;                // performance counters next value
-  logic [31:0] [1:0]                   mhpmcounter_we;                   // performance counters write enable
-  logic [31:0] [31:0]                  mhpmevent_q, mhpmevent_n, mhpmevent_rdata; // event enable
-  logic [31:0]                         mcountinhibit_q, mcountinhibit_n, mcountinhibit_rdata; // performance counter enable
-  logic [NUM_HPM_EVENTS-1:0]           hpm_events;                       // events for performance counters
-  logic [31:0] [MHPMCOUNTER_WIDTH-1:0] mhpmcounter_increment;            // increment of mhpmcounter_q
-  logic [31:0]                         mhpmcounter_write_lower;          // write 32 lower bits of mhpmcounter_q
-  logic [31:0]                         mhpmcounter_write_upper;          // write 32 upper bits mhpmcounter_q
-  logic [31:0]                         mhpmcounter_write_increment;      // write increment of mhpmcounter_q
+  logic [31:0] [63:0]           mhpmcounter_q;                                  // Performance counters
+  logic [31:0] [63:0]           mhpmcounter_n;                                  // Performance counters next value
+  logic [31:0] [63:0]           mhpmcounter_rdata;                              // Performance counters next value
+  logic [31:0] [1:0]            mhpmcounter_we;                                 // Performance counters write enable
+  logic [31:0] [31:0]           mhpmevent_q, mhpmevent_n, mhpmevent_rdata;      // Event enable
+  logic [31:0]                  mcountinhibit_q, mcountinhibit_n, mcountinhibit_rdata; // Performance counter inhibit
+  logic [NUM_HPM_EVENTS-1:0]    hpm_events;                                     // Events for performance counters
+  logic [31:0] [63:0]           mhpmcounter_increment;                          // Increment of mhpmcounter_q
+  logic [31:0]                  mhpmcounter_write_lower;                        // Write 32 lower bits of mhpmcounter_q
+  logic [31:0]                  mhpmcounter_write_upper;                        // Write 32 upper bits mhpmcounter_q
+  logic [31:0]                  mhpmcounter_write_increment;                    // Write increment of mhpmcounter_q
 
-  // Local instr_valid
-  logic         instr_valid;
+  logic                         umode_mcounteren_illegal_read;
+  logic                         illegal_csr_write_priv, illegal_csr_read_priv;
 
-  csr_opcode_e  csr_op;
-  csr_num_e     csr_waddr;
-  csr_num_e     csr_raddr;
-  logic [31:0]  csr_wdata;
-  logic         csr_en_gated;
-  logic         csr_wr_in_wb;
-  logic         xsecure_csr_wr_in_wb;
-  logic         pmp_csr_wr_in_wb;
+  logic                         csr_wr_in_wb;
+  logic                         xsecure_csr_wr_in_wb;
+  logic                         pmp_csr_wr_in_wb;
 
-  logic         illegal_csr_read;  // Current CSR cannot be read
-  logic         illegal_csr_write; // Current CSR cannot be written
+  logic                         mscratch_rd_error;                              // todo: use
+  logic                         mstatus_rd_error;
+  logic                         mtvec_rd_error;
+  logic [PMP_NUM_REGIONS-1:0]   pmpncfg_rd_error;
+  logic [PMP_NUM_REGIONS-1:0]   pmp_addr_rd_error;
+  logic                         pmp_mseccfg_rd_error;
+  logic                         pmp_rd_error;
+  logic                         cpuctrl_rd_error;
+  logic                         dcsr_rd_error;
+  logic                         mie_rd_error;
+  logic                         mepc_rd_error;
+  logic                         mtvt_rd_error;                                  // todo: use
+  logic                         mintstatus_rd_error;                            // todo: use
+  logic                         mintthresh_rd_error;                            // todo: use
+  logic                         mclicbase_rd_error;                             // todo: use
+  logic                         mscratchcsw_rd_error;                           // todo: use
+  logic                         mscratchcswl_rd_error;                          // todo: use
+  logic                         jvt_rd_error;                                   // todo: use
+  logic                         priv_lvl_rd_error;                              // todo: use
 
-  logic         unused_signals;
+  logic                         tdata1_rd_error;                                // Not used
+  logic                         tdata2_rd_error;                                // Not used
+  logic                         dpc_rd_error;                                   // Not used
+  logic                         dscratch0_rd_error;                             // Not used
+  logic                         dscratch1_rd_error;                             // Not used
+  logic                         mcause_rd_error;                                // Not used
+  logic                         mcounteren_rd_error;                            // Not used
 
   // Local instr_valid for write portion (WB)
   assign instr_valid = ex_wb_pipe_i.instr_valid && !ctrl_fsm_i.kill_wb && !ctrl_fsm_i.halt_wb;
@@ -467,8 +451,17 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       // mtvec: machine trap-handler base address
       CSR_MTVEC: csr_rdata_int = mtvec_rdata;
-      // mcounteren: Counter enable registers
-      CSR_MCOUNTEREN: csr_rdata_int = mcounteren_rdata;
+
+      // mcounteren: machine counter enable
+      CSR_MCOUNTEREN: begin
+        if (USER) begin
+          csr_rdata_int = mcounteren_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
+
       // mtvt: machine trap-handler vector table base address
       CSR_MTVT: begin
         if (SMCLIC) begin
@@ -627,7 +620,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
       CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31: begin
         csr_rdata_int                 = mhpmcounter_rdata[csr_raddr[4:0]][31:0];
-        umode_mcounteren_illegal_read = !mcounteren_rdata[csr_raddr[4:0]] && (id_ex_pipe_i.priv_lvl == PRIV_LVL_U);
+        umode_mcounteren_illegal_read = !mcounteren_rdata[csr_raddr[4:0]] && (id_ex_pipe_i.priv_lvl == PRIV_LVL_U); // todo: code no longer needed?
         csr_counter_read_o            = 1'b1;
       end
 
@@ -651,7 +644,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
       CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
       CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H: begin
-        csr_rdata_int                 = (MHPMCOUNTER_WIDTH == 64) ? mhpmcounter_rdata[csr_raddr[4:0]][63:32] : '0;
+        csr_rdata_int                 = mhpmcounter_rdata[csr_raddr[4:0]][63:32];
         umode_mcounteren_illegal_read = !mcounteren_rdata[csr_raddr[4:0]] && (id_ex_pipe_i.priv_lvl == PRIV_LVL_U);
         csr_counter_read_o            = 1'b1;
       end
@@ -672,41 +665,96 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MCONFIGPTR: csr_rdata_int = mconfigptr_rdata;
 
       CSR_PMPCFG0, CSR_PMPCFG1, CSR_PMPCFG2,  CSR_PMPCFG3,  CSR_PMPCFG4,  CSR_PMPCFG5,  CSR_PMPCFG6,  CSR_PMPCFG7,
-      CSR_PMPCFG8, CSR_PMPCFG9, CSR_PMPCFG10, CSR_PMPCFG11, CSR_PMPCFG12, CSR_PMPCFG13, CSR_PMPCFG14, CSR_PMPCFG15:
-        csr_rdata_int = {pmpncfg_rdata[6'(csr_raddr[3:0]*4 + 3)], pmpncfg_rdata[6'(csr_raddr[3:0]*4 + 2)],
-                         pmpncfg_rdata[6'(csr_raddr[3:0]*4 + 1)], pmpncfg_rdata[6'(csr_raddr[3:0]*4 + 0)]};
-
+      CSR_PMPCFG8, CSR_PMPCFG9, CSR_PMPCFG10, CSR_PMPCFG11, CSR_PMPCFG12, CSR_PMPCFG13, CSR_PMPCFG14, CSR_PMPCFG15: begin
+       if (PMP) begin
+          csr_rdata_int = {pmpncfg_rdata[6'(csr_raddr[3:0]*4 + 3)], pmpncfg_rdata[6'(csr_raddr[3:0]*4 + 2)],
+            pmpncfg_rdata[6'(csr_raddr[3:0]*4 + 1)], pmpncfg_rdata[6'(csr_raddr[3:0]*4 + 0)]};
+         end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
 
       CSR_PMPADDR0,  CSR_PMPADDR1,  CSR_PMPADDR2,  CSR_PMPADDR3,  CSR_PMPADDR4,  CSR_PMPADDR5,  CSR_PMPADDR6,  CSR_PMPADDR7,
-      CSR_PMPADDR8,  CSR_PMPADDR9,  CSR_PMPADDR10, CSR_PMPADDR11, CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15:
-        csr_rdata_int = pmp_addr_rdata[6'(16*0 + csr_raddr[3:0])];
+      CSR_PMPADDR8,  CSR_PMPADDR9,  CSR_PMPADDR10, CSR_PMPADDR11, CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15: begin
+        if (PMP) begin
+          csr_rdata_int = pmp_addr_rdata[6'(16*0 + csr_raddr[3:0])];
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
+
       CSR_PMPADDR16, CSR_PMPADDR17, CSR_PMPADDR18, CSR_PMPADDR19, CSR_PMPADDR20, CSR_PMPADDR21, CSR_PMPADDR22, CSR_PMPADDR23,
-      CSR_PMPADDR24, CSR_PMPADDR25, CSR_PMPADDR26, CSR_PMPADDR27, CSR_PMPADDR28, CSR_PMPADDR29, CSR_PMPADDR30, CSR_PMPADDR31:
-        csr_rdata_int = pmp_addr_rdata[6'(16*1 + csr_raddr[3:0])];
+      CSR_PMPADDR24, CSR_PMPADDR25, CSR_PMPADDR26, CSR_PMPADDR27, CSR_PMPADDR28, CSR_PMPADDR29, CSR_PMPADDR30, CSR_PMPADDR31: begin
+        if (PMP) begin
+          csr_rdata_int = pmp_addr_rdata[6'(16*1 + csr_raddr[3:0])];
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
+
       CSR_PMPADDR32, CSR_PMPADDR33, CSR_PMPADDR34, CSR_PMPADDR35, CSR_PMPADDR36, CSR_PMPADDR37, CSR_PMPADDR38, CSR_PMPADDR39,
-      CSR_PMPADDR40, CSR_PMPADDR41, CSR_PMPADDR42, CSR_PMPADDR43, CSR_PMPADDR44, CSR_PMPADDR45, CSR_PMPADDR46, CSR_PMPADDR47:
-        csr_rdata_int = pmp_addr_rdata[6'(16*2 + csr_raddr[3:0])];
+      CSR_PMPADDR40, CSR_PMPADDR41, CSR_PMPADDR42, CSR_PMPADDR43, CSR_PMPADDR44, CSR_PMPADDR45, CSR_PMPADDR46, CSR_PMPADDR47: begin
+        if (PMP) begin
+          csr_rdata_int = pmp_addr_rdata[6'(16*2 + csr_raddr[3:0])];
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
+
       CSR_PMPADDR48, CSR_PMPADDR49, CSR_PMPADDR50, CSR_PMPADDR51, CSR_PMPADDR52, CSR_PMPADDR53, CSR_PMPADDR54, CSR_PMPADDR55,
-      CSR_PMPADDR56, CSR_PMPADDR57, CSR_PMPADDR58, CSR_PMPADDR59, CSR_PMPADDR60, CSR_PMPADDR61, CSR_PMPADDR62, CSR_PMPADDR63:
-        csr_rdata_int = pmp_addr_rdata[6'(16*3 + csr_raddr[3:0])];
+      CSR_PMPADDR56, CSR_PMPADDR57, CSR_PMPADDR58, CSR_PMPADDR59, CSR_PMPADDR60, CSR_PMPADDR61, CSR_PMPADDR62, CSR_PMPADDR63: begin
+        if (PMP) begin
+          csr_rdata_int =  pmp_addr_rdata[6'(16*3 + csr_raddr[3:0])];
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
 
-      CSR_MSECCFG:
-        csr_rdata_int = pmp_mseccfg_rdata;
+      CSR_MSECCFG: begin
+        if (PMP) begin
+          csr_rdata_int = pmp_mseccfg_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
 
-      CSR_MSECCFGH:
-        csr_rdata_int = pmp_mseccfgh_rdata;
+      CSR_MSECCFGH: begin
+        if (PMP) begin
+          csr_rdata_int = pmp_mseccfgh_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
 
-      CSR_MENVCFG:
-        csr_rdata_int = menvcfg_rdata;
+      CSR_MENVCFG: begin
+        if (USER) begin
+          csr_rdata_int = menvcfg_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
 
-      CSR_MENVCFGH:
-        csr_rdata_int = menvcfgh_rdata;
+      CSR_MENVCFGH: begin
+        if (USER) begin
+          csr_rdata_int = menvcfgh_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
+      end
 
       CSR_SECURESEED0: begin
         if (SECURE) begin
-          csr_rdata_int = secureseed0_rdata; // Read as 0
-        end
-        else begin
+          csr_rdata_int = secureseed0_rdata;
+        end else begin
           // Cause illegal CSR access
           csr_rdata_int    = '0;
           illegal_csr_read = 1'b1;
@@ -715,10 +763,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       CSR_SECURESEED1: begin
         if (SECURE) begin
-          csr_rdata_int = secureseed1_rdata; // Read as 0
-        end
-        else begin
-          // Cause illegal CSR access
+          csr_rdata_int = secureseed1_rdata;
+        end else begin
           csr_rdata_int    = '0;
           illegal_csr_read = 1'b1;
         end
@@ -726,10 +772,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       CSR_SECURESEED2: begin
         if (SECURE) begin
-          csr_rdata_int = secureseed2_rdata; // Read as 0
-        end
-        else begin
-          // Cause illegal CSR access
+          csr_rdata_int = secureseed2_rdata;
+        end else begin
           csr_rdata_int    = '0;
           illegal_csr_read = 1'b1;
         end
@@ -737,10 +781,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       CSR_CPUCTRL: begin
         if (SECURE) begin
-          csr_rdata_int = cpuctrl_rdata; // Read as 0
-        end
-        else begin
-          // Cause illegal CSR access
+          csr_rdata_int = cpuctrl_rdata;
+        end else begin
           csr_rdata_int    = '0;
           illegal_csr_read = 1'b1;
         end
@@ -999,10 +1041,14 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_MTVEC: begin
           mtvec_we = 1'b1;
         end
+
         // mcounteren: counter enable
         CSR_MCOUNTEREN: begin
-          mcounteren_we = 1'b1;
+          if (USER) begin
+            mcounteren_we = 1'b1;
+          end
         end
+
         // mtvt: machine trap-handler vector table base address
         CSR_MTVT: begin
           if (SMCLIC) begin
@@ -1141,59 +1187,89 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_PMPCFG4,  CSR_PMPCFG5,  CSR_PMPCFG6,  CSR_PMPCFG7,
         CSR_PMPCFG8,  CSR_PMPCFG9,  CSR_PMPCFG10, CSR_PMPCFG11,
         CSR_PMPCFG12, CSR_PMPCFG13, CSR_PMPCFG14, CSR_PMPCFG15: begin
-          pmpncfg_we_int[csr_waddr[3:0]*4+:4] = 4'hF;
+          if (PMP) begin
+            pmpncfg_we_int[csr_waddr[3:0]*4+:4] = 4'hF;
+          end
         end
+
         CSR_PMPADDR0,  CSR_PMPADDR1,  CSR_PMPADDR2,  CSR_PMPADDR3,
         CSR_PMPADDR4,  CSR_PMPADDR5,  CSR_PMPADDR6,  CSR_PMPADDR7,
         CSR_PMPADDR8,  CSR_PMPADDR9,  CSR_PMPADDR10, CSR_PMPADDR11,
         CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15: begin
-          pmp_addr_we_int[6'(16*0 + csr_waddr[3:0])] = 1'b1;
+          if (PMP) begin
+            pmp_addr_we_int[6'(16*0 + csr_waddr[3:0])] = 1'b1;
+          end
         end
+
         CSR_PMPADDR16, CSR_PMPADDR17, CSR_PMPADDR18, CSR_PMPADDR19,
         CSR_PMPADDR20, CSR_PMPADDR21, CSR_PMPADDR22, CSR_PMPADDR23,
         CSR_PMPADDR24, CSR_PMPADDR25, CSR_PMPADDR26, CSR_PMPADDR27,
         CSR_PMPADDR28, CSR_PMPADDR29, CSR_PMPADDR30, CSR_PMPADDR31: begin
-          pmp_addr_we_int[6'(16*1 + csr_waddr[3:0])] = 1'b1;
+          if (PMP) begin
+            pmp_addr_we_int[6'(16*1 + csr_waddr[3:0])] = 1'b1;
+          end
         end
+
         CSR_PMPADDR32, CSR_PMPADDR33, CSR_PMPADDR34, CSR_PMPADDR35,
         CSR_PMPADDR36, CSR_PMPADDR37, CSR_PMPADDR38, CSR_PMPADDR39,
         CSR_PMPADDR40, CSR_PMPADDR41, CSR_PMPADDR42, CSR_PMPADDR43,
         CSR_PMPADDR44, CSR_PMPADDR45, CSR_PMPADDR46, CSR_PMPADDR47: begin
-          pmp_addr_we_int[6'(16*2 + csr_waddr[3:0])] = 1'b1;
+          if (PMP) begin
+            pmp_addr_we_int[6'(16*2 + csr_waddr[3:0])] = 1'b1;
+          end
         end
+
         CSR_PMPADDR48, CSR_PMPADDR49, CSR_PMPADDR50, CSR_PMPADDR51,
         CSR_PMPADDR52, CSR_PMPADDR53, CSR_PMPADDR54, CSR_PMPADDR55,
         CSR_PMPADDR56, CSR_PMPADDR57, CSR_PMPADDR58, CSR_PMPADDR59,
         CSR_PMPADDR60, CSR_PMPADDR61, CSR_PMPADDR62, CSR_PMPADDR63: begin
-          pmp_addr_we_int[6'(16*3 + csr_waddr[3:0])] = 1'b1;
+          if (PMP) begin
+            pmp_addr_we_int[6'(16*3 + csr_waddr[3:0])] = 1'b1;
+          end
         end
+
         CSR_MSECCFG: begin
-          pmp_mseccfg_we = 1'b1;
+          if (PMP) begin
+            pmp_mseccfg_we = 1'b1;
+          end
         end
+
         CSR_MSECCFGH: begin
-          pmp_mseccfgh_we = 1'b1;
+          if (PMP) begin
+            pmp_mseccfgh_we = 1'b1;
+          end
         end
+
         CSR_MENVCFG: begin
-          menvcfg_we = 1'b1;
+          if (USER) begin
+            menvcfg_we = 1'b1;
+          end
         end
+
         CSR_MENVCFGH: begin
-          menvcfgh_we = 1'b1;
+          if (USER) begin
+            menvcfgh_we = 1'b1;
+          end
         end
+
         CSR_CPUCTRL: begin
           if (SECURE) begin
             cpuctrl_we = 1'b1;
           end
         end
+
         CSR_SECURESEED0: begin
           if (SECURE) begin
             secureseed0_we = 1'b1;
           end
         end
+
         CSR_SECURESEED1: begin
           if (SECURE) begin
             secureseed1_we = 1'b1;
           end
         end
+
         CSR_SECURESEED2: begin
           if (SECURE) begin
             secureseed2_we = 1'b1;
@@ -1244,13 +1320,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       clic_pa_o       = '0;
     end
 
-
-
     // exception controller gets priority over other writes
     unique case (1'b1)
-
       ctrl_fsm_i.csr_save_cause: begin
-
         if (ctrl_fsm_i.debug_csr_save) begin
             // all interrupts are masked, don't update cause, epc, tval dpc and
             // mpstatus
@@ -1299,6 +1371,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
         end
       end //ctrl_fsm_i.csr_save_cause
+
       ctrl_fsm_i.csr_restore_mret: begin //MRET
         priv_lvl_n     = privlvl_t'(mstatus_rdata.mpp);
         priv_lvl_we    = 1'b1;
@@ -1314,6 +1387,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           mintstatus_we = 1'b1;
         end
       end //ctrl_fsm_i.csr_restore_mret
+
       ctrl_fsm_i.csr_restore_dret: begin //DRET
           // Restore to the recorded privilege level
           priv_lvl_n = dcsr_rdata.prv;
@@ -1358,292 +1432,346 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   //
   // CSR instances
 
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_JVT_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (32'd0)
-  ) jvt_csr_i (
-    .clk          (clk),
-    .rst_n        (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i    (jvt_n),
-    .wr_en_i      (jvt_we),
-    .rd_data_o    (jvt_q),
-    .rd_error_o   (jvt_rd_error)
+  )
+  jvt_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( jvt_n                 ),
+    .wr_en_i            ( jvt_we                ),
+    .rd_data_o          ( jvt_q                 ),
+    .rd_error_o         ( jvt_rd_error          )
   );
 
-  assign jvt_addr_o = jvt_q.base [31:32-JVT_ADDR_WIDTH];
-
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
-  ) dscratch0_csr_i (
-    .clk          (clk),
-    .rst_n        (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i    (dscratch0_n),
-    .wr_en_i      (dscratch0_we),
-    .rd_data_o    (dscratch0_q),
-    .rd_error_o   (dscratch0_rd_error)
+  )
+  dscratch0_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( dscratch0_n           ),
+    .wr_en_i            ( dscratch0_we          ),
+    .rd_data_o          ( dscratch0_q           ),
+    .rd_error_o         ( dscratch0_rd_error    )
   );
 
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
-  ) dscratch1_csr_i (
-    .clk          (clk),
-    .rst_n        (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i    (dscratch1_n),
-    .wr_en_i      (dscratch1_we),
-    .rd_data_o    (dscratch1_q),
-    .rd_error_o   (dscratch1_rd_error)
+  )
+  dscratch1_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( dscratch1_n           ), 
+    .wr_en_i            ( dscratch1_we          ), 
+    .rd_data_o          ( dscratch1_q           ),
+    .rd_error_o         ( dscratch1_rd_error    )
   );
 
- cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_DCSR_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (DCSR_RESET_VAL)
-  ) dcsr_csr_i (
-    .clk          (clk),
-    .rst_n        (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i    (dcsr_n),
-    .wr_en_i      (dcsr_we),
-    .rd_data_o    (dcsr_q),
-    .rd_error_o   (dcsr_rd_error)
+  )
+  dcsr_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( dcsr_n                ),
+    .wr_en_i            ( dcsr_we               ),
+    .rd_data_o          ( dcsr_q                ),
+    .rd_error_o         ( dcsr_rd_error         )
   );
 
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
-  ) dpc_csr_i (
-    .clk          (clk),
-    .rst_n        (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i    (dpc_n),
-    .wr_en_i      (dpc_we),
-    .rd_data_o    (dpc_q),
-    .rd_error_o   (dpc_rd_error)
+  )
+  dpc_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( dpc_n                 ),
+    .wr_en_i            ( dpc_we                ),
+    .rd_data_o          ( dpc_q                 ),
+    .rd_error_o         ( dpc_rd_error          )
   );
 
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_MEPC_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (32'd0)
-  ) mepc_csr_i (
-    .clk          (clk),
-    .rst_n        (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i    (mepc_n),
-    .wr_en_i      (mepc_we),
-    .rd_data_o    (mepc_q),
-    .rd_error_o   (mepc_rd_error)
+  )
+  mepc_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( mepc_n                ),
+    .wr_en_i            ( mepc_we               ),
+    .rd_data_o          ( mepc_q                ),
+    .rd_error_o         ( mepc_rd_error         )
   );
 
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_MSCRATCH_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (32'd0)
-  ) mscratch_csr_i (
-    .clk          (clk),
-    .rst_n        (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i    (mscratch_n),
-    .wr_en_i      (mscratch_we),
-    .rd_data_o    (mscratch_q),
-    .rd_error_o   (mscratch_rd_error)
+  )
+  mscratch_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( mscratch_n            ),
+    .wr_en_i            ( mscratch_we           ),
+    .rd_data_o          ( mscratch_q            ),
+    .rd_error_o         ( mscratch_rd_error     )
   );
 
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .MASK       (CSR_MSTATUS_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (MSTATUS_RESET_VAL)
-  ) mstatus_csr_i (
-    .clk          (clk),
-    .rst_n        (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i    (mstatus_n),
-    .wr_en_i      (mstatus_we),
-    .rd_data_o    (mstatus_q),
-    .rd_error_o   (mstatus_rd_error)
+  )
+  mstatus_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( mstatus_n             ),
+    .wr_en_i            ( mstatus_we            ),
+    .rd_data_o          ( mstatus_q             ),
+    .rd_error_o         ( mstatus_rd_error      )
   );
 
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
-  ) mcause_csr_i (
-    .clk          (clk),
-    .rst_n        (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i    (mcause_n),
-    .wr_en_i      (mcause_we),
-    .rd_data_o    (mcause_q),
-    .rd_error_o   (mcause_rd_error)
+  )
+  mcause_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( mcause_n              ),
+    .wr_en_i            ( mcause_we             ),
+    .rd_data_o          ( mcause_q              ),
+    .rd_error_o         ( mcause_rd_error       )
   );
 
   generate
     if (SMCLIC) begin : smclic_csrs
 
-      assign mie_q  = 32'h0;                                                    // CLIC mode is assumed when SMCLIC = 1
+      assign mie_q = 32'h0;                                                     // CLIC mode is assumed when SMCLIC = 1
       assign mie_rd_error = 1'b0;
 
-      cv32e40s_csr #(
+      cv32e40s_csr
+      #(
         .LIB        (LIB),
         .WIDTH      (32),
         .SHADOWCOPY (1'b0),
         .RESETVALUE (MTVEC_CLIC_RESET_VAL)
-      ) mtvec_csr_i (
-        .clk          (clk),
-        .rst_n        (rst_n),
-        .scan_cg_en_i (scan_cg_en_i),
-        .wr_data_i    (mtvec_n),
-        .wr_en_i      (mtvec_we),
-        .rd_data_o    (mtvec_q),
-        .rd_error_o   (mtvec_rd_error)
+      )
+      mtvec_csr_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( mtvec_n               ),
+        .wr_en_i        ( mtvec_we              ),
+        .rd_data_o      ( mtvec_q               ),
+        .rd_error_o     ( mtvec_rd_error        )
       );
-      cv32e40s_csr #(
+
+      cv32e40s_csr
+      #(
         .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MTVT_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (MTVT_RESET_VAL)
-      ) mtvt_csr_i (
-        .clk          (clk),
-        .rst_n        (rst_n),
-        .scan_cg_en_i (scan_cg_en_i),
-        .wr_data_i    (mtvt_n),
-        .wr_en_i      (mtvt_we),
-        .rd_data_o    (mtvt_q),
-        .rd_error_o   (mtvt_rd_error)
+      )
+      mtvt_csr_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( mtvt_n                ), 
+        .wr_en_i        ( mtvt_we               ), 
+        .rd_data_o      ( mtvt_q                ),
+        .rd_error_o     ( mtvt_rd_error         )
       );
 
-      assign mtvt_addr_o = mtvt_q.addr[31:(32-MTVT_ADDR_WIDTH)];
-
-      cv32e40s_csr #(
+      cv32e40s_csr
+      #(
         .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MINTSTATUS_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (MINTSTATUS_RESET_VAL)
-      ) mintstatus_csr_i (
-        .clk           (clk),
-        .rst_n         (rst_n),
-        .scan_cg_en_i  (scan_cg_en_i),
-        .wr_data_i     (mintstatus_n),
-        .wr_en_i       (mintstatus_we),
-        .rd_data_o     (mintstatus_q),
-        .rd_error_o    (mintstatus_rd_error)
+      )
+      mintstatus_csr_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( mintstatus_n          ),
+        .wr_en_i        ( mintstatus_we         ),
+        .rd_data_o      ( mintstatus_q          ),
+        .rd_error_o     ( mintstatus_rd_error   )
       );
-      cv32e40s_csr #(
+
+      cv32e40s_csr
+      #(
         .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MINTTHRESH_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (32'h0)
-      ) mintthresh_csr_i (
-        .clk          (clk),
-        .rst_n        (rst_n),
-        .scan_cg_en_i (scan_cg_en_i),
-        .wr_data_i    (mintthresh_n),
-        .wr_en_i      (mintthresh_we),
-        .rd_data_o    (mintthresh_q),
-        .rd_error_o   (mintthresh_rd_error)
+      )
+      mintthresh_csr_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( mintthresh_n          ),
+        .wr_en_i        ( mintthresh_we         ),
+        .rd_data_o      ( mintthresh_q          ),
+        .rd_error_o     ( mintthresh_rd_error   )
       );
-      cv32e40s_csr #(
+
+      cv32e40s_csr
+      #(
         .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MSCRATCHCSW_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (32'h0)
-      ) mscratchcsw_csr_i (
-        .clk          (clk),
-        .rst_n        (rst_n),
-        .scan_cg_en_i (scan_cg_en_i),
-        .wr_data_i    (mscratchcsw_n),
-        .wr_en_i      (mscratchcsw_we),
-        .rd_data_o    (mscratchcsw_q),
-        .rd_error_o   (mscratchcsw_rd_error)
+      )
+      mscratchcsw_csr_i (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( mscratchcsw_n         ),
+        .wr_en_i        ( mscratchcsw_we        ),
+        .rd_data_o      ( mscratchcsw_q         ),
+        .rd_error_o     ( mscratchcsw_rd_error  )
       );
-      cv32e40s_csr #(
+
+      cv32e40s_csr
+      #(
         .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MSCRATCHCSWL_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (32'h0)
-      ) mscratchcswl_csr_i (
-        .clk          (clk),
-        .rst_n        (rst_n),
-        .scan_cg_en_i (scan_cg_en_i),
-        .wr_data_i    (mscratchcswl_n),
-        .wr_en_i      (mscratchcswl_we),
-        .rd_data_o    (mscratchcswl_q),
-        .rd_error_o   (mscratchcswl_rd_error)
+      )
+      mscratchcswl_csr_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( mscratchcswl_n        ),
+        .wr_en_i        ( mscratchcswl_we       ),
+        .rd_data_o      ( mscratchcswl_q        ),
+        .rd_error_o     ( mscratchcswl_rd_error )
       );
-      cv32e40s_csr #(
+
+      cv32e40s_csr
+      #(
         .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_MCLICBASE_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (32'h0)
-      ) mclicbase_csr_i (
-        .clk          (clk),
-        .rst_n        (rst_n),
-        .scan_cg_en_i (scan_cg_en_i),
-        .wr_data_i    (mclicbase_n),
-        .wr_en_i      (mclicbase_we),
-        .rd_data_o    (mclicbase_q),
-        .rd_error_o   (mclicbase_rd_error)
+      )
+      mclicbase_csr_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( mclicbase_n           ),
+        .wr_en_i        ( mclicbase_we          ),
+        .rd_data_o      ( mclicbase_q           ),
+        .rd_error_o     ( mclicbase_rd_error    )
       );
 
     end else begin : basic_mode_csrs
 
-      cv32e40s_csr #(
+      cv32e40s_csr
+      #(
         .WIDTH      (32),
         .SHADOWCOPY (1'b0),
         .RESETVALUE (MTVEC_BASIC_RESET_VAL)
-      ) mtvec_csr_i (
-        .clk          (clk),
-        .rst_n        (rst_n),
-        .scan_cg_en_i (scan_cg_en_i),
-        .wr_data_i    (mtvec_n),
-        .wr_en_i      (mtvec_we),
-        .rd_data_o    (mtvec_q),
-        .rd_error_o   (mtvec_rd_error)
+      )
+      mtvec_csr_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( mtvec_n               ),
+        .wr_en_i        ( mtvec_we              ),
+        .rd_data_o      ( mtvec_q               ),
+        .rd_error_o     ( mtvec_rd_error        )
       );
-      // Only include mie CSR when SMCLIC = 0
-      cv32e40s_csr #(
+
+      cv32e40s_csr
+      #(
         .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (IRQ_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (32'd0)
-      ) mie_csr_i (
-        .clk          (clk),
-        .rst_n        (rst_n),
-        .scan_cg_en_i (scan_cg_en_i),
-        .wr_data_i    (mie_n),
-        .wr_en_i      (mie_we),
-        .rd_data_o    (mie_q),
-        .rd_error_o   (mie_rd_error)
+      )
+      mie_csr_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( mie_n                 ),
+        .wr_en_i        ( mie_we                ),
+        .rd_data_o      ( mie_q                 ),
+        .rd_error_o     ( mie_rd_error          )
       );
 
       assign mtvt_q              = 32'h0;
@@ -1667,62 +1795,74 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       logic [2:0] lfsr_lockup;
 
-      cv32e40s_csr #(
+      cv32e40s_csr
+      #(
         .LIB        (LIB),
         .WIDTH      (32),
         .MASK       (CSR_CPUCTRL_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (32'd0)
-        ) cpuctrl_csr_i (
-          .clk          (clk),
-          .rst_n        (rst_n),
-          .scan_cg_en_i (scan_cg_en_i),
-          .wr_data_i    (cpuctrl_n),
-          .wr_en_i      (cpuctrl_we),
-          .rd_data_o    (cpuctrl_q),
-          .rd_error_o   (cpuctrl_rd_error)
-        );
+      )
+      cpuctrl_csr_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( cpuctrl_n             ),
+        .wr_en_i        ( cpuctrl_we            ),
+        .rd_data_o      ( cpuctrl_q             ),
+        .rd_error_o     ( cpuctrl_rd_error      )
+      );
 
       // Shifting LFSR0 in IF because it controls instruction insertion
-      cv32e40s_lfsr #(
+      cv32e40s_lfsr
+      #(
         .LFSR_CFG     (LFSR0_CFG)
-        ) lfsr0_i (
-          .clk        (clk),
-          .rst_n      (rst_n),
-          .seed_i     (secureseed0_n),
-          .seed_we_i  (secureseed0_we),
-          .enable_i   (cpuctrl_q.rnddummy),
-          .shift_i    (lfsr_shift_if_i),
-          .data_o     (xsecure_ctrl_o.lfsr0),
-          .lockup_o   (lfsr_lockup[0])
-        );
+      )
+      lfsr0_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .seed_i         ( secureseed0_n         ),
+        .seed_we_i      ( secureseed0_we        ),
+        .enable_i       ( cpuctrl_q.rnddummy    ),
+        .shift_i        ( lfsr_shift_if_i       ),
+        .data_o         ( xsecure_ctrl_o.lfsr0  ),
+        .lockup_o       ( lfsr_lockup[0]        )
+      );
 
       // Shifting lfsr 1 and 2 in ID because they control the operand values
-      cv32e40s_lfsr #(
+      cv32e40s_lfsr
+      #(
         .LFSR_CFG     (LFSR1_CFG)
-        ) lfsr1_i (
-          .clk        (clk),
-          .rst_n      (rst_n),
-          .seed_i     (secureseed1_n),
-          .seed_we_i  (secureseed1_we),
-          .enable_i   (cpuctrl_q.rnddummy),
-          .shift_i    (lfsr_shift_id_i),
-          .data_o     (xsecure_ctrl_o.lfsr1),
-          .lockup_o   (lfsr_lockup[1])
-        );
+      )
+      lfsr1_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .seed_i         ( secureseed1_n         ),
+        .seed_we_i      ( secureseed1_we        ),
+        .enable_i       ( cpuctrl_q.rnddummy    ),
+        .shift_i        ( lfsr_shift_id_i       ),
+        .data_o         ( xsecure_ctrl_o.lfsr1  ),
+        .lockup_o       ( lfsr_lockup[1]        )
+      );
 
-      cv32e40s_lfsr #(
+      cv32e40s_lfsr
+      #(
         .LFSR_CFG     (LFSR2_CFG)
-        ) lfsr2_i (
-          .clk        (clk),
-          .rst_n      (rst_n),
-          .seed_i     (secureseed2_n),
-          .seed_we_i  (secureseed2_we),
-          .enable_i   (cpuctrl_q.rnddummy),
-          .shift_i    (lfsr_shift_id_i),
-          .data_o     (xsecure_ctrl_o.lfsr2),
-          .lockup_o   (lfsr_lockup[2])
-        );
+      )
+      lfsr2_i
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .seed_i         ( secureseed2_n         ),
+        .seed_we_i      ( secureseed2_we        ),
+        .enable_i       ( cpuctrl_q.rnddummy    ),
+        .shift_i        ( lfsr_shift_id_i       ),
+        .data_o         ( xsecure_ctrl_o.lfsr2  ),
+        .lockup_o       ( lfsr_lockup[2]        )
+      );
 
       // Populate xsecure_ctrl
       assign xsecure_ctrl_o.cpuctrl = cpuctrl_t'(cpuctrl_q);
@@ -1746,7 +1886,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
     end
   endgenerate
-
 
   assign csr_wr_in_wb = ex_wb_pipe_i.csr_en &&
                         ex_wb_pipe_i.instr_valid &&
@@ -1775,19 +1914,22 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign csr_wr_in_wb_flush_o = xsecure_csr_wr_in_wb || pmp_csr_wr_in_wb;
 
   // Privledge level register
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      ($bits(privlvl_t)),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (PRIV_LVL_M)
-  ) priv_lvl_i (
-    .clk      (clk),
-    .rst_n     (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i  (priv_lvl_n),
-    .wr_en_i    (priv_lvl_we),
-    .rd_data_o  (priv_lvl_q_int),
-    .rd_error_o (priv_lvl_error)
+  )
+  priv_lvl_i
+  (
+    .clk            ( clk                   ),
+    .rst_n          ( rst_n                 ),
+    .scan_cg_en_i   ( scan_cg_en_i          ),
+    .wr_data_i      ( priv_lvl_n            ),
+    .wr_en_i        ( priv_lvl_we           ),
+    .rd_data_o      ( priv_lvl_q_int        ),
+    .rd_error_o     ( priv_lvl_rd_error     )
   );
 
   assign priv_lvl_q = privlvl_t'(priv_lvl_q_int);
@@ -1892,20 +2034,24 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             endcase
           end
 
-          cv32e40s_csr #(
-                         .LIB        (LIB),
-                         .WIDTH      ($bits(pmpncfg_t)),
-                         .MASK       (CSR_PMPNCFG_MASK),
-                         .SHADOWCOPY (SECURE),
-                         .RESETVALUE (PMP_PMPNCFG_RV[i]))
+          cv32e40s_csr
+          #(
+            .LIB        (LIB),
+            .WIDTH      ($bits(pmpncfg_t)),
+            .MASK       (CSR_PMPNCFG_MASK),
+            .SHADOWCOPY (SECURE),
+            .RESETVALUE (PMP_PMPNCFG_RV[i])
+          )
           pmpncfg_csr_i
-            (.clk          (clk),
-             .rst_n        (rst_n),
-             .scan_cg_en_i (scan_cg_en_i),
-             .wr_data_i    (pmpncfg_n[i]),
-             .wr_en_i      (pmpncfg_we[i]),
-             .rd_data_o    (pmpncfg_q[i]),
-             .rd_error_o   (pmpncfg_rd_error[i]));
+          (
+            .clk            ( clk                   ),
+            .rst_n          ( rst_n                 ),
+            .scan_cg_en_i   ( scan_cg_en_i          ),
+            .wr_data_i      ( pmpncfg_n[i]          ),
+            .wr_en_i        ( pmpncfg_we[i]         ),
+            .rd_data_o      ( pmpncfg_q[i]          ),
+            .rd_error_o     ( pmpncfg_rd_error[i]   )
+          );
 
           assign csr_pmp_o.cfg[i] = pmpncfg_q[i];
 
@@ -1922,21 +2068,24 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
           assign pmpaddr_wr_addr_match[i] = (csr_waddr == csr_num_e'(CSR_PMPADDR0 + i));
 
-          cv32e40s_csr #(
-                         .LIB        (LIB),
-                         .WIDTH      (PMP_ADDR_WIDTH),
-                         .MASK       (CSR_PMPADDR_MASK),
-                         .SHADOWCOPY (SECURE),
-                         .RESETVALUE (PMP_PMPADDR_RV[i][31-:PMP_ADDR_WIDTH]))
+          cv32e40s_csr
+          #(
+            .LIB        (LIB),
+            .WIDTH      (PMP_ADDR_WIDTH),
+            .MASK       (CSR_PMPADDR_MASK),
+            .SHADOWCOPY (SECURE),
+            .RESETVALUE (PMP_PMPADDR_RV[i][31-:PMP_ADDR_WIDTH])
+          )
           pmp_addr_csr_i
-            (.clk          (clk),
-             .rst_n        (rst_n),
-             .scan_cg_en_i (scan_cg_en_i),
-             .wr_data_i    (pmp_addr_n),
-             .wr_en_i      (pmp_addr_we[i]),
-             .rd_data_o    (pmp_addr_q[i]),
-             .rd_error_o   (pmp_addr_rd_error[i]));
-
+          (
+            .clk            ( clk                   ),
+            .rst_n          ( rst_n                 ),
+            .scan_cg_en_i   ( scan_cg_en_i          ),
+            .wr_data_i      ( pmp_addr_n            ),
+            .wr_en_i        ( pmp_addr_we[i]        ),
+            .rd_data_o      ( pmp_addr_q[i]         ),
+            .rd_error_o     ( pmp_addr_rd_error[i]  )
+          );
 
           if (PMP_GRANULARITY == 0) begin: pmp_addr_rdata_g0
             // If G == 0, read data is unmodified
@@ -1997,20 +2146,24 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       assign pmp_mseccfg_n.zero0 = '0;
 
-      cv32e40s_csr #(
-                     .LIB        (LIB),
-                     .WIDTH      ($bits(mseccfg_t)),
-                     .MASK       (CSR_MSECCFG_MASK),
-                     .SHADOWCOPY (SECURE),
-                     .RESETVALUE (PMP_MSECCFG_RV))
+      cv32e40s_csr
+      #(
+        .LIB        (LIB),
+        .WIDTH      ($bits(mseccfg_t)),
+        .MASK       (CSR_MSECCFG_MASK),
+        .SHADOWCOPY (SECURE),
+        .RESETVALUE (PMP_MSECCFG_RV)
+      )
       pmp_mseccfg_csr_i
-        (.clk          (clk),
-         .rst_n        (rst_n),
-         .scan_cg_en_i (scan_cg_en_i),
-         .wr_data_i    (pmp_mseccfg_n),
-         .wr_en_i       (pmp_mseccfg_we),
-         .rd_data_o     (pmp_mseccfg_q),
-         .rd_error_o    (pmp_mseccfg_rd_error));
+      (
+        .clk            ( clk                   ),
+        .rst_n          ( rst_n                 ),
+        .scan_cg_en_i   ( scan_cg_en_i          ),
+        .wr_data_i      ( pmp_mseccfg_n         ),
+        .wr_en_i        ( pmp_mseccfg_we        ),
+        .rd_data_o      ( pmp_mseccfg_q         ),
+        .rd_error_o     ( pmp_mseccfg_rd_error  )
+      );
 
       assign csr_pmp_o.mseccfg = pmp_mseccfg_q;
 
@@ -2054,6 +2207,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign mclicbase_rdata    = mclicbase_q;
   assign mie_rdata          = mie_q;
 
+  assign priv_lvl_rdata     = priv_lvl_q;
+
+  assign mcounteren_rdata   = mcounteren_q;
+  assign pmpncfg_rdata      = pmpncfg_q;
+  assign pmp_mseccfg_rdata  = pmp_mseccfg_q;
+
   //  mnxti_rdata will be used in the read-modify-write portion of the CSR access.
   // For mnxti, this is actually mstatus. The value written back to the GPR will be
   // the address of the function pointer to the interrupt handler.
@@ -2073,6 +2232,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign menvcfg_rdata      = 32'h0;
   assign menvcfgh_rdata     = 32'h0;
 
+  assign cpuctrl_rdata      = 32'h0;
+  assign secureseed0_rdata  = 32'h0;
+  assign secureseed1_rdata  = 32'h0;
+  assign secureseed2_rdata  = 32'h0;
+
   // dcsr_rdata factors in the flop outputs and the nmip bit from the controller
   assign dcsr_rdata = {dcsr_q[31:4], ctrl_fsm_i.pending_nmi, dcsr_q[2:0]};
 
@@ -2087,38 +2251,25 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign csr_rdata_o = csr_rdata_int;
 
-  assign mcounteren_rdata    = mcounteren_q;
-  assign pmpncfg_rdata       = pmpncfg_q;
-  assign pmp_mseccfg_rdata   = pmp_mseccfg_q;
-  assign priv_lvl_rdata      = priv_lvl_q;
-  assign cpuctrl_rdata       = 32'h0;
-  assign secureseed0_rdata   = 32'h0;
-  assign secureseed1_rdata   = 32'h0;
-  assign secureseed2_rdata   = 32'h0;
-
   ////////////////////////////////////////////////////////////////////////
   //
   // CSR outputs
 
-  // Global machine mode interrupt enable
-  // Machine mode interrupts are always enabled when in a lower privilege mode
-  // When single stepping, interrupt enable is gated by dcsr.stepie
-  assign m_irq_enable_o  = (mstatus_rdata.mie || (priv_lvl_rdata < PRIV_LVL_M)) && !(dcsr_rdata.step && !dcsr_rdata.stepie);
-  assign mtvec_addr_o    = mtvec_rdata.addr;
-  assign mtvec_mode_o    = mtvec_rdata.mode;
-  assign mepc_o          = mepc_rdata;
-  assign dpc_o           = dpc_rdata;
-  assign dcsr_o          = dcsr_rdata;
-  assign mie_o           = mie_rdata;
-  assign mintthresh_o    = mintthresh_rdata[7:0];
-  assign mintstatus_o    = mintstatus_rdata;
-  assign mtvt_addr_o     = mtvt_rdata.addr[31:(32-MTVT_ADDR_WIDTH)];
-  assign mcause_o        = mcause_rdata;
-  // priv_lvl_o indicates the currently active priviledge level (updated when taking an exception, and when MRET is in WB)
-  assign priv_lvl_o      = priv_lvl_rdata;
-  assign mstatus_o       = mstatus_rdata;
+  assign dcsr_o        = dcsr_rdata;
+  assign dpc_o         = dpc_rdata;
+  assign jvt_addr_o    = jvt_rdata.base[31:32-JVT_ADDR_WIDTH];
+  assign mcause_o      = mcause_rdata;
+  assign mcycle_o      = mhpmcounter_rdata[0];
+  assign mepc_o        = mepc_rdata;
+  assign mie_o         = mie_rdata;
+  assign mintstatus_o  = mintstatus_rdata;
+  assign mintthresh_o  = mintthresh_rdata[7:0];
+  assign mstatus_o     = mstatus_rdata;
+  assign mtvec_addr_o  = mtvec_rdata.addr;
+  assign mtvec_mode_o  = mtvec_rdata.mode;
+  assign mtvt_addr_o   = mtvt_rdata.addr[31:(32-MTVT_ADDR_WIDTH)];
 
-
+  assign priv_lvl_o    = priv_lvl_rdata;
 
   ////////////////////////////////////////////////////////////////////////
   //  ____       _                   _____     _                        //
@@ -2132,35 +2283,41 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign tselect_q = 32'h0; // todo
   assign tselect_rdata = tselect_q;
 
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (TDATA1_RST_VAL)
-  ) tdata1_csr_i (
-    .clk          (clk),
-    .scan_cg_en_i (scan_cg_en_i),
-    .rst_n        (rst_n),
-    .wr_data_i    (tdata1_n),
-    .wr_en_i      (tdata1_we),
-    .rd_data_o    (tdata1_q),
-    .rd_error_o   (tdata1_rd_error)
+  )
+  tdata1_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( tdata1_n              ),
+    .wr_en_i            ( tdata1_we             ),
+    .rd_data_o          ( tdata1_q              ),
+    .rd_error_o         ( tdata1_rd_error       )
   );
 
   assign tdata1_rdata = tdata1_q;
 
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
-  ) tdata2_csr_i (
-    .clk          (clk),
-    .scan_cg_en_i (scan_cg_en_i),
-    .rst_n        (rst_n),
-    .wr_data_i    (tdata2_n),
-    .wr_en_i      (tdata2_we),
-    .rd_data_o    (tdata2_q),
-    .rd_error_o   (tdata2_rd_error)
+  )
+  tdata2_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( tdata2_n              ),
+    .wr_en_i            ( tdata2_we             ),
+    .rd_data_o          ( tdata2_q              ),
+    .rd_error_o         ( tdata2_rd_error       )
   );
 
   assign tdata2_rdata = tdata2_q;
@@ -2193,9 +2350,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // |_|   \___|_|  |_|(_)  \____\___/ \__,_|_| |_|\__\___|_|    //
   //                                                             //
   /////////////////////////////////////////////////////////////////
-
-  // Cycle Count Output Signal
-  assign mcycle_o = mhpmcounter_rdata[0];
 
   // Flop certain events to ease timing
   localparam bit [15:0] HPM_EVENT_FLOP     = 16'b1111_1111_1100_0000;
@@ -2318,7 +2472,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       // Write upper counter bits
       assign mhpmcounter_write_upper[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
-                                                  csr_we_int && (csr_waddr == (CSR_MCYCLEH + wcnt_gidx)) && (MHPMCOUNTER_WIDTH == 64);
+                                                  csr_we_int && (csr_waddr == (CSR_MCYCLEH + wcnt_gidx));
 
       // Increment counter
 
@@ -2445,25 +2599,32 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   end
 
   //  Counter enable register: mcounteren
-  cv32e40s_csr #(
+  cv32e40s_csr
+  #(
     .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0),
     .MASK       (CSR_MCOUNTEREN_MASK)
-  ) mcounteren_csr_i (
-    .clk        (clk),
-    .rst_n      (rst_n),
-    .scan_cg_en_i (scan_cg_en_i),
-    .wr_data_i  (mcounteren_n),
-    .wr_en_i    (mcounteren_we),
-    .rd_data_o  (mcounteren_q),
-    .rd_error_o (mcounteren_rd_error));
+  ) 
+  mcounteren_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( mcounteren_n          ),
+    .wr_en_i            ( mcounteren_we         ),
+    .rd_data_o          ( mcounteren_q          ),
+    .rd_error_o         ( mcounteren_rd_error   )
+  );
+
   assign mcountinhibit_rdata = mcountinhibit_q;
 
   // Some signals are unused on purpose (typically they are used by RVFI code). Use them here for easier LINT waiving.
 
   assign unused_signals = tselect_we | tinfo_we | tcontrol_we | mstatush_we | misa_we | mip_we | mvendorid_we |
-    marchid_we | mimpid_we | mhartid_we | mconfigptr_we | mtval_we | pmp_mseccfgh_we | menvcfgh_we | menvcfg_we;
+    marchid_we | mimpid_we | mhartid_we | mconfigptr_we | mtval_we | pmp_mseccfgh_we | menvcfgh_we | menvcfg_we |
+    tdata1_rd_error | tdata2_rd_error | dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error | mcause_rd_error | 
+    mcounteren_rd_error;
 
 endmodule
