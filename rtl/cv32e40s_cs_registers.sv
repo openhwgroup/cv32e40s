@@ -314,6 +314,27 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         priv_lvl_we;
   logic [1:0]                   priv_lvl_q_int;
 
+  logic [31:0]                  mstateen0_n, mstateen0_q, mstateen0_rdata;
+  logic                         mstateen0_we;
+
+  logic [31:0]                  mstateen1_n, mstateen1_rdata;                   // No CSR module instance
+  logic                         mstateen1_we;                                   // Not used in RTL (used by RVFI)
+  logic [31:0]                  mstateen2_n, mstateen2_rdata;                   // No CSR module instance
+  logic                         mstateen2_we;                                   // Not used in RTL (used by RVFI)
+  logic [31:0]                  mstateen3_n, mstateen3_rdata;                   // No CSR module instance
+  logic                         mstateen3_we;                                   // Not used in RTL (used by RVFI)
+
+  logic [31:0]                  mstateen0h_n, mstateen0h_rdata;                 // No CSR module instance
+  logic                         mstateen0h_we;                                  // Not used in RTL (used by RVFI)
+  logic [31:0]                  mstateen1h_n, mstateen1h_rdata;                 // No CSR module instance
+  logic                         mstateen1h_we;                                  // Not used in RTL (used by RVFI)
+  logic [31:0]                  mstateen2h_n, mstateen2h_rdata;                 // No CSR module instance
+  logic                         mstateen2h_we;                                  // Not used in RTL (used by RVFI)
+  logic [31:0]                  mstateen3h_n, mstateen3h_rdata;                 // No CSR module instance
+  logic                         mstateen3h_we;
+
+
+
   // Performance Counter Signals
   logic [31:0] [63:0]           mhpmcounter_q;                                  // Performance counters
   logic [31:0] [63:0]           mhpmcounter_n;                                  // Performance counters next value
@@ -353,6 +374,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         mscratchcswl_rd_error;
   logic                         jvt_rd_error;
   logic                         priv_lvl_rd_error;
+  logic                         mstateen0_rd_error;
 
   logic                         tdata1_rd_error;                                // Not used
   logic                         tdata2_rd_error;                                // Not used
@@ -394,7 +416,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mscratchcsw_rd_error ||
     mscratchcswl_rd_error ||
     jvt_rd_error ||
-    priv_lvl_rd_error;
+    priv_lvl_rd_error ||
+    mstateen0_rd_error;
 
   ////////////////////////////////////////
   // Determine if CSR access is illegal //
@@ -797,6 +820,38 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
       end
 
+      CSR_MSTATEEN0: begin
+        csr_rdata_int = mstateen0_rdata;
+      end
+
+      CSR_MSTATEEN1: begin
+        csr_rdata_int = mstateen1_rdata;
+      end
+
+      CSR_MSTATEEN2: begin
+        csr_rdata_int = mstateen2_rdata;
+      end
+
+      CSR_MSTATEEN3: begin
+        csr_rdata_int = mstateen3_rdata;
+      end
+
+      CSR_MSTATEEN0H: begin
+        csr_rdata_int = mstateen0h_rdata;
+      end
+
+      CSR_MSTATEEN1H: begin
+        csr_rdata_int = mstateen1h_rdata;
+      end
+
+      CSR_MSTATEEN2H: begin
+        csr_rdata_int = mstateen2h_rdata;
+      end
+
+      CSR_MSTATEEN3H: begin
+        csr_rdata_int = mstateen3h_rdata;
+      end
+
       default: begin
         csr_rdata_int    = '0;
         illegal_csr_read = 1'b1;
@@ -1021,6 +1076,30 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
     marchid_n       = marchid_rdata;              // Read-only
     marchid_we      = 1'b0;                       // Always 0
+
+    mstateen0_n     = csr_wdata_int & CSR_MSTATEEN0_MASK;
+    mstateen0_we    = 1'b0;
+
+    mstateen1_n     = mstateen1_rdata;            // Read-only
+    mstateen1_we    = 1'b0;                       // Always 0
+
+    mstateen2_n     = mstateen2_rdata;            // Read-only
+    mstateen2_we    = 1'b0;                       // Always 0
+
+    mstateen3_n     = mstateen3_rdata;            // Read-only
+    mstateen3_we    = 1'b0;                       // Always 0
+
+    mstateen0h_n    = mstateen0h_rdata;           // Read-only
+    mstateen0h_we   = 1'b0;                       // Always 0
+
+    mstateen1h_n    = mstateen1h_rdata;            // Read-only
+    mstateen1h_we   = 1'b0;                       // Always 0
+
+    mstateen2h_n    = mstateen2h_rdata;            // Read-only
+    mstateen2h_we   = 1'b0;                       // Always 0
+
+    mstateen3h_n    = mstateen3_rdata;            // Read-only
+    mstateen3h_we   = 1'b0;                       // Always 0
 
     if (csr_we_int) begin
       case (csr_waddr)
@@ -1284,6 +1363,38 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             secureseed2_we = 1'b1;
           end
         end
+
+        CSR_MSTATEEN0: begin
+          mstateen0_we = 1'b1;
+        end
+
+        CSR_MSTATEEN1: begin
+          mstateen1_we = 1'b1;
+        end
+
+        CSR_MSTATEEN2: begin
+          mstateen2_we = 1'b1;
+        end
+
+        CSR_MSTATEEN3: begin
+          mstateen3_we = 1'b1;
+        end
+
+        CSR_MSTATEEN0H: begin
+          mstateen0h_we = 1'b1;
+        end
+
+        CSR_MSTATEEN1H: begin
+          mstateen1h_we = 1'b1;
+        end
+
+        CSR_MSTATEEN2H: begin
+          mstateen2h_we = 1'b1;
+        end
+
+        CSR_MSTATEEN3H: begin
+          mstateen3h_we = 1'b1;
+        end
       endcase
     end
 
@@ -1445,6 +1556,25 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   #(
     .LIB        (LIB),
     .WIDTH      (32),
+    .MASK       (CSR_MSTATEEN0_MASK),
+    .SHADOWCOPY (SECURE),
+    .RESETVALUE (32'd0)
+  )
+  mstateen0_csr_i
+  (
+    .clk                ( clk                   ),
+    .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
+    .wr_data_i          ( mstateen0_n           ),
+    .wr_en_i            ( mstateen0_we          ),
+    .rd_data_o          ( mstateen0_q           ),
+    .rd_error_o         ( mstateen0_rd_error    )
+  );
+
+  cv32e40s_csr
+  #(
+    .LIB        (LIB),
+    .WIDTH      (32),
     .MASK       (CSR_JVT_MASK),
     .SHADOWCOPY (SECURE),
     .RESETVALUE (32'd0)
@@ -1490,8 +1620,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     .clk                ( clk                   ),
     .rst_n              ( rst_n                 ),
     .scan_cg_en_i       ( scan_cg_en_i          ),
-    .wr_data_i          ( dscratch1_n           ), 
-    .wr_en_i            ( dscratch1_we          ), 
+    .wr_data_i          ( dscratch1_n           ),
+    .wr_en_i            ( dscratch1_we          ),
     .rd_data_o          ( dscratch1_q           ),
     .rd_error_o         ( dscratch1_rd_error    )
   );
@@ -1646,8 +1776,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .clk            ( clk                   ),
         .rst_n          ( rst_n                 ),
         .scan_cg_en_i   ( scan_cg_en_i          ),
-        .wr_data_i      ( mtvt_n                ), 
-        .wr_en_i        ( mtvt_we               ), 
+        .wr_data_i      ( mtvt_n                ),
+        .wr_en_i        ( mtvt_we               ),
         .rd_data_o      ( mtvt_q                ),
         .rd_error_o     ( mtvt_rd_error         )
       );
@@ -2250,6 +2380,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign secureseed1_rdata  = 32'h0;
   assign secureseed2_rdata  = 32'h0;
 
+  assign mstateen0_rdata    = mstateen0_q;
+  assign mstateen1_rdata    = 32'h0;
+  assign mstateen2_rdata    = 32'h0;
+  assign mstateen3_rdata    = 32'h0;
+  assign mstateen0h_rdata   = 32'h0;
+  assign mstateen1h_rdata   = 32'h0;
+  assign mstateen2h_rdata   = 32'h0;
+  assign mstateen3h_rdata   = 32'h0;
+
   // dcsr_rdata factors in the flop outputs and the nmip bit from the controller
   assign dcsr_rdata = {dcsr_q[31:4], ctrl_fsm_i.pending_nmi, dcsr_q[2:0]};
 
@@ -2619,7 +2758,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0),
     .MASK       (CSR_MCOUNTEREN_MASK)
-  ) 
+  )
   mcounteren_csr_i
   (
     .clk                ( clk                   ),
@@ -2637,7 +2776,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign unused_signals = tselect_we | tinfo_we | tcontrol_we | mstatush_we | misa_we | mip_we | mvendorid_we |
     marchid_we | mimpid_we | mhartid_we | mconfigptr_we | mtval_we | pmp_mseccfgh_we | menvcfgh_we | menvcfg_we |
-    tdata1_rd_error | tdata2_rd_error | dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error | mcause_rd_error | 
-    mcounteren_rd_error;
+    tdata1_rd_error | tdata2_rd_error | dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error | mcause_rd_error |
+    mcounteren_rd_error | mstateen1_we | mstateen2_we | mstateen3_we | mstateen0h_we | mstateen1h_we | mstateen2h_we |
+    mstateen3h_we;
 
 endmodule
