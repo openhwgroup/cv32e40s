@@ -647,7 +647,9 @@ module cv32e40s_wrapper
          .csr_mstateen2h_n_i       ( '0                                    /* TODO: connect            */ ),
          .csr_mstateen2h_q_i       ( '0                                    /* TODO: connect            */ ),
          .csr_mstateen2h_we_i      ( '0                                    /* TODO: connect            */ )
-
+         .csr_mstateen3h_n_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen3h_q_i       ( '0                                    /* TODO: connect            */ ),
+         .csr_mstateen3h_we_i      ( '0                                    /* TODO: connect            */ )
 
 
 `ifdef RISCV_FORMAL
