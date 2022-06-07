@@ -802,35 +802,75 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       end
 
       CSR_MSTATEEN0: begin
-        csr_rdata_int = mstateen0_rdata;
+        if (USER) begin
+          csr_rdata_int = mstateen0_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
       end
 
       CSR_MSTATEEN1: begin
-        csr_rdata_int = mstateen1_rdata;
+        if (USER) begin
+          csr_rdata_int = mstateen1_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
       end
 
       CSR_MSTATEEN2: begin
-        csr_rdata_int = mstateen2_rdata;
+        if (USER) begin
+          csr_rdata_int = mstateen2_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
       end
 
       CSR_MSTATEEN3: begin
-        csr_rdata_int = mstateen3_rdata;
+        if (USER) begin
+          csr_rdata_int = mstateen3_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
       end
 
       CSR_MSTATEEN0H: begin
-        csr_rdata_int = mstateen0h_rdata;
+        if (USER) begin
+          csr_rdata_int = mstateen0h_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
       end
 
       CSR_MSTATEEN1H: begin
-        csr_rdata_int = mstateen1h_rdata;
+        if (USER) begin
+          csr_rdata_int = mstateen1h_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
       end
 
       CSR_MSTATEEN2H: begin
-        csr_rdata_int = mstateen2h_rdata;
+        if (USER) begin
+          csr_rdata_int = mstateen2h_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
       end
 
       CSR_MSTATEEN3H: begin
-        csr_rdata_int = mstateen3h_rdata;
+        if (USER) begin
+          csr_rdata_int = mstateen3h_rdata;
+        end else begin
+          csr_rdata_int    = '0;
+          illegal_csr_read = 1'b1;
+        end
       end
 
       default: begin
@@ -1349,35 +1389,51 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
 
         CSR_MSTATEEN0: begin
-          mstateen0_we = 1'b1;
+          if (USER) begin
+            mstateen0_we = 1'b1;
+          end
         end
 
         CSR_MSTATEEN1: begin
-          mstateen1_we = 1'b1;
+          if (USER) begin
+            mstateen1_we = 1'b1;
+          end
         end
 
         CSR_MSTATEEN2: begin
-          mstateen2_we = 1'b1;
+          if (USER) begin
+            mstateen2_we = 1'b1;
+          end
         end
 
         CSR_MSTATEEN3: begin
-          mstateen3_we = 1'b1;
+          if (USER) begin
+            mstateen3_we = 1'b1;
+          end
         end
 
         CSR_MSTATEEN0H: begin
-          mstateen0h_we = 1'b1;
+          if (USER) begin
+            mstateen0h_we = 1'b1;
+          end
         end
 
         CSR_MSTATEEN1H: begin
-          mstateen1h_we = 1'b1;
+          if (USER) begin
+            mstateen1h_we = 1'b1;
+          end
         end
 
         CSR_MSTATEEN2H: begin
-          mstateen2h_we = 1'b1;
+          if (USER) begin
+            mstateen2h_we = 1'b1;
+          end
         end
 
         CSR_MSTATEEN3H: begin
-          mstateen3h_we = 1'b1;
+          if (USER) begin
+            mstateen3h_we = 1'b1;
+          end
         end
       endcase
     end
