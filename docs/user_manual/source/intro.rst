@@ -72,6 +72,7 @@ Many features in the RISC-V specification are optional, and |corev| can be param
 
 .. list-table:: |corev| Base Instruction Set
    :header-rows: 1
+   :class: no-scrollbar-table
 
    * - Base Integer Instruction Set
      - Version
@@ -89,6 +90,7 @@ In addition, the following standard instruction set extensions are available fro
 
 .. list-table:: |corev| Standard Instruction Set Extensions
    :header-rows: 1
+   :class: no-scrollbar-table
 
    * - Standard Extension
      - Version
@@ -162,6 +164,7 @@ The following custom instruction set extensions are available.
 
 .. list-table:: |corev| Custom Instruction Set Extensions
    :header-rows: 1
+   :class: no-scrollbar-table
 
    * - Custom Extension
      - Version
