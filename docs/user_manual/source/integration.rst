@@ -126,127 +126,135 @@ Instantiation Template
 Parameters
 ----------
 
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| Name                         | Type/Range     | Default          | Description                                                        |
-+==============================+================+==================+====================================================================+
-| ``LIB``                      | int            | 0                | Standard cell library (semantics defined by integrator)            |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``RV32``                     | rv32_e         | RV32I            | Base Integer Instruction Set.                                      |
-|                              |                |                  | ``RV32`` = RV32I: RV32I Base Integer Instruction Set.              |
-|                              |                |                  | ``RV32`` = RV32E: RV32E Base Integer Instruction Set.              |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``B_EXT``                    | b_ext_e        | NONE             | Enable Bit Manipulation support. ``B_EXT`` = B_NONE: No Bit        |
-|                              |                |                  | Manipulation instructions are supported. ``B_EXT`` = ZBA_ZBB_ZBS:  |
-|                              |                |                  | Zba, Zbb and Zbs are supported. ``B_EXT`` = ZBA_ZBB_ZBC_ZBS:       |
-|                              |                |                  | Zba, Zbb, Zbc and Zbs are supported.                               |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``M_EXT``                    | m_ext_e        | M                | Enable Multiply / Divide support. ``M_EXT`` = M_NONE: No multiply /|
-|                              |                |                  | divide instructions are supported. ``M_EXT`` = ZMMUL: The          |
-|                              |                |                  | multiplication subset of the ``M`` extension is supported.         |
-|                              |                |                  | ``M_EXT`` = M: The ``M`` extension is supported.                   |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``DBG_NUM_TRIGGERS``         | int (0..4 )    | 1                | Number of debug triggers, see :ref:`debug-support`                 |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``PMA_NUM_REGIONS``          | int (0..16)    | 0                | Number of PMA regions                                              |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``PMA_CFG[]``                | pma_cfg_t      | PMA_R_DEFAULT    | PMA configuration.                                                 |
-|                              |                |                  | Array of pma_cfg_t with PMA_NUM_REGIONS entries, see :ref:`pma`    |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``PMP_GRANULARITY``          | int (0..31)    | 0                | Sets minimum granularity of PMP address matching to                |
-|                              |                |                  | 2 :sup:`PMP_GRANULARITY+2` bytes.                                  |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``PMP_NUM_REGIONS``          | int (0..64)    | 0                | Number of PMP regions                                              |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``PMP_PMPNCFG_RV[]``         | pmpncfg_t      | PMPNCFG_DEFAULT  | Reset values for ``pmpncfg`` bitfileds in ``pmpcfg`` CSRs.         |
-|                              |                |                  | Array of pmpncfg_t with PMP_NUM_REGIONS entries, see :ref:`pmp`    |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``PMP_PMPADDR_RV[]``         | logic[31:0]    | 0                | Reset values for ``pmpaddr`` CSRs.                                 |
-|                              |                |                  | Array with PMP_NUM_REGIONS entries, see :ref:`pmp`                 |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``PMP_MSECCFG_RV``           | mseccfg_t      | 0                | Reset value for ``mseccfg`` CSR, see :ref:`pmp`                    |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``SMCLIC``                   | bit            | 0                | Is Smclic supported?                                               |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``SMCLIC_ID_WIDTH``          | int (1..10 )   | 6                | Width of ``clic_irq_id_i`` and ``clic_irq_id_o``. The maximum      |
-|                              |                |                  | number of supported interrupts in CLIC mode is                     |
-|                              |                |                  | ``2^SMCLIC_ID_WIDTH``. Trap vector table alignment is restricted   |
-|                              |                |                  | as described in :ref:`csr-mtvt`.                                   |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``LFSR0``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR0 configuration, see :ref:`xsecure`.                           |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``LFSR1``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR1 configuration, see :ref:`xsecure`.                           |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
-| ``LFSR2``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR2 configuration, see :ref:`xsecure`.                           |
-+------------------------------+----------------+------------------+--------------------------------------------------------------------+
+.. table::
+  :widths: 20 10 10 60
+  :class: no-scrollbar-table
+
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | Name                         | Type/Range     | Default          | Description                                                        |
+  +==============================+================+==================+====================================================================+
+  | ``LIB``                      | int            | 0                | Standard cell library (semantics defined by integrator)            |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``RV32``                     | rv32_e         | RV32I            | Base Integer Instruction Set.                                      |
+  |                              |                |                  | ``RV32`` = RV32I: RV32I Base Integer Instruction Set.              |
+  |                              |                |                  | ``RV32`` = RV32E: RV32E Base Integer Instruction Set.              |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``B_EXT``                    | b_ext_e        | NONE             | Enable Bit Manipulation support. ``B_EXT`` = B_NONE: No Bit        |
+  |                              |                |                  | Manipulation instructions are supported. ``B_EXT`` = ZBA_ZBB_ZBS:  |
+  |                              |                |                  | Zba, Zbb and Zbs are supported. ``B_EXT`` = ZBA_ZBB_ZBC_ZBS:       |
+  |                              |                |                  | Zba, Zbb, Zbc and Zbs are supported.                               |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``M_EXT``                    | m_ext_e        | M                | Enable Multiply / Divide support. ``M_EXT`` = M_NONE: No multiply /|
+  |                              |                |                  | divide instructions are supported. ``M_EXT`` = ZMMUL: The          |
+  |                              |                |                  | multiplication subset of the ``M`` extension is supported.         |
+  |                              |                |                  | ``M_EXT`` = M: The ``M`` extension is supported.                   |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``DBG_NUM_TRIGGERS``         | int (0..4 )    | 1                | Number of debug triggers, see :ref:`debug-support`                 |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``PMA_NUM_REGIONS``          | int (0..16)    | 0                | Number of PMA regions                                              |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``PMA_CFG[]``                | pma_cfg_t      | PMA_R_DEFAULT    | PMA configuration.                                                 |
+  |                              |                |                  | Array of pma_cfg_t with PMA_NUM_REGIONS entries, see :ref:`pma`    |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``PMP_GRANULARITY``          | int (0..31)    | 0                | Sets minimum granularity of PMP address matching to                |
+  |                              |                |                  | 2 :sup:`PMP_GRANULARITY+2` bytes.                                  |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``PMP_NUM_REGIONS``          | int (0..64)    | 0                | Number of PMP regions                                              |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``PMP_PMPNCFG_RV[]``         | pmpncfg_t      | PMPNCFG_DEFAULT  | Reset values for ``pmpncfg`` bitfileds in ``pmpcfg`` CSRs.         |
+  |                              |                |                  | Array of pmpncfg_t with PMP_NUM_REGIONS entries, see :ref:`pmp`    |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``PMP_PMPADDR_RV[]``         | logic[31:0]    | 0                | Reset values for ``pmpaddr`` CSRs.                                 |
+  |                              |                |                  | Array with PMP_NUM_REGIONS entries, see :ref:`pmp`                 |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``PMP_MSECCFG_RV``           | mseccfg_t      | 0                | Reset value for ``mseccfg`` CSR, see :ref:`pmp`                    |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``SMCLIC``                   | bit            | 0                | Is Smclic supported?                                               |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``SMCLIC_ID_WIDTH``          | int (1..10 )   | 6                | Width of ``clic_irq_id_i`` and ``clic_irq_id_o``. The maximum      |
+  |                              |                |                  | number of supported interrupts in CLIC mode is                     |
+  |                              |                |                  | ``2^SMCLIC_ID_WIDTH``. Trap vector table alignment is restricted   |
+  |                              |                |                  | as described in :ref:`csr-mtvt`.                                   |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``LFSR0``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR0 configuration, see :ref:`xsecure`.                           |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``LFSR1``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR1 configuration, see :ref:`xsecure`.                           |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``LFSR2``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR2 configuration, see :ref:`xsecure`.                           |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
 
 Interfaces
 ----------
 
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| Signal(s)               | Width                   | Dir | Description                                |
-+=========================+=========================+=====+============================================+
-| ``clk_i``               | 1                       | in  | Clock signal                               |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``rst_ni``              | 1                       | in  | Active-low asynchronous reset              |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``scan_cg_en_i``        | 1                       | in  | Scan clock gate enable. Design for test    |
-|                         |                         |     | (DfT) related signal. Can be used during   |
-|                         |                         |     | scan testing operation to force            |
-|                         |                         |     | instantiated clock gate(s) to be enabled.  |
-|                         |                         |     | This signal should be 0 during normal /    |
-|                         |                         |     | functional operation.                      |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``boot_addr_i``         | 32                      | in  | Boot address. First program counter after  |
-|                         |                         |     | reset = ``boot_addr_i``. Must be           |
-|                         |                         |     | word aligned. Do not change after enabling |
-|                         |                         |     | core via ``fetch_enable_i``                |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``mtvec_addr_i``        | 32                      | in  | ``mtvec`` address. Initial value for the   |
-|                         |                         |     | address part of :ref:`csr-mtvec`.          |
-|                         |                         |     | Must be 128-byte aligned                   |
-|                         |                         |     | (i.e. ``mtvec_addr_i[6:0]`` = 0).          |
-|                         |                         |     | Do not change after enabling core          |
-|                         |                         |     | via ``fetch_enable_i``                     |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``dm_halt_addr_i``      | 32                      | in  | Address to jump to when entering Debug     |
-|                         |                         |     | Mode, see :ref:`debug-support`. Must be    |
-|                         |                         |     | word aligned. Do not change after enabling |
-|                         |                         |     | core via ``fetch_enable_i``                |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``dm_exception_addr_i`` | 32                      | in  | Address to jump to when an exception       |
-|                         |                         |     | occurs when executing code during Debug    |
-|                         |                         |     | Mode, see :ref:`debug-support`. Must be    |
-|                         |                         |     | word aligned. Do not change after enabling |
-|                         |                         |     | core via ``fetch_enable_i``                |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``mhartid_i``           | 32                      | in  | Hart ID, usually static, can be read from  |
-|                         |                         |     | :ref:`csr-mhartid` CSR                     |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``mimpid_patch_i``      | 4                       | in  | Implementation ID patch. Must be static.   |
-|                         |                         |     | Readable as part of :ref:`csr-mimpid` CSR. |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``instr_*``             | Instruction fetch interface, see :ref:`instruction-fetch`                  |
-+-------------------------+----------------------------------------------------------------------------+
-| ``data_*``              | Load-store unit interface, see :ref:`load-store-unit`                      |
-+-------------------------+----------------------------------------------------------------------------+
-| ``mcycle_o``            | Cycle Counter Output                                                       |
-+-------------------------+----------------------------------------------------------------------------+
-| ``irq_*``               | Interrupt inputs, see :ref:`exceptions-interrupts`                         |
-+-------------------------+----------------------------------------------------------------------------+
-| ``clic_*_i``            | CLIC interface, see :ref:`exceptions-interrupts`                           |
-+-------------------------+----------------------------------------------------------------------------+
-| ``debug_*``             | Debug interface, see :ref:`debug-support`                                  |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``alert_*``             | Alert interface, see :ref:`xsecure`                                        |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``fetch_enable_i``      | 1                       | in  | Enable the instruction fetch of |corev|.   |
-|                         |                         |     | The first instruction fetch after reset    |
-|                         |                         |     | de-assertion will not happen as long as    |
-|                         |                         |     | this signal is 0. ``fetch_enable_i`` needs |
-|                         |                         |     | to be set to 1 for at least one cycle      |
-|                         |                         |     | while not in reset to enable fetching.     |
-|                         |                         |     | Once fetching has been enabled the value   |
-|                         |                         |     | ``fetch_enable_i`` is ignored.             |
-+-------------------------+-------------------------+-----+--------------------------------------------+
-| ``core_sleep_o``        | 1                       | out | Core is sleeping, see :ref:`sleep_unit`.   |
-+-------------------------+-------------------------+-----+--------------------------------------------+
+.. table::
+  :widths: 20 10 10 60
+  :class: no-scrollbar-table
+
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | Signal(s)               | Width                   | Dir | Description                                |
+  +=========================+=========================+=====+============================================+
+  | ``clk_i``               | 1                       | in  | Clock signal                               |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``rst_ni``              | 1                       | in  | Active-low asynchronous reset              |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``scan_cg_en_i``        | 1                       | in  | Scan clock gate enable. Design for test    |
+  |                         |                         |     | (DfT) related signal. Can be used during   |
+  |                         |                         |     | scan testing operation to force            |
+  |                         |                         |     | instantiated clock gate(s) to be enabled.  |
+  |                         |                         |     | This signal should be 0 during normal /    |
+  |                         |                         |     | functional operation.                      |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``boot_addr_i``         | 32                      | in  | Boot address. First program counter after  |
+  |                         |                         |     | reset = ``boot_addr_i``. Must be           |
+  |                         |                         |     | word aligned. Do not change after enabling |
+  |                         |                         |     | core via ``fetch_enable_i``                |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``mtvec_addr_i``        | 32                      | in  | ``mtvec`` address. Initial value for the   |
+  |                         |                         |     | address part of :ref:`csr-mtvec`.          |
+  |                         |                         |     | Must be 128-byte aligned                   |
+  |                         |                         |     | (i.e. ``mtvec_addr_i[6:0]`` = 0).          |
+  |                         |                         |     | Do not change after enabling core          |
+  |                         |                         |     | via ``fetch_enable_i``                     |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``dm_halt_addr_i``      | 32                      | in  | Address to jump to when entering Debug     |
+  |                         |                         |     | Mode, see :ref:`debug-support`. Must be    |
+  |                         |                         |     | word aligned. Do not change after enabling |
+  |                         |                         |     | core via ``fetch_enable_i``                |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``dm_exception_addr_i`` | 32                      | in  | Address to jump to when an exception       |
+  |                         |                         |     | occurs when executing code during Debug    |
+  |                         |                         |     | Mode, see :ref:`debug-support`. Must be    |
+  |                         |                         |     | word aligned. Do not change after enabling |
+  |                         |                         |     | core via ``fetch_enable_i``                |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``mhartid_i``           | 32                      | in  | Hart ID, usually static, can be read from  |
+  |                         |                         |     | :ref:`csr-mhartid` CSR                     |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``mimpid_patch_i``      | 4                       | in  | Implementation ID patch. Must be static.   |
+  |                         |                         |     | Readable as part of :ref:`csr-mimpid` CSR. |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``instr_*``             | Instruction fetch interface, see :ref:`instruction-fetch`                  |
+  +-------------------------+----------------------------------------------------------------------------+
+  | ``data_*``              | Load-store unit interface, see :ref:`load-store-unit`                      |
+  +-------------------------+----------------------------------------------------------------------------+
+  | ``mcycle_o``            | Cycle Counter Output                                                       |
+  +-------------------------+----------------------------------------------------------------------------+
+  | ``irq_*``               | Interrupt inputs, see :ref:`exceptions-interrupts`                         |
+  +-------------------------+----------------------------------------------------------------------------+
+  | ``clic_*_i``            | CLIC interface, see :ref:`exceptions-interrupts`                           |
+  +-------------------------+----------------------------------------------------------------------------+
+  | ``debug_*``             | Debug interface, see :ref:`debug-support`                                  |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``alert_*``             | Alert interface, see :ref:`xsecure`                                        |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``fetch_enable_i``      | 1                       | in  | Enable the instruction fetch of |corev|.   |
+  |                         |                         |     | The first instruction fetch after reset    |
+  |                         |                         |     | de-assertion will not happen as long as    |
+  |                         |                         |     | this signal is 0. ``fetch_enable_i`` needs |
+  |                         |                         |     | to be set to 1 for at least one cycle      |
+  |                         |                         |     | while not in reset to enable fetching.     |
+  |                         |                         |     | Once fetching has been enabled the value   |
+  |                         |                         |     | ``fetch_enable_i`` is ignored.             |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``core_sleep_o``        | 1                       | out | Core is sleeping, see :ref:`sleep_unit`.   |
+  +-------------------------+-------------------------+-----+--------------------------------------------+
