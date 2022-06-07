@@ -33,6 +33,8 @@ module cv32e40s_compressed_decoder import cv32e40s_pkg::*;
 (
   input  inst_resp_t  instr_i,
   input  logic        instr_is_ptr_i,
+  input  logic [31:0] mstateen0_i,
+  input  privlvl_t    priv_lvl_i,
   output inst_resp_t  instr_o,
   output logic        is_compressed_o,
   output logic        illegal_instr_o,
@@ -439,7 +441,10 @@ module cv32e40s_compressed_decoder import cv32e40s_pkg::*;
             end
 
             3'b101: begin
-              if (ZC_EXT) begin
+              // Table jumps are only allowed while in machine mode, or in user mode when mstateen0[2] = 1
+              // mstateen0 is only writeable from machine mode, and thus it is safe to use it directly with no
+              // hazard detection or stalls (an mret would need to be executed after the CSR write to enter user mode)
+              if (ZC_EXT && ((priv_lvl_i == PRIV_LVL_M) || mstateen0_i[2])) begin
                 // The cm.jt and cm.jalt have no equivalent 32-bit instructions.
                 // Mapping to JAL anyway, but an extra control bit is set to indicate that these
                 // are table jumps as opposed to regular JAL instruction.

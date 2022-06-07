@@ -92,6 +92,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // PMP CSR's
   input pmp_csr_t       csr_pmp_i,
 
+  // mstateen CSR
+  input  logic [31:0]   mstateen0_i,
+
   // Privilege mode
   input privlvlctrl_t   priv_lvl_ctrl_i,
   input privlvl_t       priv_lvl_clic_ptr_i,    // Priv level for CLIC pointers. Must respect mstatus.mprv (done in cs_registers)
@@ -443,6 +446,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   (
     .instr_i            ( prefetch_instr          ),
     .instr_is_ptr_i     ( ptr_in_if_o             ),
+    .mstateen0_i        ( mstateen0_i             ),
+    .priv_lvl_i         ( prefetch_priv_lvl       ),
     .instr_o            ( instr_decompressed      ),
     .is_compressed_o    ( instr_compressed_int    ),
     .illegal_instr_o    ( illegal_c_insn          ),

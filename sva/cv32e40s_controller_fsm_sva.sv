@@ -352,35 +352,6 @@ module cv32e40s_controller_fsm_sva
                      ctrl_fsm_o.irq_ack |-> !pending_nmi)
       else `uvm_error("controller", "irq_ack set while there's a pending NMI")
 
-  // Assert that intr_taken is always single cycle. I.e. no double counting
-  a_mhpevent_intr_taken_single_cycle:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ctrl_fsm_o.mhpmevent.intr_taken |=> !ctrl_fsm_o.mhpmevent.intr_taken)
-      else `uvm_error("controller", "mhpmevent.intr_taken not single cycle")
-
-  // Assert that id_ld_stall is always single cycle. I.e. no double counting
-  a_mhpevent_id_ld_stall_single_cycle:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ctrl_fsm_o.mhpmevent.id_ld_stall |=> !ctrl_fsm_o.mhpmevent.id_ld_stall)
-      else `uvm_error("controller", "mhpmevent.id_ld_stall not single cycle")
-
-  // Assert that id_jalr_stall is a subset of id_invalid
-  a_mhpevent_id_jalr_stall_subset:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ctrl_fsm_o.mhpmevent.id_jalr_stall |-> ctrl_fsm_o.mhpmevent.id_invalid)
-      else `uvm_error("controller", "mhpmevent.id_jalr_stall not a subset of mhpmevent.id_invalid")
-
-  // Assert that id_ld_stall is a subset of id_invalid
-  a_mhpevent_id_ld_stall_subset:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ctrl_fsm_o.mhpmevent.id_ld_stall |-> ctrl_fsm_o.mhpmevent.id_invalid)
-      else `uvm_error("controller", "mhpmevent.id_ld_stall not a subset of mhpmevent.id_invalid")
-
-  // Assert that wb_data_stall is a subset of wb_invalid
-  a_mhpevent_wb_data_stall_subset:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ctrl_fsm_o.mhpmevent.wb_data_stall |-> ctrl_fsm_o.mhpmevent.wb_invalid)
-      else `uvm_error("controller", "mhpmevent.wb_data_stall not a subset of mhpmevent.wb_invalid")
 
   // Assert that interrupts are not allowed when WB stage has an LSU
   // instruction (cnt_q != 0)
@@ -524,11 +495,7 @@ endgenerate
   // Events caused by the dummy instruction shoud be suppressed
   a_not_counting_dummy_instr :
     assert property (@(posedge clk) disable iff (!rst_n)
-                     (ex_wb_pipe_i.instr_meta.dummy |-> !(ctrl_fsm_o.mhpmevent.minstret   ||
-                                                          ctrl_fsm_o.mhpmevent.compressed ||
-                                                          ctrl_fsm_o.mhpmevent.jump       ||
-                                                          ctrl_fsm_o.mhpmevent.branch     ||
-                                                          ctrl_fsm_o.mhpmevent.branch_taken)))
+                     (ex_wb_pipe_i.instr_meta.dummy |-> !(ctrl_fsm_o.mhpmevent.minstret)))
                      else `uvm_error("controller", "Dummy instruction retirement counted")
 
   // Dummy instructions should never have synchronous exceptions

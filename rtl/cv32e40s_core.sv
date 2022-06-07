@@ -218,6 +218,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   logic [MTVT_ADDR_WIDTH-1:0] mtvt_addr;
 
+  logic [31:0] mstateen0;
+
   logic [7:0]  mintthresh;
   mintstatus_t mintstatus;
 
@@ -532,6 +534,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // CSR registers
     .csr_pmp_i           ( csr_pmp                  ),
+    .mstateen0_i         ( mstateen0                ),
 
     // Privilege level
     .priv_lvl_ctrl_i     ( priv_lvl_if_ctrl         ),
@@ -849,6 +852,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mtvec_addr_o               ( mtvec_addr             ),
     .mtvec_mode_o               ( mtvec_mode             ),
     .mtvt_addr_o                ( mtvt_addr              ),
+    .mstateen0_o                ( mstateen0              ),
 
     .priv_lvl_if_ctrl_o         ( priv_lvl_if_ctrl       ),
     .priv_lvl_lsu_o             ( priv_lvl_lsu           ),

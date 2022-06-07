@@ -225,7 +225,16 @@ typedef enum logic[11:0] {
   CSR_MTVEC          = 12'h305,
   CSR_MCOUNTEREN     = 12'h306,
   CSR_MTVT           = 12'h307,
+  CSR_MSTATEEN0      = 12'h30C,
+  CSR_MSTATEEN1      = 12'h30D,
+  CSR_MSTATEEN2      = 12'h30E,
+  CSR_MSTATEEN3      = 12'h30F,
   CSR_MSTATUSH       = 12'h310,
+
+  CSR_MSTATEEN0H     = 12'h31C,
+  CSR_MSTATEEN1H     = 12'h31D,
+  CSR_MSTATEEN2H     = 12'h31E,
+  CSR_MSTATEEN3H     = 12'h31F,
 
   // Performance counters
   CSR_MCOUNTINHIBIT  = 12'h320,
@@ -477,6 +486,7 @@ parameter CSR_PMPNCFG_MASK      = 8'hFF;
 parameter CSR_PMPADDR_MASK      = 32'hFFFFFFFF;
 parameter CSR_MSECCFG_MASK      = 32'h00000007;
 parameter CSR_PRV_LVL_MASK      = 32'hFFFFFFFF;
+parameter CSR_MSTATEEN0_MASK    = 32'h00000004;
 
 // CSR operations
 
