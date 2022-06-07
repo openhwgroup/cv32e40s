@@ -40,7 +40,7 @@ Exceptions
  |              0 |             49 | Instruction parity/checksum fault     | ``instr_gntpar_i``, ``instr_rvalidpar``, ``instr_rchk_i`` related errors  |
  +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
 
-If an instruction raises multiple exceptions, the priority, from high to low, is as follows: 
+If an instruction raises multiple exceptions, the priority, from high to low, is as follows:
 
 * ``instruction access fault (1)``
 * ``instruction parity/checksum fault (49)``
@@ -52,7 +52,7 @@ If an instruction raises multiple exceptions, the priority, from high to low, is
 * ``store/AMO access fault (7)``
 * ``load access fault (5)``
 
-Exceptions in general cannot be disabled and are always active. 
+Exceptions in general cannot be disabled and are always active.
 All exceptions are precise.
 Whether the PMP and PMA will actually cause exceptions depends on their configuration.
 |corev|  raises an illegal instruction exception for any instruction in the RISC-V privileged and unprivileged specifications that is explicitly defined as being
@@ -68,7 +68,7 @@ Non Maskable Interrupts (NMIs) update ``mepc``, ``mcause`` and ``mstatus`` simil
 
 .. note::
 
-   Specifically ``mstatus.mie`` will get cleared to 0 when an (unrecoverable) NMI is taken. [RISC-V-PRIV]_ does not specify the behavior of 
+   Specifically ``mstatus.mie`` will get cleared to 0 when an (unrecoverable) NMI is taken. [RISC-V-PRIV]_ does not specify the behavior of
    ``mstatus`` in response to NMIs, see https://github.com/riscv/riscv-isa-manual/issues/756. If this behavior is
    specified at a future date, then we will reconsider our implementation.
 
@@ -114,6 +114,8 @@ Interrupt Interface
 
 .. table:: Basic interrupt architecture interface signals
   :name: Basic interrupt architecture interface signals
+  :widths: 10 10 80
+  :class: no-scrollbar-table
 
   +-------------------------+-----------+--------------------------------------------------+
   | Signal                  | Direction | Description                                      |
@@ -160,7 +162,7 @@ To enable any of the ``irq_i[31:0]`` interrupts, both the global interrupt enabl
 
 If multiple interrupts are pending, they are handled in the fixed priority order defined by [RISC-V-PRIV]_.
 The highest priority is given to the interrupt with the highest ID, except for the Machine Timer Interrupt, which has the lowest priority. So from high to low priority the interrupts are
-ordered as follows: 
+ordered as follows:
 
 * ``store parity/checksum fault NMI (1027)``
 * ``load parity/checksum fault NMI (1026)``
@@ -181,25 +183,29 @@ In Debug Mode, all interrupts are ignored independent of ``mstatus.MIE`` and the
 
 |corev| can trigger the following interrupts as reported in ``mcause``:
 
- +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- | Interrupt      | Exception Code | Description                                     | Scenario(s)                                                     |
- +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |              3 | Machine Software Interrupt (MSI)                | ``irq_i[3]``                                                    |
- +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |              7 | Machine Timer Interrupt (MTI)                   | ``irq_i[7]``                                                    |
- +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |             11 | Machine External Interrupt (MEI)                | ``irq_i[11]``                                                   |
- +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |          31-16 | Machine Fast Interrupts                         | ``irq_i[31]``-``irq_i[16]``                                     |
- +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |           1024 | Load bus fault NMI (imprecise)                  | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for load           |
- +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |           1025 | Store bus fault NMI (imprecise)                 | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for store          |
- +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |           1026 | Load parity/checksum fault NMI (imprecise)      | Load parity/checksum fault (imprecise)                          |
- +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
- |              1 |           1027 | Store parity/checksum fault NMI (imprecise)     | Store parity/checksum fault (imprecise)                         |
- +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+.. table::
+  :widths: 10 10 40 40
+  :class: no-scrollbar-table
+
+  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+  | Interrupt      | Exception Code | Description                                     | Scenario(s)                                                     |
+  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+  |              1 |              3 | Machine Software Interrupt (MSI)                | ``irq_i[3]``                                                    |
+  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+  |              1 |              7 | Machine Timer Interrupt (MTI)                   | ``irq_i[7]``                                                    |
+  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+  |              1 |             11 | Machine External Interrupt (MEI)                | ``irq_i[11]``                                                   |
+  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+  |              1 |          31-16 | Machine Fast Interrupts                         | ``irq_i[31]``-``irq_i[16]``                                     |
+  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+  |              1 |           1024 | Load bus fault NMI (imprecise)                  | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for load           |
+  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+  |              1 |           1025 | Store bus fault NMI (imprecise)                 | ``data_err_i`` = 1 and ``data_rvalid_i`` = 1 for store          |
+  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+  |              1 |           1026 | Load parity/checksum fault NMI (imprecise)      | Load parity/checksum fault (imprecise)                          |
+  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
+  |              1 |           1027 | Store parity/checksum fault NMI (imprecise)     | Store parity/checksum fault (imprecise)                         |
+  +----------------+----------------+-------------------------------------------------+-----------------------------------------------------------------+
 
 .. note::
 
@@ -243,6 +249,8 @@ Interrupt Interface
 
 .. table:: CLIC interrupt architecture interface signals
   :name: CLIC interrupt architecture interface signals
+  :widths: 20 10 70
+  :class: no-scrollbar-table
 
   +----------------------------------------+-----------+--------------------------------------------------+
   | Signal                                 | Direction | Description                                      |
@@ -290,7 +298,7 @@ also impacts the alignment requirement for the trap vector table, see :ref:`csr-
 
 Nested Interrupt Handling
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-|corev| offers hardware support for nested interrupt handling when ``SMCLIC`` == 1. 
+|corev| offers hardware support for nested interrupt handling when ``SMCLIC`` == 1.
 
 CLIC extends interrupt preemption to support up to 256 interrupt levels for each privilege mode,
 where higher-numbered interrupt levels can preempt lower-numbered interrupt levels. See [RISC-V-SMCLIC]_ for details.

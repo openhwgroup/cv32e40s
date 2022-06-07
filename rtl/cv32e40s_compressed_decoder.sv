@@ -39,8 +39,6 @@ module cv32e40s_compressed_decoder import cv32e40s_pkg::*;
   output logic        tbljmp_o
 );
 
-  import cv32e40s_pkg::*;
-
   logic [31:0] instr;
 
   assign instr = instr_i.bus_resp.rdata;
