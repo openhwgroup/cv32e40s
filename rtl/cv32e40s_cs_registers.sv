@@ -79,6 +79,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output logic [24:0]                   mtvec_addr_o,
   output logic  [1:0]                   mtvec_mode_o,
   output logic [MTVT_ADDR_WIDTH-1:0]    mtvt_addr_o,
+  output logic [31:0]                   mstateen0_o,
+
 
   output privlvl_t                      priv_lvl_o,
   output privlvlctrl_t                  priv_lvl_if_ctrl_o,
@@ -350,6 +352,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   logic                         umode_mcounteren_illegal_read;
   logic                         illegal_csr_write_priv, illegal_csr_read_priv;
+  logic                         illegal_jvt_access;
 
   logic                         csr_wr_in_wb;
   logic                         xsecure_csr_wr_in_wb;
@@ -436,7 +439,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                              (id_ex_pipe_i.csr_en) &&
                              ((csr_raddr[11:10] == 2'b11) || illegal_csr_write_priv); // Priv spec section 2.1
 
-  assign csr_illegal_o = (id_ex_pipe_i.instr_valid && id_ex_pipe_i.csr_en) ? illegal_csr_write || illegal_csr_read || illegal_csr_read_priv : 1'b0;
+  // Any access to JVT is only legal from machine mode, or from user mode when mstateen[2] is 1.
+  assign illegal_jvt_access = ((csr_raddr == CSR_JVT) && ((id_ex_pipe_i.priv_lvl < PRIV_LVL_M) && !mstateen0_rdata[2]));
+
+  assign csr_illegal_o = (id_ex_pipe_i.instr_valid && id_ex_pipe_i.csr_en) ? illegal_csr_write || illegal_csr_read || illegal_csr_read_priv || illegal_jvt_access : 1'b0;
 
 
   ////////////////////////////////////////////
@@ -2422,6 +2428,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign mtvt_addr_o   = mtvt_rdata.addr[31:(32-MTVT_ADDR_WIDTH)];
 
   assign priv_lvl_o    = priv_lvl_rdata;
+  assign mstateen0_o   = mstateen0_rdata;
 
   ////////////////////////////////////////////////////////////////////////
   //  ____       _                   _____     _                        //

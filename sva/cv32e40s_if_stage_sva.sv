@@ -35,7 +35,9 @@ module cv32e40s_if_stage_sva
   input privlvl_t       prefetch_priv_lvl,
   input logic           dummy_insert,
   input if_id_pipe_t    if_id_pipe_o,
-  if_c_obi.monitor      m_c_obi_instr_if
+  if_c_obi.monitor      m_c_obi_instr_if,
+  input logic [31:0]    mstateen0_i,
+  input logic           tbljmp
 );
 
   // Check that bus interface transactions are halfword aligned (will be forced word aligned at core boundary)
@@ -64,7 +66,7 @@ module cv32e40s_if_stage_sva
   // Helper logic for a_priv_lvl_change
   logic priv_lvl_change;
   privlvl_t new_priv_lvl;
-    
+
   always_ff @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
       priv_lvl_change <= 1'b0;
@@ -84,7 +86,7 @@ module cv32e40s_if_stage_sva
   // Assert that upon a privilege level change, the next instruction passed to ID has the correct privilege level
   a_priv_lvl_change :
     assert property (@(posedge clk) disable iff (!rst_n)
-                     priv_lvl_change && if_id_pipe_o.instr_valid |-> 
+                     priv_lvl_change && if_id_pipe_o.instr_valid |->
                      if_id_pipe_o.priv_lvl == new_priv_lvl)
     else `uvm_error("if_stage", "Wrong privilege level sent to ID stage")
 
@@ -101,6 +103,13 @@ module cv32e40s_if_stage_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      dummy_insert |-> !$past(dummy_insert))
       else `uvm_error("if_stage", "Two dummy instructions in a row")
+
+
+  // No table jumps may occur in user mode while mstateen0[2] is 0
+  a_no_illegal_tablejumps :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (prefetch_priv_lvl == PRIV_LVL_U) && !mstateen0_i[2] |-> !tbljmp)
+      else `uvm_error("if_stage", "Table jump in user mode without state permissions.")
 
 endmodule // cv32e40s_if_stage
 
