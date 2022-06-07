@@ -5,15 +5,15 @@
 #  Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-# 
+#
 #  https://solderpad.org/licenses/
-# 
+#
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-# 
+#
 #  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 #
 ###############################################################################
@@ -127,7 +127,7 @@ html_logo = '../images/openhw-landscape.svg'
 # so a file named "default.css" will overwrite the builtin "default.css".
 #html_static_path = ['ystatic']
 # Set html_static_path to null on the advice of RTDs:
-html_static_path = []
+html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -139,6 +139,9 @@ html_static_path = []
 #
 # html_sidebars = {}
 
+html_css_files = [
+  'css/custom.css',
+]
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
@@ -170,8 +173,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'CV32E40S_User_Manual.tex', u'CORE-V-Docs Documentation',
-     u'Davide Schiavone', 'manual'),
+    (master_doc, 'CV32E40S_User_Manual.tex', u'CV32E40S User Manual',
+     u'OpenHW Group', 'manual'),
 ]
 
 
