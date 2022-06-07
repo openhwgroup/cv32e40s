@@ -143,10 +143,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   localparam logic [31:0] X_MISA       = 32'h00000000;
   localparam logic [ 1:0] X_ECS_XS     = 2'b00;
 
-  // todo: remove when reducing profiling infrastructure
-  parameter int           NUM_MHPMCOUNTERS  = 1;
-
-
+  // No additional hardware performance counters
+  localparam int          NUM_MHPMCOUNTERS = 0;
 
   // Number of register file read ports
   // Core will only use two, but X_EXT may mandate 2 or 3

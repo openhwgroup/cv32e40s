@@ -269,8 +269,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [31:0]                  mtval_n, mtval_rdata;                           // No CSR module instance
   logic                         mtval_we;                                       // Not used in RTL (used by RVFI)
 
-  logic [31:0]                  mcounteren_q, mcounteren_n, mcounteren_rdata;
-  logic                         mcounteren_we;
+  logic [31:0]                  mcounteren_n, mcounteren_rdata;                 // No CSR module instance
+  logic                         mcounteren_we;                                  // Not used in RTL (used by RVFI)
 
   pmpncfg_t                     pmpncfg_n[PMP_MAX_REGIONS];
   pmpncfg_t                     pmpncfg_q[PMP_MAX_REGIONS];
@@ -327,7 +327,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [31:0]                  mhpmcounter_write_upper;                        // Write 32 upper bits mhpmcounter_q
   logic [31:0]                  mhpmcounter_write_increment;                    // Write increment of mhpmcounter_q
 
-  logic                         umode_mcounteren_illegal_read;
   logic                         illegal_csr_write_priv, illegal_csr_read_priv;
 
   logic                         csr_wr_in_wb;
@@ -360,7 +359,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         dscratch0_rd_error;                             // Not used
   logic                         dscratch1_rd_error;                             // Not used
   logic                         mcause_rd_error;                                // Not used
-  logic                         mcounteren_rd_error;                            // Not used
 
   // Local instr_valid for write portion (WB)
   assign instr_valid = ex_wb_pipe_i.instr_valid && !ctrl_fsm_i.kill_wb && !ctrl_fsm_i.halt_wb;
@@ -407,7 +405,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Bits [9:8] in csr_addr indicate priviledge level needed to access CSR's.
   // The exception is access to perfomance counters from user mode, which is configured through mcounteren.
   assign illegal_csr_write_priv =  csr_raddr[9:8] > id_ex_pipe_i.priv_lvl;
-  assign illegal_csr_read_priv  = (csr_raddr[9:8] > id_ex_pipe_i.priv_lvl) || umode_mcounteren_illegal_read;
+  assign illegal_csr_read_priv  = (csr_raddr[9:8] > id_ex_pipe_i.priv_lvl);
 
   assign illegal_csr_write = (id_ex_pipe_i.csr_op != CSR_OP_READ) &&
                              (id_ex_pipe_i.csr_en) &&
@@ -432,7 +430,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   always_comb
   begin
     illegal_csr_read              = 1'b0;
-    umode_mcounteren_illegal_read = 1'b0;
     csr_counter_read_o            = 1'b0;
     csr_mnxti_read_o   = 1'b0;
 
@@ -617,20 +614,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MHPMCOUNTER16, CSR_MHPMCOUNTER17, CSR_MHPMCOUNTER18, CSR_MHPMCOUNTER19,
       CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
       CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
-      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31,
-      CSR_CYCLE,
-      CSR_INSTRET,
-      CSR_HPMCOUNTER3,
-      CSR_HPMCOUNTER4,  CSR_HPMCOUNTER5,  CSR_HPMCOUNTER6,  CSR_HPMCOUNTER7,
-      CSR_HPMCOUNTER8,  CSR_HPMCOUNTER9,  CSR_HPMCOUNTER10, CSR_HPMCOUNTER11,
-      CSR_HPMCOUNTER12, CSR_HPMCOUNTER13, CSR_HPMCOUNTER14, CSR_HPMCOUNTER15,
-      CSR_HPMCOUNTER16, CSR_HPMCOUNTER17, CSR_HPMCOUNTER18, CSR_HPMCOUNTER19,
-      CSR_HPMCOUNTER20, CSR_HPMCOUNTER21, CSR_HPMCOUNTER22, CSR_HPMCOUNTER23,
-      CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
-      CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31: begin
-        csr_rdata_int                 = mhpmcounter_rdata[csr_raddr[4:0]][31:0];
-        umode_mcounteren_illegal_read = !mcounteren_rdata[csr_raddr[4:0]] && (id_ex_pipe_i.priv_lvl == PRIV_LVL_U); // todo: code no longer needed?
-        csr_counter_read_o            = 1'b1;
+      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31: begin
+        csr_rdata_int = mhpmcounter_rdata[csr_raddr[4:0]][31:0];
+        csr_counter_read_o = 1'b1;
       end
 
       CSR_MCYCLEH,
@@ -642,20 +628,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MHPMCOUNTER16H, CSR_MHPMCOUNTER17H, CSR_MHPMCOUNTER18H, CSR_MHPMCOUNTER19H,
       CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
       CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
-      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H,
-      CSR_CYCLEH,
-      CSR_INSTRETH,
-      CSR_HPMCOUNTER3H,
-      CSR_HPMCOUNTER4H,  CSR_HPMCOUNTER5H,  CSR_HPMCOUNTER6H,  CSR_HPMCOUNTER7H,
-      CSR_HPMCOUNTER8H,  CSR_HPMCOUNTER9H,  CSR_HPMCOUNTER10H, CSR_HPMCOUNTER11H,
-      CSR_HPMCOUNTER12H, CSR_HPMCOUNTER13H, CSR_HPMCOUNTER14H, CSR_HPMCOUNTER15H,
-      CSR_HPMCOUNTER16H, CSR_HPMCOUNTER17H, CSR_HPMCOUNTER18H, CSR_HPMCOUNTER19H,
-      CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
-      CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
-      CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H: begin
-        csr_rdata_int                 = mhpmcounter_rdata[csr_raddr[4:0]][63:32];
-        umode_mcounteren_illegal_read = !mcounteren_rdata[csr_raddr[4:0]] && (id_ex_pipe_i.priv_lvl == PRIV_LVL_U);
-        csr_counter_read_o            = 1'b1;
+      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H: begin
+        csr_rdata_int = mhpmcounter_rdata[csr_raddr[4:0]][63:32];
+        csr_counter_read_o = 1'b1;
       end
 
       // mvendorid: Machine Vendor ID
@@ -903,9 +878,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mtvec_n.zero0 = mtvec_rdata.zero0;
     mtvec_we      = csr_mtvec_init_i;
 
-    mcounteren_n    = csr_wdata_int & CSR_MCOUNTEREN_MASK;
-    mcounteren_we   = 1'b0;
-
     if (SMCLIC) begin
       mtvec_n.mode             = mtvec_rdata.mode; // mode is WARL 0x3 when using CLIC
 
@@ -985,21 +957,27 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     pmp_addr_we_int = {PMP_MAX_REGIONS{1'b0}};
     pmp_mseccfg_we  = 1'b0;
 
-    pmp_mseccfgh_n  = pmp_mseccfgh_rdata;        // Read-only
-    pmp_mseccfgh_we = 1'b0;                      // Always 0
+    pmp_mseccfgh_n  = pmp_mseccfgh_rdata;         // Read-only
+    pmp_mseccfgh_we = 1'b0;                       // Always 0
 
-    menvcfg_n       = menvcfg_rdata;             // Read-only
-    menvcfg_we      = 1'b0;                      // Always 0
+    mcounteren_n    = mcounteren_rdata;           // Read-only
+    mcounteren_we   = 1'b0;
+
+    menvcfg_n       = menvcfg_rdata;              // Read-only
+    menvcfg_we      = 1'b0;
 
     menvcfgh_n      = menvcfgh_rdata;             // Read-only
-    menvcfgh_we     = 1'b0;                      // Always 0
+    menvcfgh_we     = 1'b0;
 
     cpuctrl_n       = csr_wdata_int & CSR_CPUCTRL_MASK;
     cpuctrl_we      = 1'b0;
+
     secureseed0_n   = csr_wdata_int;
     secureseed0_we  = 1'b0;
+
     secureseed1_n   = csr_wdata_int;
     secureseed1_we  = 1'b0;
+
     secureseed2_n   = csr_wdata_int;
     secureseed2_we  = 1'b0;
 
@@ -2222,7 +2200,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign priv_lvl_rdata     = priv_lvl_q;
 
-  assign mcounteren_rdata   = mcounteren_q;
   assign pmpncfg_rdata      = pmpncfg_q;
   assign pmp_mseccfg_rdata  = pmp_mseccfg_q;
 
@@ -2242,6 +2219,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign mconfigptr_rdata   = 32'h0;
 
   assign pmp_mseccfgh_rdata = 32'h0;
+  assign mcounteren_rdata   = 32'h0;
   assign menvcfg_rdata      = 32'h0;
   assign menvcfgh_rdata     = 32'h0;
 
@@ -2364,55 +2342,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   //                                                             //
   /////////////////////////////////////////////////////////////////
 
-  // Flop certain events to ease timing
-  localparam bit [15:0] HPM_EVENT_FLOP     = 16'b1111_1111_1100_0000;
   localparam bit [31:0] MCOUNTINHIBIT_MASK = {{(29-NUM_MHPMCOUNTERS){1'b0}},{(NUM_MHPMCOUNTERS){1'b1}},3'b101};
-
-  logic [15:0]          hpm_events_raw;
-  logic                 all_counters_disabled;
-
-  assign all_counters_disabled = &(mcountinhibit_n | ~MCOUNTINHIBIT_MASK);
-
-  genvar                hpm_idx;
-  generate
-    for(hpm_idx=0; hpm_idx<16; hpm_idx++) begin
-      if(HPM_EVENT_FLOP[hpm_idx]) begin: hpm_event_flop
-
-        always_ff @(posedge clk, negedge rst_n) begin
-          if (rst_n == 1'b0) begin
-            hpm_events[hpm_idx] <= 1'b0;
-          end else begin
-            if(!all_counters_disabled) begin
-              hpm_events[hpm_idx] <= hpm_events_raw[hpm_idx];
-            end
-          end
-        end
-
-      end
-      else begin: hpm_even_no_flop
-        assign hpm_events[hpm_idx] = hpm_events_raw[hpm_idx];
-      end
-    end
-  endgenerate
 
   // ------------------------
   // Events to count
-  assign hpm_events_raw[0]  = 1'b1;                               // Cycle counter
-  assign hpm_events_raw[1]  = ctrl_fsm_i.mhpmevent.minstret;      // Instruction counter
-  assign hpm_events_raw[2]  = ctrl_fsm_i.mhpmevent.compressed;    // Compressed instruction counter
-  assign hpm_events_raw[3]  = ctrl_fsm_i.mhpmevent.jump;          // Nr of jumps (unconditional)
-  assign hpm_events_raw[4]  = ctrl_fsm_i.mhpmevent.branch;        // Nr of branches (conditional)
-  assign hpm_events_raw[5]  = ctrl_fsm_i.mhpmevent.branch_taken;  // Nr of taken branches (conditional)
-  assign hpm_events_raw[6]  = ctrl_fsm_i.mhpmevent.intr_taken;    // Nr of interrupts taken (excluding NMI)
-  assign hpm_events_raw[7]  = ctrl_fsm_i.mhpmevent.data_read;     // Data read. Nr of read transactions on the OBI data interface
-  assign hpm_events_raw[8]  = ctrl_fsm_i.mhpmevent.data_write;    // Data write. Nr of write transactions on the OBI data interface
-  assign hpm_events_raw[9]  = ctrl_fsm_i.mhpmevent.if_invalid;    // IF invalid (No valid output from IF when ID stage is ready)
-  assign hpm_events_raw[10] = ctrl_fsm_i.mhpmevent.id_invalid;    // ID invalid (No valid output from ID when EX stage is ready)
-  assign hpm_events_raw[11] = ctrl_fsm_i.mhpmevent.ex_invalid;    // EX invalid (No valid output from EX when WB stage is ready)
-  assign hpm_events_raw[12] = ctrl_fsm_i.mhpmevent.wb_invalid;    // WB invalid (No valid output from WB)
-  assign hpm_events_raw[13] = ctrl_fsm_i.mhpmevent.id_ld_stall;   // Nr of load use hazards
-  assign hpm_events_raw[14] = ctrl_fsm_i.mhpmevent.id_jalr_stall; // Nr of jump (and link) register hazards
-  assign hpm_events_raw[15] = ctrl_fsm_i.mhpmevent.wb_data_stall; // Nr of stall cycles caused in the WB stage by loads/stores
+  assign hpm_events[0] = 1'b1;                               // Cycle counter
+  assign hpm_events[1] = ctrl_fsm_i.mhpmevent.minstret;      // Instruction counter
 
   // ------------------------
   // address decoder for performance counter registers
@@ -2611,33 +2546,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     end
   end
 
-  //  Counter enable register: mcounteren
-  cv32e40s_csr
-  #(
-    .LIB        (LIB),
-    .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
-    .RESETVALUE (32'd0),
-    .MASK       (CSR_MCOUNTEREN_MASK)
-  ) 
-  mcounteren_csr_i
-  (
-    .clk                ( clk                   ),
-    .rst_n              ( rst_n                 ),
-    .scan_cg_en_i       ( scan_cg_en_i          ),
-    .wr_data_i          ( mcounteren_n          ),
-    .wr_en_i            ( mcounteren_we         ),
-    .rd_data_o          ( mcounteren_q          ),
-    .rd_error_o         ( mcounteren_rd_error   )
-  );
-
   assign mcountinhibit_rdata = mcountinhibit_q;
 
   // Some signals are unused on purpose (typically they are used by RVFI code). Use them here for easier LINT waiving.
 
-  assign unused_signals = tselect_we | tinfo_we | tcontrol_we | mstatush_we | misa_we | mip_we | mvendorid_we |
-    marchid_we | mimpid_we | mhartid_we | mconfigptr_we | mtval_we | pmp_mseccfgh_we | menvcfgh_we | menvcfg_we |
-    tdata1_rd_error | tdata2_rd_error | dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error | mcause_rd_error | 
-    mcounteren_rd_error;
+  assign unused_signals = tselect_we | tinfo_we | tcontrol_we | mstatush_we | misa_we | mip_we | mvendorid_we | marchid_we |
+    mimpid_we | mhartid_we | mconfigptr_we | mtval_we | pmp_mseccfgh_we | mcounteren_we | menvcfg_we | menvcfgh_we |
+    tdata1_rd_error | tdata2_rd_error | dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error | mcause_rd_error;
 
 endmodule

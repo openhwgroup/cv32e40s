@@ -466,20 +466,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // Performance counter events
   assign ctrl_fsm_o.mhpmevent.minstret      = wb_counter_event_gated;
-  assign ctrl_fsm_o.mhpmevent.compressed    = wb_counter_event_gated && ex_wb_pipe_i.instr_meta.compressed;
-  assign ctrl_fsm_o.mhpmevent.jump          = wb_counter_event_gated && ex_wb_pipe_i.alu_jmp_qual;
-  assign ctrl_fsm_o.mhpmevent.branch        = wb_counter_event_gated && ex_wb_pipe_i.alu_bch_qual;
-  assign ctrl_fsm_o.mhpmevent.branch_taken  = wb_counter_event_gated && ex_wb_pipe_i.alu_bch_taken_qual;
-  assign ctrl_fsm_o.mhpmevent.intr_taken    = ctrl_fsm_o.irq_ack;
-  assign ctrl_fsm_o.mhpmevent.data_read     = m_c_obi_data_if.s_req.req && m_c_obi_data_if.s_gnt.gnt && !m_c_obi_data_if.req_payload.we;
-  assign ctrl_fsm_o.mhpmevent.data_write    = m_c_obi_data_if.s_req.req && m_c_obi_data_if.s_gnt.gnt && m_c_obi_data_if.req_payload.we;
-  assign ctrl_fsm_o.mhpmevent.if_invalid    = !if_valid_i && id_ready_i;
-  assign ctrl_fsm_o.mhpmevent.id_invalid    = !id_valid_i && ex_ready_i;
-  assign ctrl_fsm_o.mhpmevent.ex_invalid    = !ex_valid_i && wb_ready_i;
-  assign ctrl_fsm_o.mhpmevent.wb_invalid    = !(wb_valid_i && last_op_wb_i);
-  assign ctrl_fsm_o.mhpmevent.id_jalr_stall = ctrl_byp_i.jalr_stall && !id_valid_i && ex_ready_i;
-  assign ctrl_fsm_o.mhpmevent.id_ld_stall   = ctrl_byp_i.load_stall && !id_valid_i && ex_ready_i;
-  assign ctrl_fsm_o.mhpmevent.wb_data_stall = data_stall_wb_i;
 
   // Mux used to select PC from the different pipeline stages
   always_comb begin
