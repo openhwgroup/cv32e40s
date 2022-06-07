@@ -255,6 +255,9 @@ module cv32e40s_rvfi
    input logic [31:0]                         csr_mstateen2_n_i,
    input logic [31:0]                         csr_mstateen2_q_i,
    input logic                                csr_mstateen2_we_i,
+   input logic [31:0]                         csr_mstateen3_n_i,
+   input logic [31:0]                         csr_mstateen3_q_i,
+   input logic                                csr_mstateen3_we_i,
 
    input logic [31:0]                         csr_mstateen0h_n_i,
    input logic [31:0]                         csr_mstateen0h_q_i,
@@ -265,6 +268,9 @@ module cv32e40s_rvfi
    input logic [31:0]                         csr_mstateen2h_n_i,
    input logic [31:0]                         csr_mstateen2h_q_i,
    input logic                                csr_mstateen2h_we_i,
+   input logic [31:0]                         csr_mstateen3h_n_i,
+   input logic [31:0]                         csr_mstateen3h_q_i,
+   input logic                                csr_mstateen3h_we_i,
 
   // RISC-V Formal Interface
   // Does not comply with the coding standards of _i/_o suffixes, but follow,
@@ -538,6 +544,10 @@ module cv32e40s_rvfi
    output logic        [31:0]                 rvfi_csr_mstateen2_wmask,
    output logic        [31:0]                 rvfi_csr_mstateen2_rdata,
    output logic        [31:0]                 rvfi_csr_mstateen2_wdata,
+   output logic        [31:0]                 rvfi_csr_mstateen3_rmask,
+   output logic        [31:0]                 rvfi_csr_mstateen3_wmask,
+   output logic        [31:0]                 rvfi_csr_mstateen3_rdata,
+   output logic        [31:0]                 rvfi_csr_mstateen3_wdata,
 
    output logic        [31:0]                 rvfi_csr_mstateen0h_rmask,
    output logic        [31:0]                 rvfi_csr_mstateen0h_wmask,
@@ -550,7 +560,11 @@ module cv32e40s_rvfi
    output logic        [31:0]                 rvfi_csr_mstateen2h_rmask,
    output logic        [31:0]                 rvfi_csr_mstateen2h_wmask,
    output logic        [31:0]                 rvfi_csr_mstateen2h_rdata,
-   output logic        [31:0]                 rvfi_csr_mstateen2h_wdata
+   output logic        [31:0]                 rvfi_csr_mstateen2h_wdata,
+   output logic        [31:0]                 rvfi_csr_mstateen3h_rmask,
+   output logic        [31:0]                 rvfi_csr_mstateen3h_wmask,
+   output logic        [31:0]                 rvfi_csr_mstateen3h_rdata,
+   output logic        [31:0]                 rvfi_csr_mstateen3h_wdata
 );
 
   // Propagating from ID stage
@@ -625,7 +639,6 @@ module cv32e40s_rvfi
   logic         pc_mux_debug;
   logic         pc_mux_dret;
   logic         pc_mux_exception;
-  logic         pc_mux_debug_exception;
   logic         pc_mux_interrupt;
   logic         pc_mux_nmi;
 
@@ -681,12 +694,7 @@ module cv32e40s_rvfi
   assign pc_mux_interrupt       = (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ);
   assign pc_mux_nmi             = (ctrl_fsm_i.pc_mux == PC_TRAP_NMI);
   assign pc_mux_debug           = (ctrl_fsm_i.pc_mux == PC_TRAP_DBD);
-  assign pc_mux_exception       = (ctrl_fsm_i.pc_mux == PC_TRAP_EXC) || pc_mux_debug_exception ;
-  // The debug exception for mret is taken in ID (contrary to all other exceptions). In the case where we have a dret in the EX stage at the same time,
-  // this can lead to a situation we take the exception for the mret even though it never reaches the WB stage.
-  // This works in rtl because the exception handler instructions will get killed.
-  // In rvfi this exception needs to be ignored as it comes from an instruction that does not retire.
-  assign pc_mux_debug_exception = (ctrl_fsm_i.pc_mux == PC_TRAP_DBE) && !dret_in_ex_i;
+  assign pc_mux_exception       = (ctrl_fsm_i.pc_mux == PC_TRAP_EXC) || (ctrl_fsm_i.pc_mux == PC_TRAP_DBE) ;
   assign pc_mux_dret            = (ctrl_fsm_i.pc_mux == PC_DRET);
 
   assign branch_taken_ex = branch_in_ex_i && branch_decision_ex_i;
@@ -1256,37 +1264,37 @@ module cv32e40s_rvfi
     end
   endgenerate
 
-  assign ex_csr_rdata_d.cycle                = csr_mhpmcounter_q_l [CSR_CYCLE & 'hF];
+  assign ex_csr_rdata_d.cycle                = csr_mhpmcounter_q_l [CSR_MCYCLE & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
   assign rvfi_csr_rdata_d.cycle              = ex_csr_rdata.cycle;
-  assign rvfi_csr_wdata_d.cycle              = csr_mhpmcounter_n_l [CSR_CYCLE & 'hF];
-  assign rvfi_csr_wmask_d.cycle              = csr_mhpmcounter_we_l[CSR_CYCLE & 'hF];
+  assign rvfi_csr_wdata_d.cycle              = csr_mhpmcounter_n_l [CSR_MCYCLE & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
+  assign rvfi_csr_wmask_d.cycle              = csr_mhpmcounter_we_l[CSR_MCYCLE & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
 
-  assign rvfi_csr_rdata_d.instret            = csr_mhpmcounter_q_l [CSR_INSTRET & 'hF];
-  assign rvfi_csr_wdata_d.instret            = csr_mhpmcounter_n_l [CSR_INSTRET & 'hF];
-  assign rvfi_csr_wmask_d.instret            = csr_mhpmcounter_we_l[CSR_INSTRET & 'hF];
+  assign rvfi_csr_rdata_d.instret            = csr_mhpmcounter_q_l [CSR_MINSTRET & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
+  assign rvfi_csr_wdata_d.instret            = csr_mhpmcounter_n_l [CSR_MINSTRET & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
+  assign rvfi_csr_wmask_d.instret            = csr_mhpmcounter_we_l[CSR_MINSTRET & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
 
   assign rvfi_csr_rdata_d.hpmcounter[ 2:0]   = 'Z;
   assign rvfi_csr_wdata_d.hpmcounter[ 2:0]   = 'Z;  // Does not exist
   assign rvfi_csr_wmask_d.hpmcounter[ 2:0]   = '0;
-  assign rvfi_csr_rdata_d.hpmcounter[31:3]   = csr_mhpmcounter_q_l [31:3];
-  assign rvfi_csr_wdata_d.hpmcounter[31:3]   = csr_mhpmcounter_n_l [31:3];
-  assign rvfi_csr_wmask_d.hpmcounter[31:3]   = csr_mhpmcounter_we_l[31:3];
+  assign rvfi_csr_rdata_d.hpmcounter[31:3]   = csr_mhpmcounter_q_l [31:3]; // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
+  assign rvfi_csr_wdata_d.hpmcounter[31:3]   = csr_mhpmcounter_n_l [31:3]; // todo: No aliasing here
+  assign rvfi_csr_wmask_d.hpmcounter[31:3]   = csr_mhpmcounter_we_l[31:3]; // todo: No aliasing here
 
-  assign ex_csr_rdata_d.cycleh               = csr_mhpmcounter_q_h [CSR_CYCLEH & 'hF];
+  assign ex_csr_rdata_d.cycleh               = csr_mhpmcounter_q_h [CSR_MCYCLEH & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
   assign rvfi_csr_rdata_d.cycleh             = ex_csr_rdata.cycleh;
-  assign rvfi_csr_wdata_d.cycleh             = csr_mhpmcounter_n_h [CSR_CYCLEH & 'hF];
-  assign rvfi_csr_wmask_d.cycleh             = csr_mhpmcounter_we_h[CSR_CYCLEH & 'hF];
+  assign rvfi_csr_wdata_d.cycleh             = csr_mhpmcounter_n_h [CSR_MCYCLEH & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
+  assign rvfi_csr_wmask_d.cycleh             = csr_mhpmcounter_we_h[CSR_MCYCLEH & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
 
-  assign rvfi_csr_rdata_d.instreth           = csr_mhpmcounter_q_h [CSR_INSTRETH & 'hF];
-  assign rvfi_csr_wdata_d.instreth           = csr_mhpmcounter_n_h [CSR_INSTRETH & 'hF];
-  assign rvfi_csr_wmask_d.instreth           = csr_mhpmcounter_we_h[CSR_INSTRETH & 'hF];
+  assign rvfi_csr_rdata_d.instreth           = csr_mhpmcounter_q_h [CSR_MINSTRETH & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
+  assign rvfi_csr_wdata_d.instreth           = csr_mhpmcounter_n_h [CSR_MINSTRETH & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
+  assign rvfi_csr_wmask_d.instreth           = csr_mhpmcounter_we_h[CSR_MINSTRETH & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
 
   assign rvfi_csr_rdata_d.hpmcounterh[ 2:0]  = 'Z;
   assign rvfi_csr_wdata_d.hpmcounterh[ 2:0]  = 'Z; // Does not exist
   assign rvfi_csr_wmask_d.hpmcounterh[ 2:0]  = '0;
-  assign rvfi_csr_rdata_d.hpmcounterh[31:3]  = csr_mhpmcounter_q_h [31:3];
-  assign rvfi_csr_wdata_d.hpmcounterh[31:3]  = csr_mhpmcounter_n_h [31:3];
-  assign rvfi_csr_wmask_d.hpmcounterh[31:3]  = csr_mhpmcounter_we_h[31:3];
+  assign rvfi_csr_rdata_d.hpmcounterh[31:3]  = csr_mhpmcounter_q_h [31:3]; // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
+  assign rvfi_csr_wdata_d.hpmcounterh[31:3]  = csr_mhpmcounter_n_h [31:3]; // todo: No aliasing here
+  assign rvfi_csr_wmask_d.hpmcounterh[31:3]  = csr_mhpmcounter_we_h[31:3]; // todo: No aliasing here
 
   // Machine info
   assign rvfi_csr_rdata_d.mvendorid          = csr_mvendorid_i;
@@ -1368,6 +1376,9 @@ module cv32e40s_rvfi
   assign rvfi_csr_wdata_d.mstateen2       = csr_mstateen2_n_i;
   assign rvfi_csr_rdata_d.mstateen2       = csr_mstateen2_q_i;
   assign rvfi_csr_wmask_d.mstateen2       = csr_mstateen2_we_i ? '1 : '0;
+  assign rvfi_csr_wdata_d.mstateen3       = csr_mstateen3_n_i;
+  assign rvfi_csr_rdata_d.mstateen3       = csr_mstateen3_q_i;
+  assign rvfi_csr_wmask_d.mstateen3       = csr_mstateen3_we_i ? '1 : '0;
 
   assign rvfi_csr_wdata_d.mstateen0h      = csr_mstateen0h_n_i;
   assign rvfi_csr_rdata_d.mstateen0h      = csr_mstateen0h_q_i;
@@ -1378,6 +1389,9 @@ module cv32e40s_rvfi
   assign rvfi_csr_wdata_d.mstateen2h      = csr_mstateen2h_n_i;
   assign rvfi_csr_rdata_d.mstateen2h      = csr_mstateen2h_q_i;
   assign rvfi_csr_wmask_d.mstateen2h      = csr_mstateen2h_we_i ? '1 : '0;
+  assign rvfi_csr_wdata_d.mstateen3h      = csr_mstateen3h_n_i;
+  assign rvfi_csr_rdata_d.mstateen3h      = csr_mstateen3h_q_i;
+  assign rvfi_csr_wmask_d.mstateen3h      = csr_mstateen3h_we_i ? '1 : '0;
 
   // CSR outputs //
   assign rvfi_csr_jvt_rdata               = rvfi_csr_rdata.jvt;
@@ -1615,6 +1629,10 @@ module cv32e40s_rvfi
   assign rvfi_csr_mstateen2_rmask       = '1;
   assign rvfi_csr_mstateen2_wdata       = rvfi_csr_wdata.mstateen2;
   assign rvfi_csr_mstateen2_wmask       = rvfi_csr_wmask.mstateen2;
+  assign rvfi_csr_mstateen3_rdata       = rvfi_csr_rdata.mstateen3;
+  assign rvfi_csr_mstateen3_rmask       = '1;
+  assign rvfi_csr_mstateen3_wdata       = rvfi_csr_wdata.mstateen3;
+  assign rvfi_csr_mstateen3_wmask       = rvfi_csr_wmask.mstateen3;
   assign rvfi_csr_mstateen0h_rdata      = rvfi_csr_rdata.mstateen0h;
   assign rvfi_csr_mstateen0h_rmask      = '1;
   assign rvfi_csr_mstateen0h_wdata      = rvfi_csr_wdata.mstateen0h;
@@ -1627,4 +1645,8 @@ module cv32e40s_rvfi
   assign rvfi_csr_mstateen2h_rmask      = '1;
   assign rvfi_csr_mstateen2h_wdata      = rvfi_csr_wdata.mstateen2h;
   assign rvfi_csr_mstateen2h_wmask      = rvfi_csr_wmask.mstateen2h;
+  assign rvfi_csr_mstateen3h_rdata      = rvfi_csr_rdata.mstateen3h;
+  assign rvfi_csr_mstateen3h_rmask      = '1;
+  assign rvfi_csr_mstateen3h_wdata      = rvfi_csr_wdata.mstateen3h;
+  assign rvfi_csr_mstateen3h_wmask      = rvfi_csr_wmask.mstateen3h;
 endmodule
