@@ -146,7 +146,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     (32'(1)          <<  8) | // I - RV32I/64I/128I base ISA
     (32'(M_EXT == M) << 12) | // M - Integer Multiply/Divide extension
     (32'(USER)       << 20) | // U - User mode implemented
-    (32'(0)          << 23) | // X - Non-standard extensions present
+    (32'(SECURE)     << 23) | // X - Non-standard extensions present
     (32'(MXL)        << 30); // M-XLEN
 
   localparam logic [31:0] MISA_VALUE = CORE_MISA | (X_EXT ? X_MISA : 32'h0000_0000);
