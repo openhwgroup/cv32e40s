@@ -87,6 +87,9 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   input logic  [1:0]  mtvec_mode_i,
 
+  // CSR write stobes
+  input  logic        csr_wr_in_wb_flush_i,
+
   // Debug Signal
   input  logic        debug_req_i,
   input  dcsr_t       dcsr_i,
@@ -94,9 +97,6 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   // CSR raddr in ex
   input  logic        csr_counter_read_i,         // A performance counter is read in CSR (EX)
   input  logic        csr_mnxti_read_i,           // MNXTI is read in CSR (EX)
-
-  // CSR write stobes
-  input logic          csr_wr_in_wb_flush_i,
 
   input logic [REGFILE_NUM_READ_PORTS-1:0] rf_re_id_i,
   input rf_addr_t     rf_raddr_id_i[REGFILE_NUM_READ_PORTS],
@@ -175,7 +175,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     // CSR write strobes
     .csr_wr_in_wb_flush_i        ( csr_wr_in_wb_flush_i     ),
 
-     // Interrupt Controller Signals
+    // Interrupt Controller Signals
     .irq_req_ctrl_i              ( irq_req_ctrl_i           ),
     .irq_id_ctrl_i               ( irq_id_ctrl_i            ),
     .irq_wu_ctrl_i               ( irq_wu_ctrl_i            ),
