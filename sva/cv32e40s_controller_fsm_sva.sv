@@ -84,10 +84,10 @@ module cv32e40s_controller_fsm_sva
   input dcsr_t          dcsr_i,
   input logic           last_sec_op_id_i,
   input logic           sys_mret_id_i,
-  input logic           csr_wr_in_wb_flush_i,
   input logic           lsu_trans_valid,
   input logic           irq_clic_shv_i,
-  input logic           last_op_wb_i
+  input logic           last_op_wb_i,
+  input logic           csr_wr_in_wb_flush_i
 );
 
 
@@ -639,6 +639,12 @@ assert property (@(posedge clk) disable iff (!rst_n)
                 |->
                 (!ctrl_fsm_o.irq_ack && (ctrl_fsm_ns != DEBUG_TAKEN)))
   else `uvm_error("controller", "Table jump interrupted by debug or interrupt")
+
+// Assert that we have no pc_set in the same cycle as a CSR write in WB requires flushing of the pipeline
+a_csr_wr_in_wb_no_fetch:
+assert property (@(posedge clk) disable iff (!rst_n)
+                  (csr_wr_in_wb_flush_i && !ctrl_fsm_o.kill_wb) |-> (!ctrl_fsm_o.pc_set))
+  else `uvm_error("controller", "Fetching new instruction before CSR values are updated")
 
 endmodule
 

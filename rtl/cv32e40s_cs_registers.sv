@@ -337,6 +337,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
 
 
+
   // Performance Counter Signals
   logic [31:0] [63:0]           mhpmcounter_q;                                  // Performance counters
   logic [31:0] [63:0]           mhpmcounter_n;                                  // Performance counters next value
@@ -356,6 +357,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         csr_wr_in_wb;
   logic                         xsecure_csr_wr_in_wb;
   logic                         pmp_csr_wr_in_wb;
+  // Detect JVT writes (requires pipeline flush)
+  logic                         jvt_wr_in_wb;
+
 
   logic                         mscratch_rd_error;
   logic                         mstatus_rd_error;
@@ -2093,7 +2097,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                              (csr_waddr == CSR_MSECCFG));
 
 
-  assign csr_wr_in_wb_flush_o = xsecure_csr_wr_in_wb || pmp_csr_wr_in_wb;
+  // Detect when a JVT write is in WB
+  assign jvt_wr_in_wb = csr_wr_in_wb && (csr_waddr == CSR_JVT);
+
+  assign csr_wr_in_wb_flush_o = xsecure_csr_wr_in_wb || pmp_csr_wr_in_wb || jvt_wr_in_wb;
 
   // Privledge level register
   cv32e40s_csr
@@ -2442,6 +2449,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   endgenerate
 
   assign csr_rdata_o = csr_rdata_int;
+
 
   ////////////////////////////////////////////////////////////////////////
   //

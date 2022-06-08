@@ -92,7 +92,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   output ctrl_fsm_t   ctrl_fsm_o,
 
   // CSR write strobes
-  input logic         csr_wr_in_wb_flush_i,
+  input  logic        csr_wr_in_wb_flush_i,
 
   // Stage valid/ready signals
   input  logic        if_valid_i,       // IF stage has valid (non-bubble) data for next stage
@@ -211,6 +211,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // Detect uninterruptible table jumps
   logic       tbljmp_in_ex_wb;
+
+  // Flop for acking flush requests due to CSR writes
+  logic       csr_flush_ack_n;
+  logic       csr_flush_ack_q;
 
   assign fencei_ready = !lsu_busy_i;
 
@@ -556,6 +560,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
     ctrl_fsm_o.pc_set_clicv        = 1'b0;
     ctrl_fsm_o.pc_set_tbljmp       = 1'b0;
+
+    csr_flush_ack_n                = 1'b0;
+
     unique case (ctrl_fsm_cs)
       RESET: begin
         ctrl_fsm_o.instr_req = 1'b0;
@@ -694,7 +701,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
               fencei_flush_req_set = 1'b1;
             end
             if (fencei_req_and_ack_q) begin
-              // fencei req and ack were set at in the same cycle, complete handshake and jump to PC_FENCEI
+              // fencei req and ack were set at in the same cycle, complete handshake and jump to PC_WB_PLUS4
 
               // Unhalt wb, kill if,id,ex
               ctrl_fsm_o.kill_if   = 1'b1;
@@ -731,10 +738,19 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             single_step_halt_if_n = 1'b0;
             debug_mode_n  = 1'b0;
           end else if (csr_wr_in_wb_flush_i) begin
-            // Flush pipeline because of CSR update
-            ctrl_fsm_o.kill_if = 1'b1;
-            ctrl_fsm_o.kill_id = 1'b1;
-            ctrl_fsm_o.kill_ex = 1'b1;
+            // CSR write in WB requires pipeline flush, halt all stages except WB
+            // EX could contain a load/store, need to avoid its address phase going onto the bus
+            ctrl_fsm_o.halt_if = 1'b1;
+            ctrl_fsm_o.halt_id = 1'b1;
+            ctrl_fsm_o.halt_ex = 1'b1;
+
+            // Set flop input to get ack in the next cycle when the write is done.
+            csr_flush_ack_n    = 1'b1;
+          end else if (csr_flush_ack_q) begin
+            // Flush pipeline because of CSR update in the previous cycle
+            ctrl_fsm_o.kill_if   = 1'b1;
+            ctrl_fsm_o.kill_id   = 1'b1;
+            ctrl_fsm_o.kill_ex   = 1'b1;
 
             // Jump to PC from oldest valid instruction, excluding WB stage
             if (id_ex_pipe_i.instr_valid) begin
@@ -1015,10 +1031,12 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       single_step_halt_if_q <= 1'b0;
       branch_taken_q        <= 1'b0;
       jump_taken_q          <= 1'b0;
+      csr_flush_ack_q       <= 1'b0;
     end else begin
       single_step_halt_if_q <= single_step_halt_if_n;
       branch_taken_q        <= branch_taken_n;
       jump_taken_q          <= jump_taken_n;
+      csr_flush_ack_q       <= csr_flush_ack_n;
     end
   end
 
