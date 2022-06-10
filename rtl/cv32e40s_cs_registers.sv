@@ -1960,20 +1960,23 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_error_o     ( mie_rd_error          )
       );
 
-      assign mtvt_q              = 32'h0;
-      assign mtvt_rd_error       = 1'b0;
+      assign mtvt_q                = 32'h0;
+      assign mtvt_rd_error         = 1'b0;
 
-      assign mintstatus_q        = 32'h0;
-      assign mintstatus_rd_error = 1'b0;
+      assign mintstatus_q          = 32'h0;
+      assign mintstatus_rd_error   = 1'b0;
 
-      assign mintthresh_q        = 32'h0;
-      assign mintthresh_rd_error = 1'b0;
+      assign mintthresh_q          = 32'h0;
+      assign mintthresh_rd_error   = 1'b0;
 
-      assign mscratchcsw_q       = 32'h0;
+      assign mscratchcsw_q         = 32'h0;
+      assign mscratchcsw_rd_error  = 1'b0;
 
-      assign mscratchcswl_q      = 32'h0;
+      assign mscratchcswl_q        = 32'h0;
+      assign mscratchcswl_rd_error = 1'b0;
 
-      assign mclicbase_q         = 32'h0;
+      assign mclicbase_q           = 32'h0;
+      assign mclicbase_rd_error    = 1'b0;
 
     end
 
