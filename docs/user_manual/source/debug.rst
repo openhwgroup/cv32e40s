@@ -19,6 +19,7 @@ Debug Mode can be entered by one of the following conditions:
  - External debug event using the debug_req_i signal
  - Trigger Module match event with ``tdata1.action`` set to 1
  - ebreak instruction when not in Debug Mode and when ``dcsr.ebreakm`` == 1 (see :ref:`ebreak_behavior` below)
+ - ``ebreak`` instruction in user mode when ``dcsr.EBREAKU`` == 1 (see :ref:`ebreak_behavior` below)
 
 A user wishing to perform an abstract access, whereby the user can observe or control a core’s GPR or CSR register from the hart, is done by invoking debug control code to move values to and from internal registers to an externally addressable Debug Module (DM). Using this execution-based debug allows for the reduction of the overall number of debug interface signals.
 
@@ -148,6 +149,8 @@ Executing the ``ebreak`` instruction when the core is **not** in Debug Mode and 
  - The core enters the exception handler routine located at ``mtvec`` (Debug Mode is not entered)
  - ``mepc`` and ``mcause`` are updated
 
+Execution of an ``ebreak`` instruction in user mode when the core is **not** in Debug Mode and ``dcsr.EBREAKU`` == 0 triggers exception entry in a similar manner.
+
 To properly return from the exception, the ebreak handler will need to increment the ``mepc`` to the next instruction. This requires querying the size of the ebreak instruction that was used to enter the exception (16 bit ``c.ebreak`` or 32 bit ``ebreak``).
 
 .. note::
@@ -161,6 +164,8 @@ Executing the ``ebreak`` instruction when the core is **not** in Debug Mode and 
 
 - The core enters Debug Mode and starts executing debug code located at ``dm_halt_addr_i`` (exception routine not called)
 - ``dpc`` and ``dcsr`` are updated
+
+Execution of an ``ebreak`` instruction in user mode when the core is **not** in Debug Mode and ``dcsr.EBREAKU`` == 1 triggers debug mode entry in a similar manner.
 
 Similar to the exception scenario above, the debugger will need to increment the ``dpc`` to the next instruction before returning from Debug Mode.
 
