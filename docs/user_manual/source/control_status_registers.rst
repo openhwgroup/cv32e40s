@@ -322,8 +322,10 @@ level):
   If the legal value(s) are not specified, then all possible values are considered valid.
   For example, a WARL (0x0) field supports only the value 0x0. Any value may be written, but
   all reads would return 0x0 regardless of the value being written to it. A WARL field may
-  support more than one value. If an unsupported value is (attempted to be) written to a WARL field, the original (legal) value
-  of the bitfield is preserved.
+  support more than one value. If an unsupported value is (attempted to be) written to a WARL
+  field, the value marked with an asterix (the so-called resolution value) is written. If there
+  is no such predefined resolution value, then the original (legal) value of the bitfield is
+  preserved.
 
 * **WPRI**: Software should ignore values read from these fields, and preserve the values when writing.
 
@@ -480,7 +482,7 @@ Reset Value: 0x0000_1800
   +-------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
   | 8           | WARL (0x0)      | **SPP**. Hardwired to 0.                                                                                                                                                                                                                                      |
   +-------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-  | 7           | RW              | **MPIE**: When an exception is encountered, MPIE will be set to MIE. When the mret instruction is executed, the value of MPIE will be stored to MIE.                                                                                                          |
+  | 7           | RW              | **MPIE**. When an exception is encountered, MPIE will be set to MIE. When the ``mret`` instruction is executed, the value of MPIE will be stored to MIE.                                                                                                      |
   +-------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
   | 6           | WARL (0x0)      | **UBE**. Hardwired to 0.                                                                                                                                                                                                                                      |
   +-------------+-----------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -1453,10 +1455,7 @@ Trigger Data 1 (``tdata1``)
 
 CSR Address: 0x7A1
 
-Reset Value: 0x6800_1044
-
-Accessible in Debug Mode or M-Mode, depending on **tdata1.dmode**. The contents of the **data** field depends on the current
-value of the **type** field. See [RISC-V-DEBUG]_ for details regarding all trigger related CSRs.
+Reset Value: 0x6800_1000
 
 .. table::
   :widths: 10 20 70
@@ -1468,21 +1467,23 @@ value of the **type** field. See [RISC-V-DEBUG]_ for details regarding all trigg
   | 31:28 | WARL (0x5,  | **TYPE**. 5 = Exception trigger, 6 = Address match trigger     |
   |       | 0x6)        | type.                                                          |
   +-------+-------------+----------------------------------------------------------------+
-  | 27    | WARL (0x1)  | **DMODE**. Only debug mode can write tdata registers           |
+  | 27    | WARL (0x1)  | **DMODE**. Only debug mode can write ``tdata`` registers.      |
   +-------+-------------+----------------------------------------------------------------+
   | 26:0  | WARL        | **DATA**. Trigger data depending on type                       |
   +-------+-------------+----------------------------------------------------------------+
+
+.. note::
+   The WARL behavior of ``tdata1.DATA`` depends on the value of ``tdata1.TYPE`` as described for
+   ``mcontrol6`` and ``etrigger``.
 
 .. _csr-mcontrol6:
 
 Match Control Type 6 (``mcontrol6``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0x7A1
+CSR Address: 0x7A1 (``mcontrol6`` is accessible as ``tdata1`` when ``tdata1.TYPE`` is 6)
 
-Reset Value: 0x6800_1000
-
-Accessible in Debug Mode or M-Mode, depending on **tdata1.dmode**.
+Reset Value: Not applicable
 
 .. table::
   :widths: 10 20 70
@@ -1493,7 +1494,7 @@ Accessible in Debug Mode or M-Mode, depending on **tdata1.dmode**.
   +=======+=============+================================================================+
   | 31:28 | WARL (0x6)  | **TYPE**. 6 = Address match trigger.                           |
   +-------+-------------+----------------------------------------------------------------+
-  | 27    | WARL (0x1)  | **DMODE**. Only debug mode can write tdata registers           |
+  | 27    | WARL (0x1)  | **DMODE**. Only debug mode can write ``tdata`` registers.      |
   +-------+-------------+----------------------------------------------------------------+
   | 26:25 | WARL (0x0)  | Hardwired to 0.                                                |
   +-------+-------------+----------------------------------------------------------------+
@@ -1514,16 +1515,16 @@ Accessible in Debug Mode or M-Mode, depending on **tdata1.dmode**.
   +-------+-------------+----------------------------------------------------------------+
   | 11    | WARL (0x0)  | **CHAIN**. Hardwired to 0.                                     |
   +-------+-------------+----------------------------------------------------------------+
-  | 10:7  | WARL (0x0,  | **MATCH**. 0: Address matches `tdata2`, 2: Address is greater  |
+  | 10:7  | WARL (0x0*, | **MATCH**. 0: Address matches `tdata2`, 2: Address is greater  |
   |       | 0x2, 0x3)   | than or equal to `tdata2`, 3: Address is less than `tdata2`.   |
   +-------+-------------+----------------------------------------------------------------+
-  | 6     | WARL        | **M**. Match in M-Mode.                                        |
+  | 6     | WARL        | **M**. Match in machine mode.                                  |
   +-------+-------------+----------------------------------------------------------------+
   | 5     | WARL (0x0)  | Hardwired to 0.                                                |
   +-------+-------------+----------------------------------------------------------------+
   | 4     | WARL (0x0)  | **S**. Hardwired to 0.                                         |
   +-------+-------------+----------------------------------------------------------------+
-  | 3     | WARL        | **U**. Match in U mode.                                        |
+  | 3     | WARL        | **U**. Match in user mode.                                     |
   +-------+-------------+----------------------------------------------------------------+
   | 2     | WARL        | **EXECUTE**. Enable matching on instruction address.           |
   +-------+-------------+----------------------------------------------------------------+
@@ -1537,11 +1538,9 @@ Accessible in Debug Mode or M-Mode, depending on **tdata1.dmode**.
 Exception Trigger (``etrigger``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0x7A1
+CSR Address: 0x7A1 (``etrigger`` is accessible as ``tdata1`` when ``tdata1.TYPE`` is 5)
 
-Reset Value: 0x5800_0001
-
-Accessible in Debug Mode or M-Mode, depending on **tdata1.dmode**.
+Reset Value: Not applicable
 
 .. table::
   :widths: 10 20 70
@@ -1552,7 +1551,7 @@ Accessible in Debug Mode or M-Mode, depending on **tdata1.dmode**.
   +=======+==============+================================================================+
   | 31:28 | WARL (0x5)   | **TYPE**. 5 = Exception trigger.                               |
   +-------+--------------+----------------------------------------------------------------+
-  | 27    | WARL (0x1)   | **DMODE**. Only debug mode can write tdata registers           |
+  | 27    | WARL (0x1)   | **DMODE**. Only debug mode can write ``tdata`` registers.      |
   +-------+--------------+----------------------------------------------------------------+
   | 26    | WARL (0x0)   | **HIT**. Hardwired to 0.                                       |
   +-------+--------------+----------------------------------------------------------------+
@@ -1564,13 +1563,13 @@ Accessible in Debug Mode or M-Mode, depending on **tdata1.dmode**.
   +-------+--------------+----------------------------------------------------------------+
   | 10    | WARL         | **NMI**. Set to enable trigger on NMI.                         |
   +-------+--------------+----------------------------------------------------------------+
-  | 9     | WARL         | **M**. Match in M-Mode.                                        |
+  | 9     | WARL         | **M**. Match in machine mode.                                  |
   +-------+--------------+----------------------------------------------------------------+
   | 8     | WARL (0x0)   | Hardwired to 0.                                                |
   +-------+--------------+----------------------------------------------------------------+
   | 7     | WARL (0x0)   | **S**. Hardwired to 0.                                         |
   +-------+--------------+----------------------------------------------------------------+
-  | 6     | WARL         | **U**. Match in U mode.                                        |
+  | 6     | WARL         | **U**. Match in user mode.                                     |
   +-------+--------------+----------------------------------------------------------------+
   | 5:0   | WARL (0x1)   | **ACTION**. Enter debug mode on match.                         |
   +-------+--------------+----------------------------------------------------------------+
