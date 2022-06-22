@@ -22,7 +22,7 @@
 // Engineer:       Oystein Knauserud - oystein.knauserud@silabs.com           //
 //                                                                            //
 // Design Name:    Sequencer                                                  //
-// Project Name:   CV32E40X                                                   //
+// Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Sequencer for Zc push/pop and double move instructions     //
@@ -31,8 +31,8 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_sequencer
-import cv32e40x_pkg::*;
+module cv32e40s_sequencer
+import cv32e40s_pkg::*;
  (
     input  logic       clk,
     input  logic       rst_n,

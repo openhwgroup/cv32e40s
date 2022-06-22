@@ -26,9 +26,9 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_sequencer_sva
+module cv32e40s_sequencer_sva
   import uvm_pkg::*;
-  import cv32e40x_pkg::*;
+  import cv32e40s_pkg::*;
 (
   input  logic           clk,
   input  logic           rst_n,

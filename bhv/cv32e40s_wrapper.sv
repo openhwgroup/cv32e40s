@@ -387,9 +387,9 @@ module cv32e40s_wrapper
                .PMA_CFG(PMA_CFG))
       write_buffer_sva(.*);
 
-  bind cv32e40x_sequencer:
+  bind cv32e40s_sequencer:
     core_i.if_stage_i.gen_seq.sequencer_i
-      cv32e40x_sequencer_sva
+      cv32e40s_sequencer_sva
         sequencer_sva (.*);
 
 `ifndef FORMAL

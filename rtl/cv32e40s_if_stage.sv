@@ -497,7 +497,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   generate
     if (ZC_EXT) begin : gen_seq
-      cv32e40x_sequencer
+      cv32e40s_sequencer
       sequencer_i
       (
         .clk                ( clk                     ),
