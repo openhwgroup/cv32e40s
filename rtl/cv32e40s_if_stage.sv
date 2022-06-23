@@ -354,9 +354,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   // if_stage ready when killed, otherwise when not halted or if a dummy instruction is inserted.
   assign if_ready = ctrl_fsm_i.kill_if || (seq_ready && predec_ready && !dummy_insert && !ctrl_fsm_i.halt_if);
-  // Local instr_valid when we have valid output from prefetcher
-  // and IF stage is not halted or killed
-  assign instr_valid = prefetch_valid && !ctrl_fsm_i.kill_if && !ctrl_fsm_i.halt_if;
 
 
   // if stage valid when local instr_valid=1
