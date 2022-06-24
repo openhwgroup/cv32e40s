@@ -47,8 +47,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter mseccfg_t                   PMP_MSECCFG_RV                          = MSECCFG_DEFAULT,
   parameter lfsr_cfg_t                  LFSR0_CFG                               = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
   parameter lfsr_cfg_t                  LFSR1_CFG                               = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter lfsr_cfg_t                  LFSR2_CFG                               = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter bit                         ZC_EXT                                  = 0 // todo: remove once fully implemented
+  parameter lfsr_cfg_t                  LFSR2_CFG                               = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
 )
 (
   // Clock and reset
@@ -149,6 +148,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Number of register file read ports
   // Core will only use two, but X_EXT may mandate 2 or 3
   localparam int unsigned REGFILE_NUM_READ_PORTS = X_EXT ? X_NUM_RS : 2;
+
+  // Zc is always present
+  localparam bit ZC_EXT = 1;
 
   // Determine alignedness of mtvt
   // mtvt[31:N] holds mtvt table entry

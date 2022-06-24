@@ -38,7 +38,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter bit          X_EXT            = 0,
   parameter logic [31:0] X_MISA           =  32'h00000000,
   parameter logic [1:0]  X_ECS_XS         =  2'b00, // todo: implement related mstatus bitfields (but only if X_EXT = 1)
-  parameter bit          ZC_EXT           = 0, // todo: remove parameter once fully implemented
+  parameter bit          ZC_EXT           = 0,
   parameter bit          SMCLIC           = 0,
   parameter int          SMCLIC_ID_WIDTH  = 5,
   parameter int          NUM_MHPMCOUNTERS = 1,
@@ -468,7 +468,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     case (csr_raddr)
       // jvt: Jump vector table
       CSR_JVT:  begin
-        if (ZC_EXT) begin // todo: remove conditional once fully implemented
+        if (ZC_EXT) begin
           csr_rdata_int = jvt_rdata;
         end else begin
           csr_rdata_int    = '0;
