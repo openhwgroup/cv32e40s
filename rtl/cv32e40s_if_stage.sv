@@ -116,6 +116,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic       [31:0] branch_addr_n;
 
   logic              prefetch_valid;
+  logic              prefetch_ready;
   inst_resp_t        prefetch_instr;
   privlvl_t          prefetch_priv_lvl;
   logic              prefetch_is_clic_ptr;
@@ -129,7 +130,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic              illegal_c_insn;
 
   inst_resp_t        instr_decompressed;
-  logic              instr_compressed_int;
+  logic              instr_compressed;
 
   // Transaction signals to/from obi interface
   logic              prefetch_resp_valid;
@@ -150,13 +151,22 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   inst_resp_t        dummy_instr;
 
   // Local instr_valid
-  logic instr_valid;
+  logic              instr_valid;
 
   // eXtension interface signals
   logic [X_ID_WIDTH-1:0] xif_id;
 
   // Flag for last operation - used by Zc*
   logic              last_op;
+
+  // ready signal for predecoder, tied to id_ready_i
+  logic              predec_ready;
+
+  // Zc* sequencer signals
+  logic              seq_valid;
+  logic              seq_ready;
+  logic              seq_last;
+  inst_resp_t        seq_instr;
 
   // Fetch address selection
   always_comb
@@ -204,7 +214,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
     .branch_addr_i            ( {branch_addr_n[31:1], 1'b0} ),
 
-    .prefetch_ready_i         ( if_ready                    ),
+    .prefetch_ready_i         ( prefetch_ready              ),
     .prefetch_valid_o         ( prefetch_valid              ),
     .prefetch_instr_o         ( prefetch_instr              ),
     .prefetch_addr_o          ( pc_if_o                     ),
@@ -343,9 +353,24 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   assign instr_valid = (prefetch_valid || dummy_insert) && !ctrl_fsm_i.kill_if && !ctrl_fsm_i.halt_if;
 
   // if_stage ready when killed, otherwise when not halted or if a dummy instruction is inserted.
-  assign if_ready = ctrl_fsm_i.kill_if || (id_ready_i && !dummy_insert && !ctrl_fsm_i.halt_if);
+  assign if_ready = ctrl_fsm_i.kill_if || (seq_ready && predec_ready && !dummy_insert && !ctrl_fsm_i.halt_if);
 
-  // if stage valid when local instr_valid is 1
+
+  // if stage valid when local instr_valid=1
+  // Ideally this should be the following:
+  //
+  // assign if_valid_o = (seq_en    && seq_valid    ) ||
+  //                     (predec_en && predec_valid ) && instr_valid;
+  //
+  // seq_en would be an internal signal in the sequencer that is set when a legal push/pop/doublemove is decoded.
+  // seq_valid would then simply be the same as sequencer's valid_i, which is set to instr_valid.
+  //
+  // predec_valid would be tied to 1'b1 (similar to the ALU in the EX stage) as this is a combinatorial unit with
+  // with no handshake to improve timing.
+  // predec_en would also be tied to 1'b1 as the predecoder will produce output for any input
+  //   Legal or illegal compressed, + passthru of uncompressed instructions
+  // In short: Any prefetched instruction (or pointer) will make if_valid_o high
+
   assign if_valid_o = instr_valid;
 
   assign if_busy_o = prefetch_busy;
@@ -354,6 +379,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   assign lfsr_shift_o = (if_valid_o && id_ready_i) && dummy_insert;
 
   assign ptr_in_if_o = prefetch_is_clic_ptr || prefetch_is_tbljmp_ptr;
+
+  // Acknowledge prefetcher when IF stage is ready. This factors in seq_ready to avoid ack'ing the
+  // prefetcher in the middle of a Zc sequence.
+  assign prefetch_ready = if_ready;
 
   // Last operation of table jumps are set when the pointer is fed to ID stage
   // tbljmp is set when a cm.jt or cm.jalt is decoded in the compressed decoder.
@@ -396,7 +425,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       if (if_valid_o && id_ready_i) begin
         if_id_pipe_o.instr_valid      <= 1'b1;
         if_id_pipe_o.instr_meta       <= instr_meta_n;
-        if_id_pipe_o.illegal_c_insn   <= dummy_insert ? 1'b0 : illegal_c_insn;
+        // seq_valid implies no illegal instruction, sequencer successfully decoded an instruction.
+        // compressed decoder will still raise illegal_c_insn as it doesn't (currently) recognize Zc push/pop/dmove
+        if_id_pipe_o.illegal_c_insn   <= (seq_valid || dummy_insert) ? 1'b0 : illegal_c_insn;
+
 
         if_id_pipe_o.priv_lvl         <= prefetch_priv_lvl;
         if_id_pipe_o.trigger_match    <= dummy_insert ? 1'b0 : trigger_match_i;
@@ -405,15 +437,16 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
         // No PC update for tablejump pointer, PC of instruction itself is needed later.
         // No update to the meta compressed, as this is used in calculating the link address.
-        //   Any pointer could change instr_compressed_int and cause a wrong link address.
+        //   Any pointer could change instr_compressed and cause a wrong link address.
         // No update to tbljmp flag, we want flag to be high for both operations.
         if (!prefetch_is_tbljmp_ptr) begin
           if_id_pipe_o.pc                    <= pc_if_o;
-          if_id_pipe_o.instr_meta.compressed <= dummy_insert ? 1'b0 : instr_compressed_int;
+          // todo: push/pop*/doublemoves are compressed, how (if at all) should we signal that when we emit uncompressed sequences?
+          if_id_pipe_o.instr_meta.compressed <= dummy_insert ? 1'b0 : instr_compressed;
           if_id_pipe_o.instr_meta.tbljmp     <= tbljmp;
 
           // Only update compressed_instr for compressed instructions
-          if (instr_compressed_int) begin
+          if (instr_compressed) begin
             if_id_pipe_o.compressed_instr      <= prefetch_instr.bus_resp.rdata[15:0];
           end
         end
@@ -428,7 +461,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
           if_id_pipe_o.instr.mpu_status   <= instr_decompressed.mpu_status;
         end else begin
           // Regular instruction, update the whole instr field
-          if_id_pipe_o.instr          <= dummy_insert ? dummy_instr : instr_decompressed;;
+          if_id_pipe_o.instr          <= dummy_insert ? dummy_instr :
+                                        seq_valid     ? seq_instr   : instr_decompressed;
         end
       end else if (id_ready_i) begin
         if_id_pipe_o.instr_valid      <= 1'b0;
@@ -449,10 +483,43 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .mstateen0_i        ( mstateen0_i             ),
     .priv_lvl_i         ( prefetch_priv_lvl       ),
     .instr_o            ( instr_decompressed      ),
-    .is_compressed_o    ( instr_compressed_int    ),
+    .is_compressed_o    ( instr_compressed        ),
     .illegal_instr_o    ( illegal_c_insn          ),
     .tbljmp_o           ( tbljmp_raw              )
   );
+
+  // Setting predec_ready to id_ready_i here instead of passing it through the predecoder.
+  // Predecoder is purely combinatorial and is always ready for new inputs
+  assign predec_ready = id_ready_i;
+
+  generate
+    if (ZC_EXT) begin : gen_seq
+      cv32e40s_sequencer
+      sequencer_i
+      (
+        .clk                ( clk                     ),
+        .rst_n              ( rst_n                   ),
+
+        .instr_i            ( prefetch_instr          ),
+        .instr_is_ptr_i     ( ptr_in_if_o             ),
+
+        .valid_i            ( instr_valid             ),
+        .ready_i            ( id_ready_i              ),
+
+
+        .instr_o            ( seq_instr               ),
+        .valid_o            ( seq_valid               ),
+        .ready_o            ( seq_ready               ),
+        .seq_last_o         ( seq_last                ) // todo: currently not used, will be factored into 'last_op' later
+      );
+    end else begin : gen_no_seq
+      assign seq_valid = 1'b0;
+      assign seq_last = 1'b0;
+      assign seq_instr = '0;
+      assign seq_ready = 1'b1;
+    end
+  endgenerate
+
 
   // tbljmp below is used in calculating 'last_op'. If we have a faulted fetch, the instruction word may be anything
   // (not cleared on faulted fetches). A faulted fetch should not be decoded to anything and thus tbljmp is cleared.

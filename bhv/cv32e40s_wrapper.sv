@@ -36,6 +36,7 @@
   `include "cv32e40s_rvfi_sva.sv"
   `include "cv32e40s_pc_check_sva.sv"
   `include "cv32e40s_param_sva.sv"
+  `include "cv32e40s_sequencer_sva.sv"
 `endif
 
 `include "cv32e40s_wrapper.vh"
@@ -386,6 +387,11 @@ module cv32e40s_wrapper
                .PMA_CFG(PMA_CFG))
       write_buffer_sva(.*);
 
+  bind cv32e40s_sequencer:
+    core_i.if_stage_i.gen_seq.sequencer_i
+      cv32e40s_sequencer_sva
+        sequencer_sva (.*);
+
 `ifndef FORMAL
   bind cv32e40s_rvfi:
     rvfi_i
@@ -430,7 +436,7 @@ module cv32e40s_wrapper
          .prefetch_valid_if_i      ( core_i.if_stage_i.prefetch_unit_i.prefetch_valid_o                   ),
          .prefetch_ready_if_i      ( core_i.if_stage_i.prefetch_unit_i.prefetch_ready_i                   ),
          .prefetch_addr_if_i       ( core_i.if_stage_i.prefetch_unit_i.prefetch_addr_o                    ),
-         .prefetch_compressed_if_i ( core_i.if_stage_i.instr_compressed_int                               ),
+         .prefetch_compressed_if_i ( core_i.if_stage_i.instr_compressed                                   ),
          .prefetch_instr_if_i      ( core_i.if_stage_i.prefetch_unit_i.prefetch_instr_o                   ),
 
          // ID Probes

@@ -2137,6 +2137,9 @@ Detailed:
     | 0    | WARL        | **MML**. Machine Mode Lockdown. This is a sticky bit and once set can only be unset due to ``rst_ni`` assertion.                  |
     +------+-------------+-----------------------------------------------------------------------------------------------------------------------------------+
 
+  .. note::
+     ``mseccfg`` is hardwired to 0x0 if ``PMP_NUM_REGIONS`` == 0.
+
   Machine Security Configuration (``mseccfgh``)
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2230,7 +2233,7 @@ Detailed:
     +-------+------------------+---------------------------+
 
   .. note::
-     pmpxcfg is WARL (0x0) if x >= ``PMP_NUM_REGIONS``.
+     ``pmpxcfg`` is WARL (0x0) if x >= ``PMP_NUM_REGIONS``.
 
   .. note::
      If **mseccfg.MML** = 0, then the **R**, **W** and **X**  together form a collective WARL field for which the combinations with **R** = 0 and **W** = 1 are reserved for future use
@@ -2254,7 +2257,8 @@ Detailed:
     | 31:0  | WARL / WARL (0x0)     | ADDRESS[33:2]             |
     +-------+-----------------------+---------------------------+
 
-  pmpaddrx is WARL if x < ``PMP_NUM_REGIONS`` and WARL (0x0) otherwise.
+  .. note::
+     ``pmpaddrx`` is WARL if x < ``PMP_NUM_REGIONS`` and WARL (0x0) otherwise.
 
 .. only:: ZICNTR
 
