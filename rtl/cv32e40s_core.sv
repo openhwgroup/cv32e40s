@@ -47,8 +47,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter mseccfg_t                   PMP_MSECCFG_RV                          = MSECCFG_DEFAULT,
   parameter lfsr_cfg_t                  LFSR0_CFG                               = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
   parameter lfsr_cfg_t                  LFSR1_CFG                               = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter lfsr_cfg_t                  LFSR2_CFG                               = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter bit                         ZC_EXT                                  = 0 // todo: remove once fully implemented
+  parameter lfsr_cfg_t                  LFSR2_CFG                               = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
 )
 (
   // Clock and reset
@@ -149,6 +148,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Number of register file read ports
   // Core will only use two, but X_EXT may mandate 2 or 3
   localparam int unsigned REGFILE_NUM_READ_PORTS = X_EXT ? X_NUM_RS : 2;
+
+  // Zc is always present
+  localparam bit ZC_EXT = 1;
 
   // Determine alignedness of mtvt
   // mtvt[31:N] holds mtvt table entry
@@ -323,6 +325,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // CLIC specific irq signals
   logic                       irq_clic_shv;
   logic [7:0]                 irq_clic_level;
+  logic [1:0]                 irq_clic_priv;
   logic                       mnxti_irq_pending;
   logic [SMCLIC_ID_WIDTH-1:0] mnxti_irq_id;
   logic [7:0]                 mnxti_irq_level;
@@ -330,6 +333,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Used (only) by verification environment
   logic        irq_ack;
   logic [9:0]  irq_id;
+  logic [7:0]  irq_level;       // Only applicable if SMCLIC = 1
+  logic [1:0]  irq_priv;        // Only applicable if SMCLIC = 1
+  logic        irq_shv;         // Only applicable if SMCLIC = 1
   logic        dbg_ack;
 
   // Xsecure control
@@ -396,9 +402,12 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign debug_running_o   = ctrl_fsm.debug_running;
 
   // Used (only) by verification environment
-  assign irq_ack = ctrl_fsm.irq_ack;
-  assign irq_id  = ctrl_fsm.irq_id;
-  assign dbg_ack = ctrl_fsm.dbg_ack;
+  assign irq_ack   = ctrl_fsm.irq_ack;
+  assign irq_id    = ctrl_fsm.irq_id;
+  assign irq_level = ctrl_fsm.irq_level;
+  assign irq_priv  = ctrl_fsm.irq_priv;
+  assign irq_shv   = ctrl_fsm.irq_shv;
+  assign dbg_ack   = ctrl_fsm.dbg_ack;
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -974,6 +983,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .irq_id_ctrl_i                  ( irq_id_ctrl            ),
     .irq_clic_shv_i                 ( irq_clic_shv           ),
     .irq_clic_level_i               ( irq_clic_level         ),
+    .irq_clic_priv_i                ( irq_clic_priv          ),
 
     // Priviledge level
     .priv_lvl_i                     ( priv_lvl               ),
@@ -1050,6 +1060,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
         .irq_wu_ctrl_o        ( irq_wu_ctrl        ),
         .irq_clic_shv_o       ( irq_clic_shv       ),
         .irq_clic_level_o     ( irq_clic_level     ),
+        .irq_clic_priv_o      ( irq_clic_priv      ),
 
         // From cs_registers
         .mstatus_i            ( mstatus            ),
@@ -1093,6 +1104,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
       // CLIC shv not used in basic mode
       assign irq_clic_shv = 1'b0;
       assign irq_clic_level = 8'h00;
+      assign irq_clic_priv = 2'b0;
 
       // CLIC mnxti not used in basic mode
       assign mnxti_irq_pending = 1'b0;
