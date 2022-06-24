@@ -84,6 +84,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  privlvl_t    priv_lvl_i,
   input  logic        irq_clic_shv_i,
   input  logic [7:0]  irq_clic_level_i,
+  input  logic [1:0]  irq_clic_priv_i,
 
   input logic  [1:0]  mtvec_mode_i,
 
@@ -182,6 +183,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .priv_lvl_i                  ( priv_lvl_i               ),
     .irq_clic_shv_i              ( irq_clic_shv_i           ),
     .irq_clic_level_i            ( irq_clic_level_i         ),
+    .irq_clic_priv_i             ( irq_clic_priv_i          ),
 
     .mtvec_mode_i                ( mtvec_mode_i             ),
 
