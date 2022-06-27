@@ -969,7 +969,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     end
     mstatus_we    = 1'b0;
 
-    mstatush_n    = csr_wdata_int;
+    mstatush_n    = mstatush_rdata; // Read only
     mstatush_we   = 1'b0;
 
     misa_n        = misa_rdata; // Read only
@@ -993,13 +993,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       mintstatus_n             = mintstatus_rdata; // Read only
       mintstatus_we            = 1'b0;
 
-      mintthresh_n             = {24'h000000, csr_wdata_int[7:0]};
+      mintthresh_n             = csr_wdata_int & CSR_MINTTHRESH_MASK;
       mintthresh_we            = 1'b0;
 
-      mscratchcsw_n            = csr_wdata_int;
+      mscratchcsw_n            = csr_wdata_int; // todo: isssue 589
       mscratchcsw_we           = 1'b0;
 
-      mscratchcswl_n           = csr_wdata_int;
+      mscratchcswl_n           = csr_wdata_int; // todo: isssue 589
       mscratchcswl_we          = 1'b0;
 
       mie_n                    = '0;
