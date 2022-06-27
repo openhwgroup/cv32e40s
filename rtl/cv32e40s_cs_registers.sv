@@ -308,7 +308,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   cpuctrl_t                     cpuctrl_n, cpuctrl_q, cpuctrl_rdata;
   logic                         cpuctrl_we;
 
-  logic [31:0]                  secureseed0_n, secureseed1_n, secureseed2_n;
+  logic [31:0]                  secureseed0_n, secureseed1_n, secureseed2_n;    // No CSR module instance
   logic                         secureseed0_we, secureseed1_we, secureseed2_we;
   logic [31:0]                  secureseed0_rdata, secureseed1_rdata, secureseed2_rdata;
 
@@ -1076,13 +1076,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     cpuctrl_n       = csr_wdata_int & CSR_CPUCTRL_MASK;
     cpuctrl_we      = 1'b0;
 
-    secureseed0_n   = csr_wdata_int;
+    secureseed0_n   = secureseed0_rdata;          // Read-only (LFSR write uses csr_wdata_int directly)
     secureseed0_we  = 1'b0;
 
-    secureseed1_n   = csr_wdata_int;
+    secureseed1_n   = secureseed1_rdata;          // Read-only (LFSR write uses csr_wdata_int directly)
     secureseed1_we  = 1'b0;
 
-    secureseed2_n   = csr_wdata_int;
+    secureseed2_n   = secureseed2_rdata;          // Read-only (LFSR write uses csr_wdata_int directly)
     secureseed2_we  = 1'b0;
 
     mtval_n         = mtval_rdata;                // Read-only
@@ -2011,7 +2011,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       (
         .clk            ( clk                   ),
         .rst_n          ( rst_n                 ),
-        .seed_i         ( secureseed0_n         ),
+        .seed_i         ( csr_wdata_int         ),      // Direct use of csr_wdata_int (secureseed0_n = 0 used by RVFI; resolution on read)
         .seed_we_i      ( secureseed0_we        ),
         .enable_i       ( cpuctrl_q.rnddummy    ),
         .shift_i        ( lfsr_shift_if_i       ),
@@ -2028,7 +2028,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       (
         .clk            ( clk                   ),
         .rst_n          ( rst_n                 ),
-        .seed_i         ( secureseed1_n         ),
+        .seed_i         ( csr_wdata_int         ),      // Direct use of csr_wdata_int (secureseed1_n = 0 used by RVFI; resolution on read)
         .seed_we_i      ( secureseed1_we        ),
         .enable_i       ( cpuctrl_q.rnddummy    ),
         .shift_i        ( lfsr_shift_id_i       ),
@@ -2044,7 +2044,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       (
         .clk            ( clk                   ),
         .rst_n          ( rst_n                 ),
-        .seed_i         ( secureseed2_n         ),
+        .seed_i         ( csr_wdata_int         ),      // Direct use of csr_wdata_int (secureseed2_n = 0 used by RVFI; resolution on read)
         .seed_we_i      ( secureseed2_we        ),
         .enable_i       ( cpuctrl_q.rnddummy    ),
         .shift_i        ( lfsr_shift_id_i       ),
