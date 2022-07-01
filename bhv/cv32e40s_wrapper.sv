@@ -457,7 +457,7 @@ module cv32e40s_wrapper
          .rs2_addr_id_i            ( core_i.register_file_wrapper_i.raddr_i[1]                            ),
          .operand_a_fw_id_i        ( core_i.id_stage_i.operand_a_fw                                       ),
          .operand_b_fw_id_i        ( core_i.id_stage_i.operand_b_fw                                       ),
-         .first_op_id_i            ( core_i.id_stage_i.if_id_pipe_i.first_op                              ),
+         .first_op_id_i            ( core_i.id_stage_i.first_op                                           ),
 
          // EX Probes
          .ex_ready_i               ( core_i.ex_stage_i.ex_ready_o                                         ),
