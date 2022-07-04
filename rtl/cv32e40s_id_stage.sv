@@ -191,6 +191,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   // Indicate last part of a multi operation instruction
   logic                 last_sec_op;
+  logic                 first_sec_op;
 
   logic                 illegal_insn;
 
@@ -199,6 +200,9 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   // Last operation of instruction (including secure operations)
   logic                 last_op;
+
+  // First operation fo instruction (including secure operations)
+  logic                 first_op;
 
   // eXtension interface signals
   logic                 xif_en;
@@ -561,13 +565,16 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.instr_meta             <= '0;
       id_ex_pipe_o.trigger_match          <= 1'b0;
 
+      id_ex_pipe_o.first_op               <= 1'b0;
       id_ex_pipe_o.last_op                <= 1'b0;
     end else begin
       // normal pipeline unstall case
       if (id_valid_o && ex_ready_i) begin
         id_ex_pipe_o.priv_lvl     <= if_id_pipe_i.priv_lvl;
         id_ex_pipe_o.instr_valid  <= 1'b1;
+
         id_ex_pipe_o.last_op      <= last_op;
+        id_ex_pipe_o.first_op     <= first_op;
 
         // Operands
         if (alu_op_a_mux_sel != OP_A_NONE) begin
@@ -681,6 +688,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       assign last_sec_op = jmp_bch_insn ? (multi_op_cnt == JMP_BCH_CYCLES - 1)
                                     : 1'b1;
 
+      assign first_sec_op = jmp_bch_insn ? (multi_op_cnt == '0) : 1'b1;
+
       // Count number of operations performed by an instruction.
       always_ff @(posedge clk, negedge rst_n) begin
         if (rst_n == 1'b0) begin
@@ -705,12 +714,15 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
     end else begin : nonsecure_ctrl_flow // !SECURE
       assign last_sec_op = 1'b1;
+      assign first_sec_op = 1'b1;
     end
   endgenerate
 
   // Only signal 'last_op' when the incoming instruction is a last_op AND the hardening logic for jumps and
   // branches also have a 'last_sec_op'
   assign last_op = if_id_pipe_i.last_op && last_sec_op;
+
+  assign first_op = if_id_pipe_i.first_op && first_sec_op;
 
   assign alu_en_o     = alu_en;
   assign sys_en_o     = sys_en;

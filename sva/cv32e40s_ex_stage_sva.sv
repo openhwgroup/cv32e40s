@@ -1,13 +1,13 @@
 // Copyright 2021 Silicon Labs, Inc.
-//   
+//
 // This file, and derivatives thereof are licensed under the
 // Solderpad License, Version 2.0 (the "License");
 // Use of this file means you agree to the terms and conditions
 // of the license and are in full compliance with the License.
 // You may obtain a copy of the License at
-//   
+//
 //     https://solderpad.org/licenses/SHL-2.0/
-//   
+//
 // Unless required by applicable law or agreed to in writing, software
 // and hardware implementations thereof
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,7 @@
 module cv32e40s_ex_stage_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
-#(  
+#(
   parameter bit X_EXT     = 1'b0
 )
 (
@@ -46,7 +46,9 @@ module cv32e40s_ex_stage_sva
   input logic           alu_cmp_result,
   input logic [31:0]    branch_target_o,
   input logic           branch_decision_o,
-  input logic           instr_valid
+  input logic           instr_valid,
+
+  input logic           branch_taken_ex_ctrl_i
 );
 
   // Halt implies not ready and not valid
@@ -132,11 +134,24 @@ endgenerate
                    |-> id_ex_pipe_i.instr_meta.dummy      ? branch_target_o == id_ex_pipe_i.pc       :
                        id_ex_pipe_i.instr_meta.compressed ? branch_target_o == (id_ex_pipe_i.pc + 2) :
                                                             branch_target_o == (id_ex_pipe_i.pc + 4));
-    
+
   // Make sure cpuctrl is stable when the EX stage has a valid instruction (i.e. cpuctrl hazard is handled correctly)
   // cpuctrl updates are treated similar to a fence instruction, so when a cpuctrl write is in WB, IF, ID and EX should be killed
   a_cpuctrl_ex_hazard:
     assert property (@(posedge clk) disable iff (!rst_n)
                      (instr_valid |=> $stable(xsecure_ctrl_i.cpuctrl)));
 
-endmodule // cv32e40s_ex_stage_sva
+
+  // Check that branch target remains constant while a branch instruction is in EX
+  property p_bch_target_stable;
+    logic [31:0] bch_target;
+    @(posedge clk) disable iff (!rst_n)
+    (branch_taken_ex_ctrl_i && !ctrl_fsm_i.kill_ex, bch_target=branch_target_o)
+    |->
+    (bch_target == branch_target_o) until_with ((ex_valid_o && wb_ready_i) || ctrl_fsm_i.kill_ex);
+  endproperty
+
+  a_bch_target_stable: assert property (p_bch_target_stable)
+    else `uvm_error("ex_stage", "Branch target not stable")
+
+endmodule

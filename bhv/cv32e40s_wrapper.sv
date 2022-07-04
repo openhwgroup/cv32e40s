@@ -197,13 +197,15 @@ module cv32e40s_wrapper
   bind cv32e40s_id_stage:
     core_i.id_stage_i cv32e40s_id_stage_sva id_stage_sva
     (
-      .ex_wb_pipe      (core_i.ex_wb_pipe),
+      .ex_wb_pipe             (core_i.ex_wb_pipe                                  ),
+      .jmp_taken_id_ctrl_i    (core_i.controller_i.controller_fsm_i.jump_taken_id ),
       .*
     );
 
   bind cv32e40s_ex_stage:
     core_i.ex_stage_i cv32e40s_ex_stage_sva ex_stage_sva
     (
+      .branch_taken_ex_ctrl_i (core_i.controller_i.controller_fsm_i.branch_taken_ex ),
       .*
     );
 
@@ -386,11 +388,12 @@ module cv32e40s_wrapper
                .PMA_CFG(PMA_CFG))
       write_buffer_sva(.*);
 
-  bind cv32e40s_sequencer:
+/* todo: include once localparam ZC_EXT is set back to 1
+  bind cv32e40x_sequencer:
     core_i.if_stage_i.gen_seq.sequencer_i
       cv32e40s_sequencer_sva
         sequencer_sva (.*);
-
+*/
 `ifndef FORMAL
   bind cv32e40s_rvfi:
     rvfi_i
@@ -454,6 +457,7 @@ module cv32e40s_wrapper
          .rs2_addr_id_i            ( core_i.register_file_wrapper_i.raddr_i[1]                            ),
          .operand_a_fw_id_i        ( core_i.id_stage_i.operand_a_fw                                       ),
          .operand_b_fw_id_i        ( core_i.id_stage_i.operand_b_fw                                       ),
+         .first_op_id_i            ( core_i.id_stage_i.first_op                                           ),
 
          // EX Probes
          .ex_ready_i               ( core_i.ex_stage_i.ex_ready_o                                         ),
