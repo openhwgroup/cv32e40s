@@ -143,10 +143,13 @@ endgenerate
 
 
   // Check that branch target remains constant while a branch instruction is in EX
+  // Restricted check to only be valid when local instr_valid is true, as the branch target
+  // will change when data independent timing is being enabled in WB. Eventually the branch will
+  // then be killed. When data independing timing is enabled, the target may change from operand_c to pc_if.
   property p_bch_target_stable;
     logic [31:0] bch_target;
     @(posedge clk) disable iff (!rst_n)
-    (branch_taken_ex_ctrl_i && !ctrl_fsm_i.kill_ex, bch_target=branch_target_o)
+    (instr_valid && branch_taken_ex_ctrl_i && !ctrl_fsm_i.kill_ex, bch_target=branch_target_o)
     |->
     (bch_target == branch_target_o) until_with ((ex_valid_o && wb_ready_i) || ctrl_fsm_i.kill_ex);
   endproperty

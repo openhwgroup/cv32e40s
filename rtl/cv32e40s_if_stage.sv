@@ -165,6 +165,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Zc* sequencer signals
   logic              seq_valid;
   logic              seq_ready;
+  logic              seq_pop;
   logic              seq_first;
   logic              seq_last;
   inst_resp_t        seq_instr;
@@ -388,6 +389,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // todo: Factor CLIC pointers?
   assign last_op_o = trigger_match_i ? 1'b1 :
                      tbljmp          ? 1'b0 :  // tbljmps are the first half
+                     dummy_insert    ? 1'b1 :  // Dummies are always single operation
                      seq_valid       ? seq_last : 1'b1; // Any other regular instructions are single operation.
 
   // Flag first operation of a sequence.
@@ -398,6 +400,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Trigger matches will have all write enables deasserted in ID, and once the first operation reaches WB the debug entry will be made.
   // Marking as first (and last above) since we know it will not be a true sequence. Sequencer will keep sequencing, but will get killed
   // upon debug entry and no side effect will occur.
+  // Dummy instructions are only allowed when first_op_o = 1. Using 'dummy_insert ? ' below would cause combinatorial loops through the controller FSM.
   // todo: factor in CLIC pointers?
   assign first_op_o = prefetch_is_tbljmp_ptr ? 1'b0 :
                       trigger_match_i        ? 1'b1 : seq_first;
@@ -509,6 +512,11 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Predecoder is purely combinatorial and is always ready for new inputs
   assign predec_ready = id_ready_i;
 
+  // Dummies are allowed when first_op_o == 1
+  // If the first operation of a sequence is ready, we allow dummies
+  // but must not advance the sequencer.
+  assign seq_pop = id_ready_i && !dummy_insert;
+
   generate
     if (ZC_EXT) begin : gen_seq
       cv32e40s_sequencer
@@ -521,7 +529,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
         .instr_is_ptr_i     ( ptr_in_if_o             ),
 
         .valid_i            ( prefetch_valid          ),
-        .ready_i            ( id_ready_i              ),
+        .ready_i            ( seq_pop                 ),
         .halt_i             ( ctrl_fsm_i.halt_if      ),
         .kill_i             ( ctrl_fsm_i.kill_if      ),
 

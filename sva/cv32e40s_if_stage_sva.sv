@@ -42,7 +42,8 @@ module cv32e40s_if_stage_sva
   input  logic          seq_ready,
   input  logic          illegal_c_insn,
   input  logic          instr_compressed,
-  input  logic          prefetch_is_tbljmp_ptr
+  input  logic          prefetch_is_tbljmp_ptr,
+  input  logic          first_op_o
 );
 
   // Check that bus interface transactions are halfword aligned (will be forced word aligned at core boundary)
@@ -108,6 +109,12 @@ module cv32e40s_if_stage_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      dummy_insert |-> !$past(dummy_insert))
       else `uvm_error("if_stage", "Two dummy instructions in a row")
+
+  // Assert that we do not trigger dummy instructions when the sequencer is in the middle of a sequence
+  a_no_dummy_mid_sequence :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      !first_op_o |-> !dummy_insert)
+      else `uvm_error("if_stage", "Dummy instruction inserted mid-sequence")
 
 
   // No table jumps may occur in user mode while mstateen0[2] is 0

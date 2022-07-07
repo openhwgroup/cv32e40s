@@ -151,7 +151,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Zc is always present
   // todo: turn on when Zc is ready for core-v-verif
-  localparam bit ZC_EXT = 0;
+  localparam bit ZC_EXT = 1;
 
   // Determine alignedness of mtvt
   // mtvt[31:N] holds mtvt table entry
@@ -978,6 +978,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .last_op_if_i                   ( last_op_if             ),
     // from IF/ID pipeline
     .if_id_pipe_i                   ( if_id_pipe             ),
+    .last_sec_op_id_i               ( last_sec_op_id         ),
 
     .alu_en_id_i                    ( alu_en_id              ),
     .alu_jmp_id_i                   ( alu_jmp_id             ),

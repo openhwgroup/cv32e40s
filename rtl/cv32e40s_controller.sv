@@ -61,6 +61,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  csr_opcode_e csr_op_id_i,
   input  logic        sys_wfi_id_i,
   input  logic        first_op_id_i,
+  input  logic        last_sec_op_id_i,
 
   input  id_ex_pipe_t id_ex_pipe_i,
   input  logic        first_op_ex_i,
