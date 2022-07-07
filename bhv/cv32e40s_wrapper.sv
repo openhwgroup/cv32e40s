@@ -253,6 +253,7 @@ module cv32e40s_wrapper
 
                               .last_sec_op_id_i    (core_i.controller_i.last_sec_op_id_i),
                               .lsu_trans_valid     (core_i.load_store_unit_i.trans_valid),
+                              .last_op_id_i        (core_i.if_id_pipe.last_op),
                               .*);
   bind cv32e40s_cs_registers:        core_i.cs_registers_i              cv32e40s_cs_registers_sva  #(.SMCLIC(SMCLIC)) cs_registers_sva (.*);
 
@@ -322,6 +323,7 @@ module cv32e40s_wrapper
                 .mret_self_stall_bypass           (core_i.controller_i.bypass_i.mret_self_stall),
                 .jumpr_self_stall_bypass          (core_i.controller_i.bypass_i.jumpr_self_stall),
                 .last_sec_op_id_i                 (core_i.id_stage_i.last_sec_op),
+                .last_op_id                       (core_i.id_stage_i.last_op),
                 .*);
 
   bind cv32e40s_sleep_unit:
@@ -388,8 +390,8 @@ module cv32e40s_wrapper
                .PMA_CFG(PMA_CFG))
       write_buffer_sva(.*);
 
-/* todo: include once localparam ZC_EXT is set back to 1
-  bind cv32e40x_sequencer:
+/* todo: reintroduce once ZC_EXT is set to 1 by default.
+  bind cv32e40s_sequencer:
     core_i.if_stage_i.gen_seq.sequencer_i
       cv32e40s_sequencer_sva
         sequencer_sva (.*);
@@ -434,7 +436,7 @@ module cv32e40s_wrapper
          .if_valid_i               ( core_i.if_stage_i.if_valid_o                                         ),
          .pc_if_i                  ( core_i.if_stage_i.pc_if_o                                            ),
          .instr_pmp_err_if_i       ( 1'b0                          /* TODO: connect */                    ),
-         .last_op_if_i             ( core_i.if_stage_i.last_op                                            ),
+         .last_op_if_i             ( core_i.if_stage_i.last_op_o                                          ),
          .prefetch_valid_if_i      ( core_i.if_stage_i.prefetch_unit_i.prefetch_valid_o                   ),
          .prefetch_ready_if_i      ( core_i.if_stage_i.prefetch_unit_i.prefetch_ready_i                   ),
          .prefetch_addr_if_i       ( core_i.if_stage_i.prefetch_unit_i.prefetch_addr_o                    ),

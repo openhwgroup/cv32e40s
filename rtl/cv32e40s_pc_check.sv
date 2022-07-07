@@ -114,6 +114,7 @@ assign nmi_addr = {mtvec_addr_i, NMI_MTVEC_INDEX, 2'b00};
 // Set expected address for sequential updates based on address in ID
 // and type of instruction (compressed +2 / uncompressed + 4)
 assign incr_addr = if_id_pipe_i.pc + (if_id_pipe_i.instr_meta.dummy      ? 32'd0 :
+                                     (!if_id_pipe_i.last_op)             ? 32'd0 : // sequenced instructions keep the same PC until last_op
                                       if_id_pipe_i.instr_meta.compressed ? 32'd2 : 32'd4);
 
 // Control flow address chosen based on flopped ctrl_fsm_i.pc_mux

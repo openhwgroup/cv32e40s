@@ -47,7 +47,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  ctrl_byp_t   ctrl_byp_i,
 
   // From IF stage
-  input logic [31:0]   pc_if_i,
+  input  logic [31:0] pc_if_i,
+  input  logic        first_op_if_i,              // IF stage is handling the first operation of a sequence.
+  input  logic        last_op_if_i,               // IF stage is handling the last operation of a sequence.
 
   // From ID stage
   input  if_id_pipe_t if_id_pipe_i,
@@ -55,11 +57,13 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  logic        sys_mret_id_i,              // mret in ID
   input  logic        alu_en_id_i,                // alu_en qualifier for jumps
   input  logic        sys_en_id_i,                // sys_en qualifier for mret
+  input  logic        first_op_id_i,              // ID stage is handling the first operation of a sequence
 
   // From EX stage
   input  id_ex_pipe_t id_ex_pipe_i,
   input  logic        branch_decision_ex_i,       // branch decision signal from EX ALU
   input  logic        last_op_ex_i,               // EX stage contains the last operation of an instruction
+  input  logic        first_op_ex_i,              // EX stage is handling the first operation of a sequence
 
   // From WB stage
   input  ex_wb_pipe_t ex_wb_pipe_i,
@@ -214,12 +218,16 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Do not count if halted or killed
   logic       wb_counter_event_gated;
 
-  // Detect uninterruptible table jumps
-  logic       tbljmp_in_ex_wb;
-
   // Flop for acking flush requests due to CSR writes
   logic       csr_flush_ack_n;
   logic       csr_flush_ack_q;
+
+  // Flag for checking if multi op instructions are in an interruptible state
+  logic       sequence_interruptible;
+
+  // Flag for checking if ID stage can be halted
+  // Used to not halt sequences in the middle, potentially causing deadlocks
+  logic       id_stage_haltable;
 
   assign fencei_ready = !lsu_busy_i;
 
@@ -243,10 +251,12 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
 
   ////////////////////////////////////////////////////////////////////
-  // Blocking dummy instructions during single stepping and in debug mode
+  // - Blocking dummy instructions during single stepping and in debug mode.
+  // - Blocking dummies if there is a non-first op in IF (sequencer is in the middle of a sequence)
   // Todo: Use allow_dummy_instr to guarantee progress (ensure there are never two dummies in a row in any pipeline stage)
-  assign  ctrl_fsm_o.allow_dummy_instr = !dcsr_i.step && // Valid in IF because it can only be written in debug mode
-                                         !debug_mode_q;  // Valid in IF because pipeline is killed when entering and exiting debug
+  assign  ctrl_fsm_o.allow_dummy_instr = (!dcsr_i.step  &&  // Valid in IF because it can only be written in debug mode
+                                         !debug_mode_q) &&  // Valid in IF because pipeline is killed when entering and exiting debug
+                                         first_op_if_i;
 
   // ID stage
 
@@ -297,6 +307,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                                 (lsu_mpu_status_wb_i != MPU_OK))          && ex_wb_pipe_i.instr_valid;
 
   // Exception in WB if the following evaluates to 1
+  // Not checking for ex_wb_pipe_i.last_op to enable exceptions to be taken as soon as possible for
+  // split load/stores or Zc sequences.
   assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK)                              ||
                              ex_wb_pipe_i.instr.bus_resp.err                                       ||
                             ex_wb_pipe_i.illegal_insn                                              ||
@@ -420,7 +432,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // The cycle after fencei enters WB, the fencei handshake will be initiated. This must complete and the fencei instruction must retire before allowing debug.
   // Once the first part of a table jump has finished in WB, we are not allowed to take debug before the last part finishes. This can be detected when the last
   // part of a table jump is in either EX or WB.
-  assign debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && !pointer_in_pipeline && !tbljmp_in_ex_wb;
+  assign debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && !pointer_in_pipeline && sequence_interruptible;
 
   // Debug pending for any other reason than single step
   assign pending_debug = (trigger_match_in_wb) ||
@@ -443,9 +455,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // interrupt pending comes directly from the interrupt controller
   assign pending_interrupt = irq_req_ctrl_i;
 
-  // Table jumps may not be interrupted if the last part has reached EX or WB.
-  assign tbljmp_in_ex_wb = ((id_ex_pipe_i.instr_meta.tbljmp && id_ex_pipe_i.last_op) || (ex_wb_pipe_i.instr_meta.tbljmp && ex_wb_pipe_i.last_op));
-
   // Allow interrupts to be taken only if there is no data request in WB,
   // and no trans_valid has been clocked from EX to environment.
   // Not allowing interrupts when the core cannot take interrupts due to debug conditions.
@@ -457,7 +466,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Once the first part of a table jump has finished in WB, we are not allowed to take interrupts before the last part finishes. This can be detected when the last
   // part of a table jump is in either EX or WB.
 
-  assign interrupt_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !xif_in_wb && !tbljmp_in_ex_wb;
+  assign interrupt_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !xif_in_wb && sequence_interruptible;
 
   // Allowing NMI's follow the same rule as regular interrupts.
   assign nmi_allowed = interrupt_allowed;
@@ -476,6 +485,37 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // Performance counter events
   assign ctrl_fsm_o.mhpmevent.minstret      = wb_counter_event_gated;
+
+  // Detect if we are in the middle of a multi operation sequence
+  // Basically check if the oldest instruction in the pipeline is a 'first_op'
+  // - if not, we have an unfinished sequence and cannot interrupt it.
+  // Used to determine if we are allowed to take debug or interrupts
+  always_comb begin
+    if (ex_wb_pipe_i.instr_valid) begin
+      sequence_interruptible = ex_wb_pipe_i.first_op;
+    end else if (id_ex_pipe_i.instr_valid) begin
+      sequence_interruptible = first_op_ex_i;
+    end else if (if_id_pipe_i.instr_valid) begin
+      sequence_interruptible = first_op_id_i;
+    end else begin
+      sequence_interruptible = first_op_if_i;
+    end
+  end
+
+  // Check if we are allowed to halt the ID stage.
+  // If ID stage contains a non-first operation, we cannot halt ID as that
+  // could cause a deadlock because a sequence cannot finish through ID.
+  // If ID stage does not contain a valid instruction, the same check is performed
+  // for the IF stage (although this is likely not needed).
+  always_comb begin
+    if (if_id_pipe_i.instr_valid) begin
+      id_stage_haltable = first_op_id_i;
+    end else begin
+      // IF stage first_op defaults to 1'b1 if the stage does not hold a valid instruction or
+      // table jump pointer. Table jump pointers will have first_op set to 0.
+      id_stage_haltable = first_op_if_i;
+    end
+  end
 
   // Mux used to select PC from the different pipeline stages
   always_comb begin
@@ -519,10 +559,13 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     // but not allowed to be taken. This is to create an interruptible bubble in WB.
     // Interrupts: Machine mode: Prevent issuing new instructions until we get an interruptible bubble.
     //             Debug mode:   Interrupts are not allowed during debug. Cannot halt ID stage in such a case
-    //                           since the dret that brings the core out of debug mode may never get passed a halted ID stage.
+    //                           since the dret that brings the core out of debug mode may never get past a halted ID stage.
+    //             Sequences:    If we need to halt for debug or interrupt not allowed due to a sequence, we must check if we can
+    //                           actually halt the ID stage or not. Halting the same sequence that causes *_allowed to go to 0
+    //                           may cause a deadlock.
     ctrl_fsm_o.halt_id          = ctrl_byp_i.jalr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_stall || ctrl_byp_i.mnxti_stall ||
-      (((pending_interrupt && !interrupt_allowed) || (pending_nmi && !nmi_allowed) || (pending_nmi_early)) && debug_interruptible) ||
-      (pending_debug && !debug_allowed);
+      (((pending_interrupt && !interrupt_allowed) || (pending_nmi && !nmi_allowed) || (pending_nmi_early)) && debug_interruptible && id_stage_haltable) ||
+      (pending_debug && !debug_allowed && id_stage_haltable);
 
 
     // Halting EX if minstret_stall occurs. Otherwise we would read the wrong minstret value
@@ -944,8 +987,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     endcase
 
     // Detect first insn issue in single step after dret
+    // Any Zc sequence must fully complete (last_op_if_i) before halting the IF stage.
     // Used to block further issuing
-    if (!ctrl_fsm_o.debug_mode && dcsr_i.step && !single_step_halt_if_q && (if_valid_i && id_ready_i)) begin
+    if (!ctrl_fsm_o.debug_mode && dcsr_i.step && !single_step_halt_if_q && (if_valid_i && id_ready_i && last_op_if_i)) begin
       single_step_halt_if_n = 1'b1;
     end
 
