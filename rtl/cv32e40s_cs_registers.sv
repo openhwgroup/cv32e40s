@@ -964,8 +964,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                                   default: 'b0
                                 };
     // mstatus.mpp is WARL, make sure only legal values are written
+    // preserve old value if new value is not within the WARL rules.
     if ((mstatus_n.mpp != PRIV_LVL_M) && (mstatus_n.mpp != PRIV_LVL_U)) begin
-      mstatus_n.mpp = PRIV_LVL_M;
+      mstatus_n.mpp = mstatus_rdata.mpp;
     end
     mstatus_we    = 1'b0;
 
@@ -1468,8 +1469,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         mstatus_n.mpp  = csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW];
 
         // mstatus.mpp is WARL, make sure only legal values are written
+        // preserve old value if new value is not within the WARL rules.
         if ((mstatus_n.mpp != PRIV_LVL_M) && (mstatus_n.mpp != PRIV_LVL_U)) begin
-          mstatus_n.mpp = PRIV_LVL_M;
+          mstatus_n.mpp = mstatus_rdata.mpp;
         end
       end
       // The CLIC pointer address should always be output for an access to MNXTI,
