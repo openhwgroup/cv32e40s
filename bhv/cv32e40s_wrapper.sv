@@ -485,6 +485,7 @@ module cv32e40s_wrapper
          .sys_wfi_insn_wb_i        ( core_i.wb_stage_i.ex_wb_pipe_i.sys_wfi_insn                          ),
          .sys_en_wb_i              ( core_i.wb_stage_i.ex_wb_pipe_i.sys_en                                ),
          .last_op_wb_i             ( core_i.wb_stage_i.last_op_o                                          ),
+         .first_op_wb_i            ( core_i.wb_stage_i.ex_wb_pipe_i.first_op                              ),
          .rf_we_wb_i               ( core_i.wb_stage_i.rf_we_wb_o                                         ),
          .rf_addr_wb_i             ( core_i.wb_stage_i.rf_waddr_wb_o                                      ),
          .rf_wdata_wb_i            ( core_i.wb_stage_i.rf_wdata_wb_o                                      ),
