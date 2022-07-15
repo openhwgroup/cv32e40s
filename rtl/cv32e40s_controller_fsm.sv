@@ -256,7 +256,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Todo: Use allow_dummy_instr to guarantee progress (ensure there are never two dummies in a row in any pipeline stage)
   assign  ctrl_fsm_o.allow_dummy_instr = (!dcsr_i.step  &&  // Valid in IF because it can only be written in debug mode
                                          !debug_mode_q) &&  // Valid in IF because pipeline is killed when entering and exiting debug
-                                         first_op_if_i;
+                                         first_op_if_i; // todo: unqualified use of first_op_if_i; also remove unneeded brackets above
 
   // ID stage
 

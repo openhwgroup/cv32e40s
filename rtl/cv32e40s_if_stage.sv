@@ -355,7 +355,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   assign instr_valid = (prefetch_valid || dummy_insert) && !ctrl_fsm_i.kill_if && !ctrl_fsm_i.halt_if;
 
   // if_stage ready when killed, otherwise when not halted or if a dummy instruction is inserted.
-  assign if_ready = ctrl_fsm_i.kill_if || (seq_ready && predec_ready && !dummy_insert && !ctrl_fsm_i.halt_if);
+  assign if_ready = ctrl_fsm_i.kill_if || (seq_ready && predec_ready && !dummy_insert && !ctrl_fsm_i.halt_if);// todo: !dummy_insert should not be needed here if factored into seq_ready, predec_ready already as would be logical
 
 
 
@@ -374,7 +374,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   assign if_busy_o = prefetch_busy;
 
   // Ensures one shift of lfsr0 for each instruction inserted in IF
-  assign lfsr_shift_o = (if_valid_o && id_ready_i) && dummy_insert;
+  assign lfsr_shift_o = if_valid_o && id_ready_i && dummy_insert;
 
   assign ptr_in_if_o = prefetch_is_clic_ptr || prefetch_is_tbljmp_ptr;
 
@@ -391,7 +391,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // todo: Factor CLIC pointers?
   assign last_op_o = trigger_match_i ? 1'b1 :
                      tbljmp          ? 1'b0 :  // tbljmps are the first half
-                     dummy_insert    ? 1'b1 :  // Dummies are always single operation
+                     dummy_insert    ? 1'b1 :  // Dummies are always single operation // todo: also first_op_o = 1?
+// todo: provide list of IF 'submodules' and explanation on their relative priorities and exclusivity. Also ordering of tbljmp and dummy_insert is misleading here
                      seq_valid       ? seq_last : 1'b1; // Any other regular instructions are single operation.
 
   // Flag first operation of a sequence.
@@ -512,12 +513,12 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   // Setting predec_ready to id_ready_i here instead of passing it through the predecoder.
   // Predecoder is purely combinatorial and is always ready for new inputs
-  assign predec_ready = id_ready_i;
+  assign predec_ready = id_ready_i; // todo: && !dummy_insert
 
   // Dummies are allowed when first_op_o == 1
   // If the first operation of a sequence is ready, we allow dummies
   // but must not advance the sequencer.
-  assign seq_pop = id_ready_i && !dummy_insert;
+  assign seq_pop = id_ready_i && !dummy_insert; // todo: seq_pop not declared and name unclear. Rename to id_ready_no_dummy
 
   // Do not signal valid to the sequencer in case of a trigger match.
   // No need for the sequencer to start a sequence, the instruction will cause

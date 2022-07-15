@@ -143,7 +143,7 @@ endgenerate
 
 
   // Check that branch target remains constant while a branch instruction is in EX
-  // Restricted check to only be valid when local instr_valid is true, as the branch target
+  // Restricted check to only be valid when local instr_valid is true, as the branch target // todo: not agreed with using instr_valid here (it is much to broad/permissive); maybe data independent timing related CSR needs to be handled differently to make this assertion easier to reason about
   // will change when data independent timing is being enabled in WB. Eventually the branch will
   // then be killed. When data independing timing is enabled, the target may change from operand_c to pc_if.
   property p_bch_target_stable;
