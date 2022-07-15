@@ -613,8 +613,7 @@ module cv32e40s_wrapper
          .csr_pmpncfg_n_i          ( core_i.cs_registers_i.pmpncfg_n                                      ),
          .csr_pmpncfg_q_i          ( core_i.cs_registers_i.pmpncfg_rdata                                  ),
          .csr_pmpncfg_we_i         ( core_i.cs_registers_i.pmpncfg_we                                     ),
-         .csr_pmpaddr_n_i          ( core_i.cs_registers_i.pmp_addr_n                                     ),
-         // Using rdata for pmp address to include read logic
+         .csr_pmpaddr_n_i          ( core_i.cs_registers_i.pmp_addr_n_r                                   ), // Next read value can differ from written/stored value
          .csr_pmpaddr_q_i          ( core_i.cs_registers_i.pmp_addr_rdata                                 ),
          .csr_pmpaddr_we_i         ( core_i.cs_registers_i.pmp_addr_we                                    ),
          .csr_mseccfg_n_i          ( core_i.cs_registers_i.pmp_mseccfg_n                                  ),
