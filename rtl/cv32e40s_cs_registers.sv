@@ -36,8 +36,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter              LIB              = 0,
   parameter m_ext_e      M_EXT            = M,
   parameter bit          X_EXT            = 0,
-  parameter logic [31:0] X_MISA           =  32'h00000000,
-  parameter logic [1:0]  X_ECS_XS         =  2'b00, // todo: implement related mstatus bitfields (but only if X_EXT = 1)
+  parameter logic [31:0] X_MISA           = 32'h00000000,
+  parameter logic [1:0]  X_ECS_XS         = 2'b00, // todo: implement related mstatus bitfields (but only if X_EXT = 1)
   parameter bit          ZC_EXT           = 0,
   parameter bit          SMCLIC           = 0,
   parameter int          SMCLIC_ID_WIDTH  = 5,
@@ -284,9 +284,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [PMP_MAX_REGIONS-1:0]   pmpncfg_warl_ignore_wr;
   logic [PMP_MAX_REGIONS-1:0]   pmpaddr_wr_addr_match;
 
-  logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_n;
+  logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_n;                                     // Value written is not necessarily the value read
   logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_q[PMP_MAX_REGIONS];
-  logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_rdata[PMP_MAX_REGIONS];
+  logic [31:0]                  pmp_addr_n_r;                                   // Not used in RTL (used by RVFI) (next read value)
+  logic [31:0]                  pmp_addr_rdata[PMP_MAX_REGIONS];
   logic [PMP_MAX_REGIONS-1:0]   pmp_addr_we_int;
   logic [PMP_MAX_REGIONS-1:0]   pmp_addr_we;
 
@@ -334,9 +335,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         mstateen2h_we;                                  // Not used in RTL (used by RVFI)
   logic [31:0]                  mstateen3h_n, mstateen3h_rdata;                 // No CSR module instance
   logic                         mstateen3h_we;
-
-
-
 
   // Performance Counter Signals
   logic [31:0] [63:0]           mhpmcounter_q;                                  // Performance counters
@@ -2182,6 +2180,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   generate
     if (PMP_NUM_REGIONS > 0) begin: csr_pmp
+
+      assign pmp_addr_n_r = '0; // todo: implement 'next read value'
+
       for (genvar i=0; i < PMP_MAX_REGIONS; i++) begin: gen_pmp_csr
 
         if (i < PMP_NUM_REGIONS) begin: pmp_region
@@ -2214,7 +2215,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
               pmpncfg_n[i].write = 1'b0;
             end
 
-            // NA4 mode is not selectable when G > 0, mode is treated as OFF
+            // NA4 mode is not selectable when G > 0, mode is treated as OFF // todo: keep old mode
             unique case (csr_wdata_int[(i%4)*PMPNCFG_W+3+:2])
               PMP_MODE_OFF   : pmpncfg_n[i].mode = PMP_MODE_OFF;
               PMP_MODE_TOR   : pmpncfg_n[i].mode = PMP_MODE_TOR;
@@ -2284,8 +2285,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             // If G == 1, bit [G-1] reads as zero in TOR or OFF mode
             always_comb begin
               pmp_addr_rdata[i] = pmp_addr_q[i];
-              if ((pmpncfg_rdata[i].mode == PMP_MODE_OFF) ||
-                  (pmpncfg_rdata[i].mode == PMP_MODE_TOR)) begin
+              if ((pmpncfg_rdata[i].mode == PMP_MODE_OFF) || (pmpncfg_rdata[i].mode == PMP_MODE_TOR)) begin
                 pmp_addr_rdata[i][PMP_GRANULARITY-1:0] = '0;
               end
             end
@@ -2295,8 +2295,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
               // In NAPOT mode, bits [G-2:0] must read as one
               pmp_addr_rdata[i] = {pmp_addr_q[i], {PMP_GRANULARITY-1{1'b1}}};
 
-              if ((pmpncfg_rdata[i].mode == PMP_MODE_OFF) ||
-                  (pmpncfg_rdata[i].mode == PMP_MODE_TOR)) begin
+              if ((pmpncfg_rdata[i].mode == PMP_MODE_OFF) || (pmpncfg_rdata[i].mode == PMP_MODE_TOR)) begin
               // In TOR or OFF mode, bits [G-1:0] must read as zero
                 pmp_addr_rdata[i][PMP_GRANULARITY-1:0] = '0;
               end
@@ -2364,6 +2363,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
     end else begin: no_csr_pmp
       // Generate tieoffs when PMP is not configured
+
+      assign pmp_addr_n_r = '0;
+
       for (genvar i = 0; i < PMP_MAX_REGIONS; i++) begin : g_tie_pmp_rdata
         assign pmpncfg_locked[i]         = 1'b0;
         assign pmpncfg_n[i]              = pmpncfg_t'('0);
@@ -2782,6 +2784,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mimpid_we | mhartid_we | mconfigptr_we | mtval_we | pmp_mseccfgh_we | mcounteren_we | menvcfg_we | menvcfgh_we |
     tdata1_rd_error | tdata2_rd_error | dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error | mcause_rd_error |
     mstateen1_we | mstateen2_we | mstateen3_we | mstateen0h_we | mstateen1h_we | mstateen2h_we |
-    mstateen3h_we;
+    mstateen3h_we | (|pmp_addr_n_r);
 
 endmodule
