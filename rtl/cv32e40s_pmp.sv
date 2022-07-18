@@ -196,9 +196,9 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
 
   // Access fault prioritization
   always_comb begin
-    // When MSECCFG.MMWP is set default deny always, otherwise allow for M-mode, deny for other
-    // modes
-    access_fault = csr_pmp_i.mseccfg.mmwp || (priv_lvl_i != PRIV_LVL_M);
+    // Fault behavior when matching region is not found for requested address
+    access_fault = csr_pmp_i.mseccfg.mmwp ? 1'b1 :
+      (csr_pmp_i.mseccfg.mml ? (priv_lvl_i != PRIV_LVL_M) || (pmp_req_type_i == PMP_ACC_EXEC) : (priv_lvl_i != PRIV_LVL_M));
 
     // PMP entries are statically prioritized, from 0 to N-1
     // The lowest-numbered PMP entry which matches an address determines accessability
