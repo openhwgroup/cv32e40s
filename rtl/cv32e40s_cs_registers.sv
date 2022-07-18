@@ -904,10 +904,16 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                       ebreakm   : csr_wdata_int[15],
                       stepie    : csr_wdata_int[11],
                       step      : csr_wdata_int[2],
-                      prv       : PRIV_LVL_M,
+                      prv       : privlvl_t'(csr_wdata_int[1:0]),
                       cause     : dcsr_rdata.cause,
                       default   : 'd0
                      };
+
+    // mstatdcsr.prv is WARL(0x0, 0x3)
+    if ((dcsr_n.prv != PRIV_LVL_M) && (dcsr_n.prv != PRIV_LVL_U)) begin
+      dcsr_n.prv = dcsr_rdata.prv;
+    end
+
     dcsr_we       = 1'b0;
 
     dscratch0_n   = csr_wdata_int;
@@ -1495,7 +1501,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
               ebreakm   : dcsr_rdata.ebreakm,
               stepie    : dcsr_rdata.stepie,
               step      : dcsr_rdata.step,
-              prv       : PRIV_LVL_M,
+              prv       : priv_lvl_rdata,               // Privilege level at time of debug entry
               cause     : ctrl_fsm_i.debug_cause,
               default   : 'd0
             };
@@ -1551,9 +1557,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
       end //ctrl_fsm_i.csr_restore_mret
 
-      ctrl_fsm_i.csr_restore_dret: begin //DRET
-          // Restore to the recorded privilege level
-          priv_lvl_n = dcsr_rdata.prv;
+      ctrl_fsm_i.csr_restore_dret: begin // DRET
+        // Restore to the recorded privilege level
+        priv_lvl_n = dcsr_rdata.prv;
+        priv_lvl_we = 1'b1;
       end //ctrl_fsm_i.csr_restore_dret
 
       // mcause.minhv shall be cleared if vector fetch is successful
