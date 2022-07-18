@@ -72,6 +72,8 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    output logic core_mpu_err_o
    );
 
+  localparam bit PMP = SECURE;
+
   logic        pma_err;
   logic        pmp_err;
   logic        mpu_err;
@@ -205,20 +207,27 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
 
   assign pmp_req_addr = {2'b00, core_trans_i.addr};
 
-  cv32e40s_pmp
-    #(// Parameters
-      .PMP_GRANULARITY                  (PMP_GRANULARITY),
-      .PMP_NUM_REGIONS                  (PMP_NUM_REGIONS))
-  pmp_i
-    (// Outputs
-     .pmp_req_err_o                     (pmp_err),
-     // Inputs
-     .clk                               (clk),
-     .rst_n                             (rst_n),
-     .pmp_req_type_i                    (pmp_req_type),
-     .csr_pmp_i                         (csr_pmp_i),
-     .priv_lvl_i                        (priv_lvl_i),
-     .pmp_req_addr_i                    (pmp_req_addr));
+  generate
+    if (PMP) begin: pmp
+      cv32e40s_pmp
+        #(// Parameters
+          .PMP_GRANULARITY                  (PMP_GRANULARITY),
+          .PMP_NUM_REGIONS                  (PMP_NUM_REGIONS))
+      pmp_i
+        (// Outputs
+         .pmp_req_err_o                     (pmp_err),
+         // Inputs
+         .clk                               (clk),
+         .rst_n                             (rst_n),
+         .pmp_req_type_i                    (pmp_req_type),
+         .csr_pmp_i                         (csr_pmp_i),
+         .priv_lvl_i                        (priv_lvl_i),
+         .pmp_req_addr_i                    (pmp_req_addr));
+    end
+    else begin: no_pmp
+      assign pmp_err = 1'b0;
+    end
+  endgenerate
 
   assign mpu_err = pmp_err || pma_err;
 

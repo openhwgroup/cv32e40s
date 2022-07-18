@@ -190,7 +190,6 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
         end
       end
 
-
     end // block: check_rules
   endgenerate
 
@@ -210,8 +209,8 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
     end
   end
 
-  // Tie low when PMP is deconfigured
-  assign pmp_req_err_o = (PMP_NUM_REGIONS == 0) ? 1'b0 : access_fault;
+  // PMP is always present (even if PMP_NUM_REGIONS == 0)
+  assign pmp_req_err_o = access_fault;
   
   // RLB, rule locking bypass, is only relevant to cv32e40s_cs_registers which controls writes to the
   // PMP CSRs. Tie to unused signal here to prevent lint warnings.
