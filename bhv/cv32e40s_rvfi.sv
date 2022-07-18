@@ -740,7 +740,7 @@ module cv32e40s_rvfi
       // Indicate that the trap is a synchronous trap into debug mode
       rvfi_trap_next.debug       = 1'b1;
       // Special case for debug entry from debug mode caused by EBREAK as it is not captured by ctrl_fsm_i.debug_cause
-      rvfi_trap_next.debug_cause = ebreak_in_wb_i ? DBG_CAUSE_EBREAK : ctrl_fsm_i.debug_cause;
+      rvfi_trap_next.debug_cause = (ebreak_in_wb_i && debug_mode_q_i) ? DBG_CAUSE_EBREAK : ctrl_fsm_i.debug_cause;
     end
 
     if (pc_mux_exception) begin
@@ -769,7 +769,7 @@ module cv32e40s_rvfi
 
     end
 
-    if(pending_single_step_i && single_step_allowed_i) begin
+    if (pending_single_step_i && single_step_allowed_i) begin
       // The timing of the single step debug entry does not allow using pc_mux for detection
       rvfi_trap_next.debug       = 1'b1;
       rvfi_trap_next.debug_cause = DBG_CAUSE_STEP;
@@ -894,7 +894,7 @@ module cv32e40s_rvfi
           // Debug cause input only valid during debug taken
           // Special case for debug entry from debug mode caused by EBREAK as it is not captured by ctrl_fsm_i.debug_cause
           // A higher priority debug request (e.g. trigger match) will pull ebreak_in_wb_i low and allow the debug cause to propagate
-          debug_cause[STAGE_IF] <=  ebreak_in_wb_i ? 3'h1 : ctrl_fsm_i.debug_cause;
+          debug_cause[STAGE_IF] <=  (ebreak_in_wb_i && debug_mode_q_i) ? DBG_CAUSE_EBREAK : ctrl_fsm_i.debug_cause;
 
           // If there is a trap in the pipeline when debug is taken, the trap will be supressed but the side-effects will not.
           // The succeeding instruction therefore needs to re-trigger the intr signals if it it did not reach the rvfi output.
