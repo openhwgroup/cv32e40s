@@ -833,6 +833,7 @@ module cv32e40s_rvfi
       rvfi_pc_wdata      <= '0;
       rvfi_trap          <= '0;
       rvfi_intr          <= 1'b0;
+      rvfi_mode          <= 2'b11;      // Reset value of rvfi_mode is being used as 'previous privilege level'
       rvfi_rd_addr       <= '0;
       rvfi_rd_wdata      <= '0;
       rvfi_csr_rdata     <= '0;
