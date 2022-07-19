@@ -234,6 +234,9 @@ The OBI (see [OPENHW-OBI]_) bus interfaces have associated parity and checksum s
    are however not required to be checked against ``wdata`` for read transactions (see [OPENHW-OBI]_). Whether the environment performs these checks or not
    is platform specific.
 
+.. note::
+   ``achk[11:8]`` are always valid for ``wdata[31:0]`` (even for sub-word transactions).
+
 .. table:: Response phase checksum signal
   :name: Response phase checksum signal
 
@@ -254,6 +257,9 @@ The OBI (see [OPENHW-OBI]_) bus interfaces have associated parity and checksum s
 .. note::
    |corev| always allows its ``rchk[3:0]`` bits to be dependent on ``rdata`` (even for write transactions). |corev| however only checks its ``rdata`` signal
    bits against ``rchk[3:0]`` for read transactions (see [OPENHW-OBI]_).
+
+.. note::
+   When |corev| checks its ``rdata`` signal bits against ``rchk[3:0]`` it always checks all bits (even for sub-word transactions).
 
 |corev| checks its OBI inputs against the related parity and checksum inputs (i.e. ``instr_gntpar_i``, ``data_gntpar_i``, ``instr_rvalidpar_i``, ``data_rvalidpar_i``, ``instr_rchk_i``
 and ``data_rchk_i``) as specified in [OPENHW-OBI]_. The ``instr_gntpar_i``, ``data_gntpar_i``, ``instr_rvalidpar_i`` and ``data_rvalidpar_i`` checks are always enabled.
