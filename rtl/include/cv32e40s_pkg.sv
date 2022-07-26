@@ -1416,6 +1416,27 @@ typedef struct packed {
   logic        kill_xif; // Kill (attempted) offloaded instruction
 } ctrl_fsm_t;
 
+  ////////////////////////////////////////
+  // Resolution functions
+
+  function automatic privlvl_t dcsr_prv_resolve
+  (
+    privlvl_t   current_value,
+    logic [1:0] next_value
+  );
+    // dcsr.prv is WARL(0x0, 0x3)
+    return ((next_value != PRIV_LVL_M) && (next_value != PRIV_LVL_U)) ? current_value : privlvl_t'(next_value);
+  endfunction
+
+  function automatic logic [1:0] mstatus_mpp_resolve
+  (
+    logic [1:0] current_value,
+    logic [1:0] next_value
+  );
+    // mstatus.mpp is WARL(0x0, 0x3)
+    return ((next_value != PRIV_LVL_M) && (next_value != PRIV_LVL_U)) ? current_value : next_value;
+  endfunction
+
   ///////////////////////////
   //                       //
   //    /\/\ (_)___  ___   //
