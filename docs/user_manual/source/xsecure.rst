@@ -267,13 +267,13 @@ and ``data_rchk_i``) as specified in [OPENHW-OBI]_. The ``instr_gntpar_i``, ``da
 The ``instr_rchk_i`` and ``data_rchk_i`` checks are only enabled for PMA regions that have their integrity attribute set to 1 (see :ref:`pma_integrity`).
 
 Any ``instr_gntpar_i`` or ``instr_rvalidpar_i`` mismatch (which per definition can only occur while not in reset) will trigger an alert on ``alert_major_o``. If the mismatch occurs during the instruction fetch
-interval (i.e. from ``instr_req_o`` = 1 to ``instr_rvalid_i`` = 1) and the instructions is attempted for execution, then a precise exception is triggered (specifically an instruction parity fault with exception code 49).
+interval (i.e. from ``instr_req_o`` = 1 to ``instr_rvalid_i`` = 1) and the instructions is attempted for execution, then a precise exception is triggered (specifically an instruction parity fault with exception code 25).
 
 Any ``data_gntpar_i`` or ``data_rvalidpar_i`` mismatch (which per definition can only occur while not in reset) will trigger an alert on ``alert_major_o``. If the mismatch occurs during the load/store fetch
 interval (i.e. from ``data_req_o`` = 1 to ``data_rvalid_i`` = 1, implying also that the load/store is attempted for execution), then an imprecise NMI is triggered (specifically a load/store parity fault NMI with exception code 1026/1027).
 
 Any ``instr_rchk_i`` related mismatch (which can only occur when enabled via the PMA) (and which per definition can only occur when ``instr_rvalid_i`` = 1) will trigger an alert on ``alert_major_o``.
-If the instructions is attempted for execution, then a precise exception is triggered (specifically an instruction checksum fault with exception code 49).
+If the instructions is attempted for execution, then a precise exception is triggered (specifically an instruction checksum fault with exception code 25).
 
 Any ``data_rchk_i`` related mismatch (which can only occur when enabled via the PMA) (and which per definition can only occur when ``data_rvalid_i`` = 1) will trigger an alert on ``alert_major_o``.
 If the load/store is attempted for execution (which is the case since ``data_rvalid_i`` = 1), then an imprecise NMI is triggered (specifically a load/store checksum fault NMI with exception code 1026/1027).

@@ -38,16 +38,16 @@ Exceptions
   +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
   |              0 |             11 | Environment call from M-Mode (ECALL)  |                                                                           |
   +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
-  |              0 |             48 | Instruction bus fault                 | ``instr_err_i`` = 1 and ``instr_rvalid_i`` = 1 for instruction fetch      |
+  |              0 |             24 | Instruction bus fault                 | ``instr_err_i`` = 1 and ``instr_rvalid_i`` = 1 for instruction fetch      |
   +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
-  |              0 |             49 | Instruction parity/checksum fault     | ``instr_gntpar_i``, ``instr_rvalidpar``, ``instr_rchk_i`` related errors  |
+  |              0 |             25 | Instruction parity/checksum fault     | ``instr_gntpar_i``, ``instr_rvalidpar``, ``instr_rchk_i`` related errors  |
   +----------------+----------------+---------------------------------------+---------------------------------------------------------------------------+
 
 If an instruction raises multiple exceptions, the priority, from high to low, is as follows:
 
 * ``instruction access fault (1)``
-* ``instruction parity/checksum fault (49)``
-* ``instruction bus fault (48)``
+* ``instruction parity/checksum fault (25)``
+* ``instruction bus fault (24)``
 * ``illegal instruction (2)``
 * ``environment call from U-Mode (8)``
 * ``environment call from M-Mode (11)``
