@@ -1476,24 +1476,26 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     unique case (1'b1)
       ctrl_fsm_i.csr_save_cause: begin
         if (ctrl_fsm_i.debug_csr_save) begin
-            // all interrupts are masked, don't update cause, epc, tval dpc and
-            // mpstatus
-            // dcsr.nmip is not a flop, but comes directly from the controller
-            dcsr_n = '{
-              xdebugver : dcsr_rdata.xdebugver,
-              ebreakm   : dcsr_rdata.ebreakm,
-              stepie    : dcsr_rdata.stepie,
-              step      : dcsr_rdata.step,
-              prv       : priv_lvl_rdata,               // Privilege level at time of debug entry
-              cause     : ctrl_fsm_i.debug_cause,
-              default   : 'd0
-            };
-            dcsr_we = 1'b1;
+          // All interrupts are masked, don't update mcause, mepc, mtval, dpc and mstatus
+          // dcsr.nmip is not a flop, but comes directly from the controller
+          dcsr_n         = '{
+            xdebugver : dcsr_rdata.xdebugver,
+            ebreakm   : dcsr_rdata.ebreakm,
+            stepie    : dcsr_rdata.stepie,
+            step      : dcsr_rdata.step,
+            prv       : priv_lvl_rdata,                 // Privilege level at time of debug entry
+            cause     : ctrl_fsm_i.debug_cause,
+            default   : 'd0
+          };
+          dcsr_we        = 1'b1;
 
-            dpc_n  = ctrl_fsm_i.pipe_pc;
-            dpc_we = 1'b1;
+          dpc_n          = ctrl_fsm_i.pipe_pc;
+          dpc_we         = 1'b1;
+
+          priv_lvl_n     = PRIV_LVL_M;                  // Execute with machine mode privilege in debug mode
+          priv_lvl_we    = 1'b1;
         end else begin
-          priv_lvl_n     = PRIV_LVL_M; // Trap into machine mode
+          priv_lvl_n     = PRIV_LVL_M;                  // Trap into machine mode
           priv_lvl_we    = 1'b1;
 
           mstatus_n      = mstatus_rdata;
@@ -1531,7 +1533,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         mstatus_n      = mstatus_rdata;
         mstatus_n.mie  = mstatus_rdata.mpie;
         mstatus_n.mpie = 1'b1;
-        mstatus_n.mpp  = PRIV_LVL_U;
+        mstatus_n.mpp  = PRIV_LVL_LOWEST;
         mstatus_n.mprv = (privlvl_t'(mstatus_rdata.mpp) == PRIV_LVL_M) ? mstatus_rdata.mprv : 1'b0;
         mstatus_we     = 1'b1;
 

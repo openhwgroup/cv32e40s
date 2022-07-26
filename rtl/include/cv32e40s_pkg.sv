@@ -533,6 +533,8 @@ typedef enum logic[1:0] {
   PRIV_LVL_U = 2'b00
 } privlvl_t;
 
+parameter privlvl_t PRIV_LVL_LOWEST = PRIV_LVL_U;
+
 // Struct used for setting privilege lelve
 typedef struct packed {
   logic        priv_lvl_set;
