@@ -904,16 +904,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                       ebreakm   : csr_wdata_int[15],
                       stepie    : csr_wdata_int[11],
                       step      : csr_wdata_int[2],
-                      prv       : privlvl_t'(csr_wdata_int[1:0]),
+                      prv       : dcsr_prv_resolve(dcsr_rdata.prv, csr_wdata_int[1:0]),
                       cause     : dcsr_rdata.cause,
                       default   : 'd0
                      };
-
-    // mstatdcsr.prv is WARL(0x0, 0x3)
-    if ((dcsr_n.prv != PRIV_LVL_M) && (dcsr_n.prv != PRIV_LVL_U)) begin
-      dcsr_n.prv = dcsr_rdata.prv;
-    end
-
     dcsr_we       = 1'b0;
 
     dscratch0_n   = csr_wdata_int;
@@ -962,16 +956,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mstatus_n     = '{
                                   tw:   csr_wdata_int[MSTATUS_TW_BIT],
                                   mprv: csr_wdata_int[MSTATUS_MPRV_BIT],
-                                  mpp:  csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW],
+                                  mpp:  mstatus_mpp_resolve(mstatus_rdata.mpp, csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
                                   mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
                                   mie:  csr_wdata_int[MSTATUS_MIE_BIT],
                                   default: 'b0
                                 };
-    // mstatus.mpp is WARL, make sure only legal values are written
-    // preserve old value if new value is not within the WARL rules.
-    if ((mstatus_n.mpp != PRIV_LVL_M) && (mstatus_n.mpp != PRIV_LVL_U)) begin
-      mstatus_n.mpp = mstatus_rdata.mpp;
-    end
     mstatus_we    = 1'b0;
 
     mstatush_n    = mstatush_rdata; // Read only
@@ -1470,13 +1459,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
         // Write mpie and mpp as aliased through mcause
         mstatus_n.mpie = csr_wdata_int[MCAUSE_MPIE_BIT];
-        mstatus_n.mpp  = csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW];
-
-        // mstatus.mpp is WARL, make sure only legal values are written
-        // preserve old value if new value is not within the WARL rules.
-        if ((mstatus_n.mpp != PRIV_LVL_M) && (mstatus_n.mpp != PRIV_LVL_U)) begin
-          mstatus_n.mpp = mstatus_rdata.mpp;
-        end
+        mstatus_n.mpp  = mstatus_mpp_resolve(mstatus_rdata.mpp, csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]);
       end
       // The CLIC pointer address should always be output for an access to MNXTI,
       // but will only contain a nonzero value if a CLIC interrupt is actually pending
@@ -1489,7 +1472,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       clic_pa_o       = '0;
     end
 
-    // exception controller gets priority over other writes
+    // Exception controller gets priority over other writes
     unique case (1'b1)
       ctrl_fsm_i.csr_save_cause: begin
         if (ctrl_fsm_i.debug_csr_save) begin
@@ -1510,7 +1493,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             dpc_n  = ctrl_fsm_i.pipe_pc;
             dpc_we = 1'b1;
         end else begin
-          priv_lvl_n     = PRIV_LVL_M; // trap into machine mode
+          priv_lvl_n     = PRIV_LVL_M; // Trap into machine mode
           priv_lvl_we    = 1'b1;
 
           mstatus_n      = mstatus_rdata;
@@ -1541,15 +1524,16 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
       end //ctrl_fsm_i.csr_save_cause
 
-      ctrl_fsm_i.csr_restore_mret: begin //MRET
+      ctrl_fsm_i.csr_restore_mret: begin // MRET
         priv_lvl_n     = privlvl_t'(mstatus_rdata.mpp);
         priv_lvl_we    = 1'b1;
+
         mstatus_n      = mstatus_rdata;
         mstatus_n.mie  = mstatus_rdata.mpie;
         mstatus_n.mpie = 1'b1;
         mstatus_n.mpp  = PRIV_LVL_U;
         mstatus_n.mprv = (privlvl_t'(mstatus_rdata.mpp) == PRIV_LVL_M) ? mstatus_rdata.mprv : 1'b0;
-        mstatus_we = 1'b1;
+        mstatus_we     = 1'b1;
 
         if (SMCLIC) begin
           mintstatus_n.mil = mcause_rdata.mpil;
@@ -1561,6 +1545,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         // Restore to the recorded privilege level
         priv_lvl_n = dcsr_rdata.prv;
         priv_lvl_we = 1'b1;
+
+// todo: Section 4.6 of debug spec: If the new privilege mode is less privileged than M-mode, MPRV in mstatus is cleared.
       end //ctrl_fsm_i.csr_restore_dret
 
       // mcause.minhv shall be cleared if vector fetch is successful

@@ -189,7 +189,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // Flag indicating there is a 'live' CLIC pointer in the pipeline
   // Used to block debug until pointer
-  logic pointer_in_pipeline;
+  logic clic_ptr_in_pipeline;
 
   // Internal irq_ack for use when a (clic) pointer reaches ID stage and
   // we have single stepping enabled.
@@ -416,13 +416,13 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Detect if there is a live CLIC pointer in the pipeline
   // This should block debug
   generate
-    if(SMCLIC) begin : gen_clic_pointer_flag
+    if (SMCLIC) begin : gen_clic_pointer_flag
       // We only need to check EX and WB, as the FSM will only be in FUNCTIONAL state
       // one cycle after the target CLIC jump has been performed from ID
-      assign pointer_in_pipeline = (id_ex_pipe_i.instr_valid && id_ex_pipe_i.instr_meta.clic_ptr) ||
-                                   (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.instr_meta.clic_ptr);
+      assign clic_ptr_in_pipeline = (id_ex_pipe_i.instr_valid && id_ex_pipe_i.instr_meta.clic_ptr) ||
+                                    (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.instr_meta.clic_ptr);
     end else begin : gen_basic_pointer_flag
-      assign pointer_in_pipeline = 1'b0;
+      assign clic_ptr_in_pipeline = 1'b0;
     end
   endgenerate
   // Regular debug will kill insn in WB, do not allow if LSU is not interruptible, a fence.i handshake is taking place
@@ -432,7 +432,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // The cycle after fencei enters WB, the fencei handshake will be initiated. This must complete and the fencei instruction must retire before allowing debug.
   // Once the first part of a table jump has finished in WB, we are not allowed to take debug before the last part finishes. This can be detected when the last
   // part of a table jump is in either EX or WB.
-  assign debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && !pointer_in_pipeline && sequence_interruptible;
+  assign debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline && sequence_interruptible;
 
   // Debug pending for any other reason than single step
   assign pending_debug = (trigger_match_in_wb) ||
@@ -580,23 +580,14 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     ctrl_fsm_o.kill_ex          = 1'b0;
     ctrl_fsm_o.kill_wb          = 1'b0;
 
-    ctrl_fsm_o.csr_restore_mret    = 1'b0;
-    ctrl_fsm_o.csr_restore_dret    = 1'b0;
+    ctrl_fsm_o.csr_restore_mret = 1'b0;
+    ctrl_fsm_o.csr_restore_dret = 1'b0;
 
-    ctrl_fsm_o.csr_save_cause      = 1'b0;
-    ctrl_fsm_o.csr_cause           = 32'h0;
-    ctrl_fsm_o.csr_clear_minhv     = 1'b0;
+    ctrl_fsm_o.csr_save_cause   = 1'b0;
+    ctrl_fsm_o.csr_cause        = 32'h0;
+    ctrl_fsm_o.csr_clear_minhv  = 1'b0;
 
-    ctrl_fsm_o.exception_alert     = 1'b0;
-
-    ctrl_fsm_o.mret_jump_id        = 1'b0;
-
-    ctrl_fsm_o.jump_in_id          = jump_in_id;
-    ctrl_fsm_o.jump_taken_id       = jump_taken_id;
-    ctrl_fsm_o.branch_in_ex        = branch_in_ex;
-    ctrl_fsm_o.branch_taken_ex     = branch_taken_ex;
-
-    pipe_pc_mux_ctrl               = PC_WB;
+    pipe_pc_mux_ctrl            = PC_WB;
 
     exc_cause                   = 11'b0;
 
@@ -608,8 +599,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     single_step_halt_if_n       = single_step_halt_if_q;
 
     // Ensure jumps and branches are taken only once
-    branch_taken_n                 = branch_taken_q;
-    jump_taken_n                   = jump_taken_q;
+    branch_taken_n              = branch_taken_q;
+    jump_taken_n                = jump_taken_q;
 
     fencei_flush_req_set        = 1'b0;
 
@@ -617,6 +608,15 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     ctrl_fsm_o.pc_set_tbljmp    = 1'b0;
 
     csr_flush_ack_n             = 1'b0;
+
+    ctrl_fsm_o.exception_alert  = 1'b0;
+
+    ctrl_fsm_o.mret_jump_id     = 1'b0;
+
+    ctrl_fsm_o.jump_in_id       = jump_in_id;
+    ctrl_fsm_o.jump_taken_id    = jump_taken_id;
+    ctrl_fsm_o.branch_in_ex     = branch_in_ex;
+    ctrl_fsm_o.branch_taken_ex  = branch_taken_ex;
 
     unique case (ctrl_fsm_cs)
       RESET: begin
