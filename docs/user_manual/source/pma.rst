@@ -66,15 +66,19 @@ Accesses to regions marked as cacheable (``cacheable=1``) will result in the OBI
 
 Integrity
 ~~~~~~~~~
-Accesses to regions marked with ``integrity=1`` will have their OBI response phase inputs checked against the ``instr_rchk_i`` and ``data_rchk_i`` signals as specified in [OPENHW-OBI]_.
-Accesses to regions marked with ``integrity=0`` will never leads to instruction parity/checksum fault (see :ref:`exceptions-interrupts`), load parity/checksum fault NMI (see :ref:`exceptions-interrupts`),
-store parity/checksum fault NMI (see :ref:`exceptions-interrupts`) or major alert (see :ref:`interface-integrity`) due to unexpected ``instr_rchk_i`` or ``data_rchk_i`` values.
+Integrity checking can be globally enabled or disabled via the ``integrity`` bit in the ``cpuctrl`` CSR.
 
-.. note::
-   ``data_rdata_i`` is never checked against ``data_rchk_i`` for write transactions (see [OPENHW-OBI]_).
+If globally enabled, then accesses to PMA regions marked with ``integrity=1`` will have their OBI input signals checked against the ``instr_gntpar_i``, ``instr_rvalidpar_i``, ``data_gntpar_i``, ``data_rvalidpar_i``,
+``instr_rchk_i`` and ``data_rchk_i`` signals. No integrity checks are performed for accesses to regions marked with ``integrity=0``.
 
-.. note::
-   The ``instr_gntpar_i``, ``instr_rvalidpar_i``, ``data_gntpar_i`` and ``data_rvalidpar_i`` are always checked (also for accesses to regions with ``integrity=0``).
+Integrity check errors can lead to the following alerts, exceptions and NMIs:
+
+* Alert on ``alert_major_o`` (see :ref:`security-alerts`).
+* Instruction parity/checksum fault (see :ref:`exceptions-interrupts`).
+* Load parity/checksum fault NMI (see :ref:`exceptions-interrupts`).
+* Store parity/checksum fault NMI (see :ref:`exceptions-interrupts`).
+
+How OBI input signals are checked is further explained in :ref:`interface-integrity`.
 
 Default attribution
 ~~~~~~~~~~~~~~~~~~~
