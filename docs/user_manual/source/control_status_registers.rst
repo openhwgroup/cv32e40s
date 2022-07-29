@@ -1917,7 +1917,11 @@ Detailed:
   |             |           | set based on the value written to this register where:                 |
   |             |           | 0x0 = 1-4, 0x3 = 1-8, 0x7 = 1-16, 0xF = 1-32, 0x1F = 1-64              |
   +-------------+-----------+------------------------------------------------------------------------+
-  | 15:3        | R (0x0)   | Reserved. Hardwired to 0.                                              |
+  | 15:5        | R (0x0)   | Reserved. Hardwired to 0.                                              |
+  +-------------+-----------+------------------------------------------------------------------------+
+  | 4           | RW        | **INTEGRITY:** Enable integrity checking (1 = enable).                 |
+  +-------------+-----------+------------------------------------------------------------------------+
+  | 3           | RW        | **PCHARDEN:** Enable PC hardening (1 = enable).                        |
   +-------------+-----------+------------------------------------------------------------------------+
   | 2           | RW        | **RNDHINT:** Replace SLT hint by a random instruction without register |
   |             |           | fileside effects (1 = enable).                                         |
