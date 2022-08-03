@@ -90,6 +90,8 @@ module cv32e40s_write_buffer import cv32e40s_pkg::*;
           end
         end
       end
+
+      default:;
     endcase // case (state)
   end
 

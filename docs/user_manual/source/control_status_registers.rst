@@ -680,10 +680,14 @@ Detailed:
 The initial value of ``mtvec`` is equal to {**mtvec_addr_i[31:7]**, 5'b0, 2'b01}.
 
 When an exception or an interrupt is encountered, the core jumps to the corresponding
-handler using the content of the ``mtvec[31:7]`` as base address. Both direct mode and vectored mode
+handler using the content of the ``mtvec[31:7]`` as base address. Both non-vectored basic mode and vectored basic mode
 are supported.
 
-The NMI vector location is at index 15 of the machine trap vector table for both direct mode and vectored mode (i.e. at {**mtvec[31:7]**, 5'hF, 2'b00}).
+Upon an NMI in non-vectored basic mode the core jumps to **mtvec[31:7]**, 5'h0, 2'b00} (i.e. index 0).
+Upon an NMI in vectored basic mode the core jumps to **mtvec[31:7]**, 5'hF, 2'b00} (i.e. index 15).
+
+.. note::
+   For NMIs the exception codes in the ``mcause`` CSR do not match the table index as for regular interrupts.
 
 .. note::
    Memory writes to the ``mtvec`` based vector table require an instruction barrier (``fence.i``) to guarantee that they are visible to the instruction fetch (see :ref:`fencei` and [RISC-V-UNPRIV]_).
@@ -708,12 +712,14 @@ Detailed:
   +=========+==================+===============================================================================================================+
   | 31:7    | WARL             | **BASE[31:7]**: Trap-handler base address, always aligned to 128 bytes.                                       |
   +---------+------------------+---------------------------------------------------------------------------------------------------------------+
-  | 6:2     | WARL (0x0)       | **BASE[6:2]**: Trap-handler base address, always aligned to 128 bytes. ``mtvec[6:2]`` is hardwired to 0x0.    |
+  | 6       | WARL (0x0)       | **BASE[6]**: Trap-handler base address, always aligned to 128 bytes. ``mtvec[6]`` is hardwired to 0x0.        |
   +---------+------------------+---------------------------------------------------------------------------------------------------------------+
-  | 1:0     | WARL (0x3)       | **MODE**: Interrupt handling mode. Always CLIC mode.                                                          |
+  | 5:0     | WARL (0x3)       | **MODE**: Interrupt handling mode. Always CLIC mode.                                                          |
   +---------+------------------+---------------------------------------------------------------------------------------------------------------+
 
-The initial value of ``mtvec`` is equal to {**mtvec_addr_i[31:7]**, 5'b0, 2'b11}.
+The initial value of ``mtvec`` is equal to {**mtvec_addr_i[31:7]**, 1'b0, 6'b000011}.
+
+Upon an NMI in CLIC mode the core jumps to **mtvec[31:7]**, 5'h0, 2'b00} (i.e. index 0).
 
 .. note::
    Memory writes to the ``mtvec`` based vector table require an instruction barrier (``fence.i``) to guarantee that they are visible to the instruction fetch (see :ref:`fencei` and [RISC-V-UNPRIV]_).
@@ -1691,7 +1697,7 @@ Debug Control and Status (``dcsr``)
 
 CSR Address: 0x7B0
 
-Reset Value: 0x4000_0013
+Reset Value: 0x4000_0413
 
 Detailed:
 
@@ -1720,7 +1726,7 @@ Detailed:
   +----------+--------------+-------------------------------------------------------------------------------------------------+
   | 11       | WARL         | **STEPIE**. Set to enable interrupts during single stepping.                                    |
   +----------+--------------+-------------------------------------------------------------------------------------------------+
-  | 10       | WARL (0x0)   | **STOPCOUNT**. Hardwired to 0.                                                                  |
+  | 10       | WARL         | **STOPCOUNT**.                                                                                  |
   +----------+--------------+-------------------------------------------------------------------------------------------------+
   | 9        | WARL (0x0)   | **STOPTIME**. Hardwired to 0.                                                                   |
   +----------+--------------+-------------------------------------------------------------------------------------------------+
@@ -2287,6 +2293,7 @@ Detailed:
 
   Read-only unprivileged shadow of the lower 32 bits of the 64 bit machine mode cycle counter.
 
+
   Instructions-Retired Counter (``instret``)
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2354,6 +2361,8 @@ Detailed:
     +-------+------+------------------------------------------------------------------+
 
   Read-only unprivileged shadow of the upper 32 bits of the 64 bit machine mode cycle counter.
+
+
 
   Upper 32 Instructions-Retired Counter (``instreth``)
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

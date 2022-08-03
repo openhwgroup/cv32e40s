@@ -51,8 +51,8 @@ It follows these specifications:
 .. [RISC-V-ZBA_ZBB_ZBC_ZBS] RISC-V Bit Manipulation ISA-extensions, Version 1.0.0-38-g865e7a7, 2021-06-28,
    https://github.com/riscv/riscv-bitmanip/releases/download/1.0.0/bitmanip-1.0.0-38-g865e7a7.pdf
 
-.. [RISC-V-ZCA_ZCB_ZCMB_ZCMP_ZCMT] RISC-V Standard Extension for the **Zca**, **Zcb**, **Zcmb**, **Zcmp**, **Zcmt** subsets of **Zc**, v0.70.4, 5022e25 (not ratified yet),
-   https://github.com/riscv/riscv-code-size-reduction/releases/download/V0.70.4-TOOLCHAIN-DEV/Zc.pdf
+.. [RISC-V-ZCA_ZCB_ZCMB_ZCMP_ZCMT] RISC-V Standard Extension for the **Zca**, **Zcb**, **Zcmb**, **Zcmp**, **Zcmt** subsets of **Zc**, v0.70.5 (not ratified yet),
+   https://github.com/riscv/riscv-code-size-reduction/blob/cd13c6b17ccb7e1b8fc8b69e76179b339bcc2b32/Zc-specification/Zc.adoc
 
 .. [RISC-V-SMEPMP] PMP Enhancements for memory access and execution prevention on Machine mode, version 1.0, 12/2021,
    https://github.com/riscv/riscv-tee/blob/b20fda89e8e05605ca943af5897c0bb7f4db9841/Smepmp/Smepmp.pdf
@@ -60,8 +60,8 @@ It follows these specifications:
 .. [RISC-V-CRYPTO] RISC-V Cryptography Extensions Volume I, Scalar & Entropy Source Instructions, Version v1.0.0, 2'nd December, 2021: Ratified,
    https://github.com/riscv/riscv-crypto/releases/download/v1.0.0-scalar/riscv-crypto-spec-scalar-v1.0.0.pdf
 
-.. [OPENHW-OBI] OpenHW Open Bus Interface (OBI) protocol, version 1.4,
-   https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.4.pdf
+.. [OPENHW-OBI] OpenHW Open Bus Interface (OBI) protocol, version 1.5.0,
+   https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.5.0.pdf
 
 .. [SYMBIOTIC-RVFI] Symbiotic EDA RISC-V Formal Interface
    https://github.com/SymbioticEDA/riscv-formal/blob/master/docs/rvfi.md
@@ -113,23 +113,23 @@ In addition, the following standard instruction set extensions are available fro
      - always enabled
 
    * - **Zca**: Subset of the standard **Zc** Code-Size Reduction extension consisting of a subset of **C** with the FP load/stores removed.
-     - v0.70.4 (not ratified yet; version will change)
+     - v0.70.5 (not ratified yet; version will change)
      - always enabled
 
    * - **Zcb**: Subset of the standard **Zc** Code-Size Reduction extension consisting of simple operations.
-     - v0.70.4 (not ratified yet; version will change)
+     - v0.70.5 (not ratified yet; version will change)
      - always enabled
 
    * - **Zcmb**: Subset of the standard **Zc** Code-Size Reduction extension consisting of load/store byte/half which overlap with **c.fld**, **c.fldsp**, **c.fsd**.
-     - v0.70.4 (not ratified yet; version will change)
+     - v0.70.5 (not ratified yet; version will change)
      - always enabled
 
    * - **Zcmp**: Subset of the standard **Zc** Code-Size Reduction extension consisting of push/pop and double move which overlap with **c.fsdsp**.
-     - v0.70.4 (not ratified yet; version will change)
+     - v0.70.5 (not ratified yet; version will change)
      - always enabled
 
    * - **Zcmt**: Subset of the standard **Zc** Code-Size Reduction extension consisting of table jump.
-     - v0.70.4 (not ratified yet; version will change)
+     - v0.70.5 (not ratified yet; version will change)
      - always enabled
 
    * - **Zba**: Bit Manipulation Address calculation instructions

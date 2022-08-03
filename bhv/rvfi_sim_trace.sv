@@ -73,12 +73,12 @@ module rvfi_sim_trace
   string              asm_string, rvfi_info_string;
   bit                 itb_file_ok, logfile_ok, enable_log_write;
 
+  // Populate itrace based on retired instruction
+  // todo: update tracer to support Zc sequences
+  //       Currently only the lower index of rvfi_mem is used, and no usage of rvfi_gpr*
   generate
   begin
     if (ITRACE_ENABLE) begin
-      // Populate itrace based on retired instruction
-      // todo: update tracer to support Zc sequences
-      //       Currently only the lower index of rvfi_mem is used, and no usage of rvfi_gpr*
       always_comb begin
         if (rvfi_valid) begin
           if (^rvfi_pc_rdata !== 1'bx && imap.exists(rvfi_pc_rdata)) begin

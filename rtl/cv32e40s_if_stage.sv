@@ -268,7 +268,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
                                                        // Misaligned access to main is allowed, and accesses outside main will
                                                        // result in instruction access fault (which will have priority over
                                                        //  misaligned from I/O fault)
-    .core_if_data_access_i( 1'b0                    ), // No data access possible from IF
     .priv_lvl_i           ( prefetch_priv_lvl       ), // todo: this is already encoded in the prot[2:1] bits
     .csr_pmp_i            ( csr_pmp_i               ),
 
@@ -404,11 +403,12 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Marking as first (and last above) since we know it will not be a true sequence. Sequencer will keep sequencing, but will get killed
   // upon debug entry and no side effect will occur.
   // Dummy instructions are only allowed when first_op_o = 1. Using 'dummy_insert ? ' below would cause combinatorial loops through the controller FSM.
+  // todo: The treatement of trigger match causes 1 instruction to possibly have first/last op set multiple times. Can this be avoided (it messes up the semantics of first/last op)?
   // todo: factor in CLIC pointers?
   assign first_op_o = prefetch_is_tbljmp_ptr ? 1'b0 :
                       trigger_match_i        ? 1'b1 : seq_first;
 
-
+  // todo: first/last op need to be treated in the same manner (assignments need to look more similar). Also seq_first/seq_last need cleaner semantics with respect ot how they relate to seq_valid.
 
   // Populate instruction meta data
   // Fields 'compressed' and 'tbljmp' keep their old value by default.
@@ -553,7 +553,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       assign seq_last  = 1'b0;
       assign seq_instr = '0;
       assign seq_ready = 1'b1;
-      assign seq_first = 1'b1; // Tie high to enable default first_op when ZC_EXT=0
+      assign seq_first = 1'b1; // Tie high to enable default first_op when ZC_EXT=0 // todo: Clean up semantics of seq_first and make this one default 0.
     end
   endgenerate
 
@@ -566,7 +566,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   assign tbljmp = (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK)) ? 1'b0 :
                   dummy_insert ? 1'b0 :
                   trigger_match_i ? 1'b0 : tbljmp_raw;
-
+// todo: The above tbljmp assignment is likely very timing critical. Why is it important to suppress table jumps here, whereas the same thing is not done for non-sequenced compressed instructions nor for sequenced instructions.
+// In fact sequenced instructions seems only gated by trigger match, which also seems inconsistent. Can't all further handling of bus/parity/MPU/trigger match be done in ID?
 
   //---------------------------------------------------------------------------
   // Dummy Instruction Insertion
@@ -594,6 +595,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       assign dummy_instr  = '0;
     end : gen_no_dummy_instr
   endgenerate
+
 
 
   //---------------------------------------------------------------------------

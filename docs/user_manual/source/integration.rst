@@ -92,7 +92,7 @@ Instantiation Template
       .data_err_i               (),
       .data_rchk_i              (),
 
-      // Cycle Count
+      // Cycle
       .mcycle_o                 (),
 
        // Interrupt interface

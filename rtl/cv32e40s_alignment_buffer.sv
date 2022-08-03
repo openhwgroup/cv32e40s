@@ -371,6 +371,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
       2'b11 : begin
         outstanding_cnt_n = outstanding_cnt_q;
       end
+      default;
     endcase
   end
 
