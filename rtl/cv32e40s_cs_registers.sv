@@ -1432,6 +1432,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             mstateen3h_we = 1'b1;
           end
         end
+        default:;
       endcase
     end
 
@@ -1582,6 +1583,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           csr_wdata_int = csr_wdata;
           csr_we_int    = 1'b0;
         end
+        default:;
       endcase
     end
   end

@@ -431,7 +431,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // a trans_valid has been clocked without ex_valid && wb_ready handshake.
   // The cycle after fencei enters WB, the fencei handshake will be initiated. This must complete and the fencei instruction must retire before allowing debug.
   // Once the first part of a table jump has finished in WB, we are not allowed to take debug before the last part finishes. This can be detected when the last
-  // part of a table jump is in either EX or WB.
+  // part of a table jump is in either EX or WB. // todo: update comments related to table jump (explain general concept and to which instructions it applies)
   assign debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline && sequence_interruptible;
 
   // Debug pending for any other reason than single step
@@ -498,7 +498,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     end else if (if_id_pipe_i.instr_valid) begin
       sequence_interruptible = first_op_id_i;
     end else begin
-      sequence_interruptible = first_op_if_i;
+      sequence_interruptible = first_op_if_i; // todo: first/last op should always be classified with instr_vali; if not it needs proper explanation.
     end
   end
 
@@ -513,7 +513,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     end else begin
       // IF stage first_op defaults to 1'b1 if the stage does not hold a valid instruction or
       // table jump pointer. Table jump pointers will have first_op set to 0.
-      id_stage_haltable = first_op_if_i;
+      id_stage_haltable = first_op_if_i; // todo: first/last op should always be classified with instr_valid; if not it needs proper explanation (and I would prefer if we get rid of this special reliance on the 1'b1 default)
     end
   end
 

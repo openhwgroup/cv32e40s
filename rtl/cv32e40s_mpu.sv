@@ -37,7 +37,6 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    input logic  rst_n,
 
    input logic  misaligned_access_i, // Indicate that ongoing access is part of a misaligned access
-   input logic  core_if_data_access_i,    // Indicate that ongoing access is a data access from the IF stage
 
    // Interface towards bus interface
    input logic  bus_trans_ready_i,
@@ -235,10 +234,10 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   // Tie to 1'b0 if this MPU is instantiatied in the IF stage
   generate
     if (IF_STAGE) begin: mpu_if
-      assign instr_fetch_access = core_if_data_access_i ? 1'b0 : 1'b1;
-      assign load_access        = core_if_data_access_i ? 1'b1 : 1'b0;
+      assign instr_fetch_access = 1'b1;
+      assign load_access        = 1'b0;
       assign core_trans_we      = 1'b0;
-      assign pmp_req_type       = core_if_data_access_i ? PMP_ACC_READ : PMP_ACC_EXEC;
+      assign pmp_req_type       = PMP_ACC_EXEC;
     end
     else begin: mpu_lsu
       assign instr_fetch_access = 1'b0;
