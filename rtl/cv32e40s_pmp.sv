@@ -197,8 +197,11 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
   // Access fault prioritization
   always_comb begin
     // Fault behavior when matching region is not found for requested address
-    access_fault = csr_pmp_i.mseccfg.mmwp ? 1'b1 :
-      (csr_pmp_i.mseccfg.mml ? (priv_lvl_i != PRIV_LVL_M) || (pmp_req_type_i == PMP_ACC_EXEC) : (priv_lvl_i != PRIV_LVL_M));
+
+    access_fault = (priv_lvl_i != PRIV_LVL_M) ? 1'b1 :                              // Non machine mode access without matching region always fails
+                   csr_pmp_i.mseccfg.mmwp     ? 1'b1 :                              // Machine mode access without matching region always fails when mmwp=1
+                   csr_pmp_i.mseccfg.mml      ? (pmp_req_type_i == PMP_ACC_EXEC) :  // Machine mode execution access without matching region fails when mml=1
+                   1'b0;                                                            // Machine mode access without matching region is granted when mmwp=0 and mml=0
 
     // PMP entries are statically prioritized, from 0 to N-1
     // The lowest-numbered PMP entry which matches an address determines accessability
