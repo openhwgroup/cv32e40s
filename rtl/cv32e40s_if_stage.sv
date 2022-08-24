@@ -79,6 +79,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   output logic          first_op_o,
   output logic          last_op_o,
+  output logic          abort_op_o,
 
   // Stage ready/valid
   output logic          if_valid_o,
@@ -125,11 +126,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic              prefetch_is_clic_ptr;
   logic              prefetch_is_tbljmp_ptr;
 
-  // flag for predecoded cm.jt / cm.jalt.
-  // Maps to custom use of JAL instruction
-  logic              tbljmp_raw; // Raw table jump from compressed decoder
-  logic              tbljmp;     // Table jump which may deassert due to exceptions
-
   logic              illegal_c_insn;
 
   inst_resp_t        instr_decompressed;
@@ -169,6 +165,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic              seq_first;       // sequencer is outputting the first operation
   logic              seq_last;        // sequencer is outputting the last operation
   inst_resp_t        seq_instr;       // Instruction for sequenced operation
+  logic              seq_tbljmp;      // Sequenced instruction is a table jump
 
   // Fetch address selection
   always_comb
@@ -379,36 +376,22 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   // Acknowledge prefetcher when IF stage is ready. This factors in seq_ready to avoid ack'ing the
   // prefetcher in the middle of a Zc sequence.
-  // No need to ack the prefetcher when tbljmp==1, as this is will generate a pc_set and kill_if when
-  // the table jump is taken in ID and the pointer fetch is initiated (or the table jump is killed).
-  assign prefetch_ready = if_ready && !tbljmp;
+  assign prefetch_ready = if_ready;
 
-  // Last operation of table jumps are set when the pointer is fed to ID stage
-  // tbljmp (first operation) is set when a cm.jt or cm.jalt is decoded in the compressed decoder.
-  // Trigger matches will get all write enables deasserted in ID, and debug entered before retiring
-  // any operations once the first operation reaches WB. A trigger match is a last_op by definition.
+  // Sequenced instructions set last_op from the sequencer.
+  // Any other instruction will be single operation, and gets last_op=1.
   // todo: Factor CLIC pointers?
-  assign last_op_o = trigger_match_i ? 1'b1 :
-                     tbljmp          ? 1'b0 :  // tbljmps are the first half
-                     dummy_insert    ? 1'b1 :  // Dummies are always single operation // todo: also first_op_o = 1?
-// todo: provide list of IF 'submodules' and explanation on their relative priorities and exclusivity. Also ordering of tbljmp and dummy_insert is misleading here
-                     seq_valid       ? seq_last : 1'b1; // Any other regular instructions are single operation.
+  assign last_op_o = seq_valid ? seq_last : 1'b1; // Any other regular instructions are single operation.
 
   // Flag first operation of a sequence.
-  // Sequencer will set seq_first=1 when not in use - any other instruction handled by the compressed decoder (except table jumps)
-  // will always have first_op=1 and may thus use seq_first.
-  // Would ideally be something like "seq_valid ? : seq_first : 1'b1", but that causes combinatorial loops
-  // through the controllers sequence_interruptible, via kill_ex and seq_valid and then into the first_op_o again.
-  // Trigger matches will have all write enables deasserted in ID, and once the first operation reaches WB the debug entry will be made.
-  // Marking as first (and last above) since we know it will not be a true sequence. Sequencer will keep sequencing, but will get killed
-  // upon debug entry and no side effect will occur.
-  // Dummy instructions are only allowed when first_op_o = 1. Using 'dummy_insert ? ' below would cause combinatorial loops through the controller FSM.
-  // todo: The treatement of trigger match causes 1 instruction to possibly have first/last op set multiple times. Can this be avoided (it messes up the semantics of first/last op)?
+  // Any sequenced instructions use the seq_first from the sequencer.
+  // Any other instruction will be single operation, and gets first_op=1.
   // todo: factor in CLIC pointers?
-  assign first_op_o = prefetch_is_tbljmp_ptr ? 1'b0 :
-                      trigger_match_i        ? 1'b1 : seq_first;
+  assign first_op_o = seq_valid ? seq_first : 1'b1; // Any other regular instructions are single operation.
 
-  // todo: first/last op need to be treated in the same manner (assignments need to look more similar). Also seq_first/seq_last need cleaner semantics with respect ot how they relate to seq_valid.
+
+  // Set flag to indicate that instruction/sequence will be aborted due to known exceptions or trigger match
+  assign abort_op_o = instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK) || trigger_match_i;
 
   // Populate instruction meta data
   // Fields 'compressed' and 'tbljmp' keep their old value by default.
@@ -441,6 +424,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       if_id_pipe_o.ptr              <= '0;
       if_id_pipe_o.last_op          <= 1'b0;
       if_id_pipe_o.first_op         <= 1'b0;
+      if_id_pipe_o.abort_op         <= 1'b0;
     end else begin
       // Valid pipeline output if we are valid AND the
       // alignment buffer has a valid instruction
@@ -457,6 +441,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
         if_id_pipe_o.xif_id           <= xif_id;
         if_id_pipe_o.last_op          <= last_op_o;
         if_id_pipe_o.first_op         <= first_op_o;
+        if_id_pipe_o.abort_op         <= abort_op_o;
 
         // No PC update for tablejump pointer, PC of instruction itself is needed later.
         // No update to the meta compressed, as this is used in calculating the link address.
@@ -464,9 +449,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
         // No update to tbljmp flag, we want flag to be high for both operations.
         if (!prefetch_is_tbljmp_ptr) begin
           if_id_pipe_o.pc                    <= pc_if_o;
-          // todo: push/pop*/doublemoves are compressed, how (if at all) should we signal that when we emit uncompressed sequences?
+          // Sequenced instructions are marked as illegal by the compressed decoder, however, the instr_compressed
+          // flag is still set and can be used when propagating to ID.
           if_id_pipe_o.instr_meta.compressed <= dummy_insert ? 1'b0 : instr_compressed;
-          if_id_pipe_o.instr_meta.tbljmp     <= tbljmp;
+          if_id_pipe_o.instr_meta.tbljmp     <= seq_tbljmp;
 
           // Only update compressed_instr for compressed instructions
           if (instr_compressed) begin
@@ -507,8 +493,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .priv_lvl_i         ( prefetch_priv_lvl       ),
     .instr_o            ( instr_decompressed      ),
     .is_compressed_o    ( instr_compressed        ),
-    .illegal_instr_o    ( illegal_c_insn          ),
-    .tbljmp_o           ( tbljmp_raw              )
+    .illegal_instr_o    ( illegal_c_insn          )
   );
 
   // Setting predec_ready to id_ready_i here instead of passing it through the predecoder.
@@ -520,54 +505,47 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // but must not advance the sequencer.
   assign seq_pop = id_ready_i && !dummy_insert; // todo: seq_pop not declared and name unclear. Rename to id_ready_no_dummy
 
-  // Do not signal valid to the sequencer in case of a trigger match.
-  // No need for the sequencer to start a sequence, the instruction will cause
-  // debug entry on the first operation with no side effects done.
-  assign seq_instr_valid = prefetch_valid && !trigger_match_i;
+  // Sequencer gets valid inputs regardless of known error conditions
+  // Error conditions will cause a 'deassert_we' in the ID stage and exceptions
+  // will be taken from WB with no side effects performed.
+  assign seq_instr_valid = prefetch_valid;
 
   generate
     if (ZC_EXT) begin : gen_seq
       cv32e40s_sequencer
       sequencer_i
       (
-        .clk                ( clk                     ),
-        .rst_n              ( rst_n                   ),
+        .clk                  ( clk                     ),
+        .rst_n                ( rst_n                   ),
 
-        .instr_i            ( prefetch_instr          ),
-        .instr_is_ptr_i     ( ptr_in_if_o             ),
+        .instr_i              ( prefetch_instr          ),
+        .instr_is_clic_ptr_i  ( prefetch_is_clic_ptr    ),
+        .instr_is_tbljmp_ptr_i( prefetch_is_tbljmp_ptr  ),
 
-        .valid_i            ( seq_instr_valid         ),
-        .ready_i            ( seq_pop                 ),
-        .halt_i             ( ctrl_fsm_i.halt_if      ),
-        .kill_i             ( ctrl_fsm_i.kill_if      ),
+        .valid_i              ( seq_instr_valid         ),
+        .ready_i              ( id_ready_i              ),
+        .halt_i               ( ctrl_fsm_i.halt_if      ),
+        .kill_i               ( ctrl_fsm_i.kill_if      ),
 
 
-        .instr_o            ( seq_instr               ),
-        .valid_o            ( seq_valid               ),
-        .ready_o            ( seq_ready               ),
-        .seq_first_o        ( seq_first               ),
-        .seq_last_o         ( seq_last                )
+        .instr_o              ( seq_instr               ),
+        .valid_o              ( seq_valid               ),
+        .ready_o              ( seq_ready               ),
+        .seq_first_o          ( seq_first               ),
+        .seq_last_o           ( seq_last                ),
+        .seq_tbljmp_o         ( seq_tbljmp              )
       );
     end else begin : gen_no_seq
-      assign seq_valid = 1'b0;
-      assign seq_last  = 1'b0;
-      assign seq_instr = '0;
-      assign seq_ready = 1'b1;
-      assign seq_first = 1'b1; // Tie high to enable default first_op when ZC_EXT=0 // todo: Clean up semantics of seq_first and make this one default 0.
+      assign seq_valid  = 1'b0;
+      assign seq_last   = 1'b0;
+      assign seq_instr  = '0;
+      assign seq_ready  = 1'b1;
+      assign seq_first  = 1'b0;
+      assign seq_tbljmp = 1'b0;
     end
   endgenerate
 
 
-  // tbljmp below is used in calculating 'last_op_o'. If we have a faulted fetch, the instruction word may be anything
-  // (not cleared on faulted fetches). A faulted fetch should not be decoded to anything and thus tbljmp is cleared.
-  // One could instead set the instruction word itself to all zeros or another illegal instruction on known fetch faults,
-  // but this may impact timing more than suppressing control bits.
-  // Also clear tbljmp for dummy instructions, as this signal is used to calculate last_op.
-  assign tbljmp = (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK)) ? 1'b0 :
-                  dummy_insert ? 1'b0 :
-                  trigger_match_i ? 1'b0 : tbljmp_raw;
-// todo: The above tbljmp assignment is likely very timing critical. Why is it important to suppress table jumps here, whereas the same thing is not done for non-sequenced compressed instructions nor for sequenced instructions.
-// In fact sequenced instructions seems only gated by trigger match, which also seems inconsistent. Can't all further handling of bus/parity/MPU/trigger match be done in ID?
 
   //---------------------------------------------------------------------------
   // Dummy Instruction Insertion

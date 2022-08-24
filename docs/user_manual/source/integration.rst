@@ -113,6 +113,8 @@ Instantiation Template
       .debug_havereset_o        (),
       .debug_running_o          (),
       .debug_halted_o           (),
+      .debug_pc_valid_o         (),
+      .debug_pc_o               (),
 
        // Alert interface
       .alert_major_o            (),
@@ -120,7 +122,8 @@ Instantiation Template
 
       // Special control signals
       .fetch_enable_i           (),
-      .core_sleep_o             ()
+      .core_sleep_o             (),
+      .wu_wfe_i                 ()
   );
 
 Parameters
@@ -258,3 +261,6 @@ Interfaces
   +-------------------------+-------------------------+-----+--------------------------------------------+
   | ``core_sleep_o``        | 1                       | out | Core is sleeping, see :ref:`sleep_unit`.   |
   +-------------------------+-------------------------+-----+--------------------------------------------+
+  | ``wu_wfe_i``            | 1                       | in  | Wake-up for ``wfe``, see :ref:`sleep_unit`.|
+  +-------------------------+-------------------------+-----+--------------------------------------------+
+

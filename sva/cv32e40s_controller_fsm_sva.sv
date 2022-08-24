@@ -88,13 +88,19 @@ module cv32e40s_controller_fsm_sva
   input logic           lsu_trans_valid,
   input logic           irq_clic_shv_i,
   input logic           last_op_wb_i,
+  input logic           abort_op_wb_i,
   input logic           csr_wr_in_wb_flush_i,
   input logic [2:0]     debug_cause_q,
+  input logic           first_op_if_i,
   input logic           first_op_id_i,
+  input logic           first_op_ex_i,
   input logic           last_op_id_i,
   input logic           ex_ready_i,
   input logic           sequence_interruptible,
-  input logic           id_stage_haltable
+  input logic           id_stage_haltable,
+  input logic           prefetch_valid_if_i,
+  input logic           prefetch_is_tbljmp_ptr_if_i,
+  input logic           abort_op_id_i
 );
 
 
@@ -196,18 +202,16 @@ module cv32e40s_controller_fsm_sva
           (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_wfi_insn && ex_wb_pipe_i.instr_valid) |-> !(id_ex_pipe_i.lsu_en) )
     else `uvm_error("controller", "LSU instruction follows WFI")
 
-  // Check that no instructions are valid in ID or EX when a single step is taken
+  // Check that no new instructions (first_op=1) are valid in ID or EX when a single step is taken
   // In case of interrupt during step, the instruction being stepped could be in any stage, and will get killed.
-  // Exception if first phase of a misaligned LSU gets an MPU error, then
-  // the controller will kill the pipeline and jump to debug with dpc set to exception handler,
-  // while id_ex_pipe may still contain the valid last phase of the misaligned LSU
-  // todo:ok: Add a second assert to check above exception?
+  // Aborted instructions may cause early termination of sequences. Either we jump to the exception handler before debug entry,
+  // or straight to debug in case of a trigger match.
   a_single_step_pipecheck :
     assert property (@(posedge clk) disable iff (!rst_n)
-            (pending_single_step && (ctrl_fsm_ns == DEBUG_TAKEN) &&
-            (lsu_mpu_status_wb_i == MPU_OK))
-            |-> ((!id_ex_pipe_i.instr_valid && !if_id_pipe_i.instr_valid) ||
+            (pending_single_step && (ctrl_fsm_ns == DEBUG_TAKEN)
+            |-> ((!(id_ex_pipe_i.instr_valid && first_op_ex_i) && !(if_id_pipe_i.instr_valid && if_id_pipe_i.first_op))) ||
                 (ctrl_fsm_o.irq_ack && ctrl_fsm_o.kill_if && ctrl_fsm_o.kill_id && ctrl_fsm_o.kill_ex && ctrl_fsm_o.kill_wb)))
+
       else `uvm_error("controller", "ID and EX not empty when when single step is taken")
 
   // Check trigger match never happens during debug_mode
@@ -601,7 +605,7 @@ endgenerate
       valid_cnt <= '0;
     end else begin
       if (bus_error_latched) begin
-        if (wb_valid_i && last_op_wb_i && !ctrl_fsm_o.debug_mode && !(dcsr_i.step && !dcsr_i.stepie)) begin
+        if (wb_valid_i && (last_op_wb_i || abort_op_wb_i) && !ctrl_fsm_o.debug_mode && !(dcsr_i.step && !dcsr_i.stepie)) begin
           valid_cnt <= valid_cnt + 1'b1;
         end
       end else begin
@@ -638,80 +642,119 @@ if (SMCLIC) begin
 
 end // SMCLIC
 
-  // Instruction sequences may not be interrupted/killed if the first operation has already been retired.
-  // Helper logic to track first_op and last_op through the WB stage to detect uninterruptible sequences
-  logic first_op_done_wb;
-  always_ff @(posedge clk, negedge rst_n) begin
-    if (rst_n == 1'b0) begin
-      first_op_done_wb <= 1'b0;
+
+
+  // Detect if we are in the middle of a multi operation sequence
+  // Basically check if the oldest instruction in the pipeline is a 'first_op'
+  // - if not, we have an unfinished sequence and cannot interrupt it.
+  // Used to determine if we are allowed to take debug or interrupts
+  logic sequence_interruptible_alt;
+  always_comb begin
+    if (ex_wb_pipe_i.instr_valid) begin
+      sequence_interruptible_alt = ex_wb_pipe_i.first_op;
+    end else if (id_ex_pipe_i.instr_valid) begin
+      sequence_interruptible_alt = first_op_ex_i;
+    end else if (if_id_pipe_i.instr_valid) begin
+      sequence_interruptible_alt = first_op_id_i;
+    end else if (prefetch_valid_if_i) begin
+      sequence_interruptible_alt = first_op_if_i;
     end else begin
-      if (!first_op_done_wb) begin
-        if (wb_valid_i && ex_wb_pipe_i.first_op && !last_op_wb_i) begin
-          first_op_done_wb <= 1'b1;
-        end
-      end else begin
-        // first_op_done_wb is set, clear when last_op retires
-        if (wb_valid_i && last_op_wb_i) begin
-          first_op_done_wb <= 1'b0;
-        end
-      end
+      // If no instruction is ready in the whole pipeline (including IF), then there are nothing in progress
+      // and we should safely be able to interrupt unless the IF stage is waiting for a table jump pointer
+      sequence_interruptible_alt = !prefetch_is_tbljmp_ptr_if_i;
     end
   end
 
-// todo: make above code look the same as below code (add kill_wb related logic)
-
-  // Helper logic to track first_op and last_op through the ID stage to detect unhaltable sequences
-  logic first_op_done_id;
-  always_ff @(posedge clk, negedge rst_n) begin
-    if (rst_n == 1'b0) begin
-      first_op_done_id <= 1'b0;
+  // Check if we are allowed to halt the ID stage.
+  // If ID stage contains a non-first operation, we cannot halt ID as that
+  // could cause a deadlock because a sequence cannot finish through ID.
+  // If ID stage does not contain a valid instruction, the same check is performed
+  // for the IF stage (although this is likely not needed).
+  // todo: This logic currently does not match the RTL version when not gating instruction in IF due to exceptions.
+  //       Assertions checking SVA vs RTL commented out.
+  logic id_stage_haltable_alt;
+  always_comb begin
+    if (if_id_pipe_i.instr_valid) begin
+      id_stage_haltable_alt = first_op_id_i;
+    end else if (prefetch_valid_if_i) begin
+      id_stage_haltable_alt = first_op_if_i;
     end else begin
-      if (!first_op_done_id) begin
-        if (id_valid_i && ex_ready_i && first_op_id_i && !last_op_id_i) begin
-          first_op_done_id <= 1'b1;
-        end
-      end else begin
-        // first_op_done_id is set, clear when last_op retires
-        if (id_valid_i && ex_ready_i && last_op_id_i) begin
-          first_op_done_id <= 1'b0;
-        end
-      end
-      // Reset flag if ID stage is killed
-      if (ctrl_fsm_o.kill_id) begin
-        first_op_done_id <= 1'b0;
-      end
+      // If no instruction is ready in the whole pipeline (including IF), then there are nothing in progress
+      // and we should safely be able to halt ID unless the IF stage is waiting for a table jump pointer
+      id_stage_haltable_alt = !prefetch_is_tbljmp_ptr_if_i;
     end
   end
 
   a_no_sequence_interrupt:
   assert property (@(posedge clk) disable iff (!rst_n)
-                    (first_op_done_wb |-> !ctrl_fsm_o.irq_ack))
+                    (!sequence_interruptible |-> !ctrl_fsm_o.irq_ack))
     else `uvm_error("controller", "Sequence broken by interrupt")
 
-// todo: add equivalency check related to first_op_done_wb computation and sequence_interruptible
+  a_interruptible_equivalency:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                    (sequence_interruptible_alt == sequence_interruptible))
+    else `uvm_error("controller", "first_op_done_wb not matching !sequence_interruptible")
 
   a_no_sequence_nmi:
   assert property (@(posedge clk) disable iff (!rst_n)
-                    (first_op_done_wb |-> !(ctrl_fsm_o.pc_set && (ctrl_fsm_o.pc_mux == PC_TRAP_NMI))))
+                    (!sequence_interruptible |-> !(ctrl_fsm_o.pc_set && (ctrl_fsm_o.pc_mux == PC_TRAP_NMI))))
     else `uvm_error("controller", "Sequence broken by NMI")
 
   a_no_sequence_ext_debug:
   assert property (@(posedge clk) disable iff (!rst_n)
-                    (first_op_done_wb |-> !(ctrl_fsm_o.dbg_ack && (debug_cause_q == DBG_CAUSE_HALTREQ)))) // todo: timing of (debug_cause_q == DBG_CAUSE_HALTREQ) seems wrong (and whole calsuse should not be needed)
+                    (!sequence_interruptible |-> !(ctrl_fsm_o.dbg_ack && (debug_cause_q == DBG_CAUSE_HALTREQ)))) // todo: timing of (debug_cause_q == DBG_CAUSE_HALTREQ) seems wrong (and whole calsuse should not be needed)
     else `uvm_error("controller", "Sequence broken by external debug")
 
+  a_no_sequence_wb_kill:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                    (!sequence_interruptible |-> !ctrl_fsm_o.kill_wb))
+    else `uvm_error("controller", "Sequence broken by external debug")
+
+/* todo: Bring back in if id_stage_haltable_alt can be correctly calculated.
   // Check that we do not allow ID stage to be halted for pending interrupts/debug if a sequence is not done
   // in the ID stage.
   a_id_stage_haltable:
   assert property (@(posedge clk) disable iff (!rst_n)
-                    (first_op_done_id |-> !id_stage_haltable)) // todo: proof equivalency, not just implication
+                    (id_stage_haltable_alt == id_stage_haltable))
     else `uvm_error("controller", "id_stage_haltable not correct")
-
+*/
   // Assert that we have no pc_set in the same cycle as a CSR write in WB requires flushing of the pipeline
   a_csr_wr_in_wb_no_fetch:
   assert property (@(posedge clk) disable iff (!rst_n)
                     (csr_wr_in_wb_flush_i && !ctrl_fsm_o.kill_wb) |-> (!ctrl_fsm_o.pc_set))
     else `uvm_error("controller", "Fetching new instruction before CSR values are updated")
 
+  // Check that id stage is haltable after passing through an operation with abort_op=1
+  a_id_halt_abort:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                    (id_valid_i && ex_ready_i && abort_op_id_i)
+                    |=>
+                    id_stage_haltable)
+    else `uvm_error("controller", "ID stage not haltable after a deasserted operation")
+
+  // Check that wb stage is interruptible after passing through an operation with exception_in_wb
+  a_wb_interruptible_abort:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                    (wb_valid_i && abort_op_wb_i)
+                    |=>
+                    sequence_interruptible)
+    else `uvm_error("controller", "sequence_interruptible should be 1 after an exception has been taken.")
+
+
+  // Check that id stage is haltable after passing through an operation with abort_op=1
+  a_id_halt_last:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                    (id_valid_i && ex_ready_i && last_op_id_i)
+                    |=>
+                    id_stage_haltable)
+    else `uvm_error("controller", "ID stage not haltable after a deasserted operation")
+
+  // Check that wb stage is interruptible after passing through an operation with exception_in_wb
+  a_wb_interruptible_last:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                    (wb_valid_i && last_op_wb_i)
+                    |=>
+                    sequence_interruptible)
+    else `uvm_error("controller", "sequence_interruptible should be 1 after an exception has been taken.")
 endmodule
 

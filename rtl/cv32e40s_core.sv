@@ -198,8 +198,14 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Detect last_op
   logic        last_op_if;
+  logic        last_op_id;
   logic        last_op_ex;
   logic        last_op_wb;
+
+  // Abort_op bits
+  logic        abort_op_if;
+  logic        abort_op_id;
+  logic        abort_op_wb;
 
   // First op bits
   logic        first_op_if;
@@ -544,6 +550,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     .first_op_o          ( first_op_if              ),
     .last_op_o           ( last_op_if               ),
+    .abort_op_o          ( abort_op_if              ),
 
     // Pipeline handshakes
     .if_valid_o          ( if_valid                 ),
@@ -626,6 +633,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .sys_en_o                     ( sys_en_id                 ),
 
     .first_op_o                   ( first_op_id               ),
+    .last_op_o                    ( last_op_id                ),
+    .abort_op_o                   ( abort_op_id               ),
 
     .rf_re_o                      ( rf_re_id                  ),
     .rf_raddr_o                   ( rf_raddr_id               ),
@@ -819,7 +828,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .clic_pa_valid_i            ( csr_clic_pa_valid            ),
     .clic_pa_i                  ( csr_clic_pa                  ),
 
-    .last_op_o                  ( last_op_wb                   )
+    .last_op_o                  ( last_op_wb                   ),
+    .abort_op_o                 ( abort_op_wb                  )
   );
 
   //////////////////////////////////////
@@ -960,7 +970,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // From ID/EX pipeline
     .id_ex_pipe_i                   ( id_ex_pipe             ),
-    .first_op_ex_i                  ( first_op_ex            ),
 
     .csr_counter_read_i             ( csr_counter_read       ),
     .csr_mnxti_read_i               ( csr_mnxti_read         ),
@@ -969,13 +978,19 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ex_wb_pipe_i                   ( ex_wb_pipe             ),
 
     // last_op bits
+    .last_op_id_i                   ( last_op_id             ),
     .last_op_ex_i                   ( last_op_ex             ),
     .last_op_wb_i                   ( last_op_wb             ),
+
+    .abort_op_id_i                  ( abort_op_id            ),
+    .abort_op_wb_i                  ( abort_op_wb            ),
 
     .if_valid_i                     ( if_valid               ),
     .pc_if_i                        ( pc_if                  ),
     .first_op_if_i                  ( first_op_if            ),
     .last_op_if_i                   ( last_op_if             ),
+    .abort_op_if_i                  ( abort_op_if            ),
+
     // from IF/ID pipeline
     .if_id_pipe_i                   ( if_id_pipe             ),
     .last_sec_op_id_i               ( last_sec_op_id         ),

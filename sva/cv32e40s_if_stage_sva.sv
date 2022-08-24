@@ -37,7 +37,7 @@ module cv32e40s_if_stage_sva
   input if_id_pipe_t    if_id_pipe_o,
   if_c_obi.monitor      m_c_obi_instr_if,
   input logic [31:0]    mstateen0_i,
-  input logic           tbljmp,
+  input logic           seq_tbljmp,
   input  logic          seq_valid,
   input  logic          seq_ready,
   input  logic          illegal_c_insn,
@@ -120,14 +120,16 @@ module cv32e40s_if_stage_sva
   // No table jumps may occur in user mode while mstateen0[2] is 0
   a_no_illegal_tablejumps :
     assert property (@(posedge clk) disable iff (!rst_n)
-                      (prefetch_priv_lvl == PRIV_LVL_U) && !mstateen0_i[2] |-> !tbljmp)
+                      (prefetch_priv_lvl == PRIV_LVL_U) && !mstateen0_i[2] |-> !seq_tbljmp)
       else `uvm_error("if_stage", "Table jump in user mode without state permissions.")
 
 
   // compressed_decoder and sequencer shall be mutually exclusive
+  // Excluding table jumps pointers as these will set seq_valid=1 while the
+  // compressed decoder ignore pointers (illegal_c_insn will be 0)
   a_compressed_seq_0:
   assert property (@(posedge clk) disable iff (!rst_n)
-                    seq_valid |-> illegal_c_insn)
+                    (seq_valid && !prefetch_is_tbljmp_ptr) |-> illegal_c_insn)
       else `uvm_error("if_stage", "Compressed decoder and sequencer not mutually exclusive.")
 
   a_compressed_seq_1:
