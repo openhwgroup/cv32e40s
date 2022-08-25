@@ -208,7 +208,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        abort_op_wb;
 
   // First op bits
-  logic        first_op_if;
+  logic        first_op_nondummy_if;
   logic        first_op_id;
   logic        first_op_ex;
 
@@ -287,6 +287,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        id_valid;
   logic        ex_valid;
   logic        wb_valid;
+
+  logic        prefetch_valid_if;
 
   // Interrupts
   mstatus_t    mstatus;
@@ -548,9 +550,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .if_busy_o           ( if_busy                  ),
     .ptr_in_if_o         ( ptr_in_if                ),
 
-    .first_op_o          ( first_op_if              ),
+    .first_op_nondummy_o ( first_op_nondummy_if     ),
     .last_op_o           ( last_op_if               ),
     .abort_op_o          ( abort_op_if              ),
+
+    .prefetch_valid_o    ( prefetch_valid_if        ),
 
     // Pipeline handshakes
     .if_valid_o          ( if_valid                 ),
@@ -987,9 +991,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     .if_valid_i                     ( if_valid               ),
     .pc_if_i                        ( pc_if                  ),
-    .first_op_if_i                  ( first_op_if            ),
+    .first_op_nondummy_if_i         ( first_op_nondummy_if   ),
     .last_op_if_i                   ( last_op_if             ),
     .abort_op_if_i                  ( abort_op_if            ),
+    .prefetch_valid_if_i            ( prefetch_valid_if      ),
 
     // from IF/ID pipeline
     .if_id_pipe_i                   ( if_id_pipe             ),

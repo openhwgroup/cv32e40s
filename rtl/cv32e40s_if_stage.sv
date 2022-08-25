@@ -77,9 +77,11 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   output logic          if_busy_o,              // Is the IF stage busy fetching instructions?
   output logic          ptr_in_if_o,            // The IF stage currently holds a pointer
 
-  output logic          first_op_o,
+  output logic          first_op_nondummy_o,
   output logic          last_op_o,
   output logic          abort_op_o,
+
+  output logic          prefetch_valid_o,
 
   // Stage ready/valid
   output logic          if_valid_o,
@@ -167,6 +169,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   inst_resp_t        seq_instr;       // Instruction for sequenced operation
   logic              seq_tbljmp;      // Sequenced instruction is a table jump
 
+  logic              id_ready_no_dummy; // Ready signal to acknowledge the sequencer
+
+  logic              first_op;        // Local first_op, including dummies
   // Fetch address selection
   always_comb
   begin
@@ -351,7 +356,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   assign instr_valid = (prefetch_valid || dummy_insert) && !ctrl_fsm_i.kill_if && !ctrl_fsm_i.halt_if;
 
   // if_stage ready when killed, otherwise when not halted or if a dummy instruction is inserted.
-  assign if_ready = ctrl_fsm_i.kill_if || (seq_ready && predec_ready && !dummy_insert && !ctrl_fsm_i.halt_if);// todo: !dummy_insert should not be needed here if factored into seq_ready, predec_ready already as would be logical
+  assign if_ready = ctrl_fsm_i.kill_if || (seq_ready && predec_ready && !ctrl_fsm_i.halt_if);
 
 
 
@@ -381,18 +386,24 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Sequenced instructions set last_op from the sequencer.
   // Any other instruction will be single operation, and gets last_op=1.
   // todo: Factor CLIC pointers?
-  assign last_op_o = seq_valid ? seq_last : 1'b1; // Any other regular instructions are single operation.
+  assign last_op_o = dummy_insert ? 1'b1 :
+                     seq_valid    ? seq_last : 1'b1; // Any other regular instructions are single operation.
 
-  // Flag first operation of a sequence.
+  // Flag first operation of a sequence (excluding dummy instructions)
   // Any sequenced instructions use the seq_first from the sequencer.
   // Any other instruction will be single operation, and gets first_op=1.
   // todo: factor in CLIC pointers?
-  assign first_op_o = seq_valid ? seq_first : 1'b1; // Any other regular instructions are single operation.
+  assign first_op_nondummy_o = seq_valid ? seq_first : 1'b1; // Any other regular instructions are single operation.
+
+  // Local first_op, including dummy instructions
+  assign first_op = dummy_insert ? 1'b1 : first_op_nondummy_o;
 
 
   // Set flag to indicate that instruction/sequence will be aborted due to known exceptions or trigger match
-  assign abort_op_o = instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK) || trigger_match_i;
+  assign abort_op_o = dummy_insert ? 1'b0 :
+                      (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK) || trigger_match_i);
 
+  assign prefetch_valid_o = prefetch_valid;
   // Populate instruction meta data
   // Fields 'compressed' and 'tbljmp' keep their old value by default.
   //   - In case of a table jump we need the fields to stay as 'compressed=1' and 'tbljmp=1'
@@ -440,7 +451,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
         if_id_pipe_o.trigger_match    <= dummy_insert ? 1'b0 : trigger_match_i;
         if_id_pipe_o.xif_id           <= xif_id;
         if_id_pipe_o.last_op          <= last_op_o;
-        if_id_pipe_o.first_op         <= first_op_o;
+        if_id_pipe_o.first_op         <= first_op;
         if_id_pipe_o.abort_op         <= abort_op_o;
 
         // No PC update for tablejump pointer, PC of instruction itself is needed later.
@@ -489,8 +500,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   (
     .instr_i            ( prefetch_instr          ),
     .instr_is_ptr_i     ( ptr_in_if_o             ),
-    .mstateen0_i        ( mstateen0_i             ),
-    .priv_lvl_i         ( prefetch_priv_lvl       ),
     .instr_o            ( instr_decompressed      ),
     .is_compressed_o    ( instr_compressed        ),
     .illegal_instr_o    ( illegal_c_insn          )
@@ -498,12 +507,12 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   // Setting predec_ready to id_ready_i here instead of passing it through the predecoder.
   // Predecoder is purely combinatorial and is always ready for new inputs
-  assign predec_ready = id_ready_i; // todo: && !dummy_insert
+  assign predec_ready = id_ready_i && !dummy_insert;
 
-  // Dummies are allowed when first_op_o == 1
+  // Dummies are allowed when first_op_nondummy_o == 1
   // If the first operation of a sequence is ready, we allow dummies
   // but must not advance the sequencer.
-  assign seq_pop = id_ready_i && !dummy_insert; // todo: seq_pop not declared and name unclear. Rename to id_ready_no_dummy
+  assign id_ready_no_dummy = id_ready_i && !dummy_insert;
 
   // Sequencer gets valid inputs regardless of known error conditions
   // Error conditions will cause a 'deassert_we' in the ID stage and exceptions
@@ -523,10 +532,12 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
         .instr_is_tbljmp_ptr_i( prefetch_is_tbljmp_ptr  ),
 
         .valid_i              ( seq_instr_valid         ),
-        .ready_i              ( id_ready_i              ),
+        .ready_i              ( id_ready_no_dummy       ),
         .halt_i               ( ctrl_fsm_i.halt_if      ),
         .kill_i               ( ctrl_fsm_i.kill_if      ),
 
+        .mstateen0_i          ( mstateen0_i             ),
+        .priv_lvl_i           ( prefetch_priv_lvl       ),
 
         .instr_o              ( seq_instr               ),
         .valid_o              ( seq_valid               ),

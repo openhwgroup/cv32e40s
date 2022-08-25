@@ -253,8 +253,8 @@ module cv32e40s_wrapper
 
                               .last_sec_op_id_i    (core_i.controller_i.last_sec_op_id_i),
                               .lsu_trans_valid     (core_i.load_store_unit_i.trans_valid),
-                              .last_op_id_i        (core_i.if_id_pipe.last_op),
-                              .first_op_if_i                (core_i.first_op_if),
+                              .last_op_id_i        (core_i.id_stage_i.last_op_o),
+                              .first_op_if_i                (core_i.if_stage_i.first_op),
                               .first_op_ex_i                (core_i.first_op_ex),
                               .prefetch_valid_if_i          (core_i.if_stage_i.prefetch_valid),
                               .prefetch_is_tbljmp_ptr_if_i  (core_i.if_stage_i.prefetch_is_tbljmp_ptr),

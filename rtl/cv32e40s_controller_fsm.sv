@@ -48,9 +48,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // From IF stage
   input  logic [31:0] pc_if_i,
-  input  logic        first_op_if_i,              // IF stage is handling the first operation of a sequence
+  input  logic        first_op_nondummy_if_i,     // IF stage is handling the first operation of a sequence
   input  logic        last_op_if_i,               // IF stage is handling the last operation of a sequence.
   input  logic        abort_op_if_i,              // IF stage contains an operation that will be aborted (bus error or MPU exception)
+  input  logic        prefetch_valid_if_i,        // Prefecher in IF stage has a valid instruction (similar as if_id_pipe.instr_valid)
 
   // From ID stage
   input  if_id_pipe_t if_id_pipe_i,
@@ -263,9 +264,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // - Blocking dummy instructions during single stepping and in debug mode.
   // - Blocking dummies if there is a non-first op in IF (sequencer is in the middle of a sequence)
   // Todo: Use allow_dummy_instr to guarantee progress (ensure there are never two dummies in a row in any pipeline stage)
-  assign  ctrl_fsm_o.allow_dummy_instr = (!dcsr_i.step  &&  // Valid in IF because it can only be written in debug mode
-                                         !debug_mode_q) &&  // Valid in IF because pipeline is killed when entering and exiting debug
-                                         first_op_if_i; // todo: unqualified use of first_op_if_i; also remove unneeded brackets above
+  assign  ctrl_fsm_o.allow_dummy_instr = !dcsr_i.step  &&  // Valid in IF because it can only be written in debug mode
+                                         !debug_mode_q &&  // Valid in IF because pipeline is killed when entering and exiting debug
+                                         (first_op_nondummy_if_i && prefetch_valid_if_i);
 
   // ID stage
 

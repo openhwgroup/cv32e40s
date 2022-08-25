@@ -33,8 +33,6 @@ module cv32e40s_compressed_decoder import cv32e40s_pkg::*;
 (
   input  inst_resp_t  instr_i,
   input  logic        instr_is_ptr_i,
-  input  logic [31:0] mstateen0_i,
-  input  privlvl_t    priv_lvl_i,
   output inst_resp_t  instr_o,
   output logic        is_compressed_o,
   output logic        illegal_instr_o

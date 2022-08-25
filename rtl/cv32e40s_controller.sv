@@ -47,9 +47,10 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   // From IF stage
   input  logic [31:0] pc_if_i,
-  input  logic        first_op_if_i,
+  input  logic        first_op_nondummy_if_i,
   input  logic        last_op_if_i,
   input  logic        abort_op_if_i,
+  input  logic        prefetch_valid_if_i,
 
   // from IF/ID pipeline
   input  if_id_pipe_t if_id_pipe_i,
@@ -154,9 +155,10 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
     .if_valid_i                  ( if_valid_i               ),
     .pc_if_i                     ( pc_if_i                  ),
-    .first_op_if_i               ( first_op_if_i            ),
+    .first_op_nondummy_if_i      ( first_op_nondummy_if_i   ),
     .last_op_if_i                ( last_op_if_i             ),
     .abort_op_if_i               ( abort_op_if_i            ),
+    .prefetch_valid_if_i         ( prefetch_valid_if_i      ),
 
     // From ID stage
     .if_id_pipe_i                ( if_id_pipe_i             ),

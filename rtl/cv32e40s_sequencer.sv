@@ -46,6 +46,9 @@ import cv32e40s_pkg::*;
     input  logic       halt_i,                // Halt, not ready for new input, no output valid. Keep state
     input  logic       kill_i,                // Kill. Ready for inputs, no output valid. Reset state
 
+    input  logic [31:0] mstateen0_i,
+    input  privlvl_t    priv_lvl_i,
+
     output inst_resp_t instr_o,               // Output sequenced (32-bit) instruction
     output logic       valid_o,               // Output is valid - input is valid AND we decode a valid seq instruction
     output logic       ready_o,               // Sequencer is ready for new inputs
@@ -133,8 +136,10 @@ import cv32e40s_pkg::*;
         if (instr[15:13] == 3'b101) begin
           unique case (instr[12:10])
             3'b000: begin
-              seq_tbljmp_o = 1'b1;
-              seq_instr = TBLJMP;
+              if ((priv_lvl_i == PRIV_LVL_M) || mstateen0_i[2]) begin
+                seq_tbljmp_o = 1'b1;
+                seq_instr = TBLJMP;
+              end
             end
 
             3'b011: begin
