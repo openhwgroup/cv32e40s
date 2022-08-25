@@ -36,6 +36,7 @@ module cv32e40s_rvfi
    input logic [31:0]                         pc_if_i,
    input logic                                instr_pmp_err_if_i,
    input logic                                last_op_if_i,
+   input logic                                abort_op_if_i,
    input logic                                prefetch_valid_if_i,
    input logic                                prefetch_ready_if_i,
    input logic [31:0]                         prefetch_addr_if_i,
@@ -70,8 +71,8 @@ module cv32e40s_rvfi
    input logic                                lsu_pmp_err_ex_i,
    input logic                                lsu_pma_err_atomic_ex_i,
    input logic [31:0]                         branch_target_ex_i,
-   input logic [31:0]                         data_addr_ex_i,
-   input logic [31:0]                         data_wdata_ex_i,
+   input logic [31:0]                         buffer_trans_addr_ex_i,
+   input logic [31:0]                         buffer_trans_wdata_ex_i,
    input logic                                lsu_split_q_ex_i,
 
    // WB probes
@@ -86,6 +87,7 @@ module cv32e40s_rvfi
    input logic                                sys_en_wb_i,
    input logic                                last_op_wb_i,
    input logic                                first_op_wb_i,
+   input logic                                abort_op_wb_i,
    input logic                                rf_we_wb_i,
    input logic [4:0]                          rf_addr_wb_i,
    input logic [31:0]                         rf_wdata_wb_i,
@@ -101,6 +103,7 @@ module cv32e40s_rvfi
    input ctrl_state_e                         ctrl_fsm_cs_i,
    input ctrl_state_e                         ctrl_fsm_ns_i,
    input logic                                pending_single_step_i,
+   input logic                                pending_single_step_ptr_i,
    input logic                                single_step_allowed_i,
    input logic                                nmi_pending_i,          // regular NMI pending
    input logic                                nmi_is_store_i,         // regular NMI type
@@ -649,7 +652,7 @@ module cv32e40s_rvfi
   logic [31:0]       mhpmcounter_h_during_wb;
 
 
-  logic [63:0] data_wdata_ror; // Intermediate rotate signal, as direct part-select not supported in all tools
+  logic [63:0] buffer_trans_wdata_ror; // Intermediate rotate signal, as direct part-select not supported in all tools
 
   logic         wb_valid_adjusted;
   logic         wb_valid_subop;
@@ -711,7 +714,7 @@ module cv32e40s_rvfi
   // The pc_mux signals probe the MUX in the IF stage to extract information about events in the WB stage.
   // These signals are therefore used both in the WB stage to see effects of the executed instruction (e.g. rvfi_trap), and
   // in the IF stage to see the reason for executing the instruction (e.g. rvfi_intr).
-  assign pc_mux_interrupt       = (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ);
+  assign pc_mux_interrupt       = (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ) || (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV);
   assign pc_mux_nmi             = (ctrl_fsm_i.pc_mux == PC_TRAP_NMI);
   assign pc_mux_debug           = (ctrl_fsm_i.pc_mux == PC_TRAP_DBD);
   assign pc_mux_exception       = (ctrl_fsm_i.pc_mux == PC_TRAP_EXC) || (ctrl_fsm_i.pc_mux == PC_TRAP_DBE) ;
@@ -769,7 +772,7 @@ module cv32e40s_rvfi
 
     end
 
-    if (pending_single_step_i && single_step_allowed_i) begin
+    if((pending_single_step_i || pending_single_step_ptr_i) && single_step_allowed_i) begin
       // The timing of the single step debug entry does not allow using pc_mux for detection
       rvfi_trap_next.debug       = 1'b1;
       rvfi_trap_next.debug_cause = DBG_CAUSE_STEP;
@@ -802,7 +805,7 @@ module cv32e40s_rvfi
   // The wake-up condition is only checked in the SLEEP state of the controller FSM.
   // Other instructions retire when their last suboperation is done in WB.
   assign wb_valid_subop    = (sys_en_wb_i && sys_wfi_insn_wb_i) ? (ctrl_fsm_cs_i == SLEEP) && (ctrl_fsm_ns_i == FUNCTIONAL) : wb_valid_i;
-  assign wb_valid_adjusted = (sys_en_wb_i && sys_wfi_insn_wb_i) ? (ctrl_fsm_cs_i == SLEEP) && (ctrl_fsm_ns_i == FUNCTIONAL) : wb_valid_i && last_op_wb_i;
+  assign wb_valid_adjusted = (sys_en_wb_i && sys_wfi_insn_wb_i) ? (ctrl_fsm_cs_i == SLEEP) && (ctrl_fsm_ns_i == FUNCTIONAL) : wb_valid_i && (last_op_wb_i || abort_op_wb_i);
 
 
   // Pipeline stage model //
@@ -878,7 +881,7 @@ module cv32e40s_rvfi
         debug_cause[STAGE_ID] <= debug_cause[STAGE_IF];
 
         // Clear captured events when last operation exits IF
-        if (last_op_if_i) begin
+        if (last_op_if_i || abort_op_if_i) begin
           in_trap    [STAGE_IF] <= 1'b0;
           debug_cause[STAGE_IF] <= '0;
         end
@@ -903,6 +906,13 @@ module cv32e40s_rvfi
                                in_trap[STAGE_ID].intr ? in_trap[STAGE_ID] :
                                in_trap[STAGE_EX].intr ? in_trap[STAGE_EX] :
                                                         in_trap[STAGE_WB];
+        // In case the first instruction during debug mode gets an exception, if_stage will be killed and the clearing
+        // of debug_cause due to last_op_if_i during (if_valid && id_ready) may never happen. This will lead to a wrong
+        // value of debug_cause on RVFI outputs. To avoid this, debug_cause is cleared if IF stage is killed due to an exception.
+        // The only sources of kill_if during debug mode is jumps, branches and exceptions. We cannot reset debug_cause due to
+        // jumps and branches as they would then report wrong debug cause when they retire.
+        end else if (ctrl_fsm_i.kill_if && pc_mux_exception) begin
+          debug_cause[STAGE_IF] <= '0;
         end
 
         // Picking up trap entry when IF is not valid to propagate for next valid instruction
@@ -933,10 +943,13 @@ module cv32e40s_rvfi
         // Only update rs1/rs2 on the first part of a multi operation instruction.
         // Jumps may actually use rs1 before (id_valid && ex_ready), an assertion exists to check that
         // the jump target is stable and it should be safe to use rs1/2_rdata at the time of the pipeline handshake.
-        // rs1/2 should reflect state of the first operation of any instruction.
-        rs1_addr   [STAGE_EX] <= first_op_id_i ? rs1_addr_id : rs1_addr[STAGE_EX]; // todo: why the first_op_id_i dependency? In https://github.com/openhwgroup/cv32e40x/pull/605 it was stated as not needed.
-        rs2_addr   [STAGE_EX] <= first_op_id_i ? rs2_addr_id : rs2_addr[STAGE_EX]; // todo: why the first_op_id_i dependency? In https://github.com/openhwgroup/cv32e40x/pull/605 it was stated as not needed.
-        rs1_rdata  [STAGE_EX] <= first_op_id_i ? rs1_rdata_id : rs1_rdata[STAGE_EX]; // todo: add good explanation why the select is needed here and not for example on rs1_rdata_subop
+        // rs1/2 address and rdata should reflect state of the first operation of any instruction, thus
+        // the gating with first_op_id_i in the lines below to not update the fields multiple times for sequenced instructions (including table jumps).
+        // The rs*_subop fields below are used to capture the state of _all_ operations within a sequence, and are used to populate the rvfi_gpr outputs
+        // to reflect all values read by the entire instruction.
+        rs1_addr   [STAGE_EX] <= first_op_id_i ? rs1_addr_id : rs1_addr[STAGE_EX];
+        rs2_addr   [STAGE_EX] <= first_op_id_i ? rs2_addr_id : rs2_addr[STAGE_EX];
+        rs1_rdata  [STAGE_EX] <= first_op_id_i ? rs1_rdata_id : rs1_rdata[STAGE_EX];
         rs2_rdata  [STAGE_EX] <= first_op_id_i ? rs2_rdata_id : rs2_rdata[STAGE_EX];
 
         mem_rmask  [STAGE_EX] <= (lsu_en_id_i && !lsu_we_id_i) ? rvfi_mem_mask_int : '0;
@@ -1079,7 +1092,7 @@ module cv32e40s_rvfi
         end
 
         // Handle counter for suboperations and memory operations
-        if (last_op_wb_i) begin
+        if (last_op_wb_i || abort_op_wb_i) begin
           // Reset suboperation and memop counters when the last op is done in WB.
           subop_cnt <= 4'h0;
           memop_cnt <= '0;
@@ -1147,11 +1160,11 @@ module cv32e40s_rvfi
   end
 
   // Memory adddress
-  assign rvfi_mem_addr_d = data_addr_ex_i;
+  assign rvfi_mem_addr_d = buffer_trans_addr_ex_i;
 
   // Align Memory write data
-  assign rvfi_mem_wdata_d  = data_wdata_ror[31:0];
-  assign data_wdata_ror    = {data_wdata_ex_i, data_wdata_ex_i} >> (8*rvfi_mem_addr_d[1:0]); // Rotate right
+  assign rvfi_mem_wdata_d       = buffer_trans_wdata_ror[31:0];
+  assign buffer_trans_wdata_ror = {buffer_trans_wdata_ex_i, buffer_trans_wdata_ex_i} >> (8*rvfi_mem_addr_d[1:0]); // Rotate right
 
   // Destination Register
   // The rd_addr signal in rtl can contain contain unused non-zero values when not reading

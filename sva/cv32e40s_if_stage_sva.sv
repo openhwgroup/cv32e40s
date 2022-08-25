@@ -37,13 +37,15 @@ module cv32e40s_if_stage_sva
   input if_id_pipe_t    if_id_pipe_o,
   if_c_obi.monitor      m_c_obi_instr_if,
   input logic [31:0]    mstateen0_i,
-  input logic           tbljmp,
+  input logic           seq_tbljmp,
   input  logic          seq_valid,
   input  logic          seq_ready,
   input  logic          illegal_c_insn,
   input  logic          instr_compressed,
   input  logic          prefetch_is_tbljmp_ptr,
-  input  logic          first_op_o
+  input  logic          first_op_nondummy_o,
+  input  logic          first_op,
+  input  logic          last_op_o
 );
 
   // Check that bus interface transactions are halfword aligned (will be forced word aligned at core boundary)
@@ -113,21 +115,23 @@ module cv32e40s_if_stage_sva
   // Assert that we do not trigger dummy instructions when the sequencer is in the middle of a sequence
   a_no_dummy_mid_sequence :
     assert property (@(posedge clk) disable iff (!rst_n)
-                      !first_op_o |-> !dummy_insert)
+                      !first_op_nondummy_o |-> !dummy_insert)
       else `uvm_error("if_stage", "Dummy instruction inserted mid-sequence")
 
 
   // No table jumps may occur in user mode while mstateen0[2] is 0
   a_no_illegal_tablejumps :
     assert property (@(posedge clk) disable iff (!rst_n)
-                      (prefetch_priv_lvl == PRIV_LVL_U) && !mstateen0_i[2] |-> !tbljmp)
+                      (prefetch_priv_lvl == PRIV_LVL_U) && !mstateen0_i[2] |-> !(seq_tbljmp && if_valid_o))
       else `uvm_error("if_stage", "Table jump in user mode without state permissions.")
 
 
   // compressed_decoder and sequencer shall be mutually exclusive
+  // Excluding table jumps pointers as these will set seq_valid=1 while the
+  // compressed decoder ignore pointers (illegal_c_insn will be 0)
   a_compressed_seq_0:
   assert property (@(posedge clk) disable iff (!rst_n)
-                    seq_valid |-> illegal_c_insn)
+                    (seq_valid && !prefetch_is_tbljmp_ptr) |-> illegal_c_insn)
       else `uvm_error("if_stage", "Compressed decoder and sequencer not mutually exclusive.")
 
   a_compressed_seq_1:
@@ -143,6 +147,10 @@ module cv32e40s_if_stage_sva
                       ctrl_fsm_i.kill_if |-> (seq_ready && !seq_valid))
         else `uvm_error("if_stage", "Kill should imply ready and not valid.")
 
-
+  // Dummies shall be first && last
+  a_dummy_first_last:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      dummy_insert |-> (first_op && last_op_o))
+        else `uvm_error("if_stage", "Dummies must have first_op and last_opo set.")
 endmodule
 

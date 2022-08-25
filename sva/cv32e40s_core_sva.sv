@@ -460,10 +460,12 @@ end
     else `uvm_error("core", "IF priviledge level not consistent with current priviledge level")
 
   // Assert that change to user mode only happens when and MRET is in ID and mstatus.mpp == PRIV_LVL_U
+  // or a DRET is in WB and dcsr.prv == PRIV_LVL_U
   a_priv_lvl_u_mode_mret:
     assert property (@(posedge clk) disable iff (!rst_ni)
                      $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_U) |->
-                     ((sys_en_id && sys_mret_insn_id) && if_id_pipe.instr_valid && (cs_registers_mstatus_q.mpp == PRIV_LVL_U)))
+                     ((sys_en_id && sys_mret_insn_id) && if_id_pipe.instr_valid && (cs_registers_mstatus_q.mpp == PRIV_LVL_U)) ||
+                     ((ex_wb_pipe.instr_valid && ex_wb_pipe.sys_dret_insn && (dcsr.prv == PRIV_LVL_U))))
     else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
 
   // Helper signal. Indicate that pc_mux is set to a trap
