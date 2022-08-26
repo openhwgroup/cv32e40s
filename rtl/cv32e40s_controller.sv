@@ -109,6 +109,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        csr_counter_read_i,         // A performance counter is read in CSR (EX)
   input  logic        csr_mnxti_read_i,           // MNXTI is read in CSR (EX)
 
+  input  logic        csr_irq_enable_write_i,     // An interrupt may be enabled by a write (WB)
+
   input logic [REGFILE_NUM_READ_PORTS-1:0] rf_re_id_i,
   input rf_addr_t     rf_raddr_id_i[REGFILE_NUM_READ_PORTS],
 
@@ -255,6 +257,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
     // From WB
     .wb_ready_i                 ( wb_ready_i               ),
+    .csr_irq_enable_write_i     ( csr_irq_enable_write_i   ),
 
     // Outputs
     .ctrl_byp_o                 ( ctrl_byp_o               )

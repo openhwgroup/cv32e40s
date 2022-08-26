@@ -36,6 +36,8 @@ module cv32e40s_core_sva
   input ctrl_fsm_t   ctrl_fsm,
   input logic [10:0] exc_cause,
   input logic [31:0] mie,
+  input logic [31:0] mie_n,
+  input logic        mie_we,
   input logic [31:0] mip,
   input dcsr_t       dcsr,
   input              if_id_pipe_t if_id_pipe,
@@ -44,6 +46,7 @@ module cv32e40s_core_sva
   input logic        ex_ready,
   input logic        irq_ack, // irq ack output
   input logic        irq_clic_shv, // ack'ed irq is a CLIC SHV
+  input logic        irq_req_ctrl, // Interrupt controller request an interrupt
   input ex_wb_pipe_t ex_wb_pipe,
   input id_ex_pipe_t id_ex_pipe,
   input logic        sys_en_id,
@@ -105,8 +108,11 @@ module cv32e40s_core_sva
   input logic        ctrl_debug_mode_n,
   input logic        ctrl_pending_debug,
   input logic        ctrl_debug_allowed,
+  input logic        ctrl_interrupt_allowed,
+  input logic        ctrl_pending_interrupt,
   input              ctrl_state_e ctrl_fsm_ns,
   input ctrl_byp_t   ctrl_byp,
+  input logic        ctrl_pending_nmi,
    // probed cs_registers signals
   input logic [31:0] cs_registers_mie_q,
   input logic [31:0] cs_registers_mepc_n,
@@ -123,8 +129,10 @@ module cv32e40s_core_sva
   input logic        mret_self_stall_bypass,
   input logic        jumpr_self_stall_bypass,
   input logic        last_sec_op_id_i,  // todo: liekely not needed when using last_op_id.
-  input logic        last_op_id
-  );
+  input logic        last_op_id,
+
+  input logic        clic_irq_q,
+  input logic [7:0]  clic_irq_level_q);
 
 if (SMCLIC) begin
   property p_clic_mie_tieoff;
@@ -677,5 +685,54 @@ a_jumpr_self_stall_qual:
   a_tbljmp_stall: assert property(p_tbljmp_stall)
     else `uvm_error("core", "Table jump not stalled while CSR is written");
 
+if (SMCLIC) begin
+    // Check that a pending interrupt is taken as soon as possible after being enabled
+  property p_clic_enable;
+    @(posedge clk) disable iff (!rst_ni)
+    ( !irq_req_ctrl
+       ##1
+       irq_req_ctrl && $stable(clic_irq_q) && $stable(clic_irq_level_q) && !(ctrl_fsm.debug_mode || (dcsr.step && !dcsr.stepie))
+       |-> (ctrl_pending_interrupt && ctrl_interrupt_allowed));
+  endproperty;
+
+  a_clic_enable: assert property(p_clic_enable)
+    else `uvm_error("core", "Interrupt not taken soon enough after enabling");
+
+  // Check a pending interrupt that is disabled is actually not taken
+  property p_clic_disable;
+    @(posedge clk) disable iff (!rst_ni)
+    (  irq_req_ctrl
+        ##1
+        !irq_req_ctrl && $stable(clic_irq_q) && $stable(clic_irq_level_q)
+        |-> !(ctrl_pending_interrupt && ctrl_interrupt_allowed));
+  endproperty;
+
+  a_clic_disable: assert property(p_clic_disable)
+    else `uvm_error("core", "Interrupt taken after disabling");
+end else begin
+  // Check that a pending interrupt is taken as soon as possible after being enabled
+  property p_mip_mie_write_enable;
+    @(posedge clk) disable iff (!rst_ni)
+    ( !irq_req_ctrl
+       ##1
+       irq_req_ctrl && $stable(mip) && !(ctrl_fsm.debug_mode || (dcsr.step && !dcsr.stepie))
+       |-> (ctrl_pending_interrupt && ctrl_interrupt_allowed));
+  endproperty;
+
+  a_mip_mie_write_enable: assert property(p_mip_mie_write_enable)
+    else `uvm_error("core", "Interrupt not taken soon enough after enabling");
+
+  // Check a pending interrupt that is disabled is actually not taken
+  property p_mip_mie_write_disable;
+    @(posedge clk) disable iff (!rst_ni)
+    (  irq_req_ctrl
+        ##1
+        !irq_req_ctrl && $stable(mip)
+        |-> !(ctrl_pending_interrupt && ctrl_interrupt_allowed));
+  endproperty;
+
+  a_mip_mie_write_disable: assert property(p_mip_mie_write_disable)
+    else `uvm_error("core", "Interrupt taken after disabling");
+end
 endmodule
 
