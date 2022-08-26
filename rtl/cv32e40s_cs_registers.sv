@@ -115,6 +115,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   input  logic [7:0]                    mnxti_irq_level_i,
   output logic                          clic_pa_valid_o,        // CSR read data is an address to a function pointer
   output logic [31:0]                   clic_pa_o,              // Address to CLIC function pointer
+  output logic                          csr_irq_enable_write_o, // An irq enable write is being performed in WB
 
   // PMP
   output pmp_csr_t                      csr_pmp_o,
@@ -2467,6 +2468,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign csr_rdata_o = csr_rdata_int;
 
+
+  // Signal when an interrupt may become enabled due to a CSR write
+  generate
+    if (SMCLIC) begin : smclic_irq_en
+      assign csr_irq_enable_write_o = mstatus_we || priv_lvl_we || mintthresh_we || mintstatus_we;
+    end else begin : basic_irq_en
+      assign csr_irq_enable_write_o = mie_we || mstatus_we || priv_lvl_we;
+    end
+  endgenerate
 
   ////////////////////////////////////////////////////////////////////////
   //

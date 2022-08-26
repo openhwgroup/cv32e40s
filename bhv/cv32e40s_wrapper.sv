@@ -311,6 +311,10 @@ module cv32e40s_wrapper
                 .ctrl_pending_debug               (core_i.controller_i.controller_fsm_i.pending_debug),
                 .ctrl_debug_allowed               (core_i.controller_i.controller_fsm_i.debug_allowed),
                 .id_stage_multi_op_id_stall       (core_i.id_stage_i.multi_op_id_stall),
+                .ctrl_pending_nmi                 (core_i.controller_i.controller_fsm_i.pending_nmi),
+                .ctrl_pending_interrupt           (core_i.controller_i.controller_fsm_i.pending_interrupt),
+                .ctrl_interrupt_allowed           (core_i.controller_i.controller_fsm_i.interrupt_allowed),
+
                 .id_stage_id_valid                (core_i.id_stage_i.id_valid_o),
                 .priv_lvl_if                      (core_i.if_stage_i.prefetch_priv_lvl),
                 .priv_lvl_if_q                    (core_i.if_stage_i.prefetch_unit_i.alignment_buffer_i.instr_priv_lvl_q),
@@ -328,6 +332,10 @@ module cv32e40s_wrapper
                 .jumpr_self_stall_bypass          (core_i.controller_i.bypass_i.jumpr_self_stall),
                 .last_sec_op_id_i                 (core_i.id_stage_i.last_sec_op),
                 .last_op_id                       (core_i.id_stage_i.last_op),
+                .mie_n                            (core_i.cs_registers_i.mie_n),
+                .mie_we                           (core_i.cs_registers_i.mie_we),
+                .clic_irq_q                       (core_i.gen_clic_interrupt.clic_int_controller_i.clic_irq_q),
+                .clic_irq_level_q                 (core_i.gen_clic_interrupt.clic_int_controller_i.clic_irq_level_q),
                 .*);
 
   bind cv32e40s_sleep_unit:
