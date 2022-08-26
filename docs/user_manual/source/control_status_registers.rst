@@ -141,7 +141,6 @@ instruction exception.
 .. table:: Control and Status Register Map (additional custom CSRs)
   :name: Control and Status Register Map (additional custom CSRs)
 
-
   +---------------+-------------------+-----------+--------------------------+---------------------------------------------------------+
   |  CSR Address  |   Name            | Privilege | Parameter                |  Description                                            |
   +===============+===================+===========+==========================+=========================================================+
@@ -155,7 +154,6 @@ instruction exception.
   +---------------+-------------------+-----------+--------------------------+---------------------------------------------------------+
   | 0xBFC         | ``secureseed2``   | MRW       |                          | Seed for LFSR2                                          |
   +---------------+-------------------+-----------+--------------------------+---------------------------------------------------------+
-
 
 .. table:: Control and Status Register Map (Unprivileged and User-Level CSRs)
   :name: Control and Status Register Map (Unprivileged and User-Level CSRs)
