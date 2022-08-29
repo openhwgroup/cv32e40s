@@ -281,15 +281,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   pmpncfg_t                     pmpncfg_rdata[PMP_MAX_REGIONS];
   logic [PMP_MAX_REGIONS-1:0]   pmpncfg_we;
   logic [PMP_MAX_REGIONS-1:0]   pmpncfg_locked;
+  logic [PMP_MAX_REGIONS-1:0]   pmpaddr_locked;
   logic [PMP_MAX_REGIONS-1:0]   pmpncfg_wr_addr_match;
   logic [PMP_MAX_REGIONS-1:0]   pmpncfg_warl_ignore_wr;
   logic [PMP_MAX_REGIONS-1:0]   pmpaddr_wr_addr_match;
 
-  logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_n;                                     // Value written is not necessarily the value read
+  logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_n[PMP_MAX_REGIONS];                    // Value written is not necessarily the value read
   logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_q[PMP_MAX_REGIONS];
   logic [31:0]                  pmp_addr_n_r;                                   // Not used in RTL (used by RVFI) (next read value)
   logic [31:0]                  pmp_addr_rdata[PMP_MAX_REGIONS];
-  logic [PMP_MAX_REGIONS-1:0]   pmp_addr_we_int;
   logic [PMP_MAX_REGIONS-1:0]   pmp_addr_we;
 
   mseccfg_t                     pmp_mseccfg_n;
@@ -1052,8 +1052,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     end
 
     pmpncfg_we      = {PMP_MAX_REGIONS{1'b0}};
-    pmp_addr_n      = csr_wdata_int[31-:PMP_ADDR_WIDTH];
-    pmp_addr_we_int = {PMP_MAX_REGIONS{1'b0}};
+    pmp_addr_we     = {PMP_MAX_REGIONS{1'b0}};
     pmp_mseccfg_we  = 1'b0;
 
     pmp_mseccfgh_n  = pmp_mseccfgh_rdata;         // Read-only
@@ -1307,7 +1306,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_PMPADDR8,  CSR_PMPADDR9,  CSR_PMPADDR10, CSR_PMPADDR11,
         CSR_PMPADDR12, CSR_PMPADDR13, CSR_PMPADDR14, CSR_PMPADDR15: begin
           if (PMP) begin
-            pmp_addr_we_int[6'(16*0 + csr_waddr[3:0])] = 1'b1;
+            pmp_addr_we[6'(16*0 + csr_waddr[3:0])] = 1'b1;
           end
         end
 
@@ -1316,7 +1315,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_PMPADDR24, CSR_PMPADDR25, CSR_PMPADDR26, CSR_PMPADDR27,
         CSR_PMPADDR28, CSR_PMPADDR29, CSR_PMPADDR30, CSR_PMPADDR31: begin
           if (PMP) begin
-            pmp_addr_we_int[6'(16*1 + csr_waddr[3:0])] = 1'b1;
+            pmp_addr_we[6'(16*1 + csr_waddr[3:0])] = 1'b1;
           end
         end
 
@@ -1325,7 +1324,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_PMPADDR40, CSR_PMPADDR41, CSR_PMPADDR42, CSR_PMPADDR43,
         CSR_PMPADDR44, CSR_PMPADDR45, CSR_PMPADDR46, CSR_PMPADDR47: begin
           if (PMP) begin
-            pmp_addr_we_int[6'(16*2 + csr_waddr[3:0])] = 1'b1;
+            pmp_addr_we[6'(16*2 + csr_waddr[3:0])] = 1'b1;
           end
         end
 
@@ -1334,7 +1333,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_PMPADDR56, CSR_PMPADDR57, CSR_PMPADDR58, CSR_PMPADDR59,
         CSR_PMPADDR60, CSR_PMPADDR61, CSR_PMPADDR62, CSR_PMPADDR63: begin
           if (PMP) begin
-            pmp_addr_we_int[6'(16*3 + csr_waddr[3:0])] = 1'b1;
+            pmp_addr_we[6'(16*3 + csr_waddr[3:0])] = 1'b1;
           end
         end
 
@@ -2252,16 +2251,17 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign csr_pmp_o.cfg[i] = pmpncfg_q[i];
 
           if (i == PMP_NUM_REGIONS-1) begin: pmp_addr_qual_upper
-            assign pmp_addr_we[i] = pmp_addr_we_int[i] &&
-                                    !pmpncfg_locked[i];
+            assign pmpaddr_locked[i] = pmpncfg_locked[i];
           end else begin: pmp_addr_qual_other
             // If the region at the next index is configured as TOR, this region's address register is locked
-            assign pmp_addr_we[i] = pmp_addr_we_int[i] &&
-                                    !pmpncfg_locked[i] &&
-                                    (!pmpncfg_locked[i+1] || pmpncfg_q[i+1].mode != PMP_MODE_TOR);
+            assign pmpaddr_locked[i] = pmpncfg_locked[i] ||
+                                       (pmpncfg_locked[i+1] && pmpncfg_q[i+1].mode == PMP_MODE_TOR);
           end
 
           assign pmpaddr_wr_addr_match[i] = (csr_waddr == csr_num_e'(CSR_PMPADDR0 + i));
+
+          // Keep old data if PMPADDR is locked
+          assign pmp_addr_n[i] = pmpaddr_locked[i] ? pmp_addr_q[i] : csr_wdata_int[31-:PMP_ADDR_WIDTH];
 
           cv32e40s_csr
           #(
@@ -2276,7 +2276,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             .clk            ( clk                   ),
             .rst_n          ( rst_n                 ),
             .scan_cg_en_i   ( scan_cg_en_i          ),
-            .wr_data_i      ( pmp_addr_n            ),
+            .wr_data_i      ( pmp_addr_n[i]         ),
             .wr_en_i        ( pmp_addr_we[i]        ),
             .rd_data_o      ( pmp_addr_q[i]         ),
             .rd_error_o     ( pmp_addr_rd_error[i]  )
