@@ -2316,13 +2316,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign pmpncfg_q[i]              = pmpncfg_t'('0);
           assign pmpncfg_rd_error[i]       = 1'b0;
           assign pmpncfg_warl_ignore_wr[i] = 1'b0;
-          assign pmpncfg_we[i]             = 1'b0;
           assign pmpncfg_wr_addr_match[i]  = 1'b0;
 
           assign pmp_addr_q[i]             = '0;
           assign pmp_addr_rdata[i]         = '0;
           assign pmp_addr_rd_error[i]      = 1'b0;
-          assign pmp_addr_we[i]            = 1'b0;
 
           assign pmpaddr_wr_addr_match[i]  = 1'b0;
 
@@ -2376,13 +2374,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         assign pmpncfg_q[i]              = pmpncfg_t'('0);
         assign pmpncfg_rd_error[i]       = 1'b0;
         assign pmpncfg_warl_ignore_wr[i] = 1'b0;
-        assign pmpncfg_we[i]             = 1'b0;
         assign pmpncfg_wr_addr_match[i]  = 1'b0;
 
         assign pmp_addr_q[i]             = '0;
         assign pmp_addr_rdata[i]         = '0;
         assign pmp_addr_rd_error[i]      = 1'b0;
-        assign pmp_addr_we[i]            = 1'b0;
 
         assign pmpaddr_wr_addr_match[i]  = 1'b0;
 
