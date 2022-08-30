@@ -2211,10 +2211,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
               pmpncfg_n[i]       = csr_wdata_int[(i%4)*PMPNCFG_W+:PMPNCFG_W];
               pmpncfg_n[i].zero0 = '0;
 
-              // RW = 01 is a reserved combination, and shall result in RW = 00, unless mseccfg.mml==1
+              // PMPCFG.R/W/X form a collective WARL field, disallowing RW=01. Writing an illegal value will leave RWX unchanged.
               if (!pmpncfg_n[i].read && pmpncfg_n[i].write && !pmp_mseccfg_rdata.mml) begin
-                pmpncfg_n[i].read  = 1'b0;
-                pmpncfg_n[i].write = 1'b0;
+                pmpncfg_n[i].read  = pmpncfg_q[i].read;
+                pmpncfg_n[i].write = pmpncfg_q[i].write;
+                pmpncfg_n[i].exec  = pmpncfg_q[i].exec;
               end
 
               // NA4 mode is not selectable when G > 0, mode is treated as OFF // todo: keep old mode
