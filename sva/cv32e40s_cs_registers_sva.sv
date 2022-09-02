@@ -43,7 +43,10 @@ module cv32e40s_cs_registers_sva
    input logic        mintstatus_we,
    input logic        mcause_we,
    input logic [31:0] clic_pa_o,
-   input logic        clic_pa_valid_o
+   input logic        clic_pa_valid_o,
+   input mintstatus_t mintstatus_rdata,
+   input privlvl_t    priv_lvl_n,
+   input privlvl_t    priv_lvl_rdata
 
    );
 
@@ -62,18 +65,43 @@ module cv32e40s_cs_registers_sva
                     1'b1 |-> mtvec_mode_o == 2'b11)
       else `uvm_error("cs_registers", "mtvec_mode is not 2'b11 in CLIC mode")
 
-  // Accesses to MNXTI are stalled in EX if there is a LSU instruction in WB.
-  // Thus no mnxti should be in WB (clic_pa_valid_o) the cycle after an LSU instruction
-  // is done in WB.
-  property p_no_mnxti_after_lsu;
-    @(posedge clk) disable iff (!rst_n)
-    (  wb_valid_i && ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid
-       |=>
-       !clic_pa_valid_o);
-  endproperty;
+    // Accesses to MNXTI are stalled in EX if there is a LSU instruction in WB.
+    // Thus no mnxti should be in WB (clic_pa_valid_o) the cycle after an LSU instruction
+    // is done in WB.
+    property p_no_mnxti_after_lsu;
+      @(posedge clk) disable iff (!rst_n)
+      (  wb_valid_i && ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid
+        |=>
+        !clic_pa_valid_o);
+    endproperty;
 
-  a_no_mnxti_after_lsu: assert property(p_no_mnxti_after_lsu)
-    else `uvm_error("core", "Mnxti should not we in WB the cycle after an LSU instruction");
+    a_no_mnxti_after_lsu: assert property(p_no_mnxti_after_lsu)
+      else `uvm_error("cs_registers", "Mnxti should not we in WB the cycle after an LSU instruction");
+
+
+    // Check that horizontal traps keep the current interrupt level
+    property p_htrap_interrupt_level;
+      @(posedge clk) disable iff (!rst_n)
+      (  ctrl_fsm_i.csr_save_cause && !ctrl_fsm_i.debug_csr_save && !ctrl_fsm_i.csr_cause.irq && (priv_lvl_n == priv_lvl_rdata)
+         |=>
+         $stable(mintstatus_rdata.mil));
+
+    endproperty;
+
+    a_htrap_interrupt_level: assert property(p_htrap_interrupt_level)
+      else `uvm_error("cs_registers", "Horizontal trap taken caused interrupt level to change");
+
+    // Check that vertical traps use interrupt level 0
+    property p_vtrap_interrupt_level;
+      @(posedge clk) disable iff (!rst_n)
+      (  ctrl_fsm_i.csr_save_cause && !ctrl_fsm_i.debug_csr_save && !ctrl_fsm_i.csr_cause.irq && (priv_lvl_n == PRIV_LVL_M) && (priv_lvl_rdata == PRIV_LVL_U)
+          |=>
+          (mintstatus_rdata.mil == '0));
+
+    endproperty;
+
+    a_vtrap_interrupt_level: assert property(p_vtrap_interrupt_level)
+      else `uvm_error("cs_registers", "Vertical trap taken with nonzero interrupt level");
   end
 endmodule // cv32e40s_cs_registers_sva
 
