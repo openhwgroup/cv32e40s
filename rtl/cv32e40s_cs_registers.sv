@@ -230,7 +230,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   mtvt_t                        mtvt_q, mtvt_n, mtvt_rdata;
   logic                         mtvt_we;
 
-  logic [31:0]                  mnxti_rdata;                                    // No CSR module instance
+  logic [31:0]                  mnxti_n, mnxti_rdata;                           // No CSR module instance
   logic                         mnxti_we;
 
   mintstatus_t                  mintstatus_q, mintstatus_n, mintstatus_rdata;
@@ -545,7 +545,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           // The data read here is what will be used in the read-modify-write portion of the CSR access.
           // For mnxti, this is actually mstatus. The value written back to the GPR will be the address of
           // the function pointer to the interrupt handler. This is muxed in the WB stage.
-          csr_rdata_int = mnxti_rdata;
+          csr_rdata_int = mstatus_rdata;
           csr_mnxti_read_o = 1'b1;
         end else begin
           csr_rdata_int    = '0;
@@ -1467,7 +1467,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       // with a higher level. The valid below will be high also for the cases where
       // no side effects occur.
       clic_pa_valid_o = csr_en_gated && (csr_waddr == CSR_MNXTI);
-      clic_pa_o       = mnxti_irq_pending_i ? {mtvt_addr_o, mnxti_irq_id_i, 2'b00} : 32'h00000000;
+      clic_pa_o       = mnxti_rdata;
     end else begin
       clic_pa_valid_o = 1'b0;
       clic_pa_o       = '0;
@@ -1514,10 +1514,18 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             // mpil is saved from mintstatus
             mcause_n.mpil = mintstatus_rdata.mil;
 
-            // todo: handle exception vs interrupt
             // Save new interrupt level to mintstatus
-            mintstatus_n.mil = ctrl_fsm_i.irq_level;
-            mintstatus_we = 1'b1;
+            // Horizontal synchronous exception traps do not change the interrupt level.
+            // Vertical synchronous exception traps to higher privilege level use interrupt level 0.
+            // All exceptions are taken in PRIV_LVL_M, so checking that we get a different privilege level is sufficient for clearing
+            // mintstatus.mil.
+            if (ctrl_fsm_i.csr_cause.irq) begin
+              mintstatus_n.mil = ctrl_fsm_i.irq_level;
+              mintstatus_we = 1'b1;
+            end else if ((priv_lvl_rdata != priv_lvl_n)) begin
+              mintstatus_n.mil = '0;
+              mintstatus_we = 1'b1;
+            end
           end else begin
             mcause_n.mpil = '0;
           end
@@ -1564,6 +1572,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       default:;
     endcase
   end
+
+  // Mirroring mstatus_n to mnxti_n for RVFI
+  assign mnxti_n = mstatus_n;
 
   // CSR operation logic
   // Using ex_wb_pipe_i.rf_wdata for read-modify-write since CSR was read in EX, written in WB
@@ -2423,10 +2434,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign pmpncfg_rdata      = pmpncfg_q;
   assign pmp_mseccfg_rdata  = pmp_mseccfg_q;
 
-  //  mnxti_rdata will be used in the read-modify-write portion of the CSR access.
-  // For mnxti, this is actually mstatus. The value written back to the GPR will be
-  // the address of the function pointer to the interrupt handler.
-  assign mnxti_rdata        = mstatus_rdata;
+  // mnxti_rdata breaks the regular convension for CSRs. The read data used for read-modify-write is the mstatus_rdata,
+  // while the value read and written back to the GPR is a pointer address if an interrupt is pending, or zero
+  // if no interrupt is pending.
+  assign mnxti_rdata        = mnxti_irq_pending_i ? {mtvt_addr_o, mnxti_irq_id_i, 2'b00} : 32'h00000000;
 
   assign mip_rdata          = mip_i;
   assign misa_rdata         = MISA_VALUE;
@@ -2794,6 +2805,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mimpid_we | mhartid_we | mconfigptr_we | mtval_we | pmp_mseccfgh_we | mcounteren_we | menvcfg_we | menvcfgh_we |
     tdata1_rd_error | tdata2_rd_error | dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error | mcause_rd_error |
     mstateen1_we | mstateen2_we | mstateen3_we | mstateen0h_we | mstateen1h_we | mstateen2h_we |
-    mstateen3h_we | (|pmp_addr_n_r);
+    mstateen3h_we | (|pmp_addr_n_r) | (|mnxti_n);
 
 endmodule
