@@ -1902,7 +1902,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       #(
         .LIB        (LIB),
         .WIDTH      (32),
-        .MASK       (CSR_MSCRATCHCSW_MASK),
+        .MASK       (CSR_MCLICBASE_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (32'h0)
       )
