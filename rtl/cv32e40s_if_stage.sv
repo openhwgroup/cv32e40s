@@ -264,6 +264,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   cv32e40s_mpu
   #(
     .IF_STAGE             ( 1                       ),
+    .OUTSTND_CNT_WIDTH    ( ALBUF_CNT_WIDTH         ),
     .CORE_REQ_TYPE        ( obi_inst_req_t          ),
     .CORE_RESP_TYPE       ( inst_resp_t             ),
     .BUS_RESP_TYPE        ( obi_inst_resp_t         ),
@@ -284,6 +285,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .csr_pmp_i            ( csr_pmp_i               ),
 
     .core_one_txn_pend_n  ( prefetch_one_txn_pend_n ),
+    .core_outstnd_cnt_q   ( prefetch_outstnd_cnt_q  ),
     .core_mpu_err_wait_i  ( 1'b1                    ),
     .core_mpu_err_o       (                         ), // Unconnected on purpose
     .core_trans_valid_i   ( prefetch_trans_valid    ),

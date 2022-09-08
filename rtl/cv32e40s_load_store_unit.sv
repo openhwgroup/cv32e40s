@@ -608,6 +608,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   cv32e40s_mpu
   #(
     .IF_STAGE           ( 0                    ),
+    .OUTSTND_CNT_WIDTH  ( 2                    ), // TODO: parameterize counter (cnt_q) and use parameter here
     .CORE_RESP_TYPE     ( data_resp_t          ),
     .BUS_RESP_TYPE      ( obi_data_resp_t      ),
     .CORE_REQ_TYPE      ( obi_data_req_t       ),
@@ -624,6 +625,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .priv_lvl_i           ( priv_lvl_lsu_i     ),
     .csr_pmp_i            ( csr_pmp_i          ),
 
+    .core_outstnd_cnt_q   ( cnt_q              ),
     .core_one_txn_pend_n  ( cnt_is_one_next    ),
     .core_mpu_err_wait_i  ( !xif_req           ),
     .core_mpu_err_o       ( xif_mpu_err        ),

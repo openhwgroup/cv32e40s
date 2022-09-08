@@ -1125,6 +1125,7 @@ typedef struct packed {
 typedef struct packed {
  obi_inst_resp_t             bus_resp;
  mpu_status_e                mpu_status;
+ logic                       integrity;
 } inst_resp_t;
 
 // Reset value for the inst_resp_t type
@@ -1132,7 +1133,8 @@ parameter inst_resp_t INST_RESP_RESET_VAL = '{
   // Setting rdata[1:0] to 2'b11 to easily assert that all
   // instructions in ID are uncompressed
   bus_resp    : '{rdata: 32'h3, err: 1'b0, rchk: 5'b0},
-  mpu_status  : MPU_OK
+  mpu_status  : MPU_OK,
+  integrity   : 1'b0
 };
 
 // Reset value for the obi_inst_req_t type
@@ -1148,6 +1150,7 @@ parameter obi_inst_req_t OBI_INST_REQ_RESET_VAL = '{
 typedef struct packed {
   obi_data_resp_t             bus_resp;
   mpu_status_e                mpu_status;
+  logic                       integrity;
 } data_resp_t;
 
 // LSU transaction

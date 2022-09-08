@@ -377,6 +377,8 @@ endgenerate
         .IS_INSTR_SIDE                          (1))
   mpu_if_sva(.pma_addr                          (pma_i.trans_addr_i),
              .pma_cfg                           (pma_i.pma_cfg),
+             .pma_integrity                     (pma_i.pma_integrity_o),
+             .core_resp_o_integrity             (core_resp_o.integrity),
              .obi_memtype                       (core_i.instr_memtype_o),
              .obi_addr                          (core_i.instr_addr_o),
              .obi_req                           (core_i.instr_req_o),
@@ -396,6 +398,8 @@ endgenerate
         .IS_INSTR_SIDE                          (0))
   mpu_lsu_sva(.pma_addr                         (pma_i.trans_addr_i),
               .pma_cfg                          (pma_i.pma_cfg),
+              .pma_integrity                    (pma_i.pma_integrity_o),
+              .core_resp_o_integrity            (core_resp_o.integrity),
               .obi_memtype                      (core_i.data_memtype_o),
               .obi_addr                         (core_i.data_addr_o),
               .obi_req                          (core_i.data_req_o),

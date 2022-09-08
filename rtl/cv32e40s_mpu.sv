@@ -25,6 +25,7 @@
 
 module cv32e40s_mpu import cv32e40s_pkg::*;
   #(  parameter bit          IF_STAGE                     = 1,
+      parameter int          OUTSTND_CNT_WIDTH            = 2,
       parameter type         CORE_REQ_TYPE                = obi_inst_req_t,
       parameter type         CORE_RESP_TYPE               = inst_resp_t,
       parameter type         BUS_RESP_TYPE                = obi_inst_resp_t,
@@ -61,7 +62,9 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    input              privlvl_t priv_lvl_i,
 
    // Indication from the core that there will be one pending transaction in the next cycle
-   input logic  core_one_txn_pend_n,
+   input logic                         core_one_txn_pend_n,
+   // Core side counter for outstanding transactions
+   input logic [OUTSTND_CNT_WIDTH-1:0] core_outstnd_cnt_q,
 
    // Indication from the core that MPU errors should be reported after all in flight transactions
    // are complete (default behavior for main core requests, but not used for XIF requests)
@@ -74,6 +77,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   localparam bit PMP = SECURE;
 
   logic        pma_err;
+  logic        pma_integrity;
   logic        pmp_err;
   logic        mpu_err;
   logic        mpu_block_core;
@@ -89,6 +93,11 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   logic [33:0] pmp_req_addr;
   logic        instr_fetch_access;
   logic        load_access;
+
+  // Integrity FIFO is 1 bit deeper than the maximum value of core_outstnd_cnt_q
+  // Bit 0 is tied low to enable direct use of core_outstnd_cnt_q to pick correct FIFO index.
+  localparam INT_FIFO_DEPTH = (2**OUTSTND_CNT_WIDTH);
+  logic [INT_FIFO_DEPTH-1:0] integrity_fifo_q;
 
   // FSM that will "consume" transfers failing PMA or PMP checks.
   // Upon failing checks, this FSM will prevent the transfer from going out on the bus
@@ -168,6 +177,19 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
     end
   end
 
+  // FIFO to keep track of integrity attribute for outstanding transactions
+  always_ff @ (posedge clk, negedge rst_n) begin
+    if (!rst_n) begin
+      integrity_fifo_q <= {INT_FIFO_DEPTH{1'b0}};
+    end
+    else begin
+      if (core_trans_valid_i && core_trans_ready_o) begin
+        // Accepted address phase, populate FIFO with PMA integrity attribute
+        integrity_fifo_q <= {integrity_fifo_q[INT_FIFO_DEPTH-2:1], pma_integrity, 1'b0};
+      end
+    end
+  end
+
   // Forward transaction request towards bus interface
   assign bus_trans_valid_o = core_trans_valid_i && !mpu_block_bus;
 
@@ -181,12 +203,13 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   assign core_resp_valid_o      = bus_resp_valid_i || mpu_err_trans_valid;
   assign core_resp_o.bus_resp   = bus_resp_i;
   assign core_resp_o.mpu_status = mpu_status;
+  assign core_resp_o.integrity  = integrity_fifo_q[core_outstnd_cnt_q];
 
   // Report MPU errors to the core immediatly
   assign core_mpu_err_o = mpu_err;
 
   // Signal ready towards core
-  assign core_trans_ready_o     = (bus_trans_ready_i && !mpu_block_core) || mpu_err_trans_ready;
+  assign core_trans_ready_o = (bus_trans_ready_i && !mpu_block_core) || mpu_err_trans_ready;
 
   // PMA - Physical Memory Attribution
   cv32e40s_pma
@@ -200,6 +223,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
     .misaligned_access_i        ( misaligned_access_i  ),
     .load_access_i              ( load_access          ),
     .pma_err_o                  ( pma_err              ),
+    .pma_integrity_o            ( pma_integrity        ),
     .pma_bufferable_o           ( bus_trans_bufferable ),
     .pma_cacheable_o            ( bus_trans_cacheable  )
   );

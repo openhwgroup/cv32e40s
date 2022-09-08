@@ -42,6 +42,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
    input logic        pma_err,
    input logic [31:0] pma_addr,
    input pma_cfg_t    pma_cfg,
+   input logic        pma_integrity,
 
    // PMP signals
    input pmp_csr_t    csr_pmp_i,
@@ -69,6 +70,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
    input logic        core_trans_ready_o,
 
    input logic        core_resp_valid_o,
+   input logic        core_resp_o_integrity,
 
    input              mpu_status_e mpu_status,
    input logic        mpu_err_trans_valid,
@@ -454,6 +456,72 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
                        ##1 !$fell(csr_pmp_i.mseccfg.mmwp))
         else `uvm_error("mpu", "mseccfg.mmwp not sticky.")
 
+    // Support logic (FIFO) to track integrity attribute for outstanding transactions
+
+    localparam MAX_OUTSTND_TXN = 5; // This needs to be larger (or equal) to the max outstanding transactions in IF and LSU
+
+    typedef enum logic [1:0] {PMA_INT, PMA_NOINT, PMA_NONE} pma_int_chck_e;
+    logic exp_integrity;
+    logic [$clog2(MAX_OUTSTND_TXN)-1:0] oldest_txn;
+
+    pma_int_chck_e [MAX_OUTSTND_TXN-1:0] pma_integrity_fifo_q;
+    pma_int_chck_e [MAX_OUTSTND_TXN-1:0] pma_integrity_fifo_n;
+    pma_int_chck_e [MAX_OUTSTND_TXN-1:0] pma_integrity_fifo_tmp;
+
+    always_comb begin
+      pma_integrity_fifo_n   = pma_integrity_fifo_q;
+      pma_integrity_fifo_tmp = pma_integrity_fifo_q;
+
+      casez ({core_trans_valid_i, core_trans_ready_o, core_resp_valid_o})
+          3'b110: begin
+            // Accepted address phase, add one entry to FIFO
+            pma_integrity_fifo_n = pma_integrity ?
+                                   {pma_integrity_fifo_q[MAX_OUTSTND_TXN-2:0], PMA_INT} :
+                                   {pma_integrity_fifo_q[MAX_OUTSTND_TXN-2:0], PMA_NOINT};
+          end
+          3'b0?1, 3'b?01: begin
+            // Response phase, remove oldest entry from FIFO
+            pma_integrity_fifo_n[oldest_txn] = PMA_NONE;
+          end
+          3'b111: begin
+            // Accepted address phase and response phase. Clear oldest transaction and add new to FIFO
+            pma_integrity_fifo_tmp[oldest_txn] = PMA_NONE;
+            pma_integrity_fifo_n = pma_integrity ?
+                                   {pma_integrity_fifo_tmp[MAX_OUTSTND_TXN-2:0], PMA_INT} :
+                                   {pma_integrity_fifo_tmp[MAX_OUTSTND_TXN-2:0], PMA_NOINT};
+          end
+          default; // Do nothing
+        endcase
+    end
+
+    // FIFO
+    always_ff @ (posedge clk, negedge rst_n) begin
+      if (!rst_n) begin
+        pma_integrity_fifo_q <= {MAX_OUTSTND_TXN{PMA_NONE}};
+      end
+      else begin
+        pma_integrity_fifo_q <= pma_integrity_fifo_n;
+      end
+    end
+
+    // Locate oldest entry in FIFO
+    always_comb begin
+      oldest_txn = '0;
+      for (int i = 0;  i < MAX_OUTSTND_TXN; i++) begin
+        if (pma_integrity_fifo_q[i] != PMA_NONE) begin
+          oldest_txn = i;
+        end
+      end
+    end
+
+    // Integrity attribute from the oldest transaction
+    assign exp_integrity = (pma_integrity_fifo_q[oldest_txn] == PMA_INT);
+
+    // Assert that integrity bit from MPU corresponds to the expected value
+    a_pma_integrity :
+      assert property (@(posedge clk) disable iff (!rst_n)
+                       core_resp_valid_o |-> exp_integrity == core_resp_o_integrity)
+        else `uvm_error("mpu", "PMA integrity attribute not correct")
 
 endmodule : cv32e40s_mpu_sva
 
