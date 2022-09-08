@@ -98,6 +98,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic [1:0]  irq_clic_priv_i,
 
   input logic  [1:0]  mtvec_mode_i,
+  input  mcause_t     mcause_i,
 
   // CSR write stobes
   input  logic        csr_wr_in_wb_flush_i,
@@ -105,6 +106,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   // Debug Signal
   input  logic        debug_req_i,
   input  dcsr_t       dcsr_i,
+
 
   // CSR raddr in ex
   input  logic        csr_counter_read_i,         // A performance counter is read in CSR (EX)
@@ -212,6 +214,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     // Debug Signal
     .debug_req_i                 ( debug_req_i              ),
     .dcsr_i                      ( dcsr_i                   ),
+    .mcause_i                    ( mcause_i                 ),
 
     // Fencei flush handshake
     .fencei_flush_ack_i          ( fencei_flush_ack_i       ),
