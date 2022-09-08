@@ -1037,6 +1037,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // From CSR registers
     .mtvec_mode_i                   ( mtvec_mode             ),
+    .mcause_i                       ( mcause                 ),
 
     // CSR write strobes
     .csr_wr_in_wb_flush_i           ( csr_wr_in_wb_flush     ),

@@ -95,6 +95,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // From cs_registers
   input  logic  [1:0] mtvec_mode_i,
   input  dcsr_t       dcsr_i,
+  input  mcause_t     mcause_i,
 
   // Toplevel input
   input  logic        debug_req_i,                // External debug request
@@ -826,13 +827,40 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             ctrl_fsm_o.kill_if = 1'b1;
 
             if (sys_mret_id) begin
-              ctrl_fsm_o.pc_mux = PC_MRET;
-              ctrl_fsm_o.pc_set = 1'b1;
-              ctrl_fsm_o.mret_jump_id = !debug_mode_q;
-              // Todo: if mcause.minhv
-              //       halt ID until EX and WB are empty
-              //       - pc_set_clicv
-              //       state -> POINTER_FETCH
+              // When mcause.minhv is set, it signals that the previous pointer fetch faulted in IF.
+              // When the mret it execured with mcause.minhv set, the pointer fetch should be restarted
+              // instead of returning to the address in mepc.
+              // This is done below by signalling pc_set_clicv along with pc_mux=PC_MRET. This will
+              // treat the mepc as an address of a CLIC pointer. The minhv flag will only be cleaned
+              // when a pointer reaches the ID stage with no faults from fetching.
+              if (mcause_i.minhv) begin
+                // mcause.minhv set, exception occured during last pointer fetch (or SW wrote it)
+                // Must wait until EX and WB are empty as they can cause exceptions
+                if (!(id_ex_pipe_i.instr_valid || ex_wb_pipe_i.instr_valid)) begin
+                  // Do another pointer fetch from the address stored in mepc.
+                  ctrl_fsm_o.pc_set = 1'b1;
+                  ctrl_fsm_o.pc_set_clicv = 1'b1; // Treat mepc as a pointer fetch
+                  ctrl_fsm_o.pc_mux = PC_MRET;
+                  ctrl_fsm_ns = POINTER_FETCH;
+                  ctrl_fsm_o.mret_jump_id = !debug_mode_q;
+                  
+                  // Set flag to avoid further jumps to the same target
+                  // if we are stalled
+                  jump_taken_n = 1'b1;
+                end else begin
+                  ctrl_fsm_o.halt_if = 1'b1;
+                  ctrl_fsm_o.halt_id = 1'b1;
+                end
+              end else begin
+                // mcause.minhv not set, do regular mret
+                ctrl_fsm_o.pc_mux       = PC_MRET;
+                ctrl_fsm_o.pc_set       = 1'b1;
+                ctrl_fsm_o.mret_jump_id = !debug_mode_q;
+
+                // Set flag to avoid further jumps to the same target
+                // if we are stalled
+                jump_taken_n = 1'b1;
+              end
 
             end else begin
               // For table jumps we have two different jumps
@@ -843,11 +871,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                                          if_id_pipe_i.instr_meta.tbljmp && if_id_pipe_i.last_op  ? PC_POINTER : PC_JUMP;
               ctrl_fsm_o.pc_set        = 1'b1;
               ctrl_fsm_o.pc_set_tbljmp = if_id_pipe_i.instr_meta.tbljmp && !if_id_pipe_i.last_op;
-            end
 
-            // Set flag to avoid further jumps to the same target
-            // if we are stalled
-            jump_taken_n   = 1'b1;
+              // Set flag to avoid further jumps to the same target
+              // if we are stalled
+              jump_taken_n = 1'b1;
+            end
           end
 
           // Mret in WB restores CSR regs
