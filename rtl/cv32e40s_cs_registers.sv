@@ -374,8 +374,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         mintstatus_rd_error;
   logic                         mintthresh_rd_error;
   logic                         mclicbase_rd_error;
-  logic                         mscratchcsw_rd_error;
-  logic                         mscratchcswl_rd_error;
   logic                         jvt_rd_error;
   logic                         priv_lvl_rd_error;
   logic                         mstateen0_rd_error;
@@ -416,8 +414,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mintstatus_rd_error ||
     mintthresh_rd_error ||
     mclicbase_rd_error ||
-    mscratchcsw_rd_error ||
-    mscratchcswl_rd_error ||
     jvt_rd_error ||
     priv_lvl_rd_error ||
     mstateen0_rd_error;
@@ -1971,10 +1967,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign mintthresh_rd_error   = 1'b0;
 
       assign mscratchcsw_q         = 32'h0;
-      assign mscratchcsw_rd_error  = 1'b0;
 
       assign mscratchcswl_q        = 32'h0;
-      assign mscratchcswl_rd_error = 1'b0;
 
       assign mclicbase_q           = 32'h0;
       assign mclicbase_rd_error    = 1'b0;
