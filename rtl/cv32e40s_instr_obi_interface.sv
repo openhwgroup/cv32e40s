@@ -36,6 +36,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
+#(  parameter int          MAX_OUTSTANDING = 2
+ )
 (
   input  logic           clk,
   input  logic           rst_n,
@@ -53,9 +55,24 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   if_c_obi.master     m_c_obi_instr_if
 );
 
+
+  // Parity FIFO is 1 bit deeper than the maximum value of cnt_q
+  // Bit 0 is tied low to enable direct use of cnt_q to pick correct FIFO index.
+  logic [MAX_OUTSTANDING:0] parity_fifo_q;
+
   obi_if_state_e state_q, next_state;
 
   logic [11:0] achk;                            // Address phase checksum
+
+  logic gntpar_err;                             // gnt parity error (immediate)
+  logic gntpar_err_q;                           // gnt parity error (sticky for waited grants)
+  logic rvalidpar_err;                          // rvalid parity error (immediate during response phase)
+
+  // Outstanding counter signals
+  logic [1:0]     cnt_q;                        // Transaction counter
+  logic [1:0]     next_cnt;                     // Next value for cnt_q
+  logic           count_up;
+  logic           count_down;
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI R Channel
@@ -65,8 +82,11 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   // interface (resp_*). It is assumed that the consumer of the transaction response
   // is always receptive when resp_valid_o = 1 (otherwise a response would get dropped)
 
-  assign resp_valid_o = m_c_obi_instr_if.s_rvalid.rvalid;
-  assign resp_o       = m_c_obi_instr_if.resp_payload;
+  assign resp_valid_o       = m_c_obi_instr_if.s_rvalid.rvalid;
+  assign resp_o.rdata       = m_c_obi_instr_if.resp_payload.rdata;
+  assign resp_o.err         = m_c_obi_instr_if.resp_payload.err;
+  assign resp_o.rchk        = m_c_obi_instr_if.resp_payload.rchk;
+  assign resp_o.parity_err  = rvalidpar_err || parity_fifo_q[cnt_q];
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI A Channel
@@ -173,5 +193,95 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   // transfer has been granted. Note that cv32e40s_obi_interface does not limit
   // the number of outstanding transactions in any way.
   assign trans_ready_o = (state_q == TRANSPARENT);
+
+  ///////////////////////////////////////
+  // Outstanding transactions counter
+  // Used for tracking parity errors
+  ///////////////////////////////////////
+  assign count_up = m_c_obi_instr_if.s_req.req && m_c_obi_instr_if.s_gnt.gnt;  // Increment upon accepted transfer request
+  assign count_down = m_c_obi_instr_if.s_rvalid.rvalid;                        // Decrement upon accepted transfer response
+
+  always_comb begin
+    case ({count_up, count_down})
+      2'b00 : begin
+        next_cnt = cnt_q;
+      end
+      2'b01 : begin
+        next_cnt = cnt_q - 1'b1;
+      end
+      2'b10 : begin
+        next_cnt = cnt_q + 1'b1;
+      end
+      2'b11 : begin
+        next_cnt = cnt_q;
+      end
+      default:;
+    endcase
+  end
+
+  always_ff @(posedge clk, negedge rst_n)
+  begin
+    if (rst_n == 1'b0) begin
+      cnt_q <= '0;
+    end else begin
+      cnt_q <= next_cnt;
+    end
+  end
+
+  //////////////////////////////////////
+  // Track parity errors
+  //////////////////////////////////////
+  // Check gnt/gntpar during address phase (req==1)
+  // Check rvalid/rvalidpar during data phase (rvalid=1)
+
+
+  // Check gnt parity during address phase
+  always_comb begin
+    gntpar_err = 1'b0;
+    if(m_c_obi_instr_if.s_req.req) begin // address phase active
+      if (m_c_obi_instr_if.s_gnt.gnt == m_c_obi_instr_if.s_gnt.gntpar) begin
+        gntpar_err = 1'b1;
+      end
+    end
+  end
+
+  // gntpar_err_q is a sticky gnt error bit.
+  // Any gnt parity error detected during req will be remembered and propagated
+  // to the fifo when the address phase ends.
+  always_ff @ (posedge clk, negedge rst_n) begin
+    if (!rst_n) begin
+      gntpar_err_q <= '0;
+    end
+    else begin
+      if (m_c_obi_instr_if.s_req.req) begin
+        // Address phase active, set sticky gntpar_err if not granted
+        // When granted, sticky bit will be cleared for the next address phase
+        if (!m_c_obi_instr_if.s_gnt.gnt) begin
+          gntpar_err_q <= gntpar_err || gntpar_err_q;
+        end else begin
+          gntpar_err_q <= 1'b0;
+        end
+      end
+    end
+  end
+
+  // FIFO to keep track of gnt parity errors for outstanding transactions
+  always_ff @ (posedge clk, negedge rst_n) begin
+    if (!rst_n) begin
+      parity_fifo_q <= '0;
+    end
+    else begin
+      if (m_c_obi_instr_if.s_req.req && m_c_obi_instr_if.s_gnt.gnt) begin
+        // Accepted address phase, populate FIFO with PMA integrity attribute
+        parity_fifo_q <= {parity_fifo_q[MAX_OUTSTANDING-1:1], (gntpar_err || gntpar_err_q), 1'b0};
+      end
+    end
+  end
+
+  // Checking rvalid parity during response phase (rvalid=1)
+  assign rvalidpar_err = m_c_obi_instr_if.s_rvalid.rvalid && m_c_obi_instr_if.s_rvalid.rvalidpar;
+
+
+
 
 endmodule

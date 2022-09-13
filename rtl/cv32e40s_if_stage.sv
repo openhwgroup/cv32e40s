@@ -304,6 +304,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   //////////////////////////////////////////////////////////////////////////////
 
   cv32e40s_instr_obi_interface
+  #(
+    .MAX_OUTSTANDING (2) // todo: hook up to parameter
+  )
   instruction_obi_i
   (
     .clk                  ( clk              ),

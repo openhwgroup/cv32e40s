@@ -100,6 +100,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // Error propagation signals for bus and mpu
   logic bus_err_unaligned, bus_err;
   mpu_status_e mpu_status_unaligned, mpu_status;
+  logic parity_err_unaligned, parity_err;
 
   // resp_valid gated while flushing
   logic resp_valid_gated;
@@ -164,9 +165,10 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
   // Aligned instructions will either be fully in index 0 or incoming data
   // This also applies for the bus_error and mpu_status
-  assign instr      = (valid_q[rptr]) ? resp_q[rptr].bus_resp.rdata : resp_i.bus_resp.rdata;
-  assign bus_err    = (valid_q[rptr]) ? resp_q[rptr].bus_resp.err   : resp_i.bus_resp.err;
-  assign mpu_status = (valid_q[rptr]) ? resp_q[rptr].mpu_status     : resp_i.mpu_status;
+  assign instr      = (valid_q[rptr]) ? resp_q[rptr].bus_resp.rdata        : resp_i.bus_resp.rdata;
+  assign bus_err    = (valid_q[rptr]) ? resp_q[rptr].bus_resp.err          : resp_i.bus_resp.err;
+  assign parity_err = (valid_q[rptr]) ? resp_q[rptr].bus_resp.parity_err   : resp_i.bus_resp.parity_err;
+  assign mpu_status = (valid_q[rptr]) ? resp_q[rptr].mpu_status            : resp_i.mpu_status;
 
   // Unaligned instructions will either be split across index 0 and 1, or index 0 and incoming data
   assign instr_unaligned = (valid_q[rptr2]) ? {resp_q[rptr2].bus_resp.rdata[15:0], instr[31:16]} : {resp_i.bus_resp.rdata[15:0], instr[31:16]};
@@ -187,6 +189,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   always_comb begin
     mpu_status_unaligned = MPU_OK;
     bus_err_unaligned = 1'b0;
+    parity_err_unaligned = 1'b0;
     // There is valid data in q1 (valid q0 is implied)
     if(valid_q[rptr2]) begin
       // Not compressed, need two sources
@@ -198,12 +201,18 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
         // Bus error from either entry
         bus_err_unaligned = (resp_q[rptr2].bus_resp.err || resp_q[rptr].bus_resp.err);
+
+        // Parity error from either entry
+        parity_err_unaligned = (resp_q[rptr2].bus_resp.parity_err || resp_q[rptr].bus_resp.parity_err);
       end else begin
         // Compressed, use only mpu_status from q0
         mpu_status_unaligned = resp_q[rptr].mpu_status;
 
         // bus error from q0
         bus_err_unaligned    = resp_q[rptr].bus_resp.err;
+
+        // parity error from q0
+        parity_err_unaligned    = resp_q[rptr].bus_resp.parity_err;
       end
     end else begin
       // There is no data in q1, check q0
@@ -217,17 +226,24 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
           // Bus error from q0 and resp_i
           bus_err_unaligned = (resp_q[rptr].bus_resp.err || resp_i.bus_resp.err);
+
+          // Parity error from q0 and resp_i
+          parity_err_unaligned = (resp_q[rptr].bus_resp.parity_err || resp_i.bus_resp.parity_err);
         end else begin
           // There is unaligned data in q0 and it is compressed
           mpu_status_unaligned = resp_q[rptr].mpu_status;
 
           // Bus error from q0
           bus_err_unaligned = resp_q[rptr].bus_resp.err;
+
+          // Parity error from q0
+          parity_err_unaligned = resp_q[rptr].bus_resp.parity_err;
         end
       end else begin
         // There is no data in the buffer, use input
         mpu_status_unaligned = resp_i.mpu_status;
         bus_err_unaligned    = resp_i.bus_resp.err;
+        parity_err_unaligned    = resp_i.bus_resp.parity_err;
       end
     end
   end
@@ -236,9 +252,11 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // Output instructions to the if stage
   always_comb
   begin
-    instr_instr_o.bus_resp.rdata = instr;
-    instr_instr_o.bus_resp.err   = bus_err;
-    instr_instr_o.mpu_status     = mpu_status;
+    instr_instr_o.bus_resp.rdata      = instr;
+    instr_instr_o.bus_resp.err        = bus_err;
+    instr_instr_o.bus_resp.parity_err = parity_err;
+    instr_instr_o.mpu_status          = mpu_status;
+    instr_instr_o.bus_resp.rchk       = '0;          // Tie off rchk here. Rchk is checked locally only an error bit is propagated.
     instr_valid_o = 1'b0;
 
     // Invalidate output if we get killed
@@ -246,9 +264,10 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
       instr_valid_o = 1'b0;
     end else if (instr_addr_o[1]) begin
       // unaligned instruction
-      instr_instr_o.bus_resp.rdata = instr_unaligned;
-      instr_instr_o.bus_resp.err   = bus_err_unaligned;
-      instr_instr_o.mpu_status     = mpu_status_unaligned;
+      instr_instr_o.bus_resp.rdata        = instr_unaligned;
+      instr_instr_o.bus_resp.err          = bus_err_unaligned;
+      instr_instr_o.bus_resp.parity_err   = parity_err_unaligned;
+      instr_instr_o.mpu_status            = mpu_status_unaligned;
       // No instruction valid
       if (!valid) begin
         instr_valid_o = 1'b0;

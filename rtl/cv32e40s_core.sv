@@ -396,6 +396,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign m_c_obi_instr_if.resp_payload.rdata = instr_rdata_i;
   assign m_c_obi_instr_if.resp_payload.err   = instr_err_i;
   assign m_c_obi_instr_if.resp_payload.rchk  = instr_rchk_i;
+  assign m_c_obi_instr_if.resp_payload.parity_err = 1'b0; // Tie off here, will we populated in instr_obi_insterface.
 
   assign data_req_o                          = m_c_obi_data_if.s_req.req;
   assign data_reqpar_o                       = m_c_obi_data_if.s_req.reqpar;
