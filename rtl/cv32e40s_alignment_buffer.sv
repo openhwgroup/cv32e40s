@@ -39,6 +39,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // Branch control
   input  logic [31:0]    branch_addr_i,
   output logic           prefetch_busy_o,
+  input xsecure_ctrl_t   xsecure_ctrl_i,
   output logic           one_txn_pend_n,
 
   // Interface to prefetcher
@@ -254,7 +255,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   begin
     instr_instr_o.bus_resp.rdata      = instr;
     instr_instr_o.bus_resp.err        = bus_err;
-    instr_instr_o.bus_resp.parity_err = parity_err;
+    instr_instr_o.bus_resp.parity_err = xsecure_ctrl_i.cpuctrl.integrity ? parity_err : 1'b0;
     instr_instr_o.mpu_status          = mpu_status;
     instr_instr_o.bus_resp.rchk       = '0;          // Tie off rchk here. Rchk is checked locally only an error bit is propagated.
     instr_valid_o = 1'b0;
@@ -266,7 +267,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
       // unaligned instruction
       instr_instr_o.bus_resp.rdata        = instr_unaligned;
       instr_instr_o.bus_resp.err          = bus_err_unaligned;
-      instr_instr_o.bus_resp.parity_err   = parity_err_unaligned;
+      instr_instr_o.bus_resp.parity_err   = xsecure_ctrl_i.cpuctrl.integrity ? parity_err_unaligned : 1'b0;
       instr_instr_o.mpu_status            = mpu_status_unaligned;
       // No instruction valid
       if (!valid) begin

@@ -60,6 +60,9 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   output logic                       one_txn_pend_n,
   output logic [ALBUF_CNT_WIDTH-1:0] outstnd_cnt_q_o,
 
+  // Xsecure control (for parity and rchk)
+  input xsecure_ctrl_t  xsecure_ctrl_i,
+
   // Prefetch Buffer Status
   output logic        prefetch_busy_o
 );
@@ -115,6 +118,8 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
 
     .branch_addr_i         ( branch_addr_i           ),
     .prefetch_busy_o       ( prefetch_busy_o         ),
+
+    .xsecure_ctrl_i        ( xsecure_ctrl_i          ),
 
     // prefetch unit
     .fetch_valid_o         ( fetch_valid             ),

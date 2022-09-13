@@ -242,6 +242,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .resp_valid_i             ( prefetch_resp_valid         ),
     .resp_i                   ( prefetch_inst_resp          ),
 
+    .xsecure_ctrl_i           ( xsecure_ctrl_i              ),
+
     // Prefetch Buffer Status
     .prefetch_busy_o          ( prefetch_busy               ),
     .one_txn_pend_n           ( prefetch_one_txn_pend_n     ),
