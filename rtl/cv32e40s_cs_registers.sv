@@ -288,7 +288,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_n[PMP_MAX_REGIONS];                    // Value written is not necessarily the value read
   logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_q[PMP_MAX_REGIONS];
-  logic [31:0]                  pmp_addr_n_r;                                   // Not used in RTL (used by RVFI) (next read value)
+  logic [31:0]                  pmp_addr_n_r[PMP_MAX_REGIONS];                  // Not used in RTL (used by RVFI) (next read value)
+  logic [PMP_MAX_REGIONS-1:0]   pmp_addr_n_r_unused;
   logic [31:0]                  pmp_addr_rdata[PMP_MAX_REGIONS];
   logic [PMP_MAX_REGIONS-1:0]   pmp_addr_we;
 
@@ -2177,8 +2178,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   generate
     if (PMP_NUM_REGIONS > 0) begin: csr_pmp
 
-      assign pmp_addr_n_r = '0; // todo: implement 'next read value'
-
       for (genvar i=0; i < PMP_MAX_REGIONS; i++) begin: gen_pmp_csr
 
         if (i < PMP_NUM_REGIONS) begin: pmp_region
@@ -2284,13 +2283,16 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
           if (PMP_GRANULARITY == 0) begin: pmp_addr_rdata_g0
             // If G == 0, read data is unmodified
-            assign pmp_addr_rdata[i] = pmp_addr_q[i];
+            assign pmp_addr_rdata[i]     = pmp_addr_q[i];
+            assign pmp_addr_n_r[i]       = pmp_addr_n[i];
           end else if (PMP_GRANULARITY == 1) begin: pmp_addr_rdata_g1
             // If G == 1, bit [G-1] reads as zero in TOR or OFF mode
             always_comb begin
               pmp_addr_rdata[i] = pmp_addr_q[i];
+              pmp_addr_n_r[i]   = pmp_addr_n[i];
               if ((pmpncfg_rdata[i].mode == PMP_MODE_OFF) || (pmpncfg_rdata[i].mode == PMP_MODE_TOR)) begin
                 pmp_addr_rdata[i][PMP_GRANULARITY-1:0] = '0;
+                pmp_addr_n_r[i][PMP_GRANULARITY-1:0]   = '0;
               end
             end
           end else begin: pmp_addr_rdata_g2
@@ -2298,15 +2300,20 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             always_comb begin
               // In NAPOT mode, bits [G-2:0] must read as one
               pmp_addr_rdata[i] = {pmp_addr_q[i], {PMP_GRANULARITY-1{1'b1}}};
+              pmp_addr_n_r[i]   = {pmp_addr_n[i], {PMP_GRANULARITY-1{1'b1}}};
 
               if ((pmpncfg_rdata[i].mode == PMP_MODE_OFF) || (pmpncfg_rdata[i].mode == PMP_MODE_TOR)) begin
               // In TOR or OFF mode, bits [G-1:0] must read as zero
                 pmp_addr_rdata[i][PMP_GRANULARITY-1:0] = '0;
+                pmp_addr_n_r[i][PMP_GRANULARITY-1:0]   = '0;
               end
             end
           end
 
           assign csr_pmp_o.addr[i] = {pmp_addr_rdata[i], 2'b00};
+
+          // pmp_addr_n_r is only used by RVFI. Assign pmp_addr_n_r_unused to ease LINT waiving
+          assign pmp_addr_n_r_unused[i] = |pmp_addr_n_r[i];
 
         end else begin: no_pmp_region
 
@@ -2320,6 +2327,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
           assign pmp_addr_q[i]             = '0;
           assign pmp_addr_rdata[i]         = '0;
+          assign pmp_addr_n_r[i]           = '0;
+          assign pmp_addr_n_r_unused[i]    = '0;
           assign pmp_addr_rd_error[i]      = 1'b0;
 
           assign pmpaddr_wr_addr_match[i]  = 1'b0;
@@ -2365,9 +2374,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
     end else begin: no_csr_pmp
       // Generate tieoffs when PMP is not configured
-
-      assign pmp_addr_n_r = '0;
-
       for (genvar i = 0; i < PMP_MAX_REGIONS; i++) begin : g_tie_pmp_rdata
         assign pmpncfg_locked[i]         = 1'b0;
         assign pmpncfg_n[i]              = pmpncfg_t'('0);
@@ -2378,6 +2384,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
         assign pmp_addr_q[i]             = '0;
         assign pmp_addr_rdata[i]         = '0;
+        assign pmp_addr_n_r[i]           = '0;
+        assign pmp_addr_n_r_unused[i]    = '0;
         assign pmp_addr_rd_error[i]      = 1'b0;
 
         assign pmpaddr_wr_addr_match[i]  = 1'b0;
@@ -2800,7 +2808,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mimpid_we | mhartid_we | mconfigptr_we | mtval_we | pmp_mseccfgh_we | mcounteren_we | menvcfg_we | menvcfgh_we |
     tdata1_rd_error | tdata2_rd_error | dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error | mcause_rd_error |
     mstateen1_we | mstateen2_we | mstateen3_we | mstateen0h_we | mstateen1h_we | mstateen2h_we |
-    mstateen3h_we | (|pmp_addr_n_r) | (|mnxti_n) | mscratchcsw_we | mscratchcswl_we |
+    mstateen3h_we | (|pmp_addr_n_r_unused) | (|mnxti_n) | mscratchcsw_we | mscratchcswl_we |
     (|mscratchcsw_rdata) | (|mscratchcswl_rdata) | (|mscratchcsw_n) | (|mscratchcswl_n);
 
 endmodule
