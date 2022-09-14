@@ -2284,12 +2284,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           if (PMP_GRANULARITY == 0) begin: pmp_addr_rdata_g0
             // If G == 0, read data is unmodified
             assign pmp_addr_rdata[i]     = pmp_addr_q[i];
-            assign pmp_addr_n_r[i]       = csr_wdata_int;
+            assign pmp_addr_n_r[i]       = pmp_addr_n[i];
           end else if (PMP_GRANULARITY == 1) begin: pmp_addr_rdata_g1
             // If G == 1, bit [G-1] reads as zero in TOR or OFF mode
             always_comb begin
               pmp_addr_rdata[i] = pmp_addr_q[i];
-              pmp_addr_n_r[i]   = csr_wdata_int;
+              pmp_addr_n_r[i]   = pmp_addr_n[i];
               if ((pmpncfg_rdata[i].mode == PMP_MODE_OFF) || (pmpncfg_rdata[i].mode == PMP_MODE_TOR)) begin
                 pmp_addr_rdata[i][PMP_GRANULARITY-1:0] = '0;
                 pmp_addr_n_r[i][PMP_GRANULARITY-1:0]   = '0;
@@ -2299,8 +2299,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             // For G >= 2, bits are masked to one or zero depending on the mode
             always_comb begin
               // In NAPOT mode, bits [G-2:0] must read as one
-              pmp_addr_rdata[i] = {pmp_addr_q[i],                       {PMP_GRANULARITY-1{1'b1}}};
-              pmp_addr_n_r[i]   = {csr_wdata_int[31:PMP_GRANULARITY-1], {PMP_GRANULARITY-1{1'b1}}};
+              pmp_addr_rdata[i] = {pmp_addr_q[i], {PMP_GRANULARITY-1{1'b1}}};
+              pmp_addr_n_r[i]   = {pmp_addr_n[i], {PMP_GRANULARITY-1{1'b1}}};
 
               if ((pmpncfg_rdata[i].mode == PMP_MODE_OFF) || (pmpncfg_rdata[i].mode == PMP_MODE_TOR)) begin
               // In TOR or OFF mode, bits [G-1:0] must read as zero
