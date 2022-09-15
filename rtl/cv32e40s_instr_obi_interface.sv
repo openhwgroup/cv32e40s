@@ -67,6 +67,7 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   logic gntpar_err;                             // gnt parity error (immediate)
   logic gntpar_err_q;                           // gnt parity error (sticky for waited grants)
   logic rvalidpar_err;                          // rvalid parity error (immediate during response phase)
+  logic gntpar_err_resp;                        // grant error with reponse timing (output of fifo)
 
   // Outstanding counter signals
   logic [1:0]     cnt_q;                        // Transaction counter
@@ -86,7 +87,9 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   assign resp_o.rdata       = m_c_obi_instr_if.resp_payload.rdata;
   assign resp_o.err         = m_c_obi_instr_if.resp_payload.err;
   assign resp_o.rchk        = m_c_obi_instr_if.resp_payload.rchk;
-  assign resp_o.parity_err  = rvalidpar_err || parity_fifo_q[cnt_q];
+  assign resp_o.parity_err  = rvalidpar_err || gntpar_err_resp;
+  assign resp_o.integrity   = 1'b1; // todo: use fifo output for integrity bit
+  assign resp_o.rchk_err    = 1'b0; // Should we signal rchk_err from the local checker?
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI A Channel
@@ -272,11 +275,14 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
     end
     else begin
       if (m_c_obi_instr_if.s_req.req && m_c_obi_instr_if.s_gnt.gnt) begin
-        // Accepted address phase, populate FIFO with PMA integrity attribute
+        // Accepted address phase, populate FIFO with gnt parity error and PMA integrity bit
         parity_fifo_q <= {parity_fifo_q[MAX_OUTSTANDING-1:1], (gntpar_err || gntpar_err_q), 1'b0};
       end
     end
   end
+
+  // grant parity for response is read from the fifo
+  assign gntpar_err_resp = parity_fifo_q[cnt_q];
 
   // Checking rvalid parity during response phase (rvalid=1)
   assign rvalidpar_err = m_c_obi_instr_if.s_rvalid.rvalid && m_c_obi_instr_if.s_rvalid.rvalidpar;

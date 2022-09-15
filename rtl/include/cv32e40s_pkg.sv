@@ -1103,7 +1103,9 @@ typedef struct packed {
   logic [INSTR_DATA_WIDTH-1:0] rdata;
   logic                        err;
   logic [4:0]                  rchk;
+  logic                        rchk_err;
   logic                        parity_err;
+  logic                        integrity;
 } obi_inst_resp_t;
 
 typedef struct packed {
@@ -1134,7 +1136,7 @@ typedef struct packed {
 parameter inst_resp_t INST_RESP_RESET_VAL = '{
   // Setting rdata[1:0] to 2'b11 to easily assert that all
   // instructions in ID are uncompressed
-  bus_resp    : '{rdata: 32'h3, err: 1'b0, rchk: 5'b0, parity_err: 1'b0},
+  bus_resp    : '{rdata: 32'h3, err: 1'b0, rchk: 5'b0, parity_err: 1'b0, rchk_err: 1'b0, integrity: 1'b0},
   mpu_status  : MPU_OK
 };
 
