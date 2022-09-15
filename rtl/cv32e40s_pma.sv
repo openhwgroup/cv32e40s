@@ -34,6 +34,7 @@ module cv32e40s_pma import cv32e40s_pkg::*;
   input  logic        misaligned_access_i,  // Indicate that ongoing access is part of a misaligned access
   input  logic        load_access_i,        // Indicate that ongoing access is a load
   output logic        pma_err_o,
+  output logic        pma_integrity_o,
   output logic        pma_bufferable_o,
   output logic        pma_cacheable_o
 );
@@ -87,6 +88,9 @@ module cv32e40s_pma import cv32e40s_pkg::*;
       pma_err_o   = 1'b1;
     end
   end
+
+  // Set integrity based on PMA region attribute
+  assign pma_integrity_o = pma_cfg.integrity;
 
   // Set cacheable and bufferable based on PMA region attributes
   // Instruction fetches and loads are never classified as bufferable

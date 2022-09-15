@@ -74,6 +74,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   localparam bit PMP = SECURE;
 
   logic        pma_err;
+  logic        pma_integrity;
   logic        pmp_err;
   logic        mpu_err;
   logic        mpu_block_core;
@@ -175,6 +176,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
     bus_trans_o            = core_trans_i;
     bus_trans_o.memtype[0] = bus_trans_bufferable;
     bus_trans_o.memtype[1] = bus_trans_cacheable;
+    bus_trans_o.integrity  = pma_integrity;
   end
 
   // Forward transaction response towards core
@@ -186,7 +188,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   assign core_mpu_err_o = mpu_err;
 
   // Signal ready towards core
-  assign core_trans_ready_o     = (bus_trans_ready_i && !mpu_block_core) || mpu_err_trans_ready;
+  assign core_trans_ready_o = (bus_trans_ready_i && !mpu_block_core) || mpu_err_trans_ready;
 
   // PMA - Physical Memory Attribution
   cv32e40s_pma
@@ -200,6 +202,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
     .misaligned_access_i        ( misaligned_access_i  ),
     .load_access_i              ( load_access          ),
     .pma_err_o                  ( pma_err              ),
+    .pma_integrity_o            ( pma_integrity        ),
     .pma_bufferable_o           ( bus_trans_bufferable ),
     .pma_cacheable_o            ( bus_trans_cacheable  )
   );
