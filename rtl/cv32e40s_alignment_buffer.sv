@@ -63,7 +63,8 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   output privlvl_t                   instr_priv_lvl_o,
   output logic                       instr_is_clic_ptr_o,
   output logic                       instr_is_tbljmp_ptr_o,
-  output logic [ALBUF_CNT_WIDTH-1:0] outstnd_cnt_q_o
+  output logic [ALBUF_CNT_WIDTH-1:0] outstnd_cnt_q_o,
+  output logic                       integrity_err_o
 );
 
   // Counter for number of instructions in the FIFO
@@ -345,13 +346,15 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
     end
   end
 
+  // Set integrity error output
+  assign integrity_err_o = parity_err || rchk_err_0 || rchk_err_1;
 
   // Output instructions to the if stage
   always_comb
   begin
     instr_instr_o.bus_resp.rdata      = instr;
     instr_instr_o.bus_resp.err        = bus_err;
-    instr_instr_o.bus_resp.parity_err = xsecure_ctrl_i.cpuctrl.integrity ? parity_err : 1'b0;
+    instr_instr_o.bus_resp.parity_err = parity_err;
     instr_instr_o.mpu_status          = mpu_status;
     instr_instr_o.bus_resp.rchk       = '0;          // Tie off rchk here. Rchk is checked locally only the error bit is propagated.
     instr_instr_o.bus_resp.rchk_err   = rchk_err_0 || rchk_err_1;

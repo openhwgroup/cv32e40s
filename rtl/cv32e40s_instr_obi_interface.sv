@@ -51,8 +51,10 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   output logic           resp_valid_o,          // Note: Consumer is assumed to be 'ready' whenever resp_valid_o = 1
   output obi_inst_resp_t resp_o,
 
+  output logic           integrity_err,         // parity error or rchk error, fans into alert_major_o
+
   // OBI interface
-  if_c_obi.master     m_c_obi_instr_if
+  if_c_obi.master        m_c_obi_instr_if
 );
 
 
@@ -74,6 +76,9 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   logic [1:0]     next_cnt;                     // Next value for cnt_q
   logic           count_up;
   logic           count_down;
+
+  logic           rchk_en;                      // Enable rchk (rvalid && integrity)
+  logic           rchk_err;                     // Local rchk error signal
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI R Channel
@@ -281,11 +286,30 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
     end
   end
 
+
+  assign rchk_en = m_c_obi_instr_if.s_rvalid.rvalid; //todo: && integrity bit
+  cv32e40s_rchk_check
+  #(
+      .RESP_TYPE (obi_inst_resp_t)
+  )
+  rchk_1_i
+  (
+    .resp_i (m_c_obi_instr_if.resp_payload),
+    .enable (rchk_en),
+    .err    (rchk_err)
+  );
+
   // grant parity for response is read from the fifo
   assign gntpar_err_resp = parity_fifo_q[cnt_q];
 
   // Checking rvalid parity during response phase (rvalid=1)
-  assign rvalidpar_err = m_c_obi_instr_if.s_rvalid.rvalid && m_c_obi_instr_if.s_rvalid.rvalidpar;
+  assign rvalidpar_err = m_c_obi_instr_if.s_rvalid.rvalid == m_c_obi_instr_if.s_rvalid.rvalidpar;
+
+  // Set integrity error outputs.
+  // rchk_err: recomputed checksum mismatch when rvalid=1
+  // rvalidpar_err: mismatch on rvalid parity bit at any time
+  // gntpar_err: mismatch on gnt parity bit at any time
+  assign integrity_err = rchk_err || rvalidpar_err || gntpar_err;
 
 
 
