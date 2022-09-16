@@ -418,26 +418,28 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   always_comb begin
     if (xif_req) begin
-      align_trans.addr    = xif_mem_if.mem_req.addr;
-      align_trans.we      = xif_mem_if.mem_req.we;
-      align_trans.be      = xif_mem_if.mem_req.be;
-      align_trans.wdata   = xif_mem_if.mem_req.wdata;
-      align_trans.prot    = {xif_mem_if.mem_req.mode, 1'b1}; // XIF transfers are data transfers
-      align_trans.dbg     = '0;                              // TODO setup debug triggers
-      align_trans.memtype = 2'b00;                           // Memory type is assigned in MPU
-      align_trans.achk    = 12'h000;                 // Set in data_obi_interface, tie off here.
+      align_trans.addr      = xif_mem_if.mem_req.addr;
+      align_trans.we        = xif_mem_if.mem_req.we;
+      align_trans.be        = xif_mem_if.mem_req.be;
+      align_trans.wdata     = xif_mem_if.mem_req.wdata;
+      align_trans.prot      = {xif_mem_if.mem_req.mode, 1'b1}; // XIF transfers are data transfers
+      align_trans.dbg       = '0;                              // TODO setup debug triggers
+      align_trans.memtype   = 2'b00;                           // Memory type is assigned in MPU
+      align_trans.achk      = 12'h000;                         // Set in data_obi_interface, tie off here.
+      align_trans.integrity = 1'b0;                            // PMA integrity attribute is assigned in the MPU
     end else begin
       // For last phase of misaligned/split transfer the address needs to be word aligned (as LSB of be will be set)
       // todo: As part of the fix for https://github.com/openhwgroup/cv32e40x/issues/388 the following should be used as well:
       // align_trans.addr   = split_q ? {trans.addr[31:2], 2'b00} + 'h4 : trans.addr;
-      align_trans.addr    = (split_q ? {trans.addr[31:2], 2'b00} + 'h4 : trans.addr);
-      align_trans.we      = trans.we;
-      align_trans.be      = be;
-      align_trans.wdata   = wdata;
-      align_trans.prot    = {trans.mode, 1'b1};      // Transfers from LSU are data transfers
-      align_trans.dbg     = trans.dbg;
-      align_trans.memtype = 2'b00;                   // Memory type is assigned in MPU
-      align_trans.achk    = 12'h000;                 // Set in data_obi_interface, tie off here.
+      align_trans.addr      = (split_q ? {trans.addr[31:2], 2'b00} + 'h4 : trans.addr);
+      align_trans.we        = trans.we;
+      align_trans.be        = be;
+      align_trans.wdata     = wdata;
+      align_trans.prot      = {trans.mode, 1'b1};              // Transfers from LSU are data transfers
+      align_trans.dbg       = trans.dbg;
+      align_trans.memtype   = 2'b00;                           // Memory type is assigned in MPU
+      align_trans.achk      = 12'h000;                         // Set in data_obi_interface, tie off here.
+      align_trans.integrity = 1'b0;                            // PMA integrity attribute is assigned in the MPU
     end
   end
 

@@ -1094,6 +1094,7 @@ typedef struct packed {
   logic [2:0]                  prot;
   logic                        dbg;
   logic [11:0]                 achk;
+  logic                        integrity; // PMA integrity attribute, will not be passed onto OBI
 } obi_inst_req_t;
 
 typedef struct packed {
@@ -1111,6 +1112,7 @@ typedef struct packed {
   logic [2:0]                     prot;
   logic                           dbg;
   logic [11:0]                    achk;
+  logic                           integrity; // PMA integrity attribute, will not be passed onto OBI
 } obi_data_req_t;
 
 typedef struct packed {
@@ -1135,11 +1137,12 @@ parameter inst_resp_t INST_RESP_RESET_VAL = '{
 
 // Reset value for the obi_inst_req_t type
 parameter obi_inst_req_t OBI_INST_REQ_RESET_VAL = '{
-  addr    : 'h0,
-  memtype : 'h0,
-  prot    : {PRIV_LVL_M, 1'b0},
-  dbg     : 1'b0,
-  achk    : 12'hFFF
+  addr      : 'h0,
+  memtype   : 'h0,
+  prot      : {PRIV_LVL_M, 1'b0},
+  dbg       : 1'b0,
+  achk      : 12'hFFF,
+  integrity : 1'b0
 };
 
 // Data transfer bundeled with MPU status
