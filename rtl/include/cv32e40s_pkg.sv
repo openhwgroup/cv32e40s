@@ -1094,7 +1094,7 @@ typedef struct packed {
   logic [2:0]                  prot;
   logic                        dbg;
   logic [11:0]                 achk;
-  logic                        integrity;
+  logic                        integrity; // PMA integrity attribute, will not be passed onto OBI
 } obi_inst_req_t;
 
 typedef struct packed {
@@ -1112,7 +1112,7 @@ typedef struct packed {
   logic [2:0]                     prot;
   logic                           dbg;
   logic [11:0]                    achk;
-  logic                           integrity;
+  logic                           integrity; // PMA integrity attribute, will not be passed onto OBI
 } obi_data_req_t;
 
 typedef struct packed {
