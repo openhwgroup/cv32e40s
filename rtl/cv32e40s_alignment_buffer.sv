@@ -308,7 +308,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   end
 
   // Set integrity error output
-  assign integrity_err_o = parity_err  || parity_err_unaligend || rchk_err_q0 || rchk_err_q1;
+  assign integrity_err_o = parity_err  || parity_err_unaligned || rchk_err_q0 || rchk_err_q1;
 
   // Output instructions to the if stage
   always_comb
