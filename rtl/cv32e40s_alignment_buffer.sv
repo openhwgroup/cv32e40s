@@ -199,7 +199,8 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   /////////////////
   // RCHK
   /////////////////
-  // Enable any rchk checking when enabled in cpuctrl and response comes from a region with the integrity bit set in the PMA.
+  // Enable any rchk checking when enabled in cpuctrl
+  // PMA integrity bit is parth of bus_resp and will be checked within the rchk module.
   assign rchk_enable = xsecure_ctrl_i.cpuctrl.integrity;
 
   // Rchk for buffer entry q0
@@ -307,7 +308,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   end
 
   // Set integrity error output
-  assign integrity_err_o = parity_err || rchk_err_q0 || rchk_err_q1;
+  assign integrity_err_o = parity_err  || parity_err_unaligend || rchk_err_q0 || rchk_err_q1;
 
   // Output instructions to the if stage
   always_comb

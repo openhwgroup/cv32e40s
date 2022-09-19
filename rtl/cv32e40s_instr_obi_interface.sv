@@ -53,6 +53,8 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
   output logic           integrity_err_o,       // parity error or rchk error, fans into alert_major_o
 
+  input xsecure_ctrl_t   xsecure_ctrl_i,
+
   // OBI interface
   if_c_obi.master        m_c_obi_instr_if
 );
@@ -291,15 +293,15 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   end
 
 
-  // Enable rchk when in response phase
-  assign rchk_en = m_c_obi_instr_if.s_rvalid.rvalid;
+  // Enable rchk when in response phase and cpuctrl.integrity is set
+  assign rchk_en = m_c_obi_instr_if.s_rvalid.rvalid && xsecure_ctrl_i.cpuctrl.integrity;
   cv32e40s_rchk_check
   #(
       .RESP_TYPE (obi_inst_resp_t)
   )
   rchk_i
   (
-    .resp_i (resp_o),  // Using local output, as is has the integrity bit appended from the fifo. Otherwise inputs from bus.
+    .resp_i (resp_o),  // Using local output, as is has the PMA integrity bit appended from the fifo. Otherwise inputs from bus.
     .enable (rchk_en),
     .err    (rchk_err)
   );
