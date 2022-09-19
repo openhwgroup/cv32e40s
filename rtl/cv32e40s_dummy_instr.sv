@@ -136,8 +136,10 @@ module cv32e40s_dummy_instr
   assign instr[11: 7] = (opcode == OPCODE_BRANCH) ? {imm[4:1], imm[11]}  : rd;
   assign instr[ 6: 0] = opcode;
 
-  assign dummy_instr_o.bus_resp.rdata = instr;
-  assign dummy_instr_o.bus_resp.err   = 1'b0;
-  assign dummy_instr_o.mpu_status     = MPU_OK;
+  assign dummy_instr_o.bus_resp.rdata      = instr;
+  assign dummy_instr_o.bus_resp.err        = 1'b0;
+  assign dummy_instr_o.mpu_status          = MPU_OK;
+  assign dummy_instr_o.bus_resp.parity_err = 1'b0;
+  assign dummy_instr_o.bus_resp.rchk_err   = 1'b0;
 
 endmodule : cv32e40s_dummy_instr

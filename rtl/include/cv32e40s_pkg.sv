@@ -938,14 +938,15 @@ typedef enum logic[3:0] {
 } pc_mux_e;
 
 // Exception Cause
-parameter EXC_CAUSE_INSTR_FAULT     = 11'h01;
-parameter EXC_CAUSE_ILLEGAL_INSN    = 11'h02;
-parameter EXC_CAUSE_BREAKPOINT      = 11'h03;
-parameter EXC_CAUSE_LOAD_FAULT      = 11'h05;
-parameter EXC_CAUSE_STORE_FAULT     = 11'h07;
-parameter EXC_CAUSE_ECALL_UMODE     = 11'h08;
-parameter EXC_CAUSE_ECALL_MMODE     = 11'h0B;
-parameter EXC_CAUSE_INSTR_BUS_FAULT = 11'h30;
+parameter EXC_CAUSE_INSTR_FAULT           = 11'h01;
+parameter EXC_CAUSE_ILLEGAL_INSN          = 11'h02;
+parameter EXC_CAUSE_BREAKPOINT            = 11'h03;
+parameter EXC_CAUSE_LOAD_FAULT            = 11'h05;
+parameter EXC_CAUSE_STORE_FAULT           = 11'h07;
+parameter EXC_CAUSE_ECALL_UMODE           = 11'h08;
+parameter EXC_CAUSE_ECALL_MMODE           = 11'h0B;
+parameter EXC_CAUSE_INSTR_INTEGRITY_FAULT = 11'h19;
+parameter EXC_CAUSE_INSTR_BUS_FAULT       = 11'h30;
 
 parameter INT_CAUSE_LSU_LOAD_FAULT  = 11'h400;
 parameter INT_CAUSE_LSU_STORE_FAULT = 11'h401;

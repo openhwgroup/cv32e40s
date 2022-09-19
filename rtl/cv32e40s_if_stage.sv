@@ -424,7 +424,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   // Set flag to indicate that instruction/sequence will be aborted due to known exceptions or trigger match
   assign abort_op_o = dummy_insert ? 1'b0 :
-                      (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK) || trigger_match_i);
+                      (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK) ||
+                      (instr_decompressed.bus_resp.parity_err) || (instr_decompressed.bus_resp.rchk_err) || trigger_match_i);
 
   assign prefetch_valid_o = prefetch_valid;
   // Populate instruction meta data
@@ -500,8 +501,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
           if_id_pipe_o.ptr                <= instr_decompressed.bus_resp.rdata;
 
           // Need to update bus error status and mpu status, but may omit the 32-bit instruction word
-          if_id_pipe_o.instr.bus_resp.err <= instr_decompressed.bus_resp.err;
-          if_id_pipe_o.instr.mpu_status   <= instr_decompressed.mpu_status;
+          if_id_pipe_o.instr.bus_resp.err        <= instr_decompressed.bus_resp.err;
+          if_id_pipe_o.instr.mpu_status          <= instr_decompressed.mpu_status;
+          if_id_pipe_o.instr.bus_resp.parity_err <= instr_decompressed.bus_resp.parity_err;
+          if_id_pipe_o.instr.bus_resp.rchk_err   <= instr_decompressed.bus_resp.rchk_err;
         end else begin
           // Regular instruction, update the whole instr field
           if_id_pipe_o.instr          <= dummy_insert ? dummy_instr :

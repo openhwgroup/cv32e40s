@@ -167,18 +167,18 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
   always_comb begin
     achk = {
-      ~^{8'b0},                                         // wdata[31:24] = 8'b0
-      ~^{8'b0},                                         // wdata[23:16] = 8'b0
-      ~^{8'b0},                                         // wdata[15:8] = 8'b0
-      ~^{8'b0},                                         // wdata[7:0] = 8'b0
-      ~^{6'b0},                                         // atop[5:0] = 6'b0
+      ^{8'b0},                                         // wdata[31:24] = 8'b0
+      ^{8'b0},                                         // wdata[23:16] = 8'b0
+      ^{8'b0},                                         // wdata[15:8] = 8'b0
+      ^{8'b0},                                         // wdata[7:0] = 8'b0
+      ^{6'b0},                                         // atop[5:0] = 6'b0
       ~^{m_c_obi_instr_if.req_payload.dbg},
       ~^{4'b1111, 1'b0},                                // be[3:0] = 4'b1111, we = 1'b0
       ~^{m_c_obi_instr_if.req_payload.prot[2:0], m_c_obi_instr_if.req_payload.memtype[1:0]},
-      ~^{m_c_obi_instr_if.req_payload.addr[31:24]},
-      ~^{m_c_obi_instr_if.req_payload.addr[23:16]},
-      ~^{m_c_obi_instr_if.req_payload.addr[15:8]},
-      ~^{m_c_obi_instr_if.req_payload.addr[7:2], 2'b00} // Bits 1:0 are tied to zero in the core level.
+      ^{m_c_obi_instr_if.req_payload.addr[31:24]},
+      ^{m_c_obi_instr_if.req_payload.addr[23:16]},
+      ^{m_c_obi_instr_if.req_payload.addr[15:8]},
+      ^{m_c_obi_instr_if.req_payload.addr[7:2], 2'b00} // Bits 1:0 are tied to zero in the core level.
     };
   end
 
