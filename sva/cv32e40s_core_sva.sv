@@ -611,33 +611,33 @@ end
   logic [11:0] data_achk_expected;
 
   assign instr_achk_expected = {
-    ~^{8'b0},
-    ~^{8'b0},
-    ~^{8'b0},
-    ~^{8'b0},
-    ~^{6'b0},
+    ^{8'b0},
+    ^{8'b0},
+    ^{8'b0},
+    ^{8'b0},
+    ^{6'b0},
     ~^{instr_dbg_o},
     ~^{4'b1111, 1'b0},
     ~^{instr_prot_o[2:0], instr_memtype_o[1:0]},
-    ~^{instr_addr_o[31:24]},
-    ~^{instr_addr_o[23:16]},
-    ~^{instr_addr_o[15:8]},
-    ~^{instr_addr_o[7:0]}
+    ^{instr_addr_o[31:24]},
+    ^{instr_addr_o[23:16]},
+    ^{instr_addr_o[15:8]},
+    ^{instr_addr_o[7:0]}
   };
 
   assign data_achk_expected = {
-    ~^{data_wdata_o[31:24]},
-    ~^{data_wdata_o[23:16]},
-    ~^{data_wdata_o[15:8]},
-    ~^{data_wdata_o[7:0]},
-    ~^{6'b0},
+    ^{data_wdata_o[31:24]},
+    ^{data_wdata_o[23:16]},
+    ^{data_wdata_o[15:8]},
+    ^{data_wdata_o[7:0]},
+    ^{6'b0},
     ~^{data_dbg_o},
     ~^{data_be_o[3:0], data_we_o},
     ~^{data_prot_o[2:0], data_memtype_o[1:0]},
-    ~^{data_addr_o[31:24]},
-    ~^{data_addr_o[23:16]},
-    ~^{data_addr_o[15:8]},
-    ~^{data_addr_o[7:0]}
+    ^{data_addr_o[31:24]},
+    ^{data_addr_o[23:16]},
+    ^{data_addr_o[15:8]},
+    ^{data_addr_o[7:0]}
   };
 
   a_no_checksum_err:
