@@ -51,16 +51,22 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   output logic           resp_valid_o,          // Note: Consumer is assumed to be 'ready' whenever resp_valid_o = 1
   output obi_inst_resp_t resp_o,
 
-  output logic           integrity_err,         // parity error or rchk error, fans into alert_major_o
+  output logic           integrity_err_o,       // parity error or rchk error, fans into alert_major_o
 
   // OBI interface
   if_c_obi.master        m_c_obi_instr_if
 );
 
 
-  // Parity FIFO is 1 bit deeper than the maximum value of cnt_q
-  // Bit 0 is tied low to enable direct use of cnt_q to pick correct FIFO index.
-  logic [MAX_OUTSTANDING:0] parity_fifo_q;
+  typedef struct packed {
+    logic        integrity;
+    logic        gnterr;
+  } int_gnt_fifo_t;
+
+  // FIFO is 1 bit deeper than the maximum value of cnt_q
+  // Index 0 is tied low to enable direct use of cnt_q to pick correct FIFO index.
+  int_gnt_fifo_t [MAX_OUTSTANDING:0] parity_fifo_q;
+  int_gnt_fifo_t parity_fifo_input;
 
   obi_if_state_e state_q, next_state;
 
@@ -87,14 +93,16 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   // The OBI R channel signals are passed on directly on the transaction response
   // interface (resp_*). It is assumed that the consumer of the transaction response
   // is always receptive when resp_valid_o = 1 (otherwise a response would get dropped)
+  // OBI response signals for parity error, integrity from PMA and rchk error are appended.
 
   assign resp_valid_o       = m_c_obi_instr_if.s_rvalid.rvalid;
-  assign resp_o.rdata       = m_c_obi_instr_if.resp_payload.rdata;
-  assign resp_o.err         = m_c_obi_instr_if.resp_payload.err;
-  assign resp_o.rchk        = m_c_obi_instr_if.resp_payload.rchk;
-  assign resp_o.parity_err  = rvalidpar_err || gntpar_err_resp;
-  assign resp_o.integrity   = 1'b1; // todo: use fifo output for integrity bit
-  assign resp_o.rchk_err    = 1'b0; // Should we signal rchk_err from the local checker?
+
+  always_comb begin
+    resp_o  = m_c_obi_instr_if.resp_payload;
+    resp_o.parity_err  = rvalidpar_err || gntpar_err_resp;
+    resp_o.rchk_err    = rchk_err;
+    resp_o.integrity   = parity_fifo_q[cnt_q].integrity;
+  end
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI A Channel
@@ -202,10 +210,10 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   // the number of outstanding transactions in any way.
   assign trans_ready_o = (state_q == TRANSPARENT);
 
-  ///////////////////////////////////////
+  /////////////////////////////////////////////////////////////
   // Outstanding transactions counter
-  // Used for tracking parity errors
-  ///////////////////////////////////////
+  // Used for tracking parity errors and integrity attribute
+  /////////////////////////////////////////////////////////////
   assign count_up = m_c_obi_instr_if.s_req.req && m_c_obi_instr_if.s_gnt.gnt;  // Increment upon accepted transfer request
   assign count_down = m_c_obi_instr_if.s_rvalid.rvalid;                        // Decrement upon accepted transfer response
 
@@ -239,19 +247,11 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   //////////////////////////////////////
   // Track parity errors
   //////////////////////////////////////
-  // Check gnt/gntpar during address phase (req==1)
-  // Check rvalid/rvalidpar during data phase (rvalid=1)
 
+  // Always check gnt parity
+  // alert_major will not update when in reset
+  assign gntpar_err = (m_c_obi_instr_if.s_gnt.gnt == m_c_obi_instr_if.s_gnt.gntpar);
 
-  // Check gnt parity during address phase
-  always_comb begin
-    gntpar_err = 1'b0;
-    if(m_c_obi_instr_if.s_req.req) begin // address phase active
-      if (m_c_obi_instr_if.s_gnt.gnt == m_c_obi_instr_if.s_gnt.gntpar) begin
-        gntpar_err = 1'b1;
-      end
-    end
-  end
 
   // gntpar_err_q is a sticky gnt error bit.
   // Any gnt parity error detected during req will be remembered and propagated
@@ -274,6 +274,10 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   end
 
   // FIFO to keep track of gnt parity errors for outstanding transactions
+
+  assign parity_fifo_input.integrity = trans_i.integrity;
+  assign parity_fifo_input.gnterr    = (gntpar_err || gntpar_err_q);
+
   always_ff @ (posedge clk, negedge rst_n) begin
     if (!rst_n) begin
       parity_fifo_q <= '0;
@@ -281,35 +285,38 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
     else begin
       if (m_c_obi_instr_if.s_req.req && m_c_obi_instr_if.s_gnt.gnt) begin
         // Accepted address phase, populate FIFO with gnt parity error and PMA integrity bit
-        parity_fifo_q <= {parity_fifo_q[MAX_OUTSTANDING-1:1], (gntpar_err || gntpar_err_q), 1'b0};
+        parity_fifo_q <= {parity_fifo_q[MAX_OUTSTANDING-1:1], parity_fifo_input, 2'b00};
       end
     end
   end
 
 
-  assign rchk_en = m_c_obi_instr_if.s_rvalid.rvalid; //todo: && integrity bit
+  // Enable rchk when in response phase
+  assign rchk_en = m_c_obi_instr_if.s_rvalid.rvalid;
   cv32e40s_rchk_check
   #(
       .RESP_TYPE (obi_inst_resp_t)
   )
-  rchk_1_i
+  rchk_i
   (
-    .resp_i (m_c_obi_instr_if.resp_payload),
+    .resp_i (resp_o),  // Using local output, as is has the integrity bit appended from the fifo. Otherwise inputs from bus.
     .enable (rchk_en),
     .err    (rchk_err)
   );
 
   // grant parity for response is read from the fifo
-  assign gntpar_err_resp = parity_fifo_q[cnt_q];
+  assign gntpar_err_resp = parity_fifo_q[cnt_q].gnterr;
 
-  // Checking rvalid parity during response phase (rvalid=1)
-  assign rvalidpar_err = m_c_obi_instr_if.s_rvalid.rvalid == m_c_obi_instr_if.s_rvalid.rvalidpar;
+  // Checking rvalid parity
+  // integrity_err_o will go high immediately, while the rvalidpar_err for the instruction
+  // will only propagate when rvalid==1.
+  assign rvalidpar_err = (m_c_obi_instr_if.s_rvalid.rvalid == m_c_obi_instr_if.s_rvalid.rvalidpar);
 
   // Set integrity error outputs.
-  // rchk_err: recomputed checksum mismatch when rvalid=1
+  // rchk_err: recomputed checksum mismatch when rvalid=1 and PMA has integrity set for the transaction
   // rvalidpar_err: mismatch on rvalid parity bit at any time
   // gntpar_err: mismatch on gnt parity bit at any time
-  assign integrity_err = rchk_err || rvalidpar_err || gntpar_err;
+  assign integrity_err_o = rchk_err || rvalidpar_err || gntpar_err;
 
 
 

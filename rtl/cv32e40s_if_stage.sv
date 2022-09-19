@@ -327,7 +327,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .resp_valid_o         ( bus_resp_valid   ),
     .resp_o               ( bus_resp         ),
 
-    .integrity_err        ( integrity_err_obi),   // immediate integrity error, either parity or chk
+    .integrity_err_o      ( integrity_err_obi),   // immediate integrity error, either parity or chk
     .m_c_obi_instr_if     ( m_c_obi_instr_if )
   );
 
