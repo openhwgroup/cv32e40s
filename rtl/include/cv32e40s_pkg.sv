@@ -517,6 +517,13 @@ typedef struct packed {
   logic         dataindtiming;
 } cpuctrl_t;
 
+parameter cpuctrl_t CPUCTRL_RESET_VAL = '{
+  integrity     : 1'b1,
+  pc_hardening  : 1'b1,
+  dataindtiming : 1'b1,
+  default:    '0};
+
+
 typedef struct packed {
   logic [31:0] lfsr2;
   logic [31:0] lfsr1;
