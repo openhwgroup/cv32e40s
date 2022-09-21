@@ -1986,7 +1986,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .WIDTH      (32),
         .MASK       (CSR_CPUCTRL_MASK),
         .SHADOWCOPY (SECURE),
-        .RESETVALUE (32'd0)
+        .RESETVALUE (CPUCTRL_RESET_VAL)
       )
       cpuctrl_csr_i
       (
@@ -2457,7 +2457,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign menvcfg_rdata      = 32'h0;
   assign menvcfgh_rdata     = 32'h0;
 
-  assign cpuctrl_rdata      = 32'h0;
+  assign cpuctrl_rdata      = cpuctrl_q;
   assign secureseed0_rdata  = 32'h0;
   assign secureseed1_rdata  = 32'h0;
   assign secureseed2_rdata  = 32'h0;

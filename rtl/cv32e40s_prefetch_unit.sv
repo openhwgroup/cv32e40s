@@ -48,6 +48,7 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   output privlvl_t    prefetch_priv_lvl_o,
   output logic        prefetch_is_clic_ptr_o,
   output logic        prefetch_is_tbljmp_ptr_o,
+  output logic        prefetch_integrity_err_o,
 
   // Transaction interface to obi interface
   output logic        trans_valid_o,
@@ -59,6 +60,9 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
 
   output logic                       one_txn_pend_n,
   output logic [ALBUF_CNT_WIDTH-1:0] outstnd_cnt_q_o,
+
+  // Xsecure control (for parity and rchk)
+  input xsecure_ctrl_t  xsecure_ctrl_i,
 
   // Prefetch Buffer Status
   output logic        prefetch_busy_o
@@ -116,6 +120,8 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
     .branch_addr_i         ( branch_addr_i           ),
     .prefetch_busy_o       ( prefetch_busy_o         ),
 
+    .xsecure_ctrl_i        ( xsecure_ctrl_i          ),
+
     // prefetch unit
     .fetch_valid_o         ( fetch_valid             ),
     .fetch_ready_i         ( fetch_ready             ),
@@ -136,7 +142,8 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
     .instr_addr_o          ( prefetch_addr_o         ),
     .instr_priv_lvl_o      ( prefetch_priv_lvl_o     ),
     .instr_is_clic_ptr_o   ( prefetch_is_clic_ptr_o  ),
-    .instr_is_tbljmp_ptr_o ( prefetch_is_tbljmp_ptr_o)
+    .instr_is_tbljmp_ptr_o ( prefetch_is_tbljmp_ptr_o),
+    .integrity_err_o       ( prefetch_integrity_err_o)
 
   );
 

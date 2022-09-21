@@ -77,18 +77,18 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
     // Integrity // todo: ensure this will not get optimized away
     m_c_obi_data_if.req_payload.achk = {
-                                        ~^{m_c_obi_data_if.req_payload.wdata[31:24]},
-                                        ~^{m_c_obi_data_if.req_payload.wdata[23:16]},
-                                        ~^{m_c_obi_data_if.req_payload.wdata[15:8]},
-                                        ~^{m_c_obi_data_if.req_payload.wdata[7:0]},
-                                        ~^{6'b0},                                         // atop[5:0] = 6'b0
+                                        ^{m_c_obi_data_if.req_payload.wdata[31:24]},
+                                        ^{m_c_obi_data_if.req_payload.wdata[23:16]},
+                                        ^{m_c_obi_data_if.req_payload.wdata[15:8]},
+                                        ^{m_c_obi_data_if.req_payload.wdata[7:0]},
+                                        ^{6'b0},                                         // atop[5:0] = 6'b0
                                         ~^{m_c_obi_data_if.req_payload.dbg},
                                         ~^{m_c_obi_data_if.req_payload.be[3:0], m_c_obi_data_if.req_payload.we},
                                         ~^{m_c_obi_data_if.req_payload.prot[2:0], m_c_obi_data_if.req_payload.memtype[1:0]},
-                                        ~^{m_c_obi_data_if.req_payload.addr[31:24]},
-                                        ~^{m_c_obi_data_if.req_payload.addr[23:16]},
-                                        ~^{m_c_obi_data_if.req_payload.addr[15:8]},
-                                        ~^{m_c_obi_data_if.req_payload.addr[7:0]}
+                                        ^{m_c_obi_data_if.req_payload.addr[31:24]},
+                                        ^{m_c_obi_data_if.req_payload.addr[23:16]},
+                                        ^{m_c_obi_data_if.req_payload.addr[15:8]},
+                                        ^{m_c_obi_data_if.req_payload.addr[7:0]}
                                         };
 
   end

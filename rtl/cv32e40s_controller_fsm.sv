@@ -325,6 +325,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Not checking for ex_wb_pipe_i.last_op to enable exceptions to be taken as soon as possible for
   // split load/stores or Zc sequences.
   assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK)                              ||
+                             ex_wb_pipe_i.instr.bus_resp.parity_err                                ||
+                             ex_wb_pipe_i.instr.bus_resp.rchk_err                                  ||
                              ex_wb_pipe_i.instr.bus_resp.err                                       ||
                             ex_wb_pipe_i.illegal_insn                                              ||
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)                   ||
@@ -337,6 +339,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // For CLIC: Pointer fetches with PMA/PMP errors will get the exception code converted to LOAD_FAULT
   //           Bus errors will be converted to NMI as for regular loads.
   assign exception_cause_wb = (ex_wb_pipe_i.instr.mpu_status != MPU_OK)               ? EXC_CAUSE_INSTR_FAULT     :
+                               ex_wb_pipe_i.instr.bus_resp.parity_err                 ? EXC_CAUSE_INSTR_INTEGRITY_FAULT :
+                               ex_wb_pipe_i.instr.bus_resp.rchk_err                   ? EXC_CAUSE_INSTR_INTEGRITY_FAULT :
                               ex_wb_pipe_i.instr.bus_resp.err                         ? EXC_CAUSE_INSTR_BUS_FAULT :
                               ex_wb_pipe_i.illegal_insn                               ? EXC_CAUSE_ILLEGAL_INSN    :
                               (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)    ? (priv_lvl_i==PRIV_LVL_M ?
@@ -843,7 +847,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                   ctrl_fsm_o.pc_mux = PC_MRET;
                   ctrl_fsm_ns = POINTER_FETCH;
                   ctrl_fsm_o.mret_jump_id = !debug_mode_q;
-                  
+
                   // Set flag to avoid further jumps to the same target
                   // if we are stalled
                   jump_taken_n = 1'b1;
@@ -971,8 +975,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
         if (if_id_pipe_i.instr_meta.clic_ptr && if_id_pipe_i.instr_valid) begin
           // Function pointer reached ID stage, do another jump
           // if no faults happened during pointer fetch. (mcause.minhv will stay high for faults)
-          // todo: deal with integrity related faults for E40S.
-          if(!((if_id_pipe_i.instr.mpu_status != MPU_OK) || if_id_pipe_i.instr.bus_resp.err)) begin
+          if(!((if_id_pipe_i.instr.mpu_status != MPU_OK) || if_id_pipe_i.instr.bus_resp.err ||
+                if_id_pipe_i.instr.bus_resp.parity_err || if_id_pipe_i.instr.bus_resp.rchk_err)) begin
             ctrl_fsm_o.pc_set = 1'b1;
             ctrl_fsm_o.pc_mux = PC_POINTER;
             ctrl_fsm_o.kill_if = 1'b1;
@@ -989,7 +993,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             // the pointer reaches WB. Dpc will then point to the first instruction in the exception/NMI handler.
             ctrl_fsm_ns = FUNCTIONAL;
           end
-          // Note: If the pointer fetch faulted (pma/pmp/bus error), an exception or NMI will
+          // Note: If the pointer fetch faulted (pma/pmp/bus error), an exception will
           // be taken once the pointer fetch reachces WB (two cycles after the current)
           // The FSM must be in the FUNCTIONAL state to take the exception or NMI.
           // A faulted pointer (in ID) should not cause debug entry either,

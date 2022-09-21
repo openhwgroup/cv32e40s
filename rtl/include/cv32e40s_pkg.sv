@@ -479,7 +479,7 @@ parameter CSR_MINTSTATUS_MASK   = 32'hFF000000;
 parameter CSR_MINTTHRESH_MASK   = 32'h000000FF;
 parameter CSR_MCLICBASE_MASK    = 32'hFFFFF000;
 parameter CSR_MSCRATCH_MASK     = 32'hFFFFFFFF;
-parameter CSR_CPUCTRL_MASK      = 32'h000F0007; // todo: will need to become 32'h000F000F
+parameter CSR_CPUCTRL_MASK      = 32'h000F001F;
 parameter CSR_PMPNCFG_MASK      = 8'hFF;
 parameter CSR_PMPADDR_MASK      = 32'hFFFFFFFF;
 parameter CSR_MSECCFG_MASK      = 32'h00000007;
@@ -509,11 +509,20 @@ parameter int unsigned CSR_MFIX_BIT_HIGH = 31;
 typedef struct packed {
   logic [31:20] zero1;
   logic [19:16] rnddummyfreq;
-  logic [15: 3] zero0;
+  logic [15: 5] zero0;
+  logic         integrity;
+  logic         pc_hardening;
   logic         rndhint;
   logic         rnddummy;
   logic         dataindtiming;
 } cpuctrl_t;
+
+parameter cpuctrl_t CPUCTRL_RESET_VAL = '{
+  integrity     : 1'b1,
+  pc_hardening  : 1'b1,
+  dataindtiming : 1'b1,
+  default:    '0};
+
 
 typedef struct packed {
   logic [31:0] lfsr2;
@@ -936,14 +945,15 @@ typedef enum logic[3:0] {
 } pc_mux_e;
 
 // Exception Cause
-parameter EXC_CAUSE_INSTR_FAULT     = 11'h01;
-parameter EXC_CAUSE_ILLEGAL_INSN    = 11'h02;
-parameter EXC_CAUSE_BREAKPOINT      = 11'h03;
-parameter EXC_CAUSE_LOAD_FAULT      = 11'h05;
-parameter EXC_CAUSE_STORE_FAULT     = 11'h07;
-parameter EXC_CAUSE_ECALL_UMODE     = 11'h08;
-parameter EXC_CAUSE_ECALL_MMODE     = 11'h0B;
-parameter EXC_CAUSE_INSTR_BUS_FAULT = 11'h30;
+parameter EXC_CAUSE_INSTR_FAULT           = 11'h01;
+parameter EXC_CAUSE_ILLEGAL_INSN          = 11'h02;
+parameter EXC_CAUSE_BREAKPOINT            = 11'h03;
+parameter EXC_CAUSE_LOAD_FAULT            = 11'h05;
+parameter EXC_CAUSE_STORE_FAULT           = 11'h07;
+parameter EXC_CAUSE_ECALL_UMODE           = 11'h08;
+parameter EXC_CAUSE_ECALL_MMODE           = 11'h0B;
+parameter EXC_CAUSE_INSTR_INTEGRITY_FAULT = 11'h19;
+parameter EXC_CAUSE_INSTR_BUS_FAULT       = 11'h30;
 
 parameter INT_CAUSE_LSU_LOAD_FAULT  = 11'h400;
 parameter INT_CAUSE_LSU_STORE_FAULT = 11'h401;
@@ -1101,6 +1111,9 @@ typedef struct packed {
   logic [INSTR_DATA_WIDTH-1:0] rdata;
   logic                        err;
   logic [4:0]                  rchk;
+  logic                        rchk_err;
+  logic                        parity_err;
+  logic                        integrity;
 } obi_inst_resp_t;
 
 typedef struct packed {
@@ -1131,7 +1144,7 @@ typedef struct packed {
 parameter inst_resp_t INST_RESP_RESET_VAL = '{
   // Setting rdata[1:0] to 2'b11 to easily assert that all
   // instructions in ID are uncompressed
-  bus_resp    : '{rdata: 32'h3, err: 1'b0, rchk: 5'b0},
+  bus_resp    : '{rdata: 32'h3, err: 1'b0, rchk: 5'b0, parity_err: 1'b0, rchk_err: 1'b0, integrity: 1'b0},
   mpu_status  : MPU_OK
 };
 
