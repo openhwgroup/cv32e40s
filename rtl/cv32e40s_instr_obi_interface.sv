@@ -67,8 +67,8 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
   // FIFO is 1 bit deeper than the maximum value of cnt_q
   // Index 0 is tied low to enable direct use of cnt_q to pick correct FIFO index.
-  int_gnt_fifo_t [MAX_OUTSTANDING:0] parity_fifo_q;
-  int_gnt_fifo_t parity_fifo_input;
+  int_gnt_fifo_t [MAX_OUTSTANDING:0] fifo_q;
+  int_gnt_fifo_t fifo_input;
 
   obi_if_state_e state_q, next_state;
 
@@ -103,7 +103,7 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
     resp_o  = m_c_obi_instr_if.resp_payload;
     resp_o.parity_err  = rvalidpar_err || gntpar_err_resp;
     resp_o.rchk_err    = rchk_err;
-    resp_o.integrity   = parity_fifo_q[cnt_q].integrity;
+    resp_o.integrity   = fifo_q[cnt_q].integrity;
   end
 
   //////////////////////////////////////////////////////////////////////////////
@@ -275,19 +275,19 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
     end
   end
 
-  // FIFO to keep track of gnt parity errors for outstanding transactions
+  // FIFO to keep track of gnt parity errors and integrity bit from PMA for outstanding transactions
 
-  assign parity_fifo_input.integrity = trans_i.integrity;
-  assign parity_fifo_input.gnterr    = (gntpar_err || gntpar_err_q);
+  assign fifo_input.integrity = trans_i.integrity;
+  assign fifo_input.gnterr    = (gntpar_err || gntpar_err_q);
 
   always_ff @ (posedge clk, negedge rst_n) begin
     if (!rst_n) begin
-      parity_fifo_q <= '0;
+      fifo_q <= '0;
     end
     else begin
       if (m_c_obi_instr_if.s_req.req && m_c_obi_instr_if.s_gnt.gnt) begin
         // Accepted address phase, populate FIFO with gnt parity error and PMA integrity bit
-        parity_fifo_q <= {parity_fifo_q[MAX_OUTSTANDING-1:1], parity_fifo_input, 2'b00};
+        fifo_q <= {fifo_q[MAX_OUTSTANDING-1:1], fifo_input, 2'b00};
       end
     end
   end
@@ -301,13 +301,13 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   )
   rchk_i
   (
-    .resp_i (resp_o),  // Using local output, as is has the PMA integrity bit appended from the fifo. Otherwise inputs from bus.
-    .enable (rchk_en),
-    .err    (rchk_err)
+    .resp_i   (resp_o),  // Using local output, as is has the PMA integrity bit appended from the fifo. Otherwise inputs from bus.
+    .enable_i (rchk_en),
+    .err_o    (rchk_err)
   );
 
   // grant parity for response is read from the fifo
-  assign gntpar_err_resp = parity_fifo_q[cnt_q].gnterr;
+  assign gntpar_err_resp = fifo_q[cnt_q].gnterr;
 
   // Checking rvalid parity
   // integrity_err_o will go high immediately, while the rvalidpar_err for the instruction

@@ -36,8 +36,8 @@ module cv32e40s_rchk_check import cv32e40s_pkg::*;
 )
 (
   input  RESP_TYPE resp_i,
-  input  logic     enable,
-  output logic     err
+  input  logic     enable_i,
+  output logic     err_o
 );
 
 logic [4:0] rchk_res;
@@ -53,6 +53,6 @@ always_comb begin
   };
 end
 
-assign err = (enable && resp_i.integrity)? (rchk_res != resp_i.rchk) : 1'b0;
+assign err_o = (enable_i && resp_i.integrity)? (rchk_res != resp_i.rchk) : 1'b0;
 
 endmodule

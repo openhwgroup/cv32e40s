@@ -328,6 +328,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .resp_o               ( bus_resp         ),
 
     .integrity_err_o      ( integrity_err_obi),   // immediate integrity error, either parity or chk
+
+    .xsecure_ctrl_i       ( xsecure_ctrl_i   ),
     .m_c_obi_instr_if     ( m_c_obi_instr_if )
   );
 

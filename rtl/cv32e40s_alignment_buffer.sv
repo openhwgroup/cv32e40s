@@ -210,9 +210,9 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   )
   rchk_0_i
   (
-    .resp_i (resp_q[rptr].bus_resp),
-    .enable (rchk_enable),
-    .err    (rchk_err_q0)
+    .resp_i   (resp_q[rptr].bus_resp),
+    .enable_i (rchk_enable),
+    .err_o    (rchk_err_q0)
   );
 
   // Rchk for buffer entry q1
@@ -222,9 +222,9 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   )
   rchk_1_i
   (
-    .resp_i (resp_q[rptr2].bus_resp),
-    .enable (rchk_enable),
-    .err    (rchk_err_q1)
+    .resp_i   (resp_q[rptr2].bus_resp),
+    .enable_i (rchk_enable),
+    .err_o    (rchk_err_q1)
   );
 
 
