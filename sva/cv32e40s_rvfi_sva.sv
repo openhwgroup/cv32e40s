@@ -197,7 +197,8 @@ end
                      (no_debug && $stable(mtvec_addr_i)) throughout s_goto_next_rvfi_valid(rvfi_csr_dcsr_rdata[3]) |->
                      rvfi_intr.intr &&
                      (rvfi_pc_rdata == {mtvec_addr_i, NMI_MTVEC_INDEX, 2'b00}) &&
-                     ((rvfi_csr_mcause_rdata[10:0] == INT_CAUSE_LSU_LOAD_FAULT) || (rvfi_csr_mcause_rdata[10:0] == INT_CAUSE_LSU_STORE_FAULT)))
+                     ((rvfi_csr_mcause_rdata[10:0] == INT_CAUSE_LSU_LOAD_FAULT) || (rvfi_csr_mcause_rdata[10:0] == INT_CAUSE_LSU_STORE_FAULT) ||
+                     (rvfi_csr_mcause_rdata[10:0] == INT_CAUSE_LSU_LOAD_INTEGRITY_FAULT) || (rvfi_csr_mcause_rdata[10:0] == INT_CAUSE_LSU_STORE_INTEGRITY_FAULT)))
       else `uvm_error("rvfi", "dcsr.nmip not followed by rvfi_intr and NMI handler")
 
   /* todo: add back in

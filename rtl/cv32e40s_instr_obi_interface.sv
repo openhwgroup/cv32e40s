@@ -85,7 +85,7 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   logic           count_up;
   logic           count_down;
 
-  logic           rchk_en;                      // Enable rchk (rvalid && integrity)
+  logic [1:0]     rchk_en;                      // Enable rchk (rvalid && integrity)
   logic           rchk_err;                     // Local rchk error signal
 
   //////////////////////////////////////////////////////////////////////////////
@@ -294,7 +294,9 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
 
   // Enable rchk when in response phase and cpuctrl.integrity is set
-  assign rchk_en = m_c_obi_instr_if.s_rvalid.rvalid && xsecure_ctrl_i.cpuctrl.integrity;
+  // Both bits are the same, we always read and always check the fulle rchk
+  assign rchk_en[0] = m_c_obi_instr_if.s_rvalid.rvalid && xsecure_ctrl_i.cpuctrl.integrity;
+  assign rchk_en[1] = m_c_obi_instr_if.s_rvalid.rvalid && xsecure_ctrl_i.cpuctrl.integrity;
   cv32e40s_rchk_check
   #(
       .RESP_TYPE (obi_inst_resp_t)

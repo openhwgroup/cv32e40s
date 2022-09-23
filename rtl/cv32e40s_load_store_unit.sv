@@ -55,7 +55,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   output logic        lsu_last_op_0_o,          // Last operation is active in EX
 
   // Stage 1 outputs (WB)
-  output logic [1:0]  lsu_err_1_o,
+  output logic [2:0]  lsu_err_1_o,
   output logic [31:0] lsu_rdata_1_o,            // LSU read data
   output mpu_status_e lsu_mpu_status_1_o,       // MPU (PMA) status, response/WB timing. To controller and wb_stage
 
@@ -75,6 +75,11 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   output logic        ready_1_o,                // LSU ready for new data in WB stage
   output logic        valid_1_o,
   input  logic        ready_1_i,
+
+  // Integrity error - fans into alert_majort_o
+  output logic        integrity_err_o,
+
+  input xsecure_ctrl_t   xsecure_ctrl_i,
 
   // eXtension interface
   if_xif.cpu_mem        xif_mem_if,
@@ -106,7 +111,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   obi_data_req_t  filter_trans;
   logic           filter_resp_valid;
   obi_data_resp_t filter_resp;
-  logic [1:0]     filter_err;
+  logic [2:0]     filter_err;
 
   // Transaction request (from cv32e40s_write_buffer to cv32e40s_data_obi_interface)
   logic           bus_trans_valid;
@@ -700,6 +705,9 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   //////////////////////////////////////////////////////////////////////////////
 
   cv32e40s_data_obi_interface
+  #(
+      .MAX_OUTSTANDING (2) // todo: connect to parameter
+  )
   data_obi_i
   (
     .clk                ( clk             ),
@@ -712,6 +720,9 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .resp_valid_o       ( bus_resp_valid  ),
     .resp_o             ( bus_resp        ),
 
+    .integrity_err_o    ( integrity_err_o ),
+
+    .xsecure_ctrl_i     ( xsecure_ctrl_i  ),
     .m_c_obi_data_if    ( m_c_obi_data_if )
   );
 

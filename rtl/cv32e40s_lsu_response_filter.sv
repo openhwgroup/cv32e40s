@@ -57,7 +57,7 @@ module cv32e40s_lsu_response_filter
 
    // Todo: This error signal could be merged with mpu_status_e, and be signaled via the resp_o above (if replaced by data_resp_t).
    //       This would make the error flow all the way through the MPU and not bypass the MPU as it does now.
-   output logic [1:0]     err_o  // bit0: flag for error, bit1: type (1 for store, 0 for load)
+   output logic [2:0]     err_o  // bit0: flag for bus error, bit1: flag for integrity error, bit2: type (1 for store, 0 for load)
    );
 
   localparam CNT_WIDTH = $clog2(DEPTH+1);
@@ -167,8 +167,12 @@ module cv32e40s_lsu_response_filter
   assign resp_valid_o = (bus_resp_is_bufferable) ? core_resp_is_bufferable : resp_valid_i;
   assign trans_o      = trans_i;
 
+  // Signal bus error
   assign err_o[0] = resp_valid_i && resp_i.err;
-  assign err_o[1] = outstanding_q[bus_cnt_q].store;
+  // Signal integrity error, only signal rchk_err for loads
+  assign err_o[1] = resp_valid_i && (resp_i.parity_err || resp_i.rchk_err);
+  // Signal type transaction for error (load or store)
+  assign err_o[2] = outstanding_q[bus_cnt_q].store;
 
   // bus_resp goes straight through
   assign resp_o = resp_i;

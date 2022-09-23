@@ -955,8 +955,10 @@ parameter EXC_CAUSE_ECALL_MMODE           = 11'h0B;
 parameter EXC_CAUSE_INSTR_INTEGRITY_FAULT = 11'h19;
 parameter EXC_CAUSE_INSTR_BUS_FAULT       = 11'h30;
 
-parameter INT_CAUSE_LSU_LOAD_FAULT  = 11'h400;
-parameter INT_CAUSE_LSU_STORE_FAULT = 11'h401;
+parameter INT_CAUSE_LSU_LOAD_FAULT            = 11'h400;
+parameter INT_CAUSE_LSU_STORE_FAULT           = 11'h401;
+parameter INT_CAUSE_LSU_LOAD_INTEGRITY_FAULT  = 11'h402;
+parameter INT_CAUSE_LSU_STORE_INTEGRITY_FAULT = 11'h403;
 
 // Interrupt mask
 parameter IRQ_MASK = 32'hFFFF0888;
@@ -1132,6 +1134,9 @@ typedef struct packed {
   logic [DATA_DATA_WIDTH-1:0] rdata;
   logic                       err;
   logic [4:0]                 rchk;
+  logic                       rchk_err;
+  logic                       parity_err;
+  logic                       integrity;
 } obi_data_resp_t;
 
 // Data/instruction transfer bundeled with MPU status

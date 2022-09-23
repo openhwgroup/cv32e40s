@@ -61,7 +61,7 @@ module cv32e40s_controller_fsm_sva
   input logic           csr_illegal_i,
   input logic           pending_single_step,
   input logic           trigger_match_in_wb,
-  input logic [1:0]     lsu_err_wb_i,
+  input logic [2:0]     lsu_err_wb_i,
   input logic           wb_valid_i,
   input logic           fencei_in_wb,
   input logic           fencei_flush_req_o,
