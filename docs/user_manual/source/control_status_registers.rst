@@ -1903,7 +1903,7 @@ CPU Control (``cpuctrl``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 CSR Address: 0xBF0
 
-Reset Value: 0x0000_0000
+Reset Value: 0x0000_0019
 
 Detailed:
 
@@ -1935,7 +1935,7 @@ Detailed:
   | 0           | RW        | **DATAINDTIMING:** Data independent timing enable (1 = enable).        |
   +-------------+-----------+------------------------------------------------------------------------+
 
-The ``cpuctrl`` register contains configuration registers for core security features. It will allways read as 0.
+The ``cpuctrl`` register contains configuration registers for core security features.
 
 Secure Seed 0
 ~~~~~~~~~~~~~
