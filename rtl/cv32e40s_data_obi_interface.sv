@@ -59,6 +59,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   if_c_obi.master     m_c_obi_data_if
 );
 
+localparam CNT_WIDTH = $clog2(MAX_OUTSTANDING + 1);
+
   typedef struct packed {
     logic        integrity;
     logic        gnterr;
@@ -79,8 +81,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   logic       rchk_err;
 
   // Outstanding counter signals
-  logic [1:0]     cnt_q;                        // Transaction counter
-  logic [1:0]     next_cnt;                     // Next value for cnt_q
+  logic [CNT_WIDTH-1:0]     cnt_q;                        // Transaction counter
+  logic [CNT_WIDTH-1:0]     next_cnt;                     // Next value for cnt_q
   logic           count_up;
   logic           count_down;
 

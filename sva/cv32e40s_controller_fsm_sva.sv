@@ -228,7 +228,7 @@ module cv32e40s_controller_fsm_sva
   // Todo: Modify to account for response filter (bufferable writes)
   //a_lsu_err_wb :
   //  assert property (@(posedge clk) disable iff (!rst_n)
-  //          lsu_err_wb_i[0] |-> ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en)
+  //          lsu_err_wb_i[0] || lsu_err_wb_i[1] |-> ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en)
   //    else `uvm_error("controller", "lsu_error in WB with no valid LSU instruction")
 
   // Check that fencei handshake is only exersiced when there's a fencei in the writeback stage

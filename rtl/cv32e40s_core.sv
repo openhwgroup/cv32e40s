@@ -306,7 +306,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        csr_err;
   logic        itf_int_err;
   logic        integrity_err_if;
-  logic        integrity_err_lsu;
+  logic        lsu_integrity_err;
 
   // Minor Alert Triggers
   logic        lfsr_lockup;
@@ -478,7 +478,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //                                 //
   /////////////////////////////////////
 
-  assign itf_int_err     = integrity_err_if || integrity_err_lsu;
+  assign itf_int_err     = integrity_err_if || lsu_integrity_err;
 
   cv32e40s_alert
     alert_i
@@ -792,7 +792,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .valid_1_o             ( lsu_valid_1        ),
     .ready_1_i             ( lsu_ready_wb       ),
 
-    .integrity_err_o       ( integrity_err_lsu  ),
+    .integrity_err_o       ( lsu_integrity_err  ),
 
     .xsecure_ctrl_i        ( xsecure_ctrl       ),
 

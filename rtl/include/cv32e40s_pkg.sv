@@ -1113,9 +1113,9 @@ typedef struct packed {
   logic [INSTR_DATA_WIDTH-1:0] rdata;
   logic                        err;
   logic [4:0]                  rchk;
-  logic                        rchk_err;
-  logic                        parity_err;
-  logic                        integrity;
+  logic                        rchk_err;    // Calculated in instr_obi_interface and appended to struct upon rvalid
+  logic                        parity_err;  // Calculated in instr_obi_interface and appended to struct upon rvalid
+  logic                        integrity;   // Tracked through instr_obi_interface and appended to struct upon rvalid
 } obi_inst_resp_t;
 
 typedef struct packed {
@@ -1134,9 +1134,9 @@ typedef struct packed {
   logic [DATA_DATA_WIDTH-1:0] rdata;
   logic                       err;
   logic [4:0]                 rchk;
-  logic                       rchk_err;
-  logic                       parity_err;
-  logic                       integrity;
+  logic                       rchk_err;    // Calculated in data_obi_interface and appended to struct upon rvalid
+  logic                       parity_err;  // Calculated in data_obi_interface and appended to struct upon rvalid
+  logic                       integrity;   // Tracked through data_obi_interface and appended to struct upon rvalid
 } obi_data_resp_t;
 
 // Data/instruction transfer bundeled with MPU status

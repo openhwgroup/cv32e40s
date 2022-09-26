@@ -167,7 +167,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
 
   // Rchk releated signals
-  logic [1:0]  rchk_enable;             // "Global" rchk enable from cpuctrl
+  logic [1:0]  rchk_enable;             // "Global" rchk enable from cpuctrl. Bit0 for rdata, bit1 for bus error
   logic        rchk_err_q0;             // rchk error in entry q0
   logic        rchk_err_q1;             // rchk error in entry q1
   logic        rchk_err_aligned;        // rchk error for aligned instructions

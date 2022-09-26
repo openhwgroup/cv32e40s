@@ -27,6 +27,8 @@
 //                                                                            //
 // Description:    This module will check the recomputed rchk values          //
 //                 and signal an error if enabled and checksums does not match//
+//                 The enable signal is split in two, one for checking rdata  //
+//                 for reads, and one to check the error bit (read and writes)//
 ////////////////////////////////////////////////////////////////////////////////
 
 

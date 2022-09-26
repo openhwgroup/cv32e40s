@@ -59,6 +59,7 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   if_c_obi.master        m_c_obi_instr_if
 );
 
+  localparam CNT_WIDTH = $clog2(MAX_OUTSTANDING + 1);
 
   typedef struct packed {
     logic        integrity;
@@ -80,8 +81,8 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   logic gntpar_err_resp;                        // grant error with reponse timing (output of fifo)
 
   // Outstanding counter signals
-  logic [1:0]     cnt_q;                        // Transaction counter
-  logic [1:0]     next_cnt;                     // Next value for cnt_q
+  logic [CNT_WIDTH-1:0]     cnt_q;                        // Transaction counter
+  logic [CNT_WIDTH-1:0]     next_cnt;                     // Next value for cnt_q
   logic           count_up;
   logic           count_down;
 
@@ -294,9 +295,9 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
 
   // Enable rchk when in response phase and cpuctrl.integrity is set
-  // Both bits are the same, we always read and always check the fulle rchk
-  assign rchk_en[0] = m_c_obi_instr_if.s_rvalid.rvalid && xsecure_ctrl_i.cpuctrl.integrity;
-  assign rchk_en[1] = m_c_obi_instr_if.s_rvalid.rvalid && xsecure_ctrl_i.cpuctrl.integrity;
+  // Both bits are the same, we always read and always check the full rchk
+  assign rchk_en[0] = m_c_obi_instr_if.s_rvalid.rvalid && xsecure_ctrl_i.cpuctrl.integrity; // Check rdata checksum
+  assign rchk_en[1] = m_c_obi_instr_if.s_rvalid.rvalid && xsecure_ctrl_i.cpuctrl.integrity; // Check bus error checksum
   cv32e40s_rchk_check
   #(
       .RESP_TYPE (obi_inst_resp_t)
