@@ -1206,6 +1206,13 @@ typedef struct packed
   logic        accepted;  // Was the offloaded instruction accepted or not?
 } xif_meta_t;
 
+typedef struct packed
+{
+  logic        bus_err;
+  logic        integrity_err;
+  logic        store;
+} lsu_err_wb_t;
+
 // IF/ID pipeline
 typedef struct packed {
   logic        instr_valid;

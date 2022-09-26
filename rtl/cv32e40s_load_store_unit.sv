@@ -55,7 +55,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   output logic        lsu_last_op_0_o,          // Last operation is active in EX
 
   // Stage 1 outputs (WB)
-  output logic [2:0]  lsu_err_1_o,
+  output lsu_err_wb_t lsu_err_1_o,
   output logic [31:0] lsu_rdata_1_o,            // LSU read data
   output mpu_status_e lsu_mpu_status_1_o,       // MPU (PMA) status, response/WB timing. To controller and wb_stage
 
@@ -86,7 +86,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   if_xif.cpu_mem_result xif_mem_result_if
 );
 
-  localparam DEPTH = 2;                         // Maximum number of outstanding transactions
+  localparam DEPTH = 2;                           // Maximum number of outstanding transactions
+  localparam OUTSTND_CNT_WIDTH = $clog2(DEPTH+1); // Width needed for counting outstanding transactions
 
   // Transaction request (before aligner)
   trans_req_t     trans;
@@ -111,7 +112,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   obi_data_req_t  filter_trans;
   logic           filter_resp_valid;
   obi_data_resp_t filter_resp;
-  logic [2:0]     filter_err;
+  lsu_err_wb_t    filter_err;
 
   // Transaction request (from cv32e40s_write_buffer to cv32e40s_data_obi_interface)
   logic           bus_trans_valid;
@@ -122,12 +123,15 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic           bus_resp_valid;
   obi_data_resp_t bus_resp;
 
-  // Counter to count maximum number of outstanding transactions
-  logic [1:0]     cnt_q;                // Transaction counter
-  logic [1:0]     next_cnt;             // Next value for cnt_q
-  logic           count_up;             // Increment outstanding transaction count by 1 (can happen at same time as count_down)
-  logic           count_down;           // Decrement outstanding transaction count by 1 (can happen at same time as count_up)
-  logic           cnt_is_one_next;
+  // Counter to count maximum number of outstanding transactions (before MPU)
+  logic [OUTSTND_CNT_WIDTH-1:0]     cnt_q;                // Transaction counter
+  logic [OUTSTND_CNT_WIDTH-1:0]     next_cnt;             // Next value for cnt_q
+  logic                             count_up;             // Increment outstanding transaction count by 1 (can happen at same time as count_down)
+  logic                             count_down;           // Decrement outstanding transaction count by 1 (can happen at same time as count_up)
+  logic                             cnt_is_one_next;
+
+
+  logic [OUTSTND_CNT_WIDTH-1:0]     bus_cnt;              // Transaction counter (bus side of response filter)
 
   logic           ctrl_update;          // Update load/store control info in WB stage
 
@@ -656,6 +660,10 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   //////////////////////////////////////////////////////////////////////////////
 
   cv32e40s_lsu_response_filter
+  #(
+    .DEPTH              ( DEPTH              ),
+    .OUTSTND_CNT_WIDTH  ( OUTSTND_CNT_WIDTH  )
+  )
     response_filter_i
       (.clk          ( clk                ),
        .rst_n        ( rst_n              ),
@@ -672,7 +680,9 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
        .ready_i      ( buffer_trans_ready ),
        .trans_o      ( buffer_trans       ),
        .resp_valid_i ( bus_resp_valid     ),
-       .resp_i       ( bus_resp           )
+       .resp_i       ( bus_resp           ),
+
+       .bus_cnt_o    ( bus_cnt            )
 
      );
 
@@ -706,7 +716,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   cv32e40s_data_obi_interface
   #(
-      .MAX_OUTSTANDING (2) // todo: connect to parameter
+      .OUTSTND_CNT_WIDTH (OUTSTND_CNT_WIDTH)
   )
   data_obi_i
   (
@@ -721,6 +731,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .resp_o             ( bus_resp        ),
 
     .integrity_err_o    ( integrity_err_o ),
+
+    .bus_cnt_i          ( bus_cnt         ),
 
     .xsecure_ctrl_i     ( xsecure_ctrl_i  ),
     .m_c_obi_data_if    ( m_c_obi_data_if )
@@ -742,8 +754,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
       // XIF memory result
       assign xif_mem_result_if.mem_result.id    = xif_id_q;
       assign xif_mem_result_if.mem_result.rdata = rdata_ext;
-      assign xif_mem_result_if.mem_result.err   = filter_err[0]; // forward bus errors to coprocessor
-      assign xif_mem_result_if.mem_result.dbg   = '0;            // TODO forward debug triggers
+      assign xif_mem_result_if.mem_result.err   = filter_err.bus_err; // forward bus errors to coprocessor
+      assign xif_mem_result_if.mem_result.dbg   = '0;                 // TODO forward debug triggers
     end else begin : no_x_ext
       assign xif_mem_if.mem_resp.exc            = '0;
       assign xif_mem_if.mem_resp.exccode        = '0;
