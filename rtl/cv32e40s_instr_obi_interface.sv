@@ -61,33 +61,23 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
   localparam CNT_WIDTH = $clog2(MAX_OUTSTANDING + 1);
 
-  typedef struct packed {
-    logic        integrity;
-    logic        gnterr;
-  } int_gnt_fifo_t;
-
-  // FIFO is 1 bit deeper than the maximum value of cnt_q
-  // Index 0 is tied low to enable direct use of cnt_q to pick correct FIFO index.
-  int_gnt_fifo_t [MAX_OUTSTANDING:0] fifo_q;
-  int_gnt_fifo_t fifo_input;
 
   obi_if_state_e state_q, next_state;
 
-  logic [11:0] achk;                            // Address phase checksum
+  logic [11:0]          achk;                         // Address phase checksum
 
-  logic gntpar_err;                             // gnt parity error (immediate)
-  logic gntpar_err_q;                           // gnt parity error (sticky for waited grants)
-  logic rvalidpar_err;                          // rvalid parity error (immediate during response phase)
-  logic gntpar_err_resp;                        // grant error with reponse timing (output of fifo)
+  logic                 gntpar_err;                   // gnt parity error (immediate)
+  logic                 rvalidpar_err;                // rvalid parity error (immediate during response phase)
+  logic                 gntpar_err_resp;              // grant error with reponse timing (output of fifo)
+  logic                 rchk_err;                     // Local rchk error signal
+  logic                 resp_has_integrity;           // Response has integrity bit set (from fifo)
 
   // Outstanding counter signals
-  logic [CNT_WIDTH-1:0]     cnt_q;                        // Transaction counter
-  logic [CNT_WIDTH-1:0]     next_cnt;                     // Next value for cnt_q
-  logic           count_up;
-  logic           count_down;
+  logic [CNT_WIDTH-1:0] cnt_q;                        // Transaction counter
+  logic [CNT_WIDTH-1:0] next_cnt;                     // Next value for cnt_q
+  logic                 count_up;
+  logic                 count_down;
 
-  logic [1:0]     rchk_en;                      // Enable rchk (rvalid && integrity)
-  logic           rchk_err;                     // Local rchk error signal
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI R Channel
@@ -101,9 +91,9 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   assign resp_valid_o       = m_c_obi_instr_if.s_rvalid.rvalid;
 
   always_comb begin
-    resp_o  = m_c_obi_instr_if.resp_payload;
+    resp_o                = m_c_obi_instr_if.resp_payload;
     resp_o.integrity_err  = rvalidpar_err || gntpar_err_resp || rchk_err;
-    resp_o.integrity   = fifo_q[cnt_q].integrity;
+    resp_o.integrity      = resp_has_integrity;
   end
 
   //////////////////////////////////////////////////////////////////////////////
@@ -255,61 +245,41 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   assign gntpar_err = (m_c_obi_instr_if.s_gnt.gnt == m_c_obi_instr_if.s_gnt.gntpar);
 
 
-  // gntpar_err_q is a sticky gnt error bit.
-  // Any gnt parity error detected during req will be remembered and propagated
-  // to the fifo when the address phase ends.
-  always_ff @ (posedge clk, negedge rst_n) begin
-    if (!rst_n) begin
-      gntpar_err_q <= '0;
-    end
-    else begin
-      if (m_c_obi_instr_if.s_req.req) begin
-        // Address phase active, set sticky gntpar_err if not granted
-        // When granted, sticky bit will be cleared for the next address phase
-        if (!m_c_obi_instr_if.s_gnt.gnt) begin
-          gntpar_err_q <= gntpar_err || gntpar_err_q;
-        end else begin
-          gntpar_err_q <= 1'b0;
-        end
-      end
-    end
-  end
-
-  // FIFO to keep track of gnt parity errors and integrity bit from PMA for outstanding transactions
-
-  assign fifo_input.integrity = trans_i.integrity;
-  assign fifo_input.gnterr    = (gntpar_err || gntpar_err_q);
-
-  always_ff @ (posedge clk, negedge rst_n) begin
-    if (!rst_n) begin
-      fifo_q <= '0;
-    end
-    else begin
-      if (m_c_obi_instr_if.s_req.req && m_c_obi_instr_if.s_gnt.gnt) begin
-        // Accepted address phase, populate FIFO with gnt parity error and PMA integrity bit
-        fifo_q <= {fifo_q[MAX_OUTSTANDING-1:1], fifo_input, 2'b00};
-      end
-    end
-  end
-
-
-  // Enable rchk when in response phase and cpuctrl.integrity is set
-  // Both bits are the same, we always read and always check the full rchk
-  assign rchk_en[0] = m_c_obi_instr_if.s_rvalid.rvalid && xsecure_ctrl_i.cpuctrl.integrity; // Check rdata checksum
-  assign rchk_en[1] = m_c_obi_instr_if.s_rvalid.rvalid && xsecure_ctrl_i.cpuctrl.integrity; // Check bus error checksum
-  cv32e40s_rchk_check
+  cv32e40s_obi_integrity_fifo
   #(
-      .RESP_TYPE (obi_inst_resp_t)
-  )
-  rchk_i
+      .MAX_OUTSTANDING   (MAX_OUTSTANDING),
+      .OUTSTND_CNT_WIDTH (CNT_WIDTH      ),
+      .RESP_TYPE         (obi_inst_resp_t)
+   )
+  integrity_fifo_i
   (
-    .resp_i   (resp_o),  // Using local output, as is has the PMA integrity bit appended from the fifo. Otherwise inputs from bus.
-    .enable_i (rchk_en),
-    .err_o    (rchk_err)
+    .clk                (clk                              ),
+    .rst_n              (rst_n                            ),
+
+    // gnt parity error
+    .gntpar_err_i       (gntpar_err                       ),
+
+    // Transaction inputs
+    .trans_integrity_i  (trans_i.integrity                ),
+    .trans_we_i         (1'b0                             ),
+
+    // Xsecure
+    .xsecure_ctrl_i     (xsecure_ctrl_i                   ),
+
+    .bus_cnt_i          (cnt_q                            ),
+
+    // Response phase properties
+    .gntpar_err_resp_o  (gntpar_err_resp                  ),
+    .integrity_o        (resp_has_integrity               ),
+    .rchk_err_o         (rchk_err                         ),
+
+    // OBI interface
+    .obi_req_i          (m_c_obi_instr_if.s_req.req       ),
+    .obi_gnt_i          (m_c_obi_instr_if.s_gnt.gnt       ),
+    .obi_rvalid_i       (m_c_obi_instr_if.s_rvalid.rvalid ),
+    .obi_resp_i         (resp_o                           )
   );
 
-  // grant parity for response is read from the fifo
-  assign gntpar_err_resp = fifo_q[cnt_q].gnterr;
 
   // Checking rvalid parity
   // integrity_err_o will go high immediately, while the rvalidpar_err for the instruction
