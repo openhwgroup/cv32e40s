@@ -26,7 +26,9 @@
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    This module will check the recomputed rchk values          //
-//                 and signal an error if enalbed and checksums does not match//
+//                 and signal an error if enabled and checksums does not match//
+//                 The enable signal is split in two, one for checking rdata  //
+//                 for reads, and one to check the error bit (read and writes)//
 ////////////////////////////////////////////////////////////////////////////////
 
 
@@ -35,12 +37,15 @@ module cv32e40s_rchk_check import cv32e40s_pkg::*;
   parameter type RESP_TYPE = obi_inst_resp_t
 )
 (
-  input  RESP_TYPE resp_i,
-  input  logic     enable_i,
-  output logic     err_o
+  input  RESP_TYPE   resp_i,
+  input  logic [1:0] enable_i,
+  output logic       err_o
 );
 
 logic [4:0] rchk_res;
+
+logic rdata_err;
+logic err_err;
 
 // Compute rchk from response inputs
 always_comb begin
@@ -53,6 +58,8 @@ always_comb begin
   };
 end
 
-assign err_o = (enable_i && resp_i.integrity)? (rchk_res != resp_i.rchk) : 1'b0;
+assign rdata_err = (enable_i[0] && resp_i.integrity) ? (rchk_res[3:0] != resp_i.rchk[3:0]) : 1'b0;
+assign err_err   = (enable_i[1] && resp_i.integrity) ? (rchk_res[4] != resp_i.rchk[4]) : 1'b0;
+assign err_o = rdata_err || err_err;
 
 endmodule

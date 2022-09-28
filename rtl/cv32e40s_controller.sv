@@ -80,7 +80,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   // LSU
   input  mpu_status_e lsu_mpu_status_wb_i,        // MPU status (WB stage)
   input  logic        data_stall_wb_i,            // WB stalled by LSU
-  input  logic [1:0]  lsu_err_wb_i,               // LSU bus error in WB stage
+  input  lsu_err_wb_t lsu_err_wb_i,               // LSU bus error or integrity error in WB stage
   input  logic        lsu_busy_i,                 // LSU is busy with outstanding transfers
   input  logic        lsu_interruptible_i,        // LSU may be interrupted
   input  logic        lsu_valid_wb_i,             // LSU is valid in WB (factors in rvalid from either OBI bus or write buffer)

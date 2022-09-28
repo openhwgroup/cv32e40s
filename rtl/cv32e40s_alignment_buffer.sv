@@ -167,11 +167,11 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
 
   // Rchk releated signals
-  logic       rchk_enable;             // "Global" rchk enable from cpuctrl
-  logic       rchk_err_q0;             // rchk error in entry q0
-  logic       rchk_err_q1;             // rchk error in entry q1
-  logic       rchk_err_aligned;        // rchk error for aligned instructions
-  logic       rchk_err_unaligned;      // rchk error for unaligned instructions
+  logic [1:0]  rchk_enable;             // "Global" rchk enable from cpuctrl. Bit0 for rdata, bit1 for bus error
+  logic        rchk_err_q0;             // rchk error in entry q0
+  logic        rchk_err_q1;             // rchk error in entry q1
+  logic        rchk_err_aligned;        // rchk error for aligned instructions
+  logic        rchk_err_unaligned;      // rchk error for unaligned instructions
 
   // Aligned instructions will either be fully in index 0 or incoming data
   // This also applies for the bus_error and mpu_status
@@ -200,8 +200,10 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // RCHK
   /////////////////
   // Enable any rchk checking when enabled in cpuctrl
-  // PMA integrity bit is parth of bus_resp and will be checked within the rchk module.
-  assign rchk_enable = xsecure_ctrl_i.cpuctrl.integrity;
+  // PMA integrity bit is part of bus_resp and will be checked within the rchk module.
+  // Always check the full rchk (both bits are the same)
+  assign rchk_enable[0] = xsecure_ctrl_i.cpuctrl.integrity;
+  assign rchk_enable[1] = xsecure_ctrl_i.cpuctrl.integrity;
 
   // Rchk for buffer entry q0
   cv32e40s_rchk_check

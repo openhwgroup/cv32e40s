@@ -70,7 +70,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // From WB stage
   input  ex_wb_pipe_t ex_wb_pipe_i,
-  input  logic [1:0]  lsu_err_wb_i,               // LSU caused bus_error in WB stage, gated with data_rvalid_i inside load_store_unit
+  input  lsu_err_wb_t lsu_err_wb_i,               // LSU caused bus_error or integrity error in WB stage, gated with data_rvalid_i inside load_store_unit
   input  logic        last_op_wb_i,               // WB stage contains the last operation of an instruction
   input  logic        abort_op_wb_i,              // WB stage contains an (to be) aborted instruction or sequence
 
@@ -139,6 +139,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Sticky version of lsu_err_wb_i
   logic nmi_pending_q;
   logic nmi_is_store_q; // 1 for store, 0 for load
+  logic nmi_is_integrity_q; // 1 for integrity, 0 for bus error
 
   // Debug mode
   logic debug_mode_n;
@@ -388,12 +389,12 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Using flopped version to avoid paths from data_err_i/data_rvalid_i to instr_* outputs
   assign pending_nmi = nmi_pending_q;
 
-  // Early version of the pending_nmi signal, using the unflopped lsu_err_wb_i[0]
+  // Early version of the pending_nmi signal, using the unflopped lsu_err_wb_i.bus_err and lsu_err_wb_i.integrity_err
   // This signal is used for halting the ID stage in the same cycle as the bus error arrives.
   // This ensures that any instruction in the ID stage that may depend on the result of the faulted load
   // will not propagate to the EX stage. For cycles after lsu_err_wb_i[0] is
   // high, ID stage will be halted due to pending_nmi and !nmi_allowed.
-  assign pending_nmi_early =  lsu_err_wb_i[0];
+  assign pending_nmi_early =  lsu_err_wb_i.bus_err || lsu_err_wb_i.integrity_err;
 
   // todo: Halting ID and killing it later will not work for Zce (push/pop)
 
@@ -639,7 +640,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
           ctrl_fsm_o.csr_save_cause  = 1'b1;
           ctrl_fsm_o.csr_cause.irq = 1'b1;
-          ctrl_fsm_o.csr_cause.exception_code = nmi_is_store_q ? INT_CAUSE_LSU_STORE_FAULT : INT_CAUSE_LSU_LOAD_FAULT;
+          ctrl_fsm_o.csr_cause.exception_code = nmi_is_integrity_q ? (nmi_is_store_q ? INT_CAUSE_LSU_STORE_INTEGRITY_FAULT : INT_CAUSE_LSU_LOAD_INTEGRITY_FAULT) :
+                                                                     (nmi_is_store_q ? INT_CAUSE_LSU_STORE_FAULT : INT_CAUSE_LSU_LOAD_FAULT);
 
           // Save pc from oldest valid instruction
           if (ex_wb_pipe_i.instr_valid) begin
@@ -1094,13 +1096,16 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     if (rst_n == 1'b0) begin
       nmi_pending_q <= 1'b0;
       nmi_is_store_q <= 1'b0;
+      nmi_is_integrity_q <= 1'b0;
     end else begin
-      if (lsu_err_wb_i[0] && !nmi_pending_q) begin
+      // Bus error [0] or integrity error [1]
+      if ((lsu_err_wb_i.bus_err || lsu_err_wb_i.integrity_err) && !nmi_pending_q) begin
         // Set whenever an error occurs in WB for the LSU, unless we already have an NMI pending.
         // Later errors could overwrite the bit for load/store type, and with mtval the address would be overwritten.
         // todo: if mtval is implemented, address must be sticky as well
         nmi_pending_q <= 1'b1;
-        nmi_is_store_q <= lsu_err_wb_i[1];
+        nmi_is_integrity_q <= lsu_err_wb_i.integrity_err;
+        nmi_is_store_q <= lsu_err_wb_i.store;
       // Clear when the controller takes the NMI
       end else if (ctrl_fsm_o.pc_set && (ctrl_fsm_o.pc_mux == PC_TRAP_NMI)) begin
         nmi_pending_q <= 1'b0;

@@ -955,8 +955,10 @@ parameter EXC_CAUSE_ECALL_MMODE           = 11'h0B;
 parameter EXC_CAUSE_INSTR_INTEGRITY_FAULT = 11'h19;
 parameter EXC_CAUSE_INSTR_BUS_FAULT       = 11'h30;
 
-parameter INT_CAUSE_LSU_LOAD_FAULT  = 11'h400;
-parameter INT_CAUSE_LSU_STORE_FAULT = 11'h401;
+parameter INT_CAUSE_LSU_LOAD_FAULT            = 11'h400;
+parameter INT_CAUSE_LSU_STORE_FAULT           = 11'h401;
+parameter INT_CAUSE_LSU_LOAD_INTEGRITY_FAULT  = 11'h402;
+parameter INT_CAUSE_LSU_STORE_INTEGRITY_FAULT = 11'h403;
 
 // Interrupt mask
 parameter IRQ_MASK = 32'hFFFF0888;
@@ -1111,9 +1113,9 @@ typedef struct packed {
   logic [INSTR_DATA_WIDTH-1:0] rdata;
   logic                        err;
   logic [4:0]                  rchk;
-  logic                        rchk_err;
-  logic                        parity_err;
-  logic                        integrity;
+  logic                        rchk_err;    // Calculated in instr_obi_interface and appended to struct upon rvalid
+  logic                        parity_err;  // Calculated in instr_obi_interface and appended to struct upon rvalid
+  logic                        integrity;   // Tracked through instr_obi_interface and appended to struct upon rvalid
 } obi_inst_resp_t;
 
 typedef struct packed {
@@ -1132,6 +1134,9 @@ typedef struct packed {
   logic [DATA_DATA_WIDTH-1:0] rdata;
   logic                       err;
   logic [4:0]                 rchk;
+  logic                       rchk_err;    // Calculated in data_obi_interface and appended to struct upon rvalid
+  logic                       parity_err;  // Calculated in data_obi_interface and appended to struct upon rvalid
+  logic                       integrity;   // Tracked through data_obi_interface and appended to struct upon rvalid
 } obi_data_resp_t;
 
 // Data/instruction transfer bundeled with MPU status
@@ -1200,6 +1205,13 @@ typedef struct packed
   logic [31:0] id;        // ID of offloaded ins
   logic        accepted;  // Was the offloaded instruction accepted or not?
 } xif_meta_t;
+
+typedef struct packed
+{
+  logic        bus_err;
+  logic        integrity_err;
+  logic        store;
+} lsu_err_wb_t;
 
 // IF/ID pipeline
 typedef struct packed {

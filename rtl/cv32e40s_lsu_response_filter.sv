@@ -32,7 +32,10 @@
 
 module cv32e40s_lsu_response_filter
   import cv32e40s_pkg::*;
-  #(parameter DEPTH = 2)
+  #(
+      parameter               DEPTH             = 2,
+      parameter int unsigned  OUTSTND_CNT_WIDTH = $clog2(DEPTH+1)
+  )
   (
    // clock and reset
    input logic            clk,
@@ -55,9 +58,11 @@ module cv32e40s_lsu_response_filter
    output logic           resp_valid_o,
    output obi_data_resp_t resp_o, // Todo: This also carries the obi error field. Could replace by data_resp_t
 
+   output logic [OUTSTND_CNT_WIDTH-1:0] bus_cnt_o,
+
    // Todo: This error signal could be merged with mpu_status_e, and be signaled via the resp_o above (if replaced by data_resp_t).
    //       This would make the error flow all the way through the MPU and not bypass the MPU as it does now.
-   output logic [1:0]     err_o  // bit0: flag for error, bit1: type (1 for store, 0 for load)
+   output lsu_err_wb_t    err_o   // error conditions in WB part of LSU
    );
 
   localparam CNT_WIDTH = $clog2(DEPTH+1);
@@ -167,10 +172,17 @@ module cv32e40s_lsu_response_filter
   assign resp_valid_o = (bus_resp_is_bufferable) ? core_resp_is_bufferable : resp_valid_i;
   assign trans_o      = trans_i;
 
-  assign err_o[0] = resp_valid_i && resp_i.err;
-  assign err_o[1] = outstanding_q[bus_cnt_q].store;
+  // Signal bus error
+  assign err_o.bus_err = resp_valid_i && resp_i.err;
+  // Signal integrity error, only signal rchk_err for loads
+  assign err_o.integrity_err = resp_valid_i && (resp_i.parity_err || resp_i.rchk_err);
+  // Signal type transaction for error (load or store)
+  assign err_o.store = outstanding_q[bus_cnt_q].store;
 
   // bus_resp goes straight through
   assign resp_o = resp_i;
+
+  // Export bus side counter for use outside of this module
+  assign bus_cnt_o = bus_cnt_q;
 
 endmodule

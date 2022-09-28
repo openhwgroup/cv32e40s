@@ -39,6 +39,7 @@
   `include "cv32e40s_sequencer_sva.sv"
   `include "cv32e40s_clic_int_controller_sva.sv"
   `include "cv32e40s_instr_obi_interface_sva.sv"
+  `include "cv32e40s_data_obi_interface_sva.sv"
 `endif
 
 `include "cv32e40s_wrapper.vh"
@@ -431,6 +432,12 @@ endgenerate
     cv32e40s_instr_obi_interface_sva
       instr_obi_sva( .m_c_obi_instr_if (core_i.m_c_obi_instr_if), // SVA monitor modport cannot connect to a master modport
                      .*);
+
+  bind cv32e40s_data_obi_interface :
+    core_i.load_store_unit_i.data_obi_i
+    cv32e40s_data_obi_interface_sva
+      data_obi_sva( .m_c_obi_data_if (core_i.m_c_obi_data_if), // SVA monitor modport cannot connect to a master modport
+                    .*);
 
 `ifndef FORMAL
   bind cv32e40s_rvfi:

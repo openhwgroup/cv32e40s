@@ -264,7 +264,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        lsu_last_op_ex;
   mpu_status_e lsu_mpu_status_wb;
   logic [31:0] lsu_rdata_wb;
-  logic [1:0]  lsu_err_wb;
+  lsu_err_wb_t lsu_err_wb;
 
   logic        lsu_valid_0;             // Handshake with EX
   logic        lsu_ready_ex;
@@ -306,6 +306,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        csr_err;
   logic        itf_int_err;
   logic        integrity_err_if;
+  logic        lsu_integrity_err;
 
   // Minor Alert Triggers
   logic        lfsr_lockup;
@@ -397,7 +398,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign m_c_obi_instr_if.resp_payload.rdata = instr_rdata_i;
   assign m_c_obi_instr_if.resp_payload.err   = instr_err_i;
   assign m_c_obi_instr_if.resp_payload.rchk  = instr_rchk_i;
-  assign m_c_obi_instr_if.resp_payload.parity_err = 1'b0; // Tie off here, will we populated in instr_obi_insterface.
+  assign m_c_obi_instr_if.resp_payload.parity_err = 1'b0; // Tie off here, will we populated in instr_obi_interface.
+  assign m_c_obi_instr_if.resp_payload.rchk_err   = 1'b0; // Tie off here, will we populated in instr_obi_interface.
 
   assign data_req_o                          = m_c_obi_data_if.s_req.req;
   assign data_reqpar_o                       = m_c_obi_data_if.s_req.reqpar;
@@ -416,6 +418,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign m_c_obi_data_if.resp_payload.rdata  = data_rdata_i;
   assign m_c_obi_data_if.resp_payload.err    = data_err_i;
   assign m_c_obi_data_if.resp_payload.rchk   = data_rchk_i;
+  assign m_c_obi_data_if.resp_payload.parity_err = 1'b0; // Tie off here, will we populated in data_obi_interface.
+  assign m_c_obi_data_if.resp_payload.rchk_err   = 1'b0; // Tie off here, will we populated in data_obi_interface.
 
   assign debug_havereset_o = ctrl_fsm.debug_havereset;
   assign debug_halted_o    = ctrl_fsm.debug_halted;
@@ -474,7 +478,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //                                 //
   /////////////////////////////////////
 
-  assign itf_int_err     = integrity_err_if; // todo:  || integrity_err_lsu
+  assign itf_int_err     = integrity_err_if || lsu_integrity_err;
 
   cv32e40s_alert
     alert_i
@@ -787,6 +791,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ready_1_o             ( lsu_ready_1        ),
     .valid_1_o             ( lsu_valid_1        ),
     .ready_1_i             ( lsu_ready_wb       ),
+
+    .integrity_err_o       ( lsu_integrity_err  ),
+
+    .xsecure_ctrl_i        ( xsecure_ctrl       ),
 
     // eXtension interface
     .xif_mem_if            ( xif.cpu_mem        ),
