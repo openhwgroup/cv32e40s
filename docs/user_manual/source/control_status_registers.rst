@@ -1919,7 +1919,7 @@ Detailed:
   | 19:16       | RW        | **RNDDUMMYFREQ:** Frequency control for dummy instruction insertion.   |
   |             |           | Dummy instruction inserted every n instructions where n is a range     |
   |             |           | set based on the value written to this register where:                 |
-  |             |           | 0x0 = 1-4, 0x3 = 1-8, 0x7 = 1-16, 0xF = 1-32, 0x1F = 1-64              |
+  |             |           | 0x0 = 1-4, 0x1 = 1-8, 0x3 = 1-16, 0x7 = 1-32, 0xF = 1-64.              |
   +-------------+-----------+------------------------------------------------------------------------+
   | 15:5        | R (0x0)   | Reserved. Hardwired to 0.                                              |
   +-------------+-----------+------------------------------------------------------------------------+
