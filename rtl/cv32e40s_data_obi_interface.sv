@@ -99,9 +99,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   always_comb begin
     resp_o  = m_c_obi_data_if.resp_payload;
-    resp_o.parity_err  = rvalidpar_err || gntpar_err_resp;
-    resp_o.rchk_err    = rchk_err;
-    resp_o.integrity   = fifo_q[bus_cnt_i].integrity;
+    resp_o.integrity_err = rvalidpar_err || gntpar_err_resp || rchk_err;
+    resp_o.integrity     = fifo_q[bus_cnt_i].integrity;
   end
 
   //////////////////////////////////////////////////////////////////////////////

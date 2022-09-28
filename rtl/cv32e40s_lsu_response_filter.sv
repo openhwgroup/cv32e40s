@@ -175,7 +175,7 @@ module cv32e40s_lsu_response_filter
   // Signal bus error
   assign err_o.bus_err = resp_valid_i && resp_i.err;
   // Signal integrity error, only signal rchk_err for loads
-  assign err_o.integrity_err = resp_valid_i && (resp_i.parity_err || resp_i.rchk_err);
+  assign err_o.integrity_err = resp_valid_i && resp_i.integrity_err;
   // Signal type transaction for error (load or store)
   assign err_o.store = outstanding_q[bus_cnt_q].store;
 

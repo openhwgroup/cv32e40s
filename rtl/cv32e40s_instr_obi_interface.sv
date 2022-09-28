@@ -102,8 +102,7 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
   always_comb begin
     resp_o  = m_c_obi_instr_if.resp_payload;
-    resp_o.parity_err  = rvalidpar_err || gntpar_err_resp;
-    resp_o.rchk_err    = rchk_err;
+    resp_o.integrity_err  = rvalidpar_err || gntpar_err_resp || rchk_err;
     resp_o.integrity   = fifo_q[cnt_q].integrity;
   end
 
