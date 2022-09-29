@@ -147,7 +147,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     (32'(1)          <<  8) | // I - RV32I/64I/128I base ISA
     (32'(M_EXT == M) << 12) | // M - Integer Multiply/Divide extension
     (32'(USER)       << 20) | // U - User mode implemented
-    (32'(SECURE)     << 23) | // X - Non-standard extensions present
+    (32'(1)          << 23) | // X - Non-standard extensions present
     (32'(MXL)        << 30); // M-XLEN
 
   localparam logic [31:0] MISA_VALUE = CORE_MISA | (X_EXT ? X_MISA : 32'h0000_0000);
@@ -387,6 +387,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         mcause_rd_error;                                // Not used
 
   // Local instr_valid for write portion (WB)
+  // Not factoring in ctrl_fsm_i.halt_limited_wb. This signal is only set during SLEEP mode, and while in SLEEP
+  // there cannot be any CSR instruction in WB.
   assign instr_valid = ex_wb_pipe_i.instr_valid && !ctrl_fsm_i.kill_wb && !ctrl_fsm_i.halt_wb;
 
   // CSR access. Read in EX, write in WB

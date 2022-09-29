@@ -160,6 +160,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   logic                 sys_mret_insn;
   logic                 sys_dret_insn;
   logic                 sys_wfi_insn;
+  logic                 sys_wfe_insn;
 
   // Operands and forwarding
   logic [31:0]          operand_a;
@@ -442,6 +443,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     .sys_dret_insn_o                 ( sys_dret_insn             ),
     .sys_ecall_insn_o                ( sys_ecall_insn            ),
     .sys_wfi_insn_o                  ( sys_wfi_insn              ),
+    .sys_wfe_insn_o                  ( sys_wfe_insn              ),
     .sys_fencei_insn_o               ( sys_fencei_insn           ),
 
     // from IF/ID pipeline
@@ -554,6 +556,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.sys_fencei_insn       <= 1'b0;
       id_ex_pipe_o.sys_mret_insn         <= 1'b0;
       id_ex_pipe_o.sys_wfi_insn          <= 1'b0;
+      id_ex_pipe_o.sys_wfe_insn          <= 1'b0;
 
       id_ex_pipe_o.xif_en                 <= 1'b0;
       id_ex_pipe_o.xif_meta               <= '0;
@@ -641,6 +644,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
           id_ex_pipe_o.sys_fencei_insn      <= sys_fencei_insn;
           id_ex_pipe_o.sys_mret_insn        <= sys_mret_insn;
           id_ex_pipe_o.sys_wfi_insn         <= sys_wfi_insn;
+          id_ex_pipe_o.sys_wfe_insn         <= sys_wfe_insn;
         end
 
         id_ex_pipe_o.illegal_insn           <= illegal_insn && !xif_insn_accept;

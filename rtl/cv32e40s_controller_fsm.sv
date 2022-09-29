@@ -92,6 +92,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   input  privlvl_t    priv_lvl_i,                 // Current running priviledge level
 
+  // Wakeup signal for WFE (from toplevel input)
+  input  logic        wu_wfe_i,
+
   // From cs_registers
   input  logic  [1:0] mtvec_mode_i,
   input  dcsr_t       dcsr_i,
@@ -170,6 +173,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   logic exception_alert_wb;
   logic [10:0] exception_cause_wb;
   logic wfi_in_wb;
+  logic wfe_in_wb;
   logic fencei_in_wb;
   logic mret_in_wb;
   logic dret_in_wb;
@@ -362,6 +366,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // wfi in wb
   assign wfi_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_wfi_insn && ex_wb_pipe_i.instr_valid;
 
+  // wfe in wb
+  assign wfe_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_wfe_insn && ex_wb_pipe_i.instr_valid;
+
   // fencei in wb
   assign fencei_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_fencei_insn && ex_wb_pipe_i.instr_valid;
 
@@ -501,9 +508,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // When WB is halted, we do not know (yet) if the instruction will retire or get killed.
   // Halted WB due to debug will result in WB getting killed
   // Halted WB due to fence.i will result in fence.i retire after handshake is done and we count when WB is un-halted
+  // ctrl_fsm_o.halt_limited_wb will only be set during SLEEP, and only affect the WB stage (not cs_registers)
+  //  In terms of counter events, no event should be counted while either of the WB related halts are asserted.
   assign wb_counter_event_gated = wb_counter_event && !exception_in_wb && !trigger_match_in_wb &&
                                   !ex_wb_pipe_i.instr_meta.dummy && // Don't count dummy instuctions
-                                  !ctrl_fsm_o.kill_wb && !ctrl_fsm_o.halt_wb;
+                                  !ctrl_fsm_o.kill_wb && !ctrl_fsm_o.halt_wb && !ctrl_fsm_o.halt_limited_wb;
 
   // Performance counter events
   assign ctrl_fsm_o.mhpmevent.minstret      = wb_counter_event_gated;
@@ -556,7 +565,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     //             Sequences:    If we need to halt for debug or interrupt not allowed due to a sequence, we must check if we can
     //                           actually halt the ID stage or not. Halting the same sequence that causes *_allowed to go to 0
     //                           may cause a deadlock.
-    ctrl_fsm_o.halt_id          = ctrl_byp_i.jalr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_stall || ctrl_byp_i.mnxti_id_stall ||
+    ctrl_fsm_o.halt_id          = ctrl_byp_i.jalr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_wfe_stall || ctrl_byp_i.mnxti_id_stall ||
       (((pending_interrupt && !interrupt_allowed) || (pending_nmi && !nmi_allowed) || (pending_nmi_early)) && debug_interruptible && id_stage_haltable) ||
       (pending_debug && !debug_allowed && id_stage_haltable);
 
@@ -567,6 +576,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     // Halting EX when an instruction in WB may cause an interrupt to become pending.
     ctrl_fsm_o.halt_ex          = ctrl_byp_i.minstret_stall || ctrl_byp_i.xif_exception_stall || ctrl_byp_i.irq_enable_stall || ctrl_byp_i.mnxti_ex_stall;
     ctrl_fsm_o.halt_wb          = 1'b0;
+    ctrl_fsm_o.halt_limited_wb  = 1'b0;
 
     // By default no stages are killed
     ctrl_fsm_o.kill_if          = 1'b0;
@@ -734,10 +744,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             // Trigger Minor Alert
             ctrl_fsm_o.exception_alert = exception_alert_wb;
           // Special insn
-          end else if (wfi_in_wb) begin
-            // Not halting EX/WB to allow insn (interruptible bubble) in EX to pass to WB before sleeping
-            ctrl_fsm_o.halt_if = 1'b1;
-            ctrl_fsm_o.halt_id = 1'b1; // Ensures second bubble after WFI (EX is empty while in SLEEP)
+          end else if (wfi_in_wb || wfe_in_wb) begin
+            // Halt the entire pipeline
+            // WFI/WFE will stay in WB until we exit sleep mode
+            ctrl_fsm_o.halt_wb = 1'b1;
             ctrl_fsm_o.instr_req = 1'b0;
             ctrl_fsm_ns = SLEEP;
           end else if (fencei_in_wb) begin
@@ -902,14 +912,27 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
         end
       end
       SLEEP: begin
-        // There should be a bubble in EX and WB in this state (checked by assertion)
+        // There should be a bubble in EX in this state (checked by assertion)
         // We are avoiding that a load/store starts its bus transaction
-        ctrl_fsm_o.ctrl_busy = 1'b0;
-        ctrl_fsm_o.instr_req = 1'b0;
-        ctrl_fsm_o.halt_wb   = 1'b1; // Put backpressure on pipeline to avoid retiring following instructions
+        ctrl_fsm_o.ctrl_busy         = 1'b0;
+        ctrl_fsm_o.instr_req         = 1'b0;
+        // Put backpressure on pipeline to avoid retiring WFI until we wake up.
+        // Using limited version of halt_wb to avoid timing paths through cs_registers and bypass onto the data OBI bus.
+        // Assertions exist to check that no CSR instruction can be in WB at this time.
+        ctrl_fsm_o.halt_limited_wb   = 1'b1;
+
+        // Wake up from SLEEP
         if (ctrl_fsm_o.wake_from_sleep) begin
           ctrl_fsm_ns = FUNCTIONAL;
           ctrl_fsm_o.ctrl_busy = 1'b1;
+          // Keep IF/ID halted while waking up (EX contains a bubble)
+          // Any jump/tablejump/mret which is in ID in this cycle must also remain in ID
+          // the next cycle for their side effects to be taken during the FUNCTIONAL state in case the interrupt is not actually taken.
+          ctrl_fsm_o.halt_id = 1'b1;
+
+          // Unhalt WB to allow WFI to retire when we exit SLEEP mode
+          // Using limited version of halt_wb to avoid timing paths through cs_registers and bypass onto the data OBI bus.
+          ctrl_fsm_o.halt_limited_wb = 1'b0;
         end
       end
       DEBUG_TAKEN: begin
@@ -1051,8 +1074,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   end
 
   // Wakeup from sleep
-  assign ctrl_fsm_o.wake_from_sleep    = irq_wu_ctrl_i || pending_debug || debug_mode_q;
-  assign ctrl_fsm_o.debug_wfi_no_sleep = debug_mode_q || dcsr_i.step || trigger_match_in_wb;
+  assign ctrl_fsm_o.wake_from_sleep        = irq_wu_ctrl_i || pending_debug || debug_mode_q || (wfe_in_wb && wu_wfe_i); // Only WFE wakes up for wfe_wu_i
+  assign ctrl_fsm_o.debug_wfi_wfe_no_sleep = debug_mode_q || dcsr_i.step;
 
   ////////////////////
   // Flops          //
@@ -1168,7 +1191,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
       wb_counter_event <= 1'b0;
     end else begin
       // When the last part of an instruction reaches WB we may increment counters,
-      // unless WB stage is halted. A halted instruction in WB may or may not be killed later,
+      // unless WB stage is halted. WB stage is halted due to either halt_wb or halt_limited wb (SLEEP with WFI/WFE in WB only).
+      // A halted instruction in WB may or may not be killed later,
       // thus we cannot count it until we know for sure if it will retire.
       // i.e halt_wb due to debug will result in killed WB, while for fence.i it will retire.
       // Note that this event bit is further gated before sent to the actual counters in case
@@ -1178,7 +1202,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
         wb_counter_event <= 1'b1;
       end else begin
         // Keep event flag high while WB is halted, as we don't know if it will retire yet
-        if (!ctrl_fsm_o.halt_wb) begin
+        if (!ctrl_fsm_o.halt_wb && !ctrl_fsm_o.halt_limited_wb) begin
           wb_counter_event <= 1'b0;
         end
       end
