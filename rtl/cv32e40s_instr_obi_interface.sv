@@ -270,8 +270,8 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
     // Response phase properties
     .gntpar_err_resp_o  (gntpar_err_resp                  ),
-    .integrity_o        (integrity_resp                   ),
-    .rchk_err_o         (rchk_err_resp                    ),
+    .integrity_resp_o   (integrity_resp                   ),
+    .rchk_err_resp_o    (rchk_err_resp                    ),
 
     // OBI interface
     .obi_req_i          (m_c_obi_instr_if.s_req.req       ),

@@ -54,8 +54,8 @@ module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
 
   // Response phase properties
   output logic                        gntpar_err_resp_o,
-  output logic                        integrity_o,
-  output logic                        rchk_err_o,
+  output logic                        integrity_resp_o,
+  output logic                        rchk_err_resp_o,
 
   // OBI handshake signals
   input  logic                        obi_req_i,
@@ -127,7 +127,7 @@ module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
     end
   end
 
-  assign integrity_o       = fifo_q[bus_cnt_i].integrity;
+  assign integrity_resp_o  = fifo_q[bus_cnt_i].integrity;
   assign resp_is_store     = fifo_q[bus_cnt_i].store;
   assign gntpar_err_resp_o = fifo_q[bus_cnt_i].gnterr;
 
@@ -143,9 +143,9 @@ module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
   )
   rchk_i
   (
-    .resp_i   (obi_resp_i),
-    .enable_i (rchk_en   ),
-    .err_o    (rchk_err_o)
+    .resp_i   (obi_resp_i     ),
+    .enable_i (rchk_en        ),
+    .err_o    (rchk_err_resp_o)
   );
 
 
