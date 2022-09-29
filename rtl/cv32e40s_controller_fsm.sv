@@ -646,6 +646,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           ctrl_fsm_o.csr_cause.exception_code = nmi_is_integrity_q ? (nmi_is_store_q ? INT_CAUSE_LSU_STORE_INTEGRITY_FAULT : INT_CAUSE_LSU_LOAD_INTEGRITY_FAULT) :
                                                                      (nmi_is_store_q ? INT_CAUSE_LSU_STORE_FAULT : INT_CAUSE_LSU_LOAD_FAULT);
 
+          // Set alert major if NMI is due to integrity
+          ctrl_fsm_o.exception_alert_major = nmi_is_integrity_q;
+
           // Save pc from oldest valid instruction
           if (ex_wb_pipe_i.instr_valid) begin
             pipe_pc_mux_ctrl = PC_WB;

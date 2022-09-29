@@ -67,10 +67,10 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   logic [11:0]          achk;                         // Address phase checksum
 
   logic                 gntpar_err;                   // gnt parity error (immediate)
-  logic                 rvalidpar_err;                // rvalid parity error (immediate during response phase)
+  logic                 rvalidpar_err_resp;           // rvalid parity error (immediate during response phase)
   logic                 gntpar_err_resp;              // grant error with reponse timing (output of fifo)
-  logic                 rchk_err;                     // Local rchk error signal
-  logic                 resp_has_integrity;           // Response has integrity bit set (from fifo)
+  logic                 rchk_err_resp;                // Local rchk error signal
+  logic                 integrity_resp;               // Response has integrity bit set (from fifo)
 
   // Outstanding counter signals
   logic [CNT_WIDTH-1:0] cnt_q;                        // Transaction counter
@@ -92,8 +92,8 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
   always_comb begin
     resp_o                = m_c_obi_instr_if.resp_payload;
-    resp_o.integrity_err  = rvalidpar_err || gntpar_err_resp || rchk_err;
-    resp_o.integrity      = resp_has_integrity;
+    resp_o.integrity_err  = rvalidpar_err_resp || gntpar_err_resp || rchk_err_resp;
+    resp_o.integrity      = integrity_resp;
   end
 
   //////////////////////////////////////////////////////////////////////////////
@@ -270,8 +270,8 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
     // Response phase properties
     .gntpar_err_resp_o  (gntpar_err_resp                  ),
-    .integrity_o        (resp_has_integrity               ),
-    .rchk_err_o         (rchk_err                         ),
+    .integrity_o        (integrity_resp                   ),
+    .rchk_err_o         (rchk_err_resp                    ),
 
     // OBI interface
     .obi_req_i          (m_c_obi_instr_if.s_req.req       ),
@@ -282,15 +282,15 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
 
   // Checking rvalid parity
-  // integrity_err_o will go high immediately, while the rvalidpar_err for the instruction
+  // integrity_err_o will go high immediately, while the rvalidpar_err_resp for the instruction
   // will only propagate when rvalid==1.
-  assign rvalidpar_err = (m_c_obi_instr_if.s_rvalid.rvalid == m_c_obi_instr_if.s_rvalid.rvalidpar);
+  assign rvalidpar_err_resp = (m_c_obi_instr_if.s_rvalid.rvalid == m_c_obi_instr_if.s_rvalid.rvalidpar);
 
   // Set integrity error outputs.
   // rchk_err: recomputed checksum mismatch when rvalid=1 and PMA has integrity set for the transaction
-  // rvalidpar_err: mismatch on rvalid parity bit at any time
+  // rvalidpar_err_resp: mismatch on rvalid parity bit at any time
   // gntpar_err: mismatch on gnt parity bit at any time
-  assign integrity_err_o = rchk_err || rvalidpar_err || gntpar_err;
+  assign integrity_err_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err;
 
 
 

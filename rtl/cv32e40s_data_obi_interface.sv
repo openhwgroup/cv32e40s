@@ -65,11 +65,11 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
 // Parity and rchk error signals
   logic       gntpar_err;
-  logic       rvalidpar_err;                          // rvalid parity error (immediate during response phase)
+  logic       rvalidpar_err_resp;                          // rvalid parity error (immediate during response phase)
   logic       gntpar_err_resp;                        // grant error with reponse timing (output of fifo)
-  logic       rchk_err;
+  logic       rchk_err_resp;
 
-  logic       resp_has_integrity;
+  logic       integrity_resp;
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -84,8 +84,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   always_comb begin
     resp_o               = m_c_obi_data_if.resp_payload;
-    resp_o.integrity_err = rvalidpar_err || gntpar_err_resp || rchk_err;
-    resp_o.integrity     = resp_has_integrity;
+    resp_o.integrity_err = rvalidpar_err_resp || gntpar_err_resp || rchk_err_resp;
+    resp_o.integrity     = integrity_resp;
   end
 
   //////////////////////////////////////////////////////////////////////////////
@@ -155,8 +155,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
       // Response phase properties
       .gntpar_err_resp_o  (gntpar_err_resp    ),
-      .integrity_o        (resp_has_integrity ),
-      .rchk_err_o         (rchk_err           ),
+      .integrity_o        (integrity_resp     ),
+      .rchk_err_o         (rchk_err_resp      ),
 
       // OBI interface
       .obi_req_i          (m_c_obi_data_if.s_req.req       ),
@@ -167,8 +167,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   // Checking rvalid parity
   // integrity_err_o will go high immediately
-  assign rvalidpar_err = (m_c_obi_data_if.s_rvalid.rvalid == m_c_obi_data_if.s_rvalid.rvalidpar);
+  assign rvalidpar_err_resp = (m_c_obi_data_if.s_rvalid.rvalid == m_c_obi_data_if.s_rvalid.rvalidpar);
 
-  assign integrity_err_o = rchk_err || rvalidpar_err || gntpar_err;
+  assign integrity_err_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err;
 
 endmodule
