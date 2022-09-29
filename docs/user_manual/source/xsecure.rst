@@ -303,8 +303,8 @@ and locally enabled (via PMA, see :ref:`pma_integrity`). Parity integrity checki
 
 Interface checking is performed both associated and non-associated to specific instruction execution.
 
-Non-associated interface checks are performed by only taking into account the bus interfaces themselves and use an observation interval that is as wide as
-possible (e.g. a data interface related parity or checksum error can be detected even if no load or store instruction is actually being executed).
+Non-associated interface checks are performed by only taking into account the bus interfaces themselves plus some state to determine whether checksum checks are enabled for a given transaction. The used observation interval is as wide as
+possible (e.g. a data interface related parity error can be detected even if no load or store instruction is actually being executed).
 Observed errors will trigger an alert on ``alert_major_o``.
 
 Associated interface checks are the interface checks that can directly be associated to a fetched instruction or bus transaction due to execution of a load or store instruction:
