@@ -147,7 +147,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   inst_resp_t                 prefetch_inst_resp;
   logic                       prefetch_one_txn_pend_n;
   logic [ALBUF_CNT_WIDTH-1:0] prefetch_outstnd_cnt_q;
-  logic                       prefetch_integrity_err;
 
   logic              bus_resp_valid;
   obi_inst_resp_t    bus_resp;
@@ -239,7 +238,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .prefetch_priv_lvl_o      ( prefetch_priv_lvl           ),
     .prefetch_is_clic_ptr_o   ( prefetch_is_clic_ptr        ),
     .prefetch_is_tbljmp_ptr_o ( prefetch_is_tbljmp_ptr      ),
-    .prefetch_integrity_err_o ( prefetch_integrity_err      ),
 
     .trans_valid_o            ( prefetch_trans_valid        ),
     .trans_ready_i            ( prefetch_trans_ready        ),
@@ -427,7 +425,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Set flag to indicate that instruction/sequence will be aborted due to known exceptions or trigger match
   assign abort_op_o = dummy_insert ? 1'b0 :
                       (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK) ||
-                      (instr_decompressed.bus_resp.parity_err) || (instr_decompressed.bus_resp.rchk_err) || trigger_match_i);
+                      (instr_decompressed.bus_resp.integrity_err) || trigger_match_i);
 
   assign prefetch_valid_o = prefetch_valid;
   // Populate instruction meta data
@@ -505,8 +503,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
           // Need to update bus error status and mpu status, but may omit the 32-bit instruction word
           if_id_pipe_o.instr.bus_resp.err        <= instr_decompressed.bus_resp.err;
           if_id_pipe_o.instr.mpu_status          <= instr_decompressed.mpu_status;
-          if_id_pipe_o.instr.bus_resp.parity_err <= instr_decompressed.bus_resp.parity_err;
-          if_id_pipe_o.instr.bus_resp.rchk_err   <= instr_decompressed.bus_resp.rchk_err;
+          if_id_pipe_o.instr.bus_resp.integrity_err <= instr_decompressed.bus_resp.integrity_err;
         end else begin
           // Regular instruction, update the whole instr field
           if_id_pipe_o.instr          <= dummy_insert ? dummy_instr :
@@ -640,7 +637,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   endgenerate
 
   // Set integrity error output
-  assign integrity_err_o = integrity_err_obi || prefetch_integrity_err;
+  assign integrity_err_o = integrity_err_obi;
 
   // Some signals are unused on purpose. Use them here for easier LINT waiving.
   assign unused_signals = |prefetch_outstnd_cnt_q;

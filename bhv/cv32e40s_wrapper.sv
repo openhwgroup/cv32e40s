@@ -435,12 +435,15 @@ endgenerate
     core_i.if_stage_i.instruction_obi_i
     cv32e40s_instr_obi_interface_sva
       instr_obi_sva( .m_c_obi_instr_if (core_i.m_c_obi_instr_if), // SVA monitor modport cannot connect to a master modport
+                     .gntpar_err_q     (core_i.if_stage_i.instruction_obi_i.integrity_fifo_i.gntpar_err_q),
                      .*);
 
   bind cv32e40s_data_obi_interface :
     core_i.load_store_unit_i.data_obi_i
     cv32e40s_data_obi_interface_sva
       data_obi_sva( .m_c_obi_data_if (core_i.m_c_obi_data_if), // SVA monitor modport cannot connect to a master modport
+      .gntpar_err_q     (core_i.load_store_unit_i.data_obi_i.integrity_fifo_i.gntpar_err_q),
+      .resp_is_store    (core_i.load_store_unit_i.data_obi_i.integrity_fifo_i.resp_is_store),
                     .*);
 
 `ifndef FORMAL

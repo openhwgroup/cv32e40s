@@ -1115,8 +1115,7 @@ typedef struct packed {
   logic [INSTR_DATA_WIDTH-1:0] rdata;
   logic                        err;
   logic [4:0]                  rchk;
-  logic                        rchk_err;    // Calculated in instr_obi_interface and appended to struct upon rvalid
-  logic                        parity_err;  // Calculated in instr_obi_interface and appended to struct upon rvalid
+  logic                        integrity_err;  // Calculated in instr_obi_interface and appended to struct upon rvalid
   logic                        integrity;   // Tracked through instr_obi_interface and appended to struct upon rvalid
 } obi_inst_resp_t;
 
@@ -1136,8 +1135,7 @@ typedef struct packed {
   logic [DATA_DATA_WIDTH-1:0] rdata;
   logic                       err;
   logic [4:0]                 rchk;
-  logic                       rchk_err;    // Calculated in data_obi_interface and appended to struct upon rvalid
-  logic                       parity_err;  // Calculated in data_obi_interface and appended to struct upon rvalid
+  logic                       integrity_err;    // Calculated in data_obi_interface and appended to struct upon rvalid
   logic                       integrity;   // Tracked through data_obi_interface and appended to struct upon rvalid
 } obi_data_resp_t;
 
@@ -1151,7 +1149,7 @@ typedef struct packed {
 parameter inst_resp_t INST_RESP_RESET_VAL = '{
   // Setting rdata[1:0] to 2'b11 to easily assert that all
   // instructions in ID are uncompressed
-  bus_resp    : '{rdata: 32'h3, err: 1'b0, rchk: 5'b0, parity_err: 1'b0, rchk_err: 1'b0, integrity: 1'b0},
+  bus_resp    : '{rdata: 32'h3, err: 1'b0, rchk: 5'b0,integrity_err: 1'b0, integrity: 1'b0},
   mpu_status  : MPU_OK
 };
 
@@ -1414,8 +1412,10 @@ typedef struct packed {
   logic        debug_running;          // Signal to external debugger that we are running (not in debug)
   logic        debug_halted;           // Signal to external debugger that we are halted (in debug mode)
 
-  // Alert Trigger
-  logic        exception_alert;
+  // Alert Trigger for minor alert
+  logic        exception_alert_minor;
+  // Alert Trigger for major alert
+  logic        exception_alert_major;
 
   // Wakeup Signal to sleep unit
   logic        wake_from_sleep;       // Wakeup (due to irq or debug)

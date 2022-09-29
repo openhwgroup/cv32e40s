@@ -170,7 +170,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // WB signals
   logic exception_in_wb;
-  logic exception_alert_wb;
+  logic exception_alert_minor_wb;
+  logic exception_alert_major_wb;
   logic [10:0] exception_cause_wb;
   logic wfi_in_wb;
   logic wfe_in_wb;
@@ -321,17 +322,19 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign branch_taken_ex = branch_in_ex && branch_decision_ex_i && !branch_taken_q;
 
   // Exception should trigger minor alert if the following evaluates to 1
-  assign exception_alert_wb  = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK) ||
-                                ex_wb_pipe_i.instr.bus_resp.err           ||
-                                ex_wb_pipe_i.illegal_insn                 ||
-                                (lsu_mpu_status_wb_i != MPU_OK))          && ex_wb_pipe_i.instr_valid;
+  assign exception_alert_minor_wb  = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK) ||
+                                      ex_wb_pipe_i.instr.bus_resp.err           ||
+                                      ex_wb_pipe_i.illegal_insn                 ||
+                                      (lsu_mpu_status_wb_i != MPU_OK))          && ex_wb_pipe_i.instr_valid;
+
+  // Major alert will be set if we take an exception for an instruction side integrity error
+  assign exception_alert_major_wb = (ex_wb_pipe_i.instr.bus_resp.integrity_err && ex_wb_pipe_i.instr_valid);
 
   // Exception in WB if the following evaluates to 1
   // Not checking for ex_wb_pipe_i.last_op to enable exceptions to be taken as soon as possible for
   // split load/stores or Zc sequences.
   assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK)                              ||
-                             ex_wb_pipe_i.instr.bus_resp.parity_err                                ||
-                             ex_wb_pipe_i.instr.bus_resp.rchk_err                                  ||
+                             ex_wb_pipe_i.instr.bus_resp.integrity_err                             ||
                              ex_wb_pipe_i.instr.bus_resp.err                                       ||
                             ex_wb_pipe_i.illegal_insn                                              ||
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)                   ||
@@ -344,8 +347,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // For CLIC: Pointer fetches with PMA/PMP errors will get the exception code converted to LOAD_FAULT
   //           Bus errors will be converted to NMI as for regular loads.
   assign exception_cause_wb = (ex_wb_pipe_i.instr.mpu_status != MPU_OK)               ? EXC_CAUSE_INSTR_FAULT     :
-                               ex_wb_pipe_i.instr.bus_resp.parity_err                 ? EXC_CAUSE_INSTR_INTEGRITY_FAULT :
-                               ex_wb_pipe_i.instr.bus_resp.rchk_err                   ? EXC_CAUSE_INSTR_INTEGRITY_FAULT :
+                               ex_wb_pipe_i.instr.bus_resp.integrity_err              ? EXC_CAUSE_INSTR_INTEGRITY_FAULT :
                               ex_wb_pipe_i.instr.bus_resp.err                         ? EXC_CAUSE_INSTR_BUS_FAULT :
                               ex_wb_pipe_i.illegal_insn                               ? EXC_CAUSE_ILLEGAL_INSN    :
                               (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)    ? (priv_lvl_i==PRIV_LVL_M ?
@@ -613,7 +615,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
     csr_flush_ack_n             = 1'b0;
 
-    ctrl_fsm_o.exception_alert  = 1'b0;
+    ctrl_fsm_o.exception_alert_minor = 1'b0;
+    ctrl_fsm_o.exception_alert_major = 1'b0;
 
     ctrl_fsm_o.mret_jump_id     = 1'b0;
 
@@ -652,6 +655,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           ctrl_fsm_o.csr_cause.irq = 1'b1;
           ctrl_fsm_o.csr_cause.exception_code = nmi_is_integrity_q ? (nmi_is_store_q ? INT_CAUSE_LSU_STORE_INTEGRITY_FAULT : INT_CAUSE_LSU_LOAD_INTEGRITY_FAULT) :
                                                                      (nmi_is_store_q ? INT_CAUSE_LSU_STORE_FAULT : INT_CAUSE_LSU_LOAD_FAULT);
+
+          // Set alert major if NMI is due to integrity
+          ctrl_fsm_o.exception_alert_major = nmi_is_integrity_q;
 
           // Save pc from oldest valid instruction
           if (ex_wb_pipe_i.instr_valid) begin
@@ -742,7 +748,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             ctrl_fsm_o.csr_cause.exception_code = exception_cause_wb;
 
             // Trigger Minor Alert
-            ctrl_fsm_o.exception_alert = exception_alert_wb;
+            ctrl_fsm_o.exception_alert_minor = exception_alert_minor_wb;
+
+            // Trigger Major Alert
+            ctrl_fsm_o.exception_alert_major = exception_alert_major_wb;
           // Special insn
           end else if (wfi_in_wb || wfe_in_wb) begin
             // Halt the entire pipeline
@@ -1001,7 +1010,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           // Function pointer reached ID stage, do another jump
           // if no faults happened during pointer fetch. (mcause.minhv will stay high for faults)
           if(!((if_id_pipe_i.instr.mpu_status != MPU_OK) || if_id_pipe_i.instr.bus_resp.err ||
-                if_id_pipe_i.instr.bus_resp.parity_err || if_id_pipe_i.instr.bus_resp.rchk_err)) begin
+                if_id_pipe_i.instr.bus_resp.integrity_err)) begin
             ctrl_fsm_o.pc_set = 1'b1;
             ctrl_fsm_o.pc_mux = PC_POINTER;
             ctrl_fsm_o.kill_if = 1'b1;

@@ -63,8 +63,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   output privlvl_t                   instr_priv_lvl_o,
   output logic                       instr_is_clic_ptr_o,
   output logic                       instr_is_tbljmp_ptr_o,
-  output logic [ALBUF_CNT_WIDTH-1:0] outstnd_cnt_q_o,
-  output logic                       integrity_err_o
+  output logic [ALBUF_CNT_WIDTH-1:0] outstnd_cnt_q_o
 );
 
   // Counter for number of instructions in the FIFO
@@ -102,7 +101,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // Error propagation signals for bus and mpu
   logic bus_err_unaligned, bus_err;
   mpu_status_e mpu_status_unaligned, mpu_status;
-  logic parity_err_unaligned, parity_err;
+
 
   // resp_valid gated while flushing
   logic resp_valid_gated;
@@ -170,17 +169,17 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   logic [1:0]  rchk_enable;             // "Global" rchk enable from cpuctrl. Bit0 for rdata, bit1 for bus error
   logic        rchk_err_q0;             // rchk error in entry q0
   logic        rchk_err_q1;             // rchk error in entry q1
-  logic        rchk_err_aligned;        // rchk error for aligned instructions
-  logic        rchk_err_unaligned;      // rchk error for unaligned instructions
+  logic        integrity_err;           // integrity error (parity or rchk) for aligned instructions
+  logic        integrity_err_unaligned; // integrity error (parity or rchk) for unaligned instructions
 
   // Aligned instructions will either be fully in index 0 or incoming data
   // This also applies for the bus_error and mpu_status
   assign instr      = (valid_q[rptr]) ? resp_q[rptr].bus_resp.rdata        : resp_i.bus_resp.rdata;
   assign bus_err    = (valid_q[rptr]) ? resp_q[rptr].bus_resp.err          : resp_i.bus_resp.err;
-  assign parity_err = (valid_q[rptr]) ? resp_q[rptr].bus_resp.parity_err   : resp_i.bus_resp.parity_err;
   assign mpu_status = (valid_q[rptr]) ? resp_q[rptr].mpu_status            : resp_i.mpu_status;
 
-  assign rchk_err_aligned = (valid_q[rptr]) ? rchk_err_q0 : resp_i.bus_resp.rchk_err;
+  // Integrity error for aligned instructions. Factors inn both parity and rchk errors from either response or buffer entry
+  assign integrity_err = (valid_q[rptr]) ? (rchk_err_q0 || resp_q[rptr].bus_resp.integrity_err) : (resp_i.bus_resp.integrity_err);
 
   // Unaligned instructions will either be split across index 0 and 1, or index 0 and incoming data
   assign instr_unaligned = (valid_q[rptr2]) ? {resp_q[rptr2].bus_resp.rdata[15:0], instr[31:16]} : {resp_i.bus_resp.rdata[15:0], instr[31:16]};
@@ -235,8 +234,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   always_comb begin
     mpu_status_unaligned = MPU_OK;
     bus_err_unaligned = 1'b0;
-    parity_err_unaligned = 1'b0;
-    rchk_err_unaligned = 1'b0;
+    integrity_err_unaligned = 1'b0;
     // There is valid data in q1 (valid q0 is implied)
     if(valid_q[rptr2]) begin
       // Not compressed, need two sources
@@ -249,10 +247,8 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
         // Bus error from either entry
         bus_err_unaligned = (resp_q[rptr2].bus_resp.err || resp_q[rptr].bus_resp.err);
 
-        // Parity error from either entry
-        parity_err_unaligned = (resp_q[rptr2].bus_resp.parity_err || resp_q[rptr].bus_resp.parity_err);
-
-        rchk_err_unaligned = rchk_err_q1 || rchk_err_q0;
+        // Integrity error from either entry
+        integrity_err_unaligned = ((resp_q[rptr2].bus_resp.integrity_err || rchk_err_q1) || (resp_q[rptr].bus_resp.integrity_err || rchk_err_q0));
 
       end else begin
         // Compressed, use only mpu_status from q0
@@ -261,10 +257,8 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
         // bus error from q0
         bus_err_unaligned    = resp_q[rptr].bus_resp.err;
 
-        // parity error from q0
-        parity_err_unaligned    = resp_q[rptr].bus_resp.parity_err;
-
-        rchk_err_unaligned = rchk_err_q0;
+        // Integrity error from q0
+        integrity_err_unaligned    = resp_q[rptr].bus_resp.integrity_err || rchk_err_q0;
 
       end
     end else begin
@@ -280,10 +274,8 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
           // Bus error from q0 and resp_i
           bus_err_unaligned = (resp_q[rptr].bus_resp.err || resp_i.bus_resp.err);
 
-          // Parity error from q0 and resp_i
-          parity_err_unaligned = (resp_q[rptr].bus_resp.parity_err || resp_i.bus_resp.parity_err);
-
-          rchk_err_unaligned = rchk_err_q0 || resp_i.bus_resp.rchk_err;
+          // Integrity error from q0 and resp_i
+          integrity_err_unaligned = ((resp_q[rptr].bus_resp.integrity_err || rchk_err_q0) || (resp_i.bus_resp.integrity_err));
 
         end else begin
           // There is unaligned data in q0 and it is compressed
@@ -292,36 +284,28 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
           // Bus error from q0
           bus_err_unaligned = resp_q[rptr].bus_resp.err;
 
-          // Parity error from q0
-          parity_err_unaligned = resp_q[rptr].bus_resp.parity_err;
-
-          rchk_err_unaligned = rchk_err_q0;
+          // Integrity error from q0
+          integrity_err_unaligned = resp_q[rptr].bus_resp.integrity_err || rchk_err_q0;
 
         end
       end else begin
         // There is no data in the buffer, use input
         mpu_status_unaligned = resp_i.mpu_status;
         bus_err_unaligned    = resp_i.bus_resp.err;
-        parity_err_unaligned = resp_i.bus_resp.parity_err;
-        rchk_err_unaligned = resp_i.bus_resp.rchk_err;
-
+        integrity_err_unaligned = resp_i.bus_resp.integrity_err;
       end
     end
   end
 
-  // Set integrity error output
-  assign integrity_err_o = parity_err  || parity_err_unaligned || rchk_err_q0 || rchk_err_q1;
-
   // Output instructions to the if stage
   always_comb
   begin
-    instr_instr_o.bus_resp.rdata      = instr;
-    instr_instr_o.bus_resp.err        = bus_err;
-    instr_instr_o.bus_resp.parity_err = parity_err;
-    instr_instr_o.mpu_status          = mpu_status;
-    instr_instr_o.bus_resp.rchk       = '0;          // Tie off rchk here. Rchk is checked locally only the error bit is propagated.
-    instr_instr_o.bus_resp.rchk_err   = rchk_err_aligned;
-    instr_instr_o.bus_resp.integrity  = 1'b0;        // Tie off integrity here, not used after this stage.
+    instr_instr_o.bus_resp.rdata         = instr;
+    instr_instr_o.bus_resp.err           = bus_err;
+    instr_instr_o.mpu_status             = mpu_status;
+    instr_instr_o.bus_resp.rchk          = '0;          // Tie off rchk here. Rchk is checked locally only the error bit is propagated.
+    instr_instr_o.bus_resp.integrity_err = integrity_err;
+    instr_instr_o.bus_resp.integrity     = 1'b0;        // Tie off integrity here, not used after this stage.
     instr_valid_o = 1'b0;
 
     // Invalidate output if we get killed
@@ -329,11 +313,10 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
       instr_valid_o = 1'b0;
     end else if (instr_addr_o[1]) begin
       // unaligned instruction
-      instr_instr_o.bus_resp.rdata        = instr_unaligned;
-      instr_instr_o.bus_resp.err          = bus_err_unaligned;
-      instr_instr_o.bus_resp.parity_err   = parity_err_unaligned;
-      instr_instr_o.mpu_status            = mpu_status_unaligned;
-      instr_instr_o.bus_resp.rchk_err     = rchk_err_unaligned;
+      instr_instr_o.bus_resp.rdata         = instr_unaligned;
+      instr_instr_o.bus_resp.err           = bus_err_unaligned;
+      instr_instr_o.mpu_status             = mpu_status_unaligned;
+      instr_instr_o.bus_resp.integrity_err = integrity_err_unaligned;
       // No instruction valid
       if (!valid) begin
         instr_valid_o = 1'b0;

@@ -660,11 +660,10 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
         if (if_id_pipe_i.instr_meta.compressed) begin
           // Overwrite instruction word in case of compressed instruction
-          id_ex_pipe_o.instr.bus_resp.rdata      <= {16'h0, if_id_pipe_i.compressed_instr};
-          id_ex_pipe_o.instr.bus_resp.err        <= if_id_pipe_i.instr.bus_resp.err;
-          id_ex_pipe_o.instr.bus_resp.parity_err <= if_id_pipe_i.instr.bus_resp.parity_err;
-          id_ex_pipe_o.instr.bus_resp.rchk_err   <= if_id_pipe_i.instr.bus_resp.rchk_err;
-          id_ex_pipe_o.instr.mpu_status          <= if_id_pipe_i.instr.mpu_status;
+          id_ex_pipe_o.instr.bus_resp.rdata         <= {16'h0, if_id_pipe_i.compressed_instr};
+          id_ex_pipe_o.instr.bus_resp.err           <= if_id_pipe_i.instr.bus_resp.err;
+          id_ex_pipe_o.instr.bus_resp.integrity_err <= if_id_pipe_i.instr.bus_resp.integrity_err;
+          id_ex_pipe_o.instr.mpu_status             <= if_id_pipe_i.instr.mpu_status;
         end else begin
           id_ex_pipe_o.instr                <= if_id_pipe_i.instr;
         end

@@ -48,7 +48,6 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   output privlvl_t    prefetch_priv_lvl_o,
   output logic        prefetch_is_clic_ptr_o,
   output logic        prefetch_is_tbljmp_ptr_o,
-  output logic        prefetch_integrity_err_o,
 
   // Transaction interface to obi interface
   output logic        trans_valid_o,
@@ -142,8 +141,7 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
     .instr_addr_o          ( prefetch_addr_o         ),
     .instr_priv_lvl_o      ( prefetch_priv_lvl_o     ),
     .instr_is_clic_ptr_o   ( prefetch_is_clic_ptr_o  ),
-    .instr_is_tbljmp_ptr_o ( prefetch_is_tbljmp_ptr_o),
-    .integrity_err_o       ( prefetch_integrity_err_o)
+    .instr_is_tbljmp_ptr_o ( prefetch_is_tbljmp_ptr_o)
 
   );
 
