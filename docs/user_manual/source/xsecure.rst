@@ -29,9 +29,11 @@ The following issues result in a major security alert on ``alert_major_o``:
 * Register file ECC error.
 * Hardened PC error.
 * Hardened CSR error.
-* Instruction parity/checksum fault (i.e. only when triggering the related exception).
-* Store parity/checksum fault (i.e. only when triggering the related NMI).
-* Load parity/checksum fault NMI (i.e. only when triggering the related NMI).
+* Non-associated instruction interface parity/checksum error.
+* Non-associated data interface parity/checksum error.
+* Instruction parity/checksum fault (i.e. when triggering the related exception).
+* Store parity/checksum fault (i.e. when triggering the related NMI).
+* Load parity/checksum fault NMI (i.e. when triggering the related NMI).
 
 The following issues result in a minor security alert on ``alert_minor_o``:
 
@@ -110,6 +112,8 @@ These parameters are of the type ``lfsr_cfg_t`` which are described in :numref:`
 
 .. table:: LFSR Configuration Type lfsr_cfg_t
   :name: LFSR Configuration Type lfsr_cfg_t
+  :widths: 15 15 70
+  :class: no-scrollbar-table
 
   +------------------+-------------+---------------------------------------------------------------------------------+
   | **Field**        | **Type**    | **Description**                                                                 |
@@ -197,6 +201,8 @@ The OBI ([OPENHW-OBI]_) bus interfaces have associated parity and checksum signa
 
 .. table:: Address phase checksum
   :name: Address phase checksum
+  :widths: 10 35 55
+  :class: no-scrollbar-table
 
   +--------------+-------------------------------------------------+--------------------------------------------------------------------------------+
   | **Signal**   | **Checksum computation**                        | **Comment**                                                                    |
@@ -236,6 +242,8 @@ The OBI ([OPENHW-OBI]_) bus interfaces have associated parity and checksum signa
 
 .. table:: Response phase checksum
   :name: Response phase checksum
+  :widths: 10 35 55
+  :class: no-scrollbar-table
 
   +--------------+-------------------------------------------------+--------------------------------------------------------------+
   | **Signal**   | **Checksum computation**                        | **Comment**                                                  |
@@ -259,48 +267,51 @@ The OBI ([OPENHW-OBI]_) bus interfaces have associated parity and checksum signa
    When |corev| checks its ``rdata`` signal bits against ``rchk[3:0]`` it always checks all bits (even for sub-word transactions).
 
 |corev| checks its OBI inputs against the related parity and checksum inputs (i.e. ``instr_gntpar_i``, ``data_gntpar_i``, ``instr_rvalidpar_i``, ``data_rvalidpar_i``, ``instr_rchk_i``
-and ``data_rchk_i``) as shown in :numref:`Parity and checksum errors`.
+and ``data_rchk_i``) as specified in :numref:`Parity and checksum error detection`. Checksum integrity checking is only performed when both globally (``cpuctrl.integrity`` = 1)
+and locally enabled (via PMA, see :ref:`pma_integrity`). Parity integrity checking is always enabled.
 
-Integrity checking is only performed when both globally (``cpuctrl.integrity`` = 1) and locally enabled (via PMA, see :ref:`pma_integrity`).
+.. table:: Parity and checksum error detection
+  :name: Parity and checksum error detection
+  :widths: 20 20 20 20 20
+  :class: no-scrollbar-table
 
-:numref:`Parity and checksum errors` specifies the generation of parity and checksum errors.
+  +------------------------------+-----------------------------------+---------------------------+----------------------------+---------------------------+
+  | **Parity / Checksum signal** | **Expected value**                | **Check enabled?**        | **Observation interval**   | **Observation interval**  |
+  |                              |                                   |                           | **for non-associated**     | **for associated**        |
+  |                              |                                   |                           | **interface checking**     | **interface checking**    |
+  +------------------------------+-----------------------------------+---------------------------+----------------------------+---------------------------+
+  | ``instr_gntpar_i``           | As defined in [OPENHW-OBI]_       | Always                    | When not in reset          | During instruction access |
+  |                              |                                   |                           |                            | address phase             |
+  +------------------------------+-----------------------------------+---------------------------+----------------------------+---------------------------+
+  | ``instr_rvalidpar_i``        | As defined in [OPENHW-OBI]_       | Always                    | When not in reset          | During instruction access |
+  |                              |                                   |                           |                            | response phase            |
+  +------------------------------+-----------------------------------+---------------------------+----------------------------+---------------------------+
+  | ``data_gntpar_i``            | As defined in [OPENHW-OBI]_       | Always                    | When not in reset          | During data access        |
+  |                              |                                   |                           |                            | address phase             |
+  +------------------------------+-----------------------------------+---------------------------+----------------------------+---------------------------+
+  | ``data_rvalidpar_i``         | As defined in [OPENHW-OBI]_       | Always                    | When not in reset          | During data access        |
+  |                              |                                   |                           |                            | response phase            |
+  +------------------------------+-----------------------------------+---------------------------+----------------------------+---------------------------+
+  | ``instr_rchk_i``             | As defined in                     | ``cpuctrl.integrity`` = 1 | During instruction access  | During instruction access |
+  |                              | :numref:`Response phase checksum` | and PMA attributes access | response phase             | response phase            |
+  |                              |                                   | with ``integrity`` = 1    |                            |                           |
+  +------------------------------+-----------------------------------+---------------------------+----------------------------+---------------------------+
+  | ``data_rchk_i``              | As defined in                     | ``cpuctrl.integrity`` = 1 | During data access         | During data access        |
+  |                              | :numref:`Response phase checksum` | and PMA attributes access | response phase             | response phase            |
+  |                              |                                   | with ``integrity`` = 1    |                            |                           |
+  +------------------------------+-----------------------------------+---------------------------+----------------------------+---------------------------+
 
-.. table:: Parity and checksum errors
-  :name: Parity and checksum errors
+Interface checking is performed both associated and non-associated to specific instruction execution.
 
-  +------------------------------+-----------------------------------+------------------------------------------+-----------------------------+
-  | **Parity / Checksum signal** | **Expected value**                | **Check enabled?**                       | **Checked when?**           |
-  +------------------------------+-----------------------------------+------------------------------------------+-----------------------------+
-  | ``instr_gntpar_i``           | As defined in [OPENHW-OBI]_       | ``cpuctrl.integrity`` = 1 and PMA        | During instruction access   |
-  |                              |                                   | attributes access with ``integrity`` = 1 | address phase               |
-  +------------------------------+-----------------------------------+------------------------------------------+-----------------------------+
-  | ``instr_rvalidpar_i``        | As defined in [OPENHW-OBI]_       | ``cpuctrl.integrity`` = 1 and PMA        | During instruction access   |
-  |                              |                                   | attributes access with ``integrity`` = 1 | response phase              |
-  +------------------------------+-----------------------------------+------------------------------------------+-----------------------------+
-  | ``data_gntpar_i``            | As defined in [OPENHW-OBI]_       | ``cpuctrl.integrity`` = 1 and PMA        | During data access          |
-  |                              |                                   | attributes access with ``integrity`` = 1 | address phase               |
-  +------------------------------+-----------------------------------+------------------------------------------+-----------------------------+
-  | ``data_rvalidpar_i``         | As defined in [OPENHW-OBI]_       | ``cpuctrl.integrity`` = 1 and PMA        | During data access          |
-  |                              |                                   | attributes access with ``integrity`` = 1 | response phase              |
-  +------------------------------+-----------------------------------+------------------------------------------+-----------------------------+
-  | ``instr_rchk_i``             | As defined in                     | ``cpuctrl.integrity`` = 1 and PMA        | During instruction access   |
-  |                              | :numref:`Response phase checksum` | attributes access with ``integrity`` = 1 | response phase              |
-  +------------------------------+-----------------------------------+------------------------------------------+-----------------------------+
-  | ``data_rchk_i``              | As defined in                     | ``cpuctrl.integrity`` = 1 and PMA        | During data access          |
-  |                              | :numref:`Response phase checksum` | attributes access with ``integrity`` = 1 | response phase              |
-  +-------------------------------------------+----------------------+------------------------------------------+-----------------------------+
+Non-associated interface checks are performed by only taking into account the bus interfaces themselves plus some state to determine whether checksum checks are enabled for a given transaction. The used observation interval is as wide as
+possible (e.g. a data interface related parity error can be detected even if no load or store instruction is actually being executed).
+Observed errors will trigger an alert on ``alert_major_o``.
 
-If a parity/checksum error occurs on the OBI instruction interface while handling an instruction fetch,
-then a precise exception is triggered (instruction parity fault with exception code 25) if attempting to execute that instruction.
-This will also trigger an alert on ``alert_major_o``.
+Associated interface checks are the interface checks that can directly be associated to a fetched instruction or bus transaction due to execution of a load or store instruction:
 
-If a parity/checksum error occurs on the OBI data interface while handling a load,
-then an imprecise NMI is triggered (load parity/checksum fault NMI with exception code 1026).
-This will also trigger an alert on ``alert_major_o``.
-
-If a parity/checksum error occurs on the OBI data interface while handling a store,
-then an imprecise NMI is triggered (store parity/checksum fault NMI with exception code 1027).
-This will also trigger an alert on ``alert_major_o``.
+* If a parity/checksum error occurs on the OBI instruction interface while handling an instruction fetch, then a precise exception is triggered (instruction parity fault with exception code 25) if attempting to execute that instruction. This will then also trigger an alert on ``alert_major_o``.
+* If a parity/checksum error occurs on the OBI data interface while handling a load, then an imprecise NMI is triggered (load parity/checksum fault NMI with exception code 1026). This will then also trigger an alert on ``alert_major_o``.
+* If a parity/checksum error occurs on the OBI data interface while handling a store, then an imprecise NMI is triggered (store parity/checksum fault NMI with exception code 1027). This will then also trigger an alert on ``alert_major_o``.
 
 The environment is expected to check the OBI outputs of |corev| against the related parity and checksum outputs (i.e. ``instr_reqpar_o``, ``data_reqpar_o``, ``instr_rchk_o`` and
 ``data_rchk_o``) as specified in [OPENHW-OBI]_ and :numref:`Address phase checksum`. It is platform defined how the environment reacts in case of parity or checksum violations.
