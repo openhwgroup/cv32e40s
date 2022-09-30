@@ -49,9 +49,6 @@ module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
   // Xsecure
   input xsecure_ctrl_t                xsecure_ctrl_i,
 
-  // Outstanding counter
-  input logic [OUTSTND_CNT_WIDTH-1:0] bus_cnt_i,
-
   // Response phase properties
   output logic                        gntpar_err_resp_o,
   output logic                        integrity_resp_o,
@@ -83,7 +80,47 @@ module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
   logic [1:0] rchk_en;                                // Rchk enable. bit0: for bits 3:0, bit1: bit 4 of rchk
   logic       resp_is_store;
 
+  // Outstanding counter signals
+  logic [OUTSTND_CNT_WIDTH-1:0] cnt_q;                        // Transaction counter
+  logic [OUTSTND_CNT_WIDTH-1:0] next_cnt;                     // Next value for cnt_q
+  logic                         count_up;
+  logic                         count_down;
 
+
+
+  /////////////////////////////////////////////////////////////
+  // Outstanding transactions counter
+  // Used for tracking parity errors and integrity attribute
+  /////////////////////////////////////////////////////////////
+  assign count_up = obi_req_i && obi_gnt_i;  // Increment upon accepted transfer request
+  assign count_down = obi_rvalid_i;                       // Decrement upon accepted transfer response
+
+  always_comb begin
+    case ({count_up, count_down})
+      2'b00 : begin
+        next_cnt = cnt_q;
+      end
+      2'b01 : begin
+        next_cnt = cnt_q - 1'b1;
+      end
+      2'b10 : begin
+        next_cnt = cnt_q + 1'b1;
+      end
+      2'b11 : begin
+        next_cnt = cnt_q;
+      end
+      default:;
+    endcase
+  end
+
+  always_ff @(posedge clk, negedge rst_n)
+  begin
+    if (rst_n == 1'b0) begin
+      cnt_q <= '0;
+    end else begin
+      cnt_q <= next_cnt;
+    end
+  end
 
   /////////////////
   // Integrity
@@ -127,9 +164,9 @@ module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
     end
   end
 
-  assign integrity_resp_o  = fifo_q[bus_cnt_i].integrity;
-  assign resp_is_store     = fifo_q[bus_cnt_i].store;
-  assign gntpar_err_resp_o = fifo_q[bus_cnt_i].gnterr;
+  assign integrity_resp_o  = fifo_q[cnt_q].integrity;
+  assign resp_is_store     = fifo_q[cnt_q].store;
+  assign gntpar_err_resp_o = fifo_q[cnt_q].gnterr;
 
   // Enable rchk when in response phase and cpuctrl.integrity is set
   // Only enable check of bits 3:0 (rchk_en[0]) for loads
