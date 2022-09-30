@@ -6,7 +6,7 @@ CV32E40S is a small and efficient, 32-bit, in-order RISC-V core with a 4-stage p
 
 * RV32[I|E]
 * [M|Zmmul]
-* Zca_Zcb_Zcmb_Zcmp_Zcmt
+* Zca_Zcb_Zcmp_Zcmt
 * Xsecure
 * [Zba_Zbb_Zbs|Zba_Zbb_Zbc_Zbs]
 * Zicsr
