@@ -131,8 +131,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic                             cnt_is_one_next;
 
 
-  logic [OUTSTND_CNT_WIDTH-1:0]     bus_cnt;              // Transaction counter (bus side of response filter)
-
   logic           ctrl_update;          // Update load/store control info in WB stage
 
   // registers for data_rdata alignment and sign extension
@@ -680,9 +678,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
        .ready_i      ( buffer_trans_ready ),
        .trans_o      ( buffer_trans       ),
        .resp_valid_i ( bus_resp_valid     ),
-       .resp_i       ( bus_resp           ),
-
-       .bus_cnt_o    ( bus_cnt            )
+       .resp_i       ( bus_resp           )
 
      );
 
@@ -716,7 +712,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   cv32e40s_data_obi_interface
   #(
-      .OUTSTND_CNT_WIDTH (OUTSTND_CNT_WIDTH)
+      .MAX_OUTSTANDING (DEPTH)
   )
   data_obi_i
   (
@@ -731,8 +727,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .resp_o             ( bus_resp        ),
 
     .integrity_err_o    ( integrity_err_o ),
-
-    .bus_cnt_i          ( bus_cnt         ),
 
     .xsecure_ctrl_i     ( xsecure_ctrl_i  ),
     .m_c_obi_data_if    ( m_c_obi_data_if )

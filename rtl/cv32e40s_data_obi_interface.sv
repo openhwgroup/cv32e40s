@@ -36,8 +36,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
-#(  parameter int unsigned  MAX_OUTSTANDING   = 2,
-    parameter int unsigned  OUTSTND_CNT_WIDTH = $clog2(MAX_OUTSTANDING+1)
+#(
+    parameter int unsigned  MAX_OUTSTANDING   = 2
  )
 (
   input  logic        clk,
@@ -56,20 +56,25 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   input xsecure_ctrl_t   xsecure_ctrl_i,
 
-  // outstanding transactions count from LSU response filter
-  input logic [OUTSTND_CNT_WIDTH-1:0] bus_cnt_i,
-
   // OBI interface
   if_c_obi.master     m_c_obi_data_if
 );
 
-// Parity and rchk error signals
+  localparam OUTSTND_CNT_WIDTH = $clog2(MAX_OUTSTANDING+1);
+
+  // Parity and rchk error signals
   logic       gntpar_err;
   logic       rvalidpar_err_resp;                          // rvalid parity error (immediate during response phase)
   logic       gntpar_err_resp;                        // grant error with reponse timing (output of fifo)
   logic       rchk_err_resp;
 
   logic       integrity_resp;
+
+  // Outstanding counter signals
+  logic [OUTSTND_CNT_WIDTH-1:0] cnt_q;                        // Transaction counter
+  logic [OUTSTND_CNT_WIDTH-1:0] next_cnt;                     // Next value for cnt_q
+  logic                         count_up;
+  logic                         count_down;
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -121,6 +126,40 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   assign m_c_obi_data_if.s_req.reqpar = !m_c_obi_data_if.s_req.req;
 
+  /////////////////////////////////////////////////////////////
+  // Outstanding transactions counter
+  // Used for tracking parity errors and integrity attribute
+  /////////////////////////////////////////////////////////////
+  assign count_up = m_c_obi_data_if.s_req.req && m_c_obi_data_if.s_gnt.gnt;  // Increment upon accepted transfer request
+  assign count_down = m_c_obi_data_if.s_rvalid.rvalid;                       // Decrement upon accepted transfer response
+
+  always_comb begin
+    case ({count_up, count_down})
+      2'b00 : begin
+        next_cnt = cnt_q;
+      end
+      2'b01 : begin
+        next_cnt = cnt_q - 1'b1;
+      end
+      2'b10 : begin
+        next_cnt = cnt_q + 1'b1;
+      end
+      2'b11 : begin
+        next_cnt = cnt_q;
+      end
+      default:;
+    endcase
+  end
+
+  always_ff @(posedge clk, negedge rst_n)
+  begin
+    if (rst_n == 1'b0) begin
+      cnt_q <= '0;
+    end else begin
+      cnt_q <= next_cnt;
+    end
+  end
+
 
   /////////////////
   // Integrity
@@ -132,9 +171,9 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   cv32e40s_obi_integrity_fifo
     #(
-        .MAX_OUTSTANDING   (MAX_OUTSTANDING),
+        .MAX_OUTSTANDING   (MAX_OUTSTANDING  ),
         .OUTSTND_CNT_WIDTH (OUTSTND_CNT_WIDTH),
-        .RESP_TYPE         (obi_data_resp_t)
+        .RESP_TYPE         (obi_data_resp_t  )
      )
     integrity_fifo_i
     (
@@ -151,7 +190,7 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
       // Xsecure
       .xsecure_ctrl_i     (xsecure_ctrl_i     ),
 
-      .bus_cnt_i          (bus_cnt_i          ),
+      .bus_cnt_i          (cnt_q              ),
 
       // Response phase properties
       .gntpar_err_resp_o  (gntpar_err_resp    ),

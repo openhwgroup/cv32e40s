@@ -58,7 +58,6 @@ module cv32e40s_lsu_response_filter
    output logic           resp_valid_o,
    output obi_data_resp_t resp_o, // Todo: This also carries the obi error field. Could replace by data_resp_t
 
-   output logic [OUTSTND_CNT_WIDTH-1:0] bus_cnt_o,
 
    // Todo: This error signal could be merged with mpu_status_e, and be signaled via the resp_o above (if replaced by data_resp_t).
    //       This would make the error flow all the way through the MPU and not bypass the MPU as it does now.
@@ -181,8 +180,5 @@ module cv32e40s_lsu_response_filter
 
   // bus_resp goes straight through
   assign resp_o = resp_i;
-
-  // Export bus side counter for use outside of this module
-  assign bus_cnt_o = bus_cnt_q;
 
 endmodule
