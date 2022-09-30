@@ -59,8 +59,6 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   if_c_obi.master        m_c_obi_instr_if
 );
 
-  localparam CNT_WIDTH = $clog2(MAX_OUTSTANDING + 1);
-
 
   obi_if_state_e state_q, next_state;
 
@@ -208,7 +206,6 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   cv32e40s_obi_integrity_fifo
   #(
       .MAX_OUTSTANDING   (MAX_OUTSTANDING),
-      .OUTSTND_CNT_WIDTH (CNT_WIDTH      ),
       .RESP_TYPE         (obi_inst_resp_t)
    )
   integrity_fifo_i

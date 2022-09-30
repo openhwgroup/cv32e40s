@@ -60,7 +60,6 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   if_c_obi.master     m_c_obi_data_if
 );
 
-  localparam OUTSTND_CNT_WIDTH = $clog2(MAX_OUTSTANDING+1);
 
   // Parity and rchk error signals
   logic       gntpar_err;
@@ -132,7 +131,6 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   cv32e40s_obi_integrity_fifo
     #(
         .MAX_OUTSTANDING   (MAX_OUTSTANDING  ),
-        .OUTSTND_CNT_WIDTH (OUTSTND_CNT_WIDTH),
         .RESP_TYPE         (obi_data_resp_t  )
      )
     integrity_fifo_i

@@ -32,7 +32,6 @@
 
 module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
 #(  parameter int unsigned  MAX_OUTSTANDING   = 2,
-    parameter int unsigned  OUTSTND_CNT_WIDTH = $clog2(MAX_OUTSTANDING+1),
     parameter type RESP_TYPE = obi_inst_resp_t
  )
 (
@@ -62,7 +61,7 @@ module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
 
 );
 
-
+  localparam OUTSTND_CNT_WIDTH = $clog2(MAX_OUTSTANDING+1);
 
   typedef struct packed {
     logic        integrity;
