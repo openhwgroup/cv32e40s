@@ -36,8 +36,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
-#(  parameter int unsigned  MAX_OUTSTANDING   = 2,
-    parameter int unsigned  OUTSTND_CNT_WIDTH = $clog2(MAX_OUTSTANDING+1)
+#(
+    parameter int unsigned  MAX_OUTSTANDING   = 2
  )
 (
   input  logic        clk,
@@ -56,14 +56,12 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   input xsecure_ctrl_t   xsecure_ctrl_i,
 
-  // outstanding transactions count from LSU response filter
-  input logic [OUTSTND_CNT_WIDTH-1:0] bus_cnt_i,
-
   // OBI interface
   if_c_obi.master     m_c_obi_data_if
 );
 
-// Parity and rchk error signals
+
+  // Parity and rchk error signals
   logic       gntpar_err;
   logic       rvalidpar_err_resp;                          // rvalid parity error (immediate during response phase)
   logic       gntpar_err_resp;                        // grant error with reponse timing (output of fifo)
@@ -132,9 +130,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   cv32e40s_obi_integrity_fifo
     #(
-        .MAX_OUTSTANDING   (MAX_OUTSTANDING),
-        .OUTSTND_CNT_WIDTH (OUTSTND_CNT_WIDTH),
-        .RESP_TYPE         (obi_data_resp_t)
+        .MAX_OUTSTANDING   (MAX_OUTSTANDING  ),
+        .RESP_TYPE         (obi_data_resp_t  )
      )
     integrity_fifo_i
     (
@@ -150,8 +147,6 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
       // Xsecure
       .xsecure_ctrl_i     (xsecure_ctrl_i     ),
-
-      .bus_cnt_i          (bus_cnt_i          ),
 
       // Response phase properties
       .gntpar_err_resp_o  (gntpar_err_resp    ),

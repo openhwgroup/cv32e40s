@@ -59,8 +59,6 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   if_c_obi.master        m_c_obi_instr_if
 );
 
-  localparam CNT_WIDTH = $clog2(MAX_OUTSTANDING + 1);
-
 
   obi_if_state_e state_q, next_state;
 
@@ -71,12 +69,6 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   logic                 gntpar_err_resp;              // grant error with reponse timing (output of fifo)
   logic                 rchk_err_resp;                // Local rchk error signal
   logic                 integrity_resp;               // Response has integrity bit set (from fifo)
-
-  // Outstanding counter signals
-  logic [CNT_WIDTH-1:0] cnt_q;                        // Transaction counter
-  logic [CNT_WIDTH-1:0] next_cnt;                     // Next value for cnt_q
-  logic                 count_up;
-  logic                 count_down;
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -202,40 +194,6 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   // the number of outstanding transactions in any way.
   assign trans_ready_o = (state_q == TRANSPARENT);
 
-  /////////////////////////////////////////////////////////////
-  // Outstanding transactions counter
-  // Used for tracking parity errors and integrity attribute
-  /////////////////////////////////////////////////////////////
-  assign count_up = m_c_obi_instr_if.s_req.req && m_c_obi_instr_if.s_gnt.gnt;  // Increment upon accepted transfer request
-  assign count_down = m_c_obi_instr_if.s_rvalid.rvalid;                        // Decrement upon accepted transfer response
-
-  always_comb begin
-    case ({count_up, count_down})
-      2'b00 : begin
-        next_cnt = cnt_q;
-      end
-      2'b01 : begin
-        next_cnt = cnt_q - 1'b1;
-      end
-      2'b10 : begin
-        next_cnt = cnt_q + 1'b1;
-      end
-      2'b11 : begin
-        next_cnt = cnt_q;
-      end
-      default:;
-    endcase
-  end
-
-  always_ff @(posedge clk, negedge rst_n)
-  begin
-    if (rst_n == 1'b0) begin
-      cnt_q <= '0;
-    end else begin
-      cnt_q <= next_cnt;
-    end
-  end
-
   //////////////////////////////////////
   // Track parity errors
   //////////////////////////////////////
@@ -248,7 +206,6 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   cv32e40s_obi_integrity_fifo
   #(
       .MAX_OUTSTANDING   (MAX_OUTSTANDING),
-      .OUTSTND_CNT_WIDTH (CNT_WIDTH      ),
       .RESP_TYPE         (obi_inst_resp_t)
    )
   integrity_fifo_i
@@ -265,8 +222,6 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
     // Xsecure
     .xsecure_ctrl_i     (xsecure_ctrl_i                   ),
-
-    .bus_cnt_i          (cnt_q                            ),
 
     // Response phase properties
     .gntpar_err_resp_o  (gntpar_err_resp                  ),
