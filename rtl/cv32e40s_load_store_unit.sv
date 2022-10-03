@@ -76,8 +76,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   output logic        valid_1_o,
   input  logic        ready_1_i,
 
-  // Integrity error - fans into alert_majort_o
-  output logic        integrity_err_o,
+  // Major alert triggers from LSU (integrity and protocol hardening)
+  output logic        alert_major_o,
 
   input xsecure_ctrl_t   xsecure_ctrl_i,
 
@@ -155,11 +155,15 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   logic           trans_valid_q;        // trans_valid got clocked without trans_ready
 
+  logic           protocol_err_mpu;     // Set when MPU gives a response when no outstanding transactions are active
+  logic           alert_major_obi;      // Major alert from OBI interface (integrity or protocol errors)
+
   logic                  xif_req;       // The ongoing memory request comes from the XIF interface
   logic                  xif_mpu_err;   // The ongoing memory request caused an MPU error
   logic                  xif_ready_1;   // The LSU second stage is ready for an XIF transaction
   logic                  xif_res_q;     // The next memory result is for the XIF interface
   logic [X_ID_WIDTH-1:0] xif_id_q;      // Instruction ID of an XIF memory transaction
+
 
   assign xif_req = X_EXT && xif_mem_if.mem_valid;
 
@@ -652,6 +656,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   // Extract rdata and err from response struct
   assign resp_rdata = resp.bus_resp.rdata;
 
+  assign protocol_err_mpu = resp_valid && !(|cnt_q);
+
 
   //////////////////////////////////////////////////////////////////////////////
   // Response Filter
@@ -716,21 +722,24 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   )
   data_obi_i
   (
-    .clk                ( clk             ),
-    .rst_n              ( rst_n           ),
+    .clk                ( clk               ),
+    .rst_n              ( rst_n             ),
 
-    .trans_valid_i      ( bus_trans_valid ),
-    .trans_ready_o      ( bus_trans_ready ),
-    .trans_i            ( bus_trans       ),
+    .trans_valid_i      ( bus_trans_valid   ),
+    .trans_ready_o      ( bus_trans_ready   ),
+    .trans_i            ( bus_trans         ),
 
-    .resp_valid_o       ( bus_resp_valid  ),
-    .resp_o             ( bus_resp        ),
+    .resp_valid_o       ( bus_resp_valid    ),
+    .resp_o             ( bus_resp          ),
 
-    .integrity_err_o    ( integrity_err_o ),
+    .alert_major_o      ( alert_major_obi   ),
 
-    .xsecure_ctrl_i     ( xsecure_ctrl_i  ),
-    .m_c_obi_data_if    ( m_c_obi_data_if )
+    .xsecure_ctrl_i     ( xsecure_ctrl_i    ),
+    .m_c_obi_data_if    ( m_c_obi_data_if   )
   );
+
+  // Integrity error and protocol hardening fans into alert major
+  assign alert_major_o = alert_major_obi || protocol_err_mpu;
 
   //////////////////////////////////////////////////////////////////////////////
   // XIF interface response and result data

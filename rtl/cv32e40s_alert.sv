@@ -63,7 +63,7 @@ module cv32e40s_alert
       alert_major_o <= rf_ecc_err_i  || // Register File ECC Error
                        pc_err_i      || // Program Counter Error
                        csr_err_i     || // Control ans Status Register Parity Error
-                       itf_int_err_i || // Interface Integrity Error
+                       itf_int_err_i || // Interface Integrity Error or protocol error
                        ctrl_fsm_i.exception_alert_major; // Instruction integrity error exception
 
     end

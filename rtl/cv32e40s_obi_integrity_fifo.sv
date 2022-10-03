@@ -53,6 +53,9 @@ module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
   output logic                        integrity_resp_o,
   output logic                        rchk_err_resp_o,
 
+  // Protocol hardening error output
+  output logic                        protocol_err_o,
+
   // OBI handshake signals
   input  logic                        obi_req_i,
   input  logic                        obi_gnt_i,
@@ -184,6 +187,7 @@ module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
     .err_o    (rchk_err_resp_o)
   );
 
+  assign protocol_err_o = obi_rvalid_i && !(|cnt_q);
 
 
  endmodule

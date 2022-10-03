@@ -109,7 +109,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   input xsecure_ctrl_t  xsecure_ctrl_i,
   output  logic         lfsr_shift_o,
 
-  output  logic         integrity_err_o,
+  output  logic         alert_major_o,
 
   // eXtension interface
   if_xif.cpu_compressed xif_compressed_if,      // XIF compressed interface
@@ -180,7 +180,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   logic              first_op;        // Local first_op, including dummies
 
-  logic              integrity_err_obi; // Integrity error from OBI interface
+  logic              alert_major_obi; // Integrity error or protocol error from OBI interface
   logic              unused_signals;
 
   // Fetch address selection
@@ -325,7 +325,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .resp_valid_o         ( bus_resp_valid   ),
     .resp_o               ( bus_resp         ),
 
-    .integrity_err_o      ( integrity_err_obi),   // immediate integrity error, either parity or chk
+    .alert_major_o        ( alert_major_obi  ),   // immediate integrity error or protocol error
 
     .xsecure_ctrl_i       ( xsecure_ctrl_i   ),
     .m_c_obi_instr_if     ( m_c_obi_instr_if )
@@ -636,8 +636,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     end
   endgenerate
 
-  // Set integrity error output
-  assign integrity_err_o = integrity_err_obi;
+  // Set alert output
+  assign alert_major_o = alert_major_obi;
 
   // Some signals are unused on purpose. Use them here for easier LINT waiving.
   assign unused_signals = |prefetch_outstnd_cnt_q;

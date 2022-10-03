@@ -51,7 +51,7 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   output logic           resp_valid_o,          // Note: Consumer is assumed to be 'ready' whenever resp_valid_o = 1
   output obi_inst_resp_t resp_o,
 
-  output logic           integrity_err_o,       // parity error or rchk error, fans into alert_major_o
+  output logic           alert_major_o,         // integrity or protocol error
 
   input xsecure_ctrl_t   xsecure_ctrl_i,
 
@@ -69,6 +69,8 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   logic                 gntpar_err_resp;              // grant error with reponse timing (output of fifo)
   logic                 rchk_err_resp;                // Local rchk error signal
   logic                 integrity_resp;               // Response has integrity bit set (from fifo)
+
+  logic                 protocol_err;                 // Set if rvalid arrives when no outstanding transactions are active
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -228,6 +230,8 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
     .integrity_resp_o   (integrity_resp                   ),
     .rchk_err_resp_o    (rchk_err_resp                    ),
 
+    .protocol_err_o     (protocol_err                     ),
+
     // OBI interface
     .obi_req_i          (m_c_obi_instr_if.s_req.req       ),
     .obi_gnt_i          (m_c_obi_instr_if.s_gnt.gnt       ),
@@ -237,7 +241,7 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
 
   // Checking rvalid parity
-  // integrity_err_o will go high immediately, while the rvalidpar_err_resp for the instruction
+  // alert_major_o will go high immediately, while the rvalidpar_err_resp for the instruction
   // will only propagate when rvalid==1.
   assign rvalidpar_err_resp = (m_c_obi_instr_if.s_rvalid.rvalid == m_c_obi_instr_if.s_rvalid.rvalidpar);
 
@@ -245,7 +249,7 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   // rchk_err: recomputed checksum mismatch when rvalid=1 and PMA has integrity set for the transaction
   // rvalidpar_err_resp: mismatch on rvalid parity bit at any time
   // gntpar_err: mismatch on gnt parity bit at any time
-  assign integrity_err_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err;
+  assign alert_major_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err || protocol_err;
 
 
 
