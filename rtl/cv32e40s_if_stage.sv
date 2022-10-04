@@ -109,7 +109,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   input xsecure_ctrl_t  xsecure_ctrl_i,
   output  logic         lfsr_shift_o,
 
-  output  logic         alert_major_o,
+  output  logic         integrity_err_o,
+  output  logic         protocol_err_o,
 
   // eXtension interface
   if_xif.cpu_compressed xif_compressed_if,      // XIF compressed interface
@@ -178,9 +179,11 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   logic              id_ready_no_dummy; // Ready signal to acknowledge the sequencer
 
-  logic              first_op;        // Local first_op, including dummies
+  logic              first_op;          // Local first_op, including dummies
 
-  logic              alert_major_obi; // Integrity error or protocol error from OBI interface
+  logic              integrity_err_obi; // Integrity error from OBI interface
+  logic              protocol_err_obi;  // Protocol error from OBI interface
+
   logic              unused_signals;
 
   // Fetch address selection
@@ -325,7 +328,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .resp_valid_o         ( bus_resp_valid   ),
     .resp_o               ( bus_resp         ),
 
-    .alert_major_o        ( alert_major_obi  ),   // immediate integrity error or protocol error
+    .integrity_err_o      ( integrity_err_obi),   // immediate integrity error
+    .protocol_err_o       ( protocol_err_obi ),   // immediate protocol error
 
     .xsecure_ctrl_i       ( xsecure_ctrl_i   ),
     .m_c_obi_instr_if     ( m_c_obi_instr_if )
@@ -636,8 +640,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     end
   endgenerate
 
-  // Set alert output
-  assign alert_major_o = alert_major_obi;
+  // Set error outputs
+  assign integrity_err_o = integrity_err_obi;
+  assign protocol_err_o  = protocol_err_obi;
 
   // Some signals are unused on purpose. Use them here for easier LINT waiving.
   assign unused_signals = |prefetch_outstnd_cnt_q;

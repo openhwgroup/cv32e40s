@@ -52,7 +52,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   output logic           resp_valid_o,          // Note: Consumer is assumed to be 'ready' whenever resp_valid_o = 1
   output obi_data_resp_t resp_o,
 
-  output logic           alert_major_o,
+  output logic           integrity_err_o,
+  output logic           protocol_err_o,
 
   input xsecure_ctrl_t   xsecure_ctrl_i,
 
@@ -168,6 +169,7 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   // alert_major_o will go high immediately
   assign rvalidpar_err_resp = (m_c_obi_data_if.s_rvalid.rvalid == m_c_obi_data_if.s_rvalid.rvalidpar);
 
-  assign alert_major_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err || protocol_err;
+  assign integrity_err_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err;
+  assign protocol_err_o  = protocol_err;
 
 endmodule

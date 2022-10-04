@@ -51,7 +51,8 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   output logic           resp_valid_o,          // Note: Consumer is assumed to be 'ready' whenever resp_valid_o = 1
   output obi_inst_resp_t resp_o,
 
-  output logic           alert_major_o,         // integrity or protocol error
+  output logic           integrity_err_o,       // integrity error
+  output logic           protocol_err_o,        // protocol error
 
   input xsecure_ctrl_t   xsecure_ctrl_i,
 
@@ -249,7 +250,8 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
   // rchk_err: recomputed checksum mismatch when rvalid=1 and PMA has integrity set for the transaction
   // rvalidpar_err_resp: mismatch on rvalid parity bit at any time
   // gntpar_err: mismatch on gnt parity bit at any time
-  assign alert_major_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err || protocol_err;
+  assign integrity_err_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err;
+  assign protocol_err_o  = protocol_err;
 
 
 

@@ -76,8 +76,9 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   output logic        valid_1_o,
   input  logic        ready_1_i,
 
-  // Major alert triggers from LSU (integrity and protocol hardening)
-  output logic        alert_major_o,
+  // Integrity and protocol error flags
+  output logic        integrity_err_o,
+  output logic        protocol_err_o,
 
   input xsecure_ctrl_t   xsecure_ctrl_i,
 
@@ -156,7 +157,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic           trans_valid_q;        // trans_valid got clocked without trans_ready
 
   logic           protocol_err_mpu;     // Set when MPU gives a response when no outstanding transactions are active
-  logic           alert_major_obi;      // Major alert from OBI interface (integrity or protocol errors)
+  logic           integrity_err_obi;    // OBI interface integrity error
+  logic           protocol_err_obi;    // OBI interface protocol error
 
   logic                  xif_req;       // The ongoing memory request comes from the XIF interface
   logic                  xif_mpu_err;   // The ongoing memory request caused an MPU error
@@ -732,14 +734,16 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .resp_valid_o       ( bus_resp_valid    ),
     .resp_o             ( bus_resp          ),
 
-    .alert_major_o      ( alert_major_obi   ),
+    .integrity_err_o    ( integrity_err_obi ),
+    .protocol_err_o     ( protocol_err_obi  ),
 
     .xsecure_ctrl_i     ( xsecure_ctrl_i    ),
     .m_c_obi_data_if    ( m_c_obi_data_if   )
   );
 
-  // Integrity error and protocol hardening fans into alert major
-  assign alert_major_o = alert_major_obi || protocol_err_mpu;
+  // Set error bits (fans into alert_major)
+  assign integrity_err_o = integrity_err_obi;
+  assign protocol_err_o  = protocol_err_obi || protocol_err_mpu;
 
   //////////////////////////////////////////////////////////////////////////////
   // XIF interface response and result data
