@@ -53,6 +53,7 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   output obi_data_resp_t resp_o,
 
   output logic           integrity_err_o,
+  output logic           protocol_err_o,
 
   input xsecure_ctrl_t   xsecure_ctrl_i,
 
@@ -68,6 +69,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   logic       rchk_err_resp;
 
   logic       integrity_resp;
+
+  logic       protocol_err;                 // Set if rvalid arrives when no outstanding transactions are active
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -153,6 +156,8 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
       .integrity_resp_o   (integrity_resp     ),
       .rchk_err_resp_o    (rchk_err_resp      ),
 
+      .protocol_err_o     (protocol_err       ),
+
       // OBI interface
       .obi_req_i          (m_c_obi_data_if.s_req.req       ),
       .obi_gnt_i          (m_c_obi_data_if.s_gnt.gnt       ),
@@ -161,9 +166,10 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
     );
 
   // Checking rvalid parity
-  // integrity_err_o will go high immediately
+  // alert_major_o will go high immediately
   assign rvalidpar_err_resp = (m_c_obi_data_if.s_rvalid.rvalid == m_c_obi_data_if.s_rvalid.rvalidpar);
 
   assign integrity_err_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err;
+  assign protocol_err_o  = protocol_err;
 
 endmodule

@@ -308,8 +308,11 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        pc_err_if;
   logic        csr_err;
   logic        itf_int_err;
+  logic        itf_prot_err;
   logic        integrity_err_if;
+  logic        protocol_err_if;
   logic        lsu_integrity_err;
+  logic        lsu_protocol_err;
 
   // Minor Alert Triggers
   logic        lfsr_lockup;
@@ -482,6 +485,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   /////////////////////////////////////
 
   assign itf_int_err     = integrity_err_if || lsu_integrity_err;
+  assign itf_prot_err    = protocol_err_if  || lsu_protocol_err;
 
   cv32e40s_alert
     alert_i
@@ -494,6 +498,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
        .pc_err_i            ( pc_err_if         ),
        .csr_err_i           ( csr_err           ),
        .itf_int_err_i       ( itf_int_err       ),
+       .itf_prot_err_i      ( itf_prot_err      ),
        .lfsr_lockup_i       ( lfsr_lockup       ),
 
        // Trigger Outputs
@@ -587,6 +592,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lfsr_shift_o        ( lfsr_shift_if            ),
 
     .integrity_err_o     ( integrity_err_if         ),
+    .protocol_err_o      ( protocol_err_if          ),
 
     // eXtension interface
     .xif_compressed_if   ( xif.cpu_compressed       ),
@@ -796,6 +802,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ready_1_i             ( lsu_ready_wb       ),
 
     .integrity_err_o       ( lsu_integrity_err  ),
+    .protocol_err_o        ( lsu_protocol_err   ),
 
     .xsecure_ctrl_i        ( xsecure_ctrl       ),
 

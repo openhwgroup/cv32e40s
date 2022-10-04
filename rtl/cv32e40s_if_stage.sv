@@ -110,6 +110,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   output  logic         lfsr_shift_o,
 
   output  logic         integrity_err_o,
+  output  logic         protocol_err_o,
 
   // eXtension interface
   if_xif.cpu_compressed xif_compressed_if,      // XIF compressed interface
@@ -178,9 +179,12 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   logic              id_ready_no_dummy; // Ready signal to acknowledge the sequencer
 
-  logic              first_op;        // Local first_op, including dummies
+  logic              first_op;          // Local first_op, including dummies
 
   logic              integrity_err_obi; // Integrity error from OBI interface
+  logic              protocol_err_obi;  // Protocol error from OBI interface
+  logic              prefetch_protocol_err;
+
   logic              unused_signals;
 
   // Fetch address selection
@@ -251,7 +255,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     // Prefetch Buffer Status
     .prefetch_busy_o          ( prefetch_busy               ),
     .one_txn_pend_n           ( prefetch_one_txn_pend_n     ),
-    .outstnd_cnt_q_o          ( prefetch_outstnd_cnt_q      )
+    .outstnd_cnt_q_o          ( prefetch_outstnd_cnt_q      ),
+
+    .protocol_err_o           ( prefetch_protocol_err       )
   );
 
   //////////////////////////////////////////////////////////////////////////////
@@ -325,7 +331,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .resp_valid_o         ( bus_resp_valid   ),
     .resp_o               ( bus_resp         ),
 
-    .integrity_err_o      ( integrity_err_obi),   // immediate integrity error, either parity or chk
+    .integrity_err_o      ( integrity_err_obi),   // immediate integrity error
+    .protocol_err_o       ( protocol_err_obi ),   // immediate protocol error
 
     .xsecure_ctrl_i       ( xsecure_ctrl_i   ),
     .m_c_obi_instr_if     ( m_c_obi_instr_if )
@@ -636,8 +643,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     end
   endgenerate
 
-  // Set integrity error output
+  // Set error outputs
   assign integrity_err_o = integrity_err_obi;
+  assign protocol_err_o  = protocol_err_obi || prefetch_protocol_err;
 
   // Some signals are unused on purpose. Use them here for easier LINT waiving.
   assign unused_signals = |prefetch_outstnd_cnt_q;

@@ -42,6 +42,7 @@ module cv32e40s_alert
    input logic      pc_err_i,
    input logic      csr_err_i,
    input logic      itf_int_err_i,
+   input logic      itf_prot_err_i,
    input logic      lfsr_lockup_i,
 
    // Alert outputs
@@ -60,10 +61,11 @@ module cv32e40s_alert
       alert_minor_o <=  ctrl_fsm_i.exception_alert_minor || // Trigger condtion constructed in controller FSM
                         lfsr_lockup_i;                // LFSR lockup
       // Major Alert
-      alert_major_o <= rf_ecc_err_i  || // Register File ECC Error
-                       pc_err_i      || // Program Counter Error
-                       csr_err_i     || // Control ans Status Register Parity Error
-                       itf_int_err_i || // Interface Integrity Error
+      alert_major_o <= rf_ecc_err_i   || // Register File ECC Error
+                       pc_err_i       || // Program Counter Error
+                       csr_err_i      || // Control and Status Register Parity Error
+                       itf_int_err_i  || // Interface Integrity Error
+                       itf_prot_err_i || // Interface protocol error
                        ctrl_fsm_i.exception_alert_major; // Instruction integrity error exception
 
     end

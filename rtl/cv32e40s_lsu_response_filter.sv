@@ -58,6 +58,8 @@ module cv32e40s_lsu_response_filter
    output logic           resp_valid_o,
    output obi_data_resp_t resp_o, // Todo: This also carries the obi error field. Could replace by data_resp_t
 
+   output logic           protocol_err_o,
+
 
    // Todo: This error signal could be merged with mpu_status_e, and be signaled via the resp_o above (if replaced by data_resp_t).
    //       This would make the error flow all the way through the MPU and not bypass the MPU as it does now.
@@ -180,5 +182,8 @@ module cv32e40s_lsu_response_filter
 
   // bus_resp goes straight through
   assign resp_o = resp_i;
+
+  // Raise protocol error when we get rvalid with outstanding count == 0 for either core or bus side
+  assign protocol_err_o = (resp_valid_o && !(|core_cnt_q)) || (resp_valid_i && !(|bus_cnt_q));
 
 endmodule

@@ -120,6 +120,7 @@ module cv32e40s_core_sva
   input logic        pc_err_if,
   input logic        csr_err,
   input logic        itf_int_err,
+  input logic        itf_prot_err,
   input logic        rf_ecc_err,
 
   input logic        sys_mret_unqual_id_bypass,
@@ -536,6 +537,11 @@ end
     assert property (@(posedge clk) disable iff (!rst_ni)
                     1'b1 |-> !itf_int_err)
           else `uvm_error("core", "itf_int_err shall be zero.")
+
+  a_no_prot_err:
+  assert property (@(posedge clk) disable iff (!rst_ni)
+                  1'b1 |-> !itf_prot_err)
+        else `uvm_error("core", "itf_prot_err shall be zero.")
 
   a_no_pc_err:
     assert property (@(posedge clk) disable iff (!rst_ni)
