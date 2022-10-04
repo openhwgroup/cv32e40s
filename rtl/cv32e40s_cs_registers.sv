@@ -2218,14 +2218,14 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                 pmpncfg_n[i].exec  = pmpncfg_q[i].exec;
               end
 
-              // NA4 mode is not selectable when G > 0, mode is treated as OFF // todo: keep old mode
+              // NA4 mode is not selectable when G > 0, previous mode will be kept
               unique case (csr_wdata_int[(i%4)*PMPNCFG_W+3+:2])
                 PMP_MODE_OFF   : pmpncfg_n[i].mode = PMP_MODE_OFF;
                 PMP_MODE_TOR   : pmpncfg_n[i].mode = PMP_MODE_TOR;
                 PMP_MODE_NA4   : pmpncfg_n[i].mode = (PMP_GRANULARITY == 0) ? PMP_MODE_NA4 :
-                                                     PMP_MODE_OFF;
+                                                     pmpncfg_q[i].mode;
                 PMP_MODE_NAPOT : pmpncfg_n[i].mode = PMP_MODE_NAPOT;
-                default : pmpncfg_n[i].mode = PMP_MODE_OFF;
+                default : pmpncfg_n[i].mode = pmpncfg_q[i].mode;
               endcase
             end
           end
