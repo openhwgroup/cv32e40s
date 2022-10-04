@@ -64,7 +64,9 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   input xsecure_ctrl_t  xsecure_ctrl_i,
 
   // Prefetch Buffer Status
-  output logic        prefetch_busy_o
+  output logic        prefetch_busy_o,
+
+  output logic        protocol_err_o
 );
 
   logic fetch_valid;
@@ -141,7 +143,9 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
     .instr_addr_o          ( prefetch_addr_o         ),
     .instr_priv_lvl_o      ( prefetch_priv_lvl_o     ),
     .instr_is_clic_ptr_o   ( prefetch_is_clic_ptr_o  ),
-    .instr_is_tbljmp_ptr_o ( prefetch_is_tbljmp_ptr_o)
+    .instr_is_tbljmp_ptr_o ( prefetch_is_tbljmp_ptr_o),
+
+    .protocol_err_o        ( protocol_err_o          )
 
   );
 

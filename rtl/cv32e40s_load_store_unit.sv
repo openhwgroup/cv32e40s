@@ -157,6 +157,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic           trans_valid_q;        // trans_valid got clocked without trans_ready
 
   logic           protocol_err_mpu;     // Set when MPU gives a response when no outstanding transactions are active
+  logic           filter_protocol_err;  // Protocol error in response filter
   logic           integrity_err_obi;    // OBI interface integrity error
   logic           protocol_err_obi;    // OBI interface protocol error
 
@@ -671,22 +672,24 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .OUTSTND_CNT_WIDTH  ( OUTSTND_CNT_WIDTH  )
   )
     response_filter_i
-      (.clk          ( clk                ),
-       .rst_n        ( rst_n              ),
-       .busy_o       ( filter_resp_busy   ),
+      (.clk            ( clk                 ),
+       .rst_n          ( rst_n               ),
+       .busy_o         ( filter_resp_busy    ),
 
-       .valid_i      ( filter_trans_valid ),
-       .ready_o      ( filter_trans_ready ),
-       .trans_i      ( filter_trans       ),
-       .resp_valid_o ( filter_resp_valid  ),
-       .resp_o       ( filter_resp        ),
-       .err_o        ( filter_err         ),
+       .valid_i        ( filter_trans_valid  ),
+       .ready_o        ( filter_trans_ready  ),
+       .trans_i        ( filter_trans        ),
+       .resp_valid_o   ( filter_resp_valid   ),
+       .resp_o         ( filter_resp         ),
+       .err_o          ( filter_err          ),
 
-       .valid_o      ( buffer_trans_valid ),
-       .ready_i      ( buffer_trans_ready ),
-       .trans_o      ( buffer_trans       ),
-       .resp_valid_i ( bus_resp_valid     ),
-       .resp_i       ( bus_resp           )
+       .valid_o        ( buffer_trans_valid  ),
+       .ready_i        ( buffer_trans_ready  ),
+       .trans_o        ( buffer_trans        ),
+       .resp_valid_i   ( bus_resp_valid      ),
+       .resp_i         ( bus_resp            ),
+
+       .protocol_err_o ( filter_protocol_err )
 
      );
 
@@ -743,7 +746,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   // Set error bits (fans into alert_major)
   assign integrity_err_o = integrity_err_obi;
-  assign protocol_err_o  = protocol_err_obi || protocol_err_mpu;
+  assign protocol_err_o  = protocol_err_obi || protocol_err_mpu || filter_protocol_err;
 
   //////////////////////////////////////////////////////////////////////////////
   // XIF interface response and result data

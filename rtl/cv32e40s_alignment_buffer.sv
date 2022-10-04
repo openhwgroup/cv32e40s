@@ -63,7 +63,10 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   output privlvl_t                   instr_priv_lvl_o,
   output logic                       instr_is_clic_ptr_o,
   output logic                       instr_is_tbljmp_ptr_o,
-  output logic [ALBUF_CNT_WIDTH-1:0] outstnd_cnt_q_o
+  output logic [ALBUF_CNT_WIDTH-1:0] outstnd_cnt_q_o,
+
+  // Protocol error output
+  output logic           protocol_err_o
 );
 
   // Counter for number of instructions in the FIFO
@@ -665,4 +668,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
   // Signal that a pointer is about to be fetched
   assign fetch_ptr_access_o = (ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_set_clicv || ctrl_fsm_i.pc_set_tbljmp));
+
+  // Set protocol error
+  assign protocol_err_o = resp_valid_i && !(|outstanding_cnt_q);
 endmodule

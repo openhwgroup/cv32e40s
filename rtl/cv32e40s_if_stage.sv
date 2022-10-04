@@ -183,6 +183,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   logic              integrity_err_obi; // Integrity error from OBI interface
   logic              protocol_err_obi;  // Protocol error from OBI interface
+  logic              prefetch_protocol_err;
 
   logic              unused_signals;
 
@@ -254,7 +255,9 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     // Prefetch Buffer Status
     .prefetch_busy_o          ( prefetch_busy               ),
     .one_txn_pend_n           ( prefetch_one_txn_pend_n     ),
-    .outstnd_cnt_q_o          ( prefetch_outstnd_cnt_q      )
+    .outstnd_cnt_q_o          ( prefetch_outstnd_cnt_q      ),
+
+    .protocol_err_o           ( prefetch_protocol_err       )
   );
 
   //////////////////////////////////////////////////////////////////////////////
@@ -642,7 +645,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   // Set error outputs
   assign integrity_err_o = integrity_err_obi;
-  assign protocol_err_o  = protocol_err_obi;
+  assign protocol_err_o  = protocol_err_obi || prefetch_protocol_err;
 
   // Some signals are unused on purpose. Use them here for easier LINT waiving.
   assign unused_signals = |prefetch_outstnd_cnt_q;
