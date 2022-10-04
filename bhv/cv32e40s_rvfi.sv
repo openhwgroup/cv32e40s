@@ -42,6 +42,7 @@ module cv32e40s_rvfi
    input logic [31:0]                         prefetch_addr_if_i,
    input logic                                prefetch_compressed_if_i,
    input inst_resp_t                          prefetch_instr_if_i,
+   input logic                                clic_ptr_if_i,
 
    // ID probes
    input logic                                id_valid_i,
@@ -92,6 +93,7 @@ module cv32e40s_rvfi
    input logic [4:0]                          rf_addr_wb_i,
    input logic [31:0]                         rf_wdata_wb_i,
    input logic [31:0]                         lsu_rdata_wb_i,
+   input logic                                clic_ptr_wb_i,
 
    // PC
    input logic [31:0]                         branch_addr_n_i,
@@ -806,8 +808,9 @@ module cv32e40s_rvfi
   // WFI instructions retire when their wake-up condition is present.
   // The wake-up condition is only checked in the SLEEP state of the controller FSM.
   // Other instructions retire when their last suboperation is done in WB.
-  assign wb_valid_subop    = wb_valid_i;
-  assign wb_valid_lastop   = wb_valid_i && (last_op_wb_i || abort_op_wb_i);
+  // CLIC pointers set wb_valid, but are not instructions and shall not cause rvfi_valid.
+  assign wb_valid_subop    = wb_valid_i && !clic_ptr_wb_i;
+  assign wb_valid_lastop   = wb_valid_i && (last_op_wb_i || abort_op_wb_i) && !clic_ptr_wb_i;
 
 
   // Pipeline stage model //
@@ -885,7 +888,12 @@ module cv32e40s_rvfi
         debug_cause[STAGE_ID] <= debug_cause[STAGE_IF];
 
         // Clear captured events when last operation exits IF
-        if (last_op_if_i || abort_op_if_i) begin
+        // Exception for clic pointers:
+        //   - CLIC pointers are seen as single operation (first_op && last_op),
+        //     but we still need the in_trap attached to the pointer target, which is
+        //     only fetched when the CLIC pointer is in ID. Thus we must not clear in_trap
+        //     when the pointer goes from IF to ID.
+        if ((last_op_if_i || abort_op_if_i) && !clic_ptr_if_i) begin
           in_trap    [STAGE_IF] <= 1'b0;
           debug_cause[STAGE_IF] <= '0;
         end
