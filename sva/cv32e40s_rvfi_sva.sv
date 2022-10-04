@@ -82,6 +82,18 @@ end
                     (irq_ack |=> in_trap[STAGE_IF].intr))
       else `uvm_error("rvfi", "irq_ack not captured by RVFI")
 
+  // Every irq_ack shall cause rvfi_intr on next rvfi_valid
+  property p_every_ack_followed_by_rvfi_intr;
+    @(posedge clk_i) disable iff (!rst_ni)
+    irq_ack ##1 rvfi_valid[->1]
+      |->
+        rvfi_intr.intr;
+  endproperty : p_every_ack_followed_by_rvfi_intr
+
+  a_every_ack_followed_by_rvfi_intr: assert property (p_every_ack_followed_by_rvfi_intr)
+  else
+    `uvm_error("rvfi",
+      $sformatf("Every irq_ack should be followed by the corresponding rvfi_intr"));
 
 
   // Helper signal, indicating debug cause

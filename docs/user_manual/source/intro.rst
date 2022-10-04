@@ -39,15 +39,16 @@ It follows these specifications:
 .. [RISC-V-PRIV] RISC-V Instruction Set Manual, Volume II: Privileged Architecture, Document Version 20211105-signoff (November 5, 2021),
    https://github.com/riscv/riscv-isa-manual/releases/download/draft-20211105-c30284b/riscv-privileged.pdf
 
-.. [RISC-V-DEBUG] RISC-V Debug Support, version 1.0.0-STABLE, fe3d1e65efed4b56574c50867830c3c499f9b18c,
-   https://github.com/riscv/riscv-debug-spec/blob/b659d7dc7f578e1a2a76f9e62a5eec0f2d80045c/riscv-debug-stable.pdf
+.. [RISC-V-DEBUG] RISC-V Debug Support, version 1.0.0-STABLE, 9dc1ee4e4653730f1b318731f9ea8e97f116670a,
+   https://github.com/riscv/riscv-debug-spec/blob/14a8d628e1fb736043eb54e0596adddb9717f0de/riscv-debug-stable.pdf
 
-.. [RISC-V-SMCLIC] "Smclic" Core-Local Interrupt Controller (CLIC) RISC-V Privileged Architecture Extension, version 0.9-draft, 3/15/2022,
-   https://github.com/riscv/riscv-fast-interrupt/blob/af247be97888f759c61a00800f86171f28151820/clic.pdf
+.. [RISC-V-SMCLIC] "Smclic" Core-Local Interrupt Controller (CLIC) RISC-V Privileged Architecture Extension, version 0.9-draft, 9/27/2022,
+   https://github.com/riscv/riscv-fast-interrupt/blob/2749a7b7adb01fc308173441b8a6131a5d128f20/clic.pdf
 
 .. [RISC-V-SMSTATEEN] RISC-V State Enable Extension, Smstateen, Version 0.6.3-70b1471, 2021-10-13: frozen,
    https://github.com/riscv/riscv-state-enable/releases/download/v0.6.3/Smstateen.pdf
 
+..
 .. [RISC-V-ZBA_ZBB_ZBC_ZBS] RISC-V Bit Manipulation ISA-extensions, Version 1.0.0-38-g865e7a7, 2021-06-28,
    https://github.com/riscv/riscv-bitmanip/releases/download/1.0.0/bitmanip-1.0.0-38-g865e7a7.pdf
 
@@ -171,7 +172,7 @@ The following custom instruction set extensions are available.
      - always enabled
 
 Most content of the RISC-V privileged specification is optional.
-|corev| currently supports the following features according to the RISC-V Privileged Specification [RISC-V-PRIV]_.
+|corev| supports the following features according to the RISC-V Privileged Specification [RISC-V-PRIV]_:
 
 * M-Mode and U-mode
 * All CSRs listed in :ref:`cs-registers`
@@ -180,6 +181,11 @@ Most content of the RISC-V privileged specification is optional.
 * Physical Memory Attribution (PMA) as described in :ref:`pma`
 * Physical Memory Protection ([RISC-V-SMEPMP]_)
 * State enable ([RISC-V-SMSTATEEN]_)
+
+|corev| supports the following ISA extensions from the RISC-V Debug Support specification [RISC-V-DEBUG]_:
+
+* **Sdext**: External Debug support. Always enabled.
+* **Sdtrig**: Trigger Module. Optionally enabled with the ``DBG_NUM_TRIGGERS`` parameter.
 
 Synthesis guidelines
 --------------------

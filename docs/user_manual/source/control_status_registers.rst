@@ -672,17 +672,17 @@ Detailed:
   +---------+------------------+---------------------------------------------------------------------------------------------------------------+
   | 6:2     | WARL (0x0)       | **BASE[6:2]**: Trap-handler base address, always aligned to 128 bytes. ``mtvec[6:2]`` is hardwired to 0x0.    |
   +---------+------------------+---------------------------------------------------------------------------------------------------------------+
-  | 1:0     | WARL (0x0, 0x1)  | **MODE**: Interrupt handling mode. 0x0 = non-vectored basic mode, 0x1 = vectored basic mode.                  |
+  | 1:0     | WARL (0x0, 0x1)  | **MODE**: Interrupt handling mode. 0x0 = non-vectored CLINT mode, 0x1 = vectored CLINT mode.                  |
   +---------+------------------+---------------------------------------------------------------------------------------------------------------+
 
 The initial value of ``mtvec`` is equal to {**mtvec_addr_i[31:7]**, 5'b0, 2'b01}.
 
 When an exception or an interrupt is encountered, the core jumps to the corresponding
-handler using the content of the ``mtvec[31:7]`` as base address. Both non-vectored basic mode and vectored basic mode
+handler using the content of the ``mtvec[31:7]`` as base address. Both non-vectored CLINT mode and vectored CLINT mode
 are supported.
 
-Upon an NMI in non-vectored basic mode the core jumps to **mtvec[31:7]**, 5'h0, 2'b00} (i.e. index 0).
-Upon an NMI in vectored basic mode the core jumps to **mtvec[31:7]**, 5'hF, 2'b00} (i.e. index 15).
+Upon an NMI in non-vectored CLINT mode the core jumps to **mtvec[31:7]**, 5'h0, 2'b00} (i.e. index 0).
+Upon an NMI in vectored CLINT mode the core jumps to **mtvec[31:7]**, 5'hF, 2'b00} (i.e. index 15).
 
 .. note::
    For NMIs the exception codes in the ``mcause`` CSR do not match the table index as for regular interrupts.
@@ -712,7 +712,9 @@ Detailed:
   +---------+------------------+---------------------------------------------------------------------------------------------------------------+
   | 6       | WARL (0x0)       | **BASE[6]**: Trap-handler base address, always aligned to 128 bytes. ``mtvec[6]`` is hardwired to 0x0.        |
   +---------+------------------+---------------------------------------------------------------------------------------------------------------+
-  | 5:0     | WARL (0x3)       | **MODE**: Interrupt handling mode. Always CLIC mode.                                                          |
+  | 5:2     | WARL (0x0)       | **SUBMODE**: Sub mode. Reserved for future use.                                                               |
+  +---------+------------------+---------------------------------------------------------------------------------------------------------------+
+  | 1:0     | WARL (0x3)       | **MODE**: Interrupt handling mode. Always CLIC mode.                                                          |
   +---------+------------------+---------------------------------------------------------------------------------------------------------------+
 
 The initial value of ``mtvec`` is equal to {**mtvec_addr_i[31:7]**, 1'b0, 6'b000011}.
@@ -1288,6 +1290,10 @@ Detailed:
 This register can be used by the software to service the next interrupt when it is in the same privilege mode,
 without incurring the full cost of an interrupt pipeline flush and context save/restore.
 
+.. note::
+  Use of ``mnxti`` with non-zero ``uimm`` values for bits 0, 2, and 4 are reserved for future use.
+  |corev| will treat such instructions as illegal instructions.
+
 .. _csr-mintstatus:
 
 Machine Interrupt Status (``mintstatus``)
@@ -1340,12 +1346,17 @@ Detailed:
   +-------------+------------+-------------------------------------------------------------------------+
   |   Bit #     |   R/W      |           Description                                                   |
   +=============+============+=========================================================================+
-  | 31: 8       |   R (0x0)  | Reserved. Hardwired to 0.                                               |
+  | 31:8        |   R (0x0)  | Reserved. Hardwired to 0.                                               |
   +-------------+------------+-------------------------------------------------------------------------+
-  |  7: 0       |   RW       | **TH**: Threshold                                                       |
+  |  7:0        |   WARL     | **TH**: Threshold                                                       |
   +-------------+------------+-------------------------------------------------------------------------+
 
 This register holds the machine mode interrupt level threshold.
+
+.. note::
+  The ``SMCLIC_INTTHRESHBITS`` parameter specifies the number of bits actually implemented in the ``mintthresh.th`` field.
+  The implemented bits are kept left justified in the most-significant bits of the 8-bit field, with the lower unimplemented
+  bits treated as hardwired to 1.
 
 .. _csr-mscratchcsw:
 
@@ -1372,6 +1383,11 @@ Detailed:
 
 Scratch swap register for multiple privilege modes.
 
+.. note::
+  Only the read-modify-write (swap/CSRRW) operation is useful for ``mscratchcsw``.
+  The behavior of the non-CSRRW variants (i.e. CSRRS/C, CSRRWI, CSRRS/CI) and CSRRW variants with **rd** = **x0** on ``mscratchcsw`` are implementation-defined.
+  |corev| will treat such instructions as illegal instructions.
+
 .. _csr-mscratchcswl:
 
 Machine Scratch Swap for Interrupt-Level Change (``mscratchcswl``)
@@ -1396,6 +1412,11 @@ Detailed:
   +-------------+------------+-------------------------------------------------------------------------+
 
 Scratch swap register for multiple interrupt levels.
+
+.. note::
+  Only the read-modify-write (swap/CSRRW) operation is useful for ``mscratchcswl``.
+  The behavior of the non-CSRRW variants (i.e. CSRRS/C, CSRRWI, CSRRS/CI) and CSRRW variants with **rd** = **x0** on ``mscratchcswl`` are implementation-defined.
+  |corev| will treat such instructions as illegal instructions.
 
 .. _csr-mclicbase:
 
@@ -1455,7 +1476,7 @@ Reset Value: 0x0000_0000
 .. _csr-tdata1:
 
 Trigger Data 1 (``tdata1``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CSR Address: 0x7A1
 
@@ -1468,8 +1489,8 @@ Reset Value: 0x6800_1000
   +-------+-------------+----------------------------------------------------------------+
   | Bit#  | R/W         | Description                                                    |
   +=======+=============+================================================================+
-  | 31:28 | WARL (0x5,  | **TYPE**. 5 = Exception trigger, 6 = Address match trigger     |
-  |       | 0x6)        | type.                                                          |
+  | 31:28 | WARL (0x5,  | **TYPE**. 0x5 (``etrigger``), 0x6 (``mcontrol6``),             |
+  |       | 0x6, 0xF)   | 0xF (``disabled``).                                            |
   +-------+-------------+----------------------------------------------------------------+
   | 27    | WARL (0x1)  | **DMODE**. Only debug mode can write ``tdata`` registers.      |
   +-------+-------------+----------------------------------------------------------------+
@@ -1477,15 +1498,15 @@ Reset Value: 0x6800_1000
   +-------+-------------+----------------------------------------------------------------+
 
 .. note::
-   The WARL behavior of ``tdata1.DATA`` depends on the value of ``tdata1.TYPE`` as described for
-   ``mcontrol6`` and ``etrigger``.
+   The WARL behavior of ``tdata1.DATA`` depends on the value of ``tdata1.TYPE`` as described in
+   :ref:`csr-mcontrol6`, :ref:`csr-etrigger` and :ref:`csr-tdata1_disabled`.
 
 .. _csr-mcontrol6:
 
 Match Control Type 6 (``mcontrol6``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0x7A1 (``mcontrol6`` is accessible as ``tdata1`` when ``tdata1.TYPE`` is 6)
+CSR Address: 0x7A1 (``mcontrol6`` is accessible as ``tdata1`` when ``tdata1.TYPE`` is 0x6)
 
 Reset Value: Not applicable
 
@@ -1542,7 +1563,7 @@ Reset Value: Not applicable
 Exception Trigger (``etrigger``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0x7A1 (``etrigger`` is accessible as ``tdata1`` when ``tdata1.TYPE`` is 5)
+CSR Address: 0x7A1 (``etrigger`` is accessible as ``tdata1`` when ``tdata1.TYPE`` is 0x5)
 
 Reset Value: Not applicable
 
@@ -1577,6 +1598,31 @@ Reset Value: Not applicable
   +-------+--------------+----------------------------------------------------------------+
   | 5:0   | WARL (0x1)   | **ACTION**. Enter debug mode on match.                         |
   +-------+--------------+----------------------------------------------------------------+
+
+.. _csr-tdata1_disabled:
+
+Trigger Data 1 (``tdata1``) - ``disabled`` view
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CSR Address: 0x7A1 (``tdata1`` view when ``tdata1.TYPE`` is 0xF)
+
+Reset Value: Not applicable
+
+.. table::
+  :widths: 10 20 70
+  :class: no-scrollbar-table
+
+
+  +-------+-------------+----------------------------------------------------------------+
+  | Bit#  | R/W         | Description                                                    |
+  +=======+=============+================================================================+
+  | 31:28 | WARL (0xF)  | **TYPE**. 0xF (``disabled``).                                  |
+  +-------+-------------+----------------------------------------------------------------+
+  | 27    | WARL (0x1)  | **DMODE**. Only debug mode can write ``tdata`` registers.      |
+  +-------+-------------+----------------------------------------------------------------+
+  | 26:0  | WARL (0x0)  | **DATA**.                                                      |
+  +-------+-------------+----------------------------------------------------------------+
+
 
 .. _csr-tdata2:
 
@@ -1633,7 +1679,7 @@ Trigger Info (``tinfo``)
 
 CSR Address: 0x7A4
 
-Reset Value: 0x0000_0060
+Reset Value: 0x0000_8060
 
 Detailed:
 
@@ -1646,8 +1692,7 @@ Detailed:
   +=======+============+==================================================================+
   | 31:16 | WARL (0x0) | Hardwired to 0.                                                  |
   +-------+------------+------------------------------------------------------------------+
-  | 15:0  | R (0x20,   | **INFO**. Type 5 and 6 are supported.                            |
-  |       | 0x40)      |                                                                  |
+  | 15:0  | R (0x8060) | **INFO**. Types 0x5, 0x6 and 0xF are supported.                  |
   +-------+------------+------------------------------------------------------------------+
 
 The **info** field contains one bit for each possible `type` enumerated in
