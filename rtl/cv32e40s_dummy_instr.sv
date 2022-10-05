@@ -83,9 +83,9 @@ module cv32e40s_dummy_instr
 
   assign dummy_insert_o = (cnt_q > lfsr_cnt) && dummy_en;
 
-  assign cnt_rst        = !dummy_en      ||      // Reset counter when dummy instructions are disabled
-                          dummy_insert_o ||      // Reset counter when inserting dummy instruction
-                          xsecure_ctrl_i.cntrst; // Reset counter when requested by xsecure_ctrl (due to csr updates)
+  assign cnt_rst        = !dummy_en                          ||      // Reset counter when dummy instructions are disabled
+                          (dummy_insert_o && instr_issued_i) ||      // Reset counter when inserting dummy instruction which is propagated to the ID stage
+                          xsecure_ctrl_i.cntrst;                     // Reset counter when requested by xsecure_ctrl (due to csr updates)
 
   assign cnt_next       = cnt_rst        ? '0           : // Reset counter
                           instr_issued_i ? cnt_q + 1'b1 : // Count issued instructions only

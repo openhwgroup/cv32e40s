@@ -195,6 +195,8 @@ module cv32e40s_wrapper
         core_i.if_stage_i.gen_dummy_instr.dummy_instr_i cv32e40s_dummy_instr_sva
       dummy_instr_sva
     (
+      .if_valid_i ( core_i.if_valid ),
+      .id_ready_i ( core_i.id_ready ),
       .*
     );
     end
