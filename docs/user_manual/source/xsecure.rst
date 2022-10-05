@@ -138,14 +138,14 @@ dummy instructions much harder to predict.
 Random instruction for hint
 ---------------------------
 
-The ``slt x0, rs1, rs2`` RV32I custom use hint is replaced by a random instruction if enabled via the ``rndhint`` bit in the ``cpuctrl`` CSR (and will act as a regular ``nop`` otherwise).
+The ``c.slli with rd=x0, nzimm!=0`` RVC custom use hint is replaced by a random instruction if enabled via the ``rndhint`` bit in the ``cpuctrl`` CSR (and will act as a regular ``nop`` otherwise).
 The random instruction has no functional impact on the processor state (i.e. it is functionally equivalent to a ``nop``, but it can result in different
 cycle count, instruction fetch and power behavior). The random instruction is randomized based on LFSR0 and is constrained to
 ``add``, ``mul``, and ``bltu`` instructions. The source data for the random instruction is obtained from LFSRs (LFSR1 and LFSR2) as opposed
 to sourcing it from the register file.
 
 .. note::
-  The ``slt x0, rs1, rs2`` instruction affects the cycle count and retired instruction counts as as visible via the ``mcycle`` CSR and ``minstret`` CSR,
+  The ``c.slli with rd=x0, nzimm!=0`` instruction affects the cycle count and retired instruction counts as as visible via the ``mcycle`` CSR and ``minstret`` CSR,
   independent of the value of the ``rndhint`` bit.
 
 .. _register-file-ecc:
