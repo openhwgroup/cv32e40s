@@ -35,7 +35,11 @@ module cv32e40s_dummy_instr_sva
    input logic                 dummy_insert_o,
    input xsecure_ctrl_t        xsecure_ctrl_i,
    input logic [CNT_WIDTH-1:0] cnt_q,
-   input logic [5:0]           lfsr_cnt
+   input logic [5:0]           lfsr_cnt,
+   input logic                 instr_issued_i,
+   input logic                 cnt_rst,
+   input logic                 if_valid_i,
+   input logic                 id_ready_i
    );
 
   // Assert that counter stopped correctly when inserting dummy instruction
@@ -49,6 +53,12 @@ module cv32e40s_dummy_instr_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      (cnt_q > lfsr_cnt) |=> (cnt_q <= $past(cnt_q)))
       else `uvm_error("Dummy Instruction Insertion", "Counted when after insert condition was met");
+
+  // Counter should not reset if a dummy instruction is not yet propagated to decode (id_ready == 0)
+  a_cnt_reset_on_dummy_issue :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (dummy_insert_o && if_valid_i && !id_ready_i) |-> !cnt_rst)
+      else `uvm_error("Dummy Instruction Insertion", "Counter reset before dummy left IF");
 
 endmodule : cv32e40s_dummy_instr_sva
 
