@@ -1972,8 +1972,8 @@ Detailed:
   +-------------+-----------+------------------------------------------------------------------------+
   | 3           | RW        | **PCHARDEN:** Enable PC hardening (1 = enable).                        |
   +-------------+-----------+------------------------------------------------------------------------+
-  | 2           | RW        | **RNDHINT:** Replace SLT hint by a random instruction without register |
-  |             |           | fileside effects (1 = enable).                                         |
+  | 2           | RW        | **RNDHINT:** Replace ``c.slli with rd=x0, nzimm!=0`` custom hint by    |
+  |             |           | a random instruction without registerfile side effects (1 = enable).   |
   +-------------+-----------+------------------------------------------------------------------------+
   | 1           | RW        | **RNDDUMMY:** Dummy instruction insertion enable (1 = enable).         |
   +-------------+-----------+------------------------------------------------------------------------+
