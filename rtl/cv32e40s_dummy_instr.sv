@@ -133,7 +133,7 @@ module cv32e40s_dummy_instr
 
   assign rd  =  5'h0; // Ignoring result by writing it to x0
   // When inserting a dummy, use offset=0 because PC of the dummy instruction is the same as the target instruction.
-  // When not inserting a dummy, the random instruction may be used for a HINT instruction which much branch to
+  // When not inserting a dummy, the random instruction may be used for a HINT instruction which must branch to
   // the next instruction (PC+2 since the HINT is a compressed c.slli)
   assign imm = dummy_insert_o ? 12'h0 : 12'h2;
 

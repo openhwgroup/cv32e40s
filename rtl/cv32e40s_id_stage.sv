@@ -229,7 +229,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
 
 
-  // Ensures one shift of the operand LFSRs for each dummy instruction in ID
+  // Ensures one shift of the operand LFSRs for each dummy or hint instruction in ID
   assign lfsr_shift_o    = (id_valid_o && ex_ready_i) && (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint) && last_sec_op;
 
   assign instr = if_id_pipe_i.instr.bus_resp.rdata;
