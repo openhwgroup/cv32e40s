@@ -1208,9 +1208,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .clk                ( clk         ),
     .rst_n              ( rst_ni      ),
 
-
-   .dummy_instr_id_i   ( if_id_pipe.instr_meta.dummy ),
-   .dummy_instr_wb_i   ( ex_wb_pipe.instr_meta.dummy ),
+    .hint_instr_id_i    ( if_id_pipe.instr_meta.hint),
+    .hint_instr_wb_i    ( ex_wb_pipe.instr_meta.hint),
+    .dummy_instr_id_i   ( if_id_pipe.instr_meta.dummy ),
+    .dummy_instr_wb_i   ( ex_wb_pipe.instr_meta.dummy ),
 
     // ECC error output
     .ecc_err_o          ( rf_ecc_err         ),

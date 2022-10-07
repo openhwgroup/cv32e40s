@@ -105,7 +105,9 @@ module cv32e40s_controller_fsm_sva
   input mcause_t        mcause_i,
   input logic           lsu_trans_valid_i,
   input logic           irq_wu_ctrl_i,
-  input logic           wu_wfe_i
+  input logic           wu_wfe_i,
+  input logic           wb_counter_event,
+  input logic           last_op_ex_i
 );
 
 
@@ -514,6 +516,13 @@ endgenerate
     assert property (@(posedge clk) disable iff (!rst_n)
                      (ex_wb_pipe_i.instr_meta.dummy |-> !(ctrl_fsm_o.mhpmevent.minstret)))
                      else `uvm_error("controller", "Dummy instruction retirement counted")
+
+  // Assert that we count hint instruction retirements
+  // Events caused by the hint instruction should not be suppressed
+  a_counting_hint_instr :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                    (ex_wb_pipe_i.instr_meta.hint && ex_wb_pipe_i.last_op && ex_wb_pipe_i.instr_valid) |-> wb_counter_event)
+                    else `uvm_error("controller", "Hint instruction retirement not counted")
 
   // Dummy instructions should never have synchronous exceptions
   a_no_sync_exception_on_dummy_inst:

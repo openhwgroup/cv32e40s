@@ -146,38 +146,38 @@ module cv32e40s_id_stage_sva
       else `uvm_error("id_stage", "Trigger match on dummy instruction")
 
 
-  // Assert that regular (non-dummy) instructions use 0 instead of the R0 register value
-  a_non_dummy_reads_0_from_r0_p0:
+  // Assert that regular (non-dummy, non-hint) instructions use 0 instead of the R0 register value
+  a_non_dummy_or_hint_reads_0_from_r0_p0:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     rf_re_o[0] && (rf_raddr_o[0] == 32'h0) && !if_id_pipe_i.instr_meta.dummy |-> (operand_a_fw == 32'h0))
-      else `uvm_error("id_stage", "Non-dummy instruction used non-zero value from R0 (on read port 0)")
+                     rf_re_o[0] && (rf_raddr_o[0] == 32'h0) && !(if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint) |-> (operand_a_fw == 32'h0))
+      else `uvm_error("id_stage", "Non-dummy or non-hint instruction used non-zero value from R0 (on read port 0)")
 
-  a_non_dummy_reads_0_from_r0_p1:
+  a_non_dummy_or_hint_reads_0_from_r0_p1:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     rf_re_o[1] && (rf_raddr_o[1] == 32'h0) && !if_id_pipe_i.instr_meta.dummy |-> (operand_b_fw == 32'h0))
-      else `uvm_error("id_stage", "Non-dummy instruction used non-zero value from R0 (on read port 1)")
+                     rf_re_o[1] && (rf_raddr_o[1] == 32'h0) && !(if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint) |-> (operand_b_fw == 32'h0))
+      else `uvm_error("id_stage", "Non-dummy or non-hint instruction used non-zero value from R0 (on read port 1)")
 
-  a_dummy_can_read_r0_p0:
+  a_dummy_or_hint_can_read_r0_p0:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     rf_re_o[0] && (rf_raddr_o[0] == 32'h0) && if_id_pipe_i.instr_meta.dummy |-> (operand_a_fw == rf_rdata_i[0]))
-      else `uvm_error("id_stage", "Dummy instruction could not read from R0 (on read port 0)")
+                     rf_re_o[0] && (rf_raddr_o[0] == 32'h0) && (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint) |-> (operand_a_fw == rf_rdata_i[0]))
+      else `uvm_error("id_stage", "Dummy or hint instruction could not read from R0 (on read port 0)")
 
-  a_dummy_can_read_r0_p1:
+  a_dummy_or_hint_can_read_r0_p1:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     rf_re_o[1] && (rf_raddr_o[1] == 32'h0) && if_id_pipe_i.instr_meta.dummy |-> (operand_b_fw == rf_rdata_i[1]))
-      else `uvm_error("id_stage", "Dummy instruction could not read from R0 (on read port 1)")
+                     rf_re_o[1] && (rf_raddr_o[1] == 32'h0) && (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint) |-> (operand_b_fw == rf_rdata_i[1]))
+      else `uvm_error("id_stage", "Dummy or hint instruction could not read from R0 (on read port 1)")
 
-  a_dummy_opa_mux_check:
+  a_dummy_or_hint_opa_mux_check:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     if_id_pipe_i.instr_meta.dummy |-> ( (ctrl_byp_i.operand_a_fw_mux_sel == SEL_LFSR) ||
-                                                        ((ctrl_byp_i.operand_a_fw_mux_sel == SEL_REGFILE) && (rf_raddr_o[0] == 0))))
-      else `uvm_error("id_stage", "Illegal operand a mux select value for dummy instruction")
+                     (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint) |-> ( (ctrl_byp_i.operand_a_fw_mux_sel == SEL_LFSR) ||
+                                                                                         ((ctrl_byp_i.operand_a_fw_mux_sel == SEL_REGFILE) && (rf_raddr_o[0] == 0))))
+      else `uvm_error("id_stage", "Illegal operand a mux select value for dummy or hint instruction")
 
-  a_dummy_opb_mux_check:
+  a_dummy_or_hint_opb_mux_check:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     if_id_pipe_i.instr_meta.dummy |-> ( (ctrl_byp_i.operand_b_fw_mux_sel == SEL_LFSR) ||
-                                                        ((ctrl_byp_i.operand_b_fw_mux_sel == SEL_REGFILE) && (rf_raddr_o[1] == 0))))
-      else `uvm_error("id_stage", "Illegal operand b mux select value for dummy instruction")
+                     (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint) |-> ( (ctrl_byp_i.operand_b_fw_mux_sel == SEL_LFSR) ||
+                                                                                         ((ctrl_byp_i.operand_b_fw_mux_sel == SEL_REGFILE) && (rf_raddr_o[1] == 0))))
+      else `uvm_error("id_stage", "Illegal operand b mux select value for dummy or hint instruction")
 
 
   // Ensure that functional unit enables are one-hot (ALU and DIV both use the ALU though)

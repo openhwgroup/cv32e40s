@@ -132,8 +132,17 @@ endgenerate
                     xsecure_ctrl_i.cpuctrl.dataindtiming &&
                     !alu_cmp_result)
                    |-> id_ex_pipe_i.instr_meta.dummy      ? branch_target_o == id_ex_pipe_i.pc       :
+                       id_ex_pipe_i.instr_meta.hint       ? branch_target_o == (id_ex_pipe_i.pc + 2) : // The hint is a compressed c.slli instruction
                        id_ex_pipe_i.instr_meta.compressed ? branch_target_o == (id_ex_pipe_i.pc + 2) :
                                                             branch_target_o == (id_ex_pipe_i.pc + 4));
+
+  // Taken branches for replaced HINT instructions shall be to PC+2
+  a_hint_branch_target:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  ((ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_mux == PC_BRANCH)) && alu_cmp_result && id_ex_pipe_i.instr_meta.hint
+                   |-> branch_target_o == (id_ex_pipe_i.pc + 2)))
+    else `uvm_error("ex_stage", "HINT with branch replacement did not branch to the next instruction")
+
 
   // Make sure cpuctrl is stable when the EX stage has a valid instruction (i.e. cpuctrl hazard is handled correctly)
   // cpuctrl updates are treated similar to a fence instruction, so when a cpuctrl write is in WB, IF, ID and EX should be killed

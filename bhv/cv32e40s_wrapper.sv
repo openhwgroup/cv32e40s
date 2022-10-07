@@ -66,7 +66,10 @@ module cv32e40s_wrapper
   parameter int          SMCLIC_ID_WIDTH              = 5,
   parameter int          DBG_NUM_TRIGGERS             = 1,
   parameter int          PMA_NUM_REGIONS              = 0,
-  parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
+  parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
+  parameter lfsr_cfg_t   LFSR0_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR1_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR2_CFG                    = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
 )
 (
   // Clock and Reset
@@ -195,8 +198,9 @@ module cv32e40s_wrapper
         core_i.if_stage_i.gen_dummy_instr.dummy_instr_i cv32e40s_dummy_instr_sva
       dummy_instr_sva
     (
-      .if_valid_i ( core_i.if_valid ),
-      .id_ready_i ( core_i.id_ready ),
+      .if_valid_i ( core_i.if_valid                   ),
+      .id_ready_i ( core_i.id_ready                   ),
+      .hint_id_i  ( core_i.if_id_pipe.instr_meta.hint ),
       .*
     );
     end
@@ -514,6 +518,7 @@ endgenerate
          .operand_a_fw_id_i        ( core_i.id_stage_i.operand_a_fw                                       ),
          .operand_b_fw_id_i        ( core_i.id_stage_i.operand_b_fw                                       ),
          .first_op_id_i            ( core_i.id_stage_i.first_op                                           ),
+         .hint_id_i                ( core_i.id_stage_i.if_id_pipe_i.instr_meta.hint                       ),
 
          // EX Probes
          .ex_ready_i               ( core_i.ex_stage_i.ex_ready_o                                         ),
@@ -547,6 +552,7 @@ endgenerate
          .is_dummy_instr_wb_i      ( core_i.wb_stage_i.ex_wb_pipe_i.instr_meta.dummy                      ),
          .abort_op_wb_i            ( core_i.wb_stage_i.abort_op_o                                         ),
          .clic_ptr_wb_i            ( core_i.wb_stage_i.ex_wb_pipe_i.instr_meta.clic_ptr                   ),
+         .hint_wb_i                ( core_i.id_stage_i.ex_wb_pipe_i.instr_meta.hint                       ),
 
          .branch_addr_n_i          ( core_i.if_stage_i.branch_addr_n                                      ),
 
@@ -747,7 +753,10 @@ endgenerate
           .SMCLIC_ID_WIDTH       ( SMCLIC_ID_WIDTH       ),
           .DBG_NUM_TRIGGERS      ( DBG_NUM_TRIGGERS      ),
           .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),
-          .PMA_CFG               ( PMA_CFG               ))
+          .PMA_CFG               ( PMA_CFG               ),
+          .LFSR0_CFG             ( LFSR0_CFG             ),
+          .LFSR1_CFG             ( LFSR1_CFG             ),
+          .LFSR2_CFG             ( LFSR2_CFG             ))
     core_i (.*);
 
 endmodule
