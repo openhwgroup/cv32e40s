@@ -106,6 +106,7 @@ module cv32e40s_if_stage_sva
       else `uvm_error("if_stage", "Prefetcher popped during dummy instruction")
 
   // Assert that we do not trigger dummy instructions multiple cycles in a row
+  // Dummies may have to wait for id_ready, or even if_valid in case of halting IF.
   // Todo: When/if we use allow_dummy_instr from controller_fsm to guarantee progress,
   //       this assertion should be updated to check for guaranteed progress
   a_no_back_to_back_dummy_instructions :

@@ -61,6 +61,7 @@ module cv32e40s_rvfi
    input logic [31:0]                         operand_a_fw_id_i,
    input logic [31:0]                         operand_b_fw_id_i,
    input logic                                first_op_id_i,
+   input logic                                hint_id_i,
 
    // EX probes
    input logic                                ex_ready_i,
@@ -94,6 +95,7 @@ module cv32e40s_rvfi
    input logic [31:0]                         rf_wdata_wb_i,
    input logic [31:0]                         lsu_rdata_wb_i,
    input logic                                clic_ptr_wb_i,
+   input logic                                hint_wb_i,
 
    // PC
    input logic [31:0]                         branch_addr_n_i,
@@ -1183,19 +1185,23 @@ module cv32e40s_rvfi
 
   // Destination Register
   // The rd_addr signal in rtl can contain contain unused non-zero values when not reading
-  assign rd_addr_wb  = (rf_we_wb_i)      ? rf_addr_wb_i  : '0;
-  assign rd_wdata_wb = (rd_addr_wb != 0) ? rf_wdata_wb_i : '0; // Gating wdata for x0 as it is assigned to 0
+  // Hint instructions use randomized instructions and operands, but should be reported as "c.slli x0, <nonzero-immediate>".
+  // - Clearing operands and addresses in case of hint instructions in WB.
+  assign rd_addr_wb  = (rf_we_wb_i && !hint_wb_i)        ? rf_addr_wb_i  : '0;
+  assign rd_wdata_wb = ((rd_addr_wb != 0) && !hint_wb_i) ? rf_wdata_wb_i : '0; // Gating wdata for x0 as it is assigned to 0
                                                                // in RTL regardless of wdata (which can be non-zero)
 
   // Source Register Read Data
   // Setting register read data from operands if there was a read and clearing if there was not as operands can contain
   // data that is not read from the register file when not reading (e.g. for immediate instructions).
   // Can't use register file rdata directly as forwarded data is needed for instructions using the same register back-to-back
-  assign rs1_rdata_id = (rf_re_id_i[0]) ? operand_a_fw_id_i : '0;
-  assign rs2_rdata_id = (rf_re_id_i[1]) ? operand_b_fw_id_i : '0;
+  // Hint instructions use randomized instructions and operands in ID, but should be reported as "c.slli x0, <nonzero-immediate>".
+  // - Clearing operands and addresses in case of hint instructions in ID.
+  assign rs1_rdata_id = (rf_re_id_i[0] && !hint_id_i) ? operand_a_fw_id_i : '0;
+  assign rs2_rdata_id = (rf_re_id_i[1] && !hint_id_i) ? operand_b_fw_id_i : '0;
   // The rs* address signals can contain unused non-zero values when not reading
-  assign rs1_addr_id  = (rf_re_id_i[0]) ? rs1_addr_id_i     : '0;
-  assign rs2_addr_id  = (rf_re_id_i[1]) ? rs2_addr_id_i     : '0;
+  assign rs1_addr_id  = (rf_re_id_i[0] && !hint_id_i) ? rs1_addr_id_i     : '0;
+  assign rs2_addr_id  = (rf_re_id_i[1] && !hint_id_i) ? rs2_addr_id_i     : '0;
 
   ////////////////////////////////
   //  CSRs                      //
