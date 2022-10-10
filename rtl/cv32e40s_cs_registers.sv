@@ -2552,6 +2552,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_csr
   #(
+    .LIB        (LIB),
     .WIDTH      (32),
     .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
