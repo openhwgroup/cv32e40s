@@ -38,7 +38,8 @@ module cv32e40s_register_file_sva
    input logic [REGFILE_WORD_WIDTH-1:0] wdata_i   [REGFILE_NUM_WRITE_PORTS],
    input logic [REGFILE_WORD_WIDTH-1:0] rdata_o   [REGFILE_NUM_READ_PORTS],
    input logic [REGFILE_WORD_WIDTH-1:0] mem_gated [REGFILE_NUM_WORDS],
-   input logic [REGFILE_WORD_WIDTH-1:0] mem       [REGFILE_NUM_WORDS]
+   input logic [REGFILE_WORD_WIDTH-1:0] mem       [REGFILE_NUM_WORDS],
+   input logic                          dummy_instr_wb_i
    );
 
   function bit check_ecc_syndrome (logic [REGFILE_WORD_WIDTH-1:0] data);
@@ -96,7 +97,14 @@ module cv32e40s_register_file_sva
             else `uvm_error("register_file", $sformatf("ECC error for register word x%d", i))
       end
 
+      // If no dummy is in WB, mem[0] shall remain stable
+      a_stable_x0_nondummy:
+        assert property (@(posedge clk) disable iff (!rst_n)
+                        !dummy_instr_wb_i |=> $stable(mem[0]))
+            else `uvm_error("register file", "mem[0] changed for non-dummy instruction")
+
     end
+
   endgenerate
 
 endmodule : cv32e40s_register_file_sva

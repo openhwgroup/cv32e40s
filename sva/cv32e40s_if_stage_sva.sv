@@ -29,6 +29,7 @@ module cv32e40s_if_stage_sva
 
   input logic           if_ready,
   input logic           if_valid_o,
+  input logic           id_ready_i,
   input logic [31:0]    pc_if_o,
   input logic           prefetch_resp_valid,
   input ctrl_fsm_t      ctrl_fsm_i,
@@ -109,7 +110,7 @@ module cv32e40s_if_stage_sva
   //       this assertion should be updated to check for guaranteed progress
   a_no_back_to_back_dummy_instructions :
     assert property (@(posedge clk) disable iff (!rst_n)
-                     dummy_insert |-> !$past(dummy_insert))
+                     dummy_insert && (if_valid_o && id_ready_i) |=> !dummy_insert)
       else `uvm_error("if_stage", "Two dummy instructions in a row")
 
   // Assert that we do not trigger dummy instructions when the sequencer is in the middle of a sequence
