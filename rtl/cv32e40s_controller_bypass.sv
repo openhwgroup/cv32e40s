@@ -96,9 +96,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   logic                              tbljmp_unqual_id;          // Table jump in ID (not qualified with alu_en)
 
   // Dummy or hint instructions in stages
-  logic                              dummy_id;
-  logic                              dummy_ex;
-  logic                              dummy_wb;
+  logic                              dummy_hint_id;
+  logic                              dummy_hint_ex;
+  logic                              dummy_hint_wb;
 
 
 
@@ -130,9 +130,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
   assign csr_unqual_id = csr_exp_unqual_id || sys_mret_unqual_id || sys_wfi_unqual_id || tbljmp_unqual_id;
 
-  assign dummy_id = if_id_pipe_i.instr_valid && if_id_pipe_i.instr_meta.dummy;
-  assign dummy_ex = id_ex_pipe_i.instr_valid && id_ex_pipe_i.instr_meta.dummy;
-  assign dummy_wb = ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.instr_meta.dummy;
+  assign dummy_hint_id = if_id_pipe_i.instr_valid && if_id_pipe_i.instr_meta.dummy;
+  assign dummy_hint_ex = id_ex_pipe_i.instr_valid && id_ex_pipe_i.instr_meta.dummy;
+  assign dummy_hint_wb = ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.instr_meta.dummy;
 
 
   /////////////////////////////////////////////////////////////
@@ -205,18 +205,18 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   genvar i;
   generate
     for(i=0; i<REGFILE_NUM_READ_PORTS; i++) begin : gen_forward_signals
-      // For dummies x0 exist in flops, non-dummies have their writes to x0 ignored and reads as zero.
+      // For dummies/hints x0 exist in flops, non-dummies/hints have their writes to x0 ignored and reads as zero.
       // Exclude x0 from hazard detection for
-      //   - Regular non-dommy instructions
-      //   - Dummy instructions reading in ID while non-dummies are writing in EX or WB
-      // Include x0 in hazard detection for dummies which read in ID while dummies are also writing in EX or WB
-      assign rf_rd_ex_hz_en[i] = !dummy_id || (dummy_id && !dummy_ex) ? |rf_raddr_id_i[i] : 1'b1;
-      assign rf_rd_wb_hz_en[i] = !dummy_id || (dummy_id && !dummy_wb) ? |rf_raddr_id_i[i] : 1'b1;
+      //   - Regular non-dommy/hint instructions
+      //   - Dummy/hint instructions reading in ID while non-dummies/hints are writing in EX or WB
+      // Include x0 in hazard detection for dummies/hints which read in ID while dummies/hints are also writing in EX or WB
+      assign rf_rd_ex_hz_en[i] = !dummy_hint_id ? |rf_raddr_id_i[i] : |rf_raddr_id_i[i] || dummy_hint_ex;
+      assign rf_rd_wb_hz_en[i] = !dummy_hint_id ? |rf_raddr_id_i[i] : |rf_raddr_id_i[i] || dummy_hint_wb;
 
-      // Does register file read address match write address in EX (excluding R0)?
+      // Does register file read address match write address in EX (excluding R0 for regular instructions)?
       assign rf_rd_ex_match[i] = (rf_waddr_ex == rf_raddr_id_i[i]) && rf_rd_ex_hz_en[i] && rf_re_id_i[i];
 
-      // Does register file read address match write address in WB (excluding R0)?
+      // Does register file read address match write address in WB (excluding R0 for regular instructions)?
       assign rf_rd_wb_match[i] = (rf_waddr_wb == rf_raddr_id_i[i]) && rf_rd_wb_hz_en[i] && rf_re_id_i[i];
 
       // Load-read hazard (for any instruction following a load)
