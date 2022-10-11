@@ -110,8 +110,6 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
                 mem[0] <= wdata_i[j];
               end
             end
-          end else begin
-            mem[0] <= RF_REG_RV;
           end
         end
       end

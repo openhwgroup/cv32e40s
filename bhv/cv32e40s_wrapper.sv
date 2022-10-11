@@ -66,7 +66,10 @@ module cv32e40s_wrapper
   parameter int          SMCLIC_ID_WIDTH              = 5,
   parameter int          DBG_NUM_TRIGGERS             = 1,
   parameter int          PMA_NUM_REGIONS              = 0,
-  parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
+  parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
+  parameter lfsr_cfg_t   LFSR0_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR1_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR2_CFG                    = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
 )
 (
   // Clock and Reset
@@ -312,7 +315,8 @@ module cv32e40s_wrapper
   bind cv32e40s_core:
     core_i cv32e40s_core_sva
       #(.PMA_NUM_REGIONS(PMA_NUM_REGIONS),
-        .SMCLIC(SMCLIC))
+        .SMCLIC(SMCLIC),
+        .REGFILE_NUM_READ_PORTS(core_i.REGFILE_NUM_READ_PORTS))
       core_sva (// probed cs_registers signals
                 .cs_registers_mie_q               (core_i.cs_registers_i.mie_q),
                 .cs_registers_mepc_n              (core_i.cs_registers_i.mepc_n),
@@ -747,7 +751,10 @@ endgenerate
           .SMCLIC_ID_WIDTH       ( SMCLIC_ID_WIDTH       ),
           .DBG_NUM_TRIGGERS      ( DBG_NUM_TRIGGERS      ),
           .PMA_NUM_REGIONS       ( PMA_NUM_REGIONS       ),
-          .PMA_CFG               ( PMA_CFG               ))
+          .PMA_CFG               ( PMA_CFG               ),
+          .LFSR0_CFG             ( LFSR0_CFG             ),
+          .LFSR1_CFG             ( LFSR1_CFG             ),
+          .LFSR2_CFG             ( LFSR2_CFG             ))
     core_i (.*);
 
 endmodule

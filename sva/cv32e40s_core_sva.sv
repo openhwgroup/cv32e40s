@@ -27,7 +27,8 @@ module cv32e40s_core_sva
   import cv32e40s_pkg::*;
   #(
     parameter int PMA_NUM_REGIONS = 0,
-    parameter bit SMCLIC = 0
+    parameter bit SMCLIC = 0,
+    parameter int REGFILE_NUM_READ_PORTS = 2
   )
   (
   input logic        clk,
@@ -100,6 +101,10 @@ module cv32e40s_core_sva
   input logic [31:0]   jalr_fw_id_i,
   input logic [31:0]   rf_wdata_wb,
   input logic          rf_we_wb,
+  input rf_addr_t      rf_waddr_wb,
+
+  input rf_addr_t      rf_raddr_id[REGFILE_NUM_READ_PORTS],
+  input rf_data_t      rf_rdata_id[REGFILE_NUM_READ_PORTS],
 
   input logic        alu_jmpr_id_i,
   input logic        alu_en_id_i,
@@ -724,5 +729,21 @@ endproperty;
 
 a_no_irq_after_lsu: assert property(p_no_irq_after_lsu)
   else `uvm_error("core", "Interrupt taken after disabling");
+
+// Checking that a dummy branch will observe the same operands for both halves of the instruction
+property p_dummy_id_wb;
+  @(posedge clk) disable iff (!rst_ni)
+  (  if_id_pipe.instr_meta.dummy && if_id_pipe.instr_valid && id_stage_id_valid && ex_ready &&   // dummy in id goes to ex
+      ((rf_raddr_id[0] == '0) || (rf_raddr_id[1] == '0)) &&          // potentially reading x0
+      ex_wb_pipe.instr_meta.dummy && ex_wb_pipe.instr_valid &&       // dummy in wb
+      rf_waddr_wb == '0 && rf_we_wb                                  // writing x0
+      ##1 if_id_pipe.instr_meta.dummy && if_id_pipe.instr_valid  &&  // dummy still in ID (must be branch)
+      !(ctrl_fsm.halt_id || ctrl_fsm.kill_id)                        // Dummy still valid, using operands
+      |->
+      $stable(operand_a_id_i) && $stable(operand_b_id_i));           // should read the same as in the first cycle
+endproperty;
+
+a_dummy_id_wb: assert property(p_dummy_id_wb)
+  else `uvm_error("core", "X0 not stable for dummy instruction in ID")
 endmodule
 

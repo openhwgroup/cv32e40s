@@ -149,34 +149,42 @@ module cv32e40s_id_stage_sva
   // Assert that regular (non-dummy) instructions use 0 instead of the R0 register value
   a_non_dummy_reads_0_from_r0_p0:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     rf_re_o[0] && (rf_raddr_o[0] == 32'h0) && !if_id_pipe_i.instr_meta.dummy |-> (operand_a_fw == 32'h0))
+                     rf_re_o[0] && (rf_raddr_o[0] == 'b0) && !if_id_pipe_i.instr_meta.dummy |-> (operand_a_fw == 32'h0))
       else `uvm_error("id_stage", "Non-dummy instruction used non-zero value from R0 (on read port 0)")
 
   a_non_dummy_reads_0_from_r0_p1:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     rf_re_o[1] && (rf_raddr_o[1] == 32'h0) && !if_id_pipe_i.instr_meta.dummy |-> (operand_b_fw == 32'h0))
+                     rf_re_o[1] && (rf_raddr_o[1] == 'b0) && !if_id_pipe_i.instr_meta.dummy |-> (operand_b_fw == 32'h0))
       else `uvm_error("id_stage", "Non-dummy instruction used non-zero value from R0 (on read port 1)")
 
+  // Cover to check that dummies can read non-zero values from x0
   a_dummy_can_read_r0_p0:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     rf_re_o[0] && (rf_raddr_o[0] == 32'h0) && if_id_pipe_i.instr_meta.dummy |-> (operand_a_fw == rf_rdata_i[0]))
+                     rf_re_o[0] && (rf_raddr_o[0] == 'b0) && if_id_pipe_i.instr_meta.dummy && (operand_a_fw != '0)|-> 1'b1)
       else `uvm_error("id_stage", "Dummy instruction could not read from R0 (on read port 0)")
 
+  // Cover to check that dummies can read non-zero values from x0
   a_dummy_can_read_r0_p1:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     rf_re_o[1] && (rf_raddr_o[1] == 32'h0) && if_id_pipe_i.instr_meta.dummy |-> (operand_b_fw == rf_rdata_i[1]))
+                     rf_re_o[1] && (rf_raddr_o[1] == 'b0) && if_id_pipe_i.instr_meta.dummy && (operand_b_fw != '0)|-> 1'b1)
       else `uvm_error("id_stage", "Dummy instruction could not read from R0 (on read port 1)")
 
+  // LFSR should be used for x1-bx31, regfile or relevant forwards for x0
   a_dummy_opa_mux_check:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     if_id_pipe_i.instr_meta.dummy |-> ( (ctrl_byp_i.operand_a_fw_mux_sel == SEL_LFSR) ||
-                                                        ((ctrl_byp_i.operand_a_fw_mux_sel == SEL_REGFILE) && (rf_raddr_o[0] == 0))))
+                     if_id_pipe_i.instr_meta.dummy |-> ( ((ctrl_byp_i.operand_a_fw_mux_sel == SEL_LFSR)    && (rf_raddr_o[0] != 'b0))  ||
+                                                         ((ctrl_byp_i.operand_a_fw_mux_sel == SEL_REGFILE) && (rf_raddr_o[0] == 'b0))   ||
+                                                         ((ctrl_byp_i.operand_a_fw_mux_sel == SEL_FW_EX)   && (rf_raddr_o[0] == 'b0))   ||
+                                                         ((ctrl_byp_i.operand_a_fw_mux_sel == SEL_FW_WB)   && (rf_raddr_o[0] == 'b0))))
       else `uvm_error("id_stage", "Illegal operand a mux select value for dummy instruction")
 
+  // LFSR should be used for x1-bx31, regfile or relevant forwards for x0
   a_dummy_opb_mux_check:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     if_id_pipe_i.instr_meta.dummy |-> ( (ctrl_byp_i.operand_b_fw_mux_sel == SEL_LFSR) ||
-                                                        ((ctrl_byp_i.operand_b_fw_mux_sel == SEL_REGFILE) && (rf_raddr_o[1] == 0))))
+                     if_id_pipe_i.instr_meta.dummy |-> ( ((ctrl_byp_i.operand_b_fw_mux_sel == SEL_LFSR)    && (rf_raddr_o[1] != 'b0))  ||
+                                                         ((ctrl_byp_i.operand_b_fw_mux_sel == SEL_REGFILE) && (rf_raddr_o[1] == 'b0))   ||
+                                                         ((ctrl_byp_i.operand_b_fw_mux_sel == SEL_FW_EX)   && (rf_raddr_o[1] == 'b0))   ||
+                                                         ((ctrl_byp_i.operand_b_fw_mux_sel == SEL_FW_WB)   && (rf_raddr_o[1] == 'b0))))
       else `uvm_error("id_stage", "Illegal operand b mux select value for dummy instruction")
 
 
