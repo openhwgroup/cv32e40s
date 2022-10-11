@@ -166,7 +166,7 @@ module cv32e40s_id_stage_sva
   // Cover to check that dummies can read non-zero values from x0
   a_dummy_can_read_r0_p1:
     assert property (@(posedge clk) disable iff (!rst_n)
-                     rf_re_o[1] && (rf_raddr_o[1] == 'b0) && if_id_pipe_i.instr_meta.dummy && (operand_b_fw != '0)|-> 1'b1)
+                     rf_re_o[1] && (rf_raddr_o[1] == 'b0) && (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint) && (operand_b_fw != '0)|-> 1'b1)
       else `uvm_error("id_stage", "Dummy or hint instruction could not read from R0 (on read port 1)")
 
   // LFSR should be used for x1-bx31, regfile or relevant forwards for x0

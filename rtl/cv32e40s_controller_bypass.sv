@@ -130,9 +130,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
   assign csr_unqual_id = csr_exp_unqual_id || sys_mret_unqual_id || sys_wfi_unqual_id || tbljmp_unqual_id;
 
-  assign dummy_hint_id = if_id_pipe_i.instr_valid && if_id_pipe_i.instr_meta.dummy;
-  assign dummy_hint_ex = id_ex_pipe_i.instr_valid && id_ex_pipe_i.instr_meta.dummy;
-  assign dummy_hint_wb = ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.instr_meta.dummy;
+  assign dummy_hint_id = if_id_pipe_i.instr_valid && (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint);
+  assign dummy_hint_ex = id_ex_pipe_i.instr_valid && (id_ex_pipe_i.instr_meta.dummy || id_ex_pipe_i.instr_meta.hint);
+  assign dummy_hint_wb = ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.instr_meta.dummy || ex_wb_pipe_i.instr_meta.hint);
 
 
   /////////////////////////////////////////////////////////////
