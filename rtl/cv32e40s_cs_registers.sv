@@ -2063,6 +2063,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       // Reset dummy instruction counter when writing registers that affect insertion frequency
       // A pipeline flush will also be performed.
+      // Cannot include lfsr_lockup here, as that would cause the counter for issued instructions in the dummy module
+      //   to reset, possibly violating the dummy instruction frequency by issuing too many instructions between dummies.
       assign xsecure_ctrl_o.cntrst = cpuctrl_we || secureseed0_we;
 
     end // block: xsecure
