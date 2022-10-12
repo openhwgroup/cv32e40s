@@ -198,8 +198,9 @@ module cv32e40s_wrapper
         core_i.if_stage_i.gen_dummy_instr.dummy_instr_i cv32e40s_dummy_instr_sva
       dummy_instr_sva
     (
-      .if_valid_i ( core_i.if_valid ),
-      .id_ready_i ( core_i.id_ready ),
+      .if_valid_i ( core_i.if_valid                   ),
+      .id_ready_i ( core_i.id_ready                   ),
+      .hint_id_i  ( core_i.if_id_pipe.instr_meta.hint ),
       .*
     );
     end
@@ -518,6 +519,7 @@ endgenerate
          .operand_a_fw_id_i        ( core_i.id_stage_i.operand_a_fw                                       ),
          .operand_b_fw_id_i        ( core_i.id_stage_i.operand_b_fw                                       ),
          .first_op_id_i            ( core_i.id_stage_i.first_op                                           ),
+         .hint_id_i                ( core_i.id_stage_i.if_id_pipe_i.instr_meta.hint                       ),
 
          // EX Probes
          .ex_ready_i               ( core_i.ex_stage_i.ex_ready_o                                         ),
@@ -551,6 +553,7 @@ endgenerate
          .is_dummy_instr_wb_i      ( core_i.wb_stage_i.ex_wb_pipe_i.instr_meta.dummy                      ),
          .abort_op_wb_i            ( core_i.wb_stage_i.abort_op_o                                         ),
          .clic_ptr_wb_i            ( core_i.wb_stage_i.ex_wb_pipe_i.instr_meta.clic_ptr                   ),
+         .hint_wb_i                ( core_i.id_stage_i.ex_wb_pipe_i.instr_meta.hint                       ),
 
          .branch_addr_n_i          ( core_i.if_stage_i.branch_addr_n                                      ),
 

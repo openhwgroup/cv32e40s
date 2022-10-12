@@ -81,6 +81,11 @@ module cv32e40s_dummy_instr
 
   assign dummy_en   = ctrl_fsm_i.allow_dummy_instr && xsecure_ctrl_i.cpuctrl.rnddummy;
 
+  // Hint instructions will consume one random instruction and perform an lfsr shift.
+  // lfsr_cnt will update when the dummy or hint instruction leaves the ID stage
+  // cnt_q is updated every time an instruction goes from IF to ID
+  //   - reset when a dummy goes from IF to ID
+  //   - incremented when any other instruction (including hint) goes from ID to ID
   assign dummy_insert_o = (cnt_q > lfsr_cnt) && dummy_en;
 
   assign cnt_rst        = !dummy_en                          ||      // Reset counter when dummy instructions are disabled
@@ -127,7 +132,11 @@ module cv32e40s_dummy_instr
   end
 
   assign rd  =  5'h0; // Ignoring result by writing it to x0
-  assign imm = 12'h0; // Offset is 0 because PC of the dummy instruction is the same as the target instruction.
+  // When inserting a dummy, use offset=0 because PC of the dummy instruction is the same as the target instruction.
+  // When not inserting a dummy, the random instruction may be used for a HINT instruction which must branch to
+  // the next instruction (PC+2 since the HINT is a compressed c.slli)
+  assign imm = dummy_insert_o ? 12'h0 : 12'h2;
+
 
   assign instr[31:25] = (opcode == OPCODE_BRANCH) ? {imm[12], imm[10:5]} : funct7;
   assign instr[24:20] = lfsr_rs2;

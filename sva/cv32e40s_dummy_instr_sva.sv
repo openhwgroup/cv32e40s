@@ -39,13 +39,23 @@ module cv32e40s_dummy_instr_sva
    input logic                 instr_issued_i,
    input logic                 cnt_rst,
    input logic                 if_valid_i,
-   input logic                 id_ready_i
+   input logic                 id_ready_i,
+   input logic                 hint_id_i
    );
 
   // Assert that counter stopped correctly when inserting dummy instruction
-  a_no_count_overflow :
+  // When no hint is in ID, the cnt_q should be exactly lfsr_cnt + 1
+  a_no_count_overflow_nohint :
     assert property (@(posedge clk) disable iff (!rst_n)
-                     dummy_insert_o |-> (cnt_q == lfsr_cnt + 1))
+                     dummy_insert_o && !hint_id_i |-> (cnt_q == lfsr_cnt + 1))
+      else `uvm_error("Dummy Instruction Insertion", "Counter counted further than lfsr_cnt + 1");
+
+  // When a dummy is inserted and at the same time a hint is in ID, the counter value
+  // may differ by more than one since the hint instruction did an lfsr shift, possibly changing the
+  // dummy insertion threshold.
+  a_no_count_overflow_hint :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      dummy_insert_o && hint_id_i |-> (cnt_q >= (lfsr_cnt + 1)))
       else `uvm_error("Dummy Instruction Insertion", "Counter counted further than lfsr_cnt + 1");
 
   // Assert that we never count when counter has passed the compare value
@@ -59,6 +69,7 @@ module cv32e40s_dummy_instr_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                       (dummy_insert_o && if_valid_i && !id_ready_i) |-> !cnt_rst)
       else `uvm_error("Dummy Instruction Insertion", "Counter reset before dummy left IF");
+
 
 endmodule : cv32e40s_dummy_instr_sva
 

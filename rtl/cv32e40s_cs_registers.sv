@@ -386,6 +386,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         dscratch1_rd_error;                             // Not used
   logic                         mcause_rd_error;                                // Not used
 
+
   // Local instr_valid for write portion (WB)
   // Not factoring in ctrl_fsm_i.halt_limited_wb. This signal is only set during SLEEP mode, and while in SLEEP
   // there cannot be any CSR instruction in WB.
@@ -1981,6 +1982,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     if (SECURE) begin : xsecure
 
       logic [2:0] lfsr_lockup;
+      logic       lfsr_en;
 
       cv32e40s_csr
       #(
@@ -2001,6 +2003,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_error_o     ( cpuctrl_rd_error      )
       );
 
+      assign lfsr_en = cpuctrl_q.rnddummy || cpuctrl_q.rndhint;
+
       // Shifting LFSR0 in IF because it controls instruction insertion
       cv32e40s_lfsr
       #(
@@ -2012,7 +2016,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rst_n          ( rst_n                 ),
         .seed_i         ( csr_wdata_int         ),      // Direct use of csr_wdata_int (secureseed0_n = 0 used by RVFI; resolution on read)
         .seed_we_i      ( secureseed0_we        ),
-        .enable_i       ( cpuctrl_q.rnddummy    ),
+        .enable_i       ( lfsr_en               ),
         .shift_i        ( lfsr_shift_if_i       ),
         .data_o         ( xsecure_ctrl_o.lfsr0  ),
         .lockup_o       ( lfsr_lockup[0]        )
@@ -2029,7 +2033,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rst_n          ( rst_n                 ),
         .seed_i         ( csr_wdata_int         ),      // Direct use of csr_wdata_int (secureseed1_n = 0 used by RVFI; resolution on read)
         .seed_we_i      ( secureseed1_we        ),
-        .enable_i       ( cpuctrl_q.rnddummy    ),
+        .enable_i       ( lfsr_en               ),
         .shift_i        ( lfsr_shift_id_i       ),
         .data_o         ( xsecure_ctrl_o.lfsr1  ),
         .lockup_o       ( lfsr_lockup[1]        )
@@ -2045,7 +2049,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rst_n          ( rst_n                 ),
         .seed_i         ( csr_wdata_int         ),      // Direct use of csr_wdata_int (secureseed2_n = 0 used by RVFI; resolution on read)
         .seed_we_i      ( secureseed2_we        ),
-        .enable_i       ( cpuctrl_q.rnddummy    ),
+        .enable_i       ( lfsr_en               ),
         .shift_i        ( lfsr_shift_id_i       ),
         .data_o         ( xsecure_ctrl_o.lfsr2  ),
         .lockup_o       ( lfsr_lockup[2]        )
@@ -2058,7 +2062,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       assign lfsr_lockup_o = |lfsr_lockup;
 
       // Reset dummy instruction counter when writing registers that affect insertion frequency
-      assign xsecure_ctrl_o.cntrst = cpuctrl_we || secureseed0_we || lfsr_lockup[0];
+      // A pipeline flush will also be performed.
+      // Cannot include lfsr_lockup here, as that would cause the counter for issued instructions in the dummy module
+      //   to reset, possibly violating the dummy instruction frequency by issuing too many instructions between dummies.
+      assign xsecure_ctrl_o.cntrst = cpuctrl_we || secureseed0_we;
 
     end // block: xsecure
     else begin : no_xsecure

@@ -1191,6 +1191,7 @@ typedef struct packed {
 typedef struct packed
 {
   logic        dummy;
+  logic        hint;
   logic        compressed;
   logic        clic_ptr;
   logic        tbljmp;

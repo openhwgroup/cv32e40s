@@ -733,17 +733,33 @@ a_no_irq_after_lsu: assert property(p_no_irq_after_lsu)
 // Checking that a dummy branch will observe the same operands for both halves of the instruction
 property p_dummy_id_wb;
   @(posedge clk) disable iff (!rst_ni)
-  (  if_id_pipe.instr_meta.dummy && if_id_pipe.instr_valid && id_stage_id_valid && ex_ready &&   // dummy in id goes to ex
-      ((rf_raddr_id[0] == '0) || (rf_raddr_id[1] == '0)) &&          // potentially reading x0
-      ex_wb_pipe.instr_meta.dummy && ex_wb_pipe.instr_valid &&       // dummy in wb
-      rf_waddr_wb == '0 && rf_we_wb                                  // writing x0
-      ##1 if_id_pipe.instr_meta.dummy && if_id_pipe.instr_valid  &&  // dummy still in ID (must be branch)
-      !(ctrl_fsm.halt_id || ctrl_fsm.kill_id)                        // Dummy still valid, using operands
+  (  if_id_pipe.instr_meta.dummy && if_id_pipe.instr_valid && id_stage_id_valid && ex_ready && !last_op_id &&   // dummy in id goes to ex
+      ((rf_raddr_id[0] == '0) || (rf_raddr_id[1] == '0)) &&                                                     // potentially reading x0
+      (ex_wb_pipe.instr_meta.dummy || ex_wb_pipe.instr_meta.hint) && ex_wb_pipe.instr_valid &&                  // dummy or hint in wb
+      rf_waddr_wb == '0 && rf_we_wb                                                                             // writing x0
+      ##1 if_id_pipe.instr_meta.dummy && if_id_pipe.instr_valid  &&                                             // dummy still in ID (must be branch)
+      !(ctrl_fsm.halt_id || ctrl_fsm.kill_id)                                                                   // Dummy still valid, using operands
       |->
-      $stable(operand_a_id_i) && $stable(operand_b_id_i));           // should read the same as in the first cycle
+      $stable(operand_a_id_i) && $stable(operand_b_id_i));                                                      // should read the same as in the first cycle
 endproperty;
 
 a_dummy_id_wb: assert property(p_dummy_id_wb)
   else `uvm_error("core", "X0 not stable for dummy instruction in ID")
+
+// Checking that a hint branch will observe the same operands for both halves of the instruction
+property p_hint_id_wb;
+  @(posedge clk) disable iff (!rst_ni)
+  (  if_id_pipe.instr_meta.hint && if_id_pipe.instr_valid && id_stage_id_valid && ex_ready && !last_op_id &&    // hint in id goes to ex
+      ((rf_raddr_id[0] == '0) || (rf_raddr_id[1] == '0)) &&                                                     // potentially reading x0
+      (ex_wb_pipe.instr_meta.dummy || ex_wb_pipe.instr_meta.hint) && ex_wb_pipe.instr_valid &&                  // dummy or hint in wb
+      rf_waddr_wb == '0 && rf_we_wb                                                                             // writing x0
+      ##1 if_id_pipe.instr_meta.hint && if_id_pipe.instr_valid  &&                                              // hint still in ID (must be branch)
+      !(ctrl_fsm.halt_id || ctrl_fsm.kill_id)                                                                   // hint still valid, using operands
+      |->
+      $stable(operand_a_id_i) && $stable(operand_b_id_i));                                                      // should read the same as in the first cycle
+endproperty;
+
+a_hint_id_wb: assert property(p_dummy_id_wb)
+  else `uvm_error("core", "X0 not stable for hint instruction in ID")
 endmodule
 

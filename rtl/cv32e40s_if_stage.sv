@@ -139,6 +139,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   inst_resp_t        instr_decompressed;
   logic              instr_compressed;
+  logic              instr_hint;
 
   // Transaction signals to/from obi interface
   logic                       prefetch_resp_valid;
@@ -404,8 +405,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   assign if_busy_o = prefetch_busy;
 
-  // Ensures one shift of lfsr0 for each instruction inserted in IF
-  assign lfsr_shift_o = if_valid_o && id_ready_i && dummy_insert;
+  // Ensures one shift of lfsr0 for each instruction (dummy or hint) inserted in IF
+  assign lfsr_shift_o = if_valid_o && id_ready_i && (dummy_insert || instr_hint);
 
   assign ptr_in_if_o = prefetch_is_clic_ptr || prefetch_is_tbljmp_ptr;
 
@@ -444,6 +445,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   always_comb begin
     instr_meta_n = '0;
     instr_meta_n.dummy         = dummy_insert;
+    instr_meta_n.hint          = dummy_insert ? 1'b0 : instr_hint;    // dummies may be inserted when a hint is in IF
     instr_meta_n.compressed    = if_id_pipe_o.instr_meta.compressed;
     instr_meta_n.clic_ptr      = prefetch_is_clic_ptr;
     instr_meta_n.tbljmp        = if_id_pipe_o.instr_meta.tbljmp;
@@ -513,8 +515,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
           if_id_pipe_o.instr.bus_resp.integrity_err <= instr_decompressed.bus_resp.integrity_err;
         end else begin
           // Regular instruction, update the whole instr field
+          // Dummy instructions replace instruction word with a random instruction word
+          // Hint instructions are replaced with random instructions within the compressed decoder
           if_id_pipe_o.instr          <= dummy_insert ? dummy_instr :
-                                        seq_valid     ? seq_instr   : instr_decompressed;
+                                         seq_valid    ? seq_instr   : instr_decompressed;
         end
       end else if (id_ready_i) begin
         if_id_pipe_o.instr_valid      <= 1'b0;
@@ -530,11 +534,14 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   )
   compressed_decoder_i
   (
-    .instr_i            ( prefetch_instr          ),
-    .instr_is_ptr_i     ( ptr_in_if_o             ),
-    .instr_o            ( instr_decompressed      ),
-    .is_compressed_o    ( instr_compressed        ),
-    .illegal_instr_o    ( illegal_c_insn          )
+    .instr_i            ( prefetch_instr             ),
+    .instr_is_ptr_i     ( ptr_in_if_o                ),
+    .xsecure_ctrl_i     ( xsecure_ctrl_i             ),
+    .hint_replacement_i ( dummy_instr.bus_resp.rdata ),   // instruction word for replaced hints
+    .instr_o            ( instr_decompressed         ),
+    .is_compressed_o    ( instr_compressed           ),
+    .illegal_instr_o    ( illegal_c_insn             ),
+    .hint_o             ( instr_hint                 )
   );
 
   // Setting predec_ready to id_ready_i here instead of passing it through the predecoder.

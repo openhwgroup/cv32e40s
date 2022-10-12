@@ -130,9 +130,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 
   assign csr_unqual_id = csr_exp_unqual_id || sys_mret_unqual_id || sys_wfi_unqual_id || tbljmp_unqual_id;
 
-  assign dummy_hint_id = if_id_pipe_i.instr_valid && if_id_pipe_i.instr_meta.dummy;
-  assign dummy_hint_ex = id_ex_pipe_i.instr_valid && id_ex_pipe_i.instr_meta.dummy;
-  assign dummy_hint_wb = ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.instr_meta.dummy;
+  assign dummy_hint_id = if_id_pipe_i.instr_valid && (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint);
+  assign dummy_hint_ex = id_ex_pipe_i.instr_valid && (id_ex_pipe_i.instr_meta.dummy || id_ex_pipe_i.instr_meta.hint);
+  assign dummy_hint_wb = ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.instr_meta.dummy || ex_wb_pipe_i.instr_meta.hint);
 
 
   /////////////////////////////////////////////////////////////
@@ -325,8 +325,8 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
       end
     end
 
-    if (if_id_pipe_i.instr_meta.dummy) begin
-      // Overriding operands with data from LFSRs for dummy instructions, except for reads from R0
+    if (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint) begin
+      // Overriding operands with data from LFSRs for dummy and hint instructions, except for reads from R0
       if (rf_raddr_id_i[0] != '0) begin
         ctrl_byp_o.operand_a_fw_mux_sel = SEL_LFSR;
       end

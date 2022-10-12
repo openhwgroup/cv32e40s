@@ -31,11 +31,14 @@ module cv32e40s_compressed_decoder import cv32e40s_pkg::*;
     parameter m_ext_e      M_EXT     = M_NONE
  )
 (
-  input  inst_resp_t  instr_i,
-  input  logic        instr_is_ptr_i,
-  output inst_resp_t  instr_o,
-  output logic        is_compressed_o,
-  output logic        illegal_instr_o
+  input  inst_resp_t    instr_i,
+  input  logic          instr_is_ptr_i,
+  input  xsecure_ctrl_t xsecure_ctrl_i,
+  input  logic [31:0]   hint_replacement_i,
+  output inst_resp_t    instr_o,
+  output logic          is_compressed_o,
+  output logic          illegal_instr_o,
+  output logic          hint_o
 );
 
   logic [31:0] instr;
@@ -53,6 +56,7 @@ module cv32e40s_compressed_decoder import cv32e40s_pkg::*;
   always_comb
   begin
     illegal_instr_o  = 1'b0;
+    hint_o           = 1'b0;
     instr_o          = instr_i;
 
     if (instr_is_ptr_i) begin
@@ -361,6 +365,14 @@ module cv32e40s_compressed_decoder import cv32e40s_pkg::*;
                 if ((instr[6:2] == 5'b0) || (instr[11:7] == 5'b0)) begin
                   // Hint -> slli rd, rd, shamt
                   instr_o.bus_resp.rdata = {7'b0, instr[6:2], instr[11:7], 3'b001, instr[11:7], OPCODE_OPIMM};
+
+                  // If rd == x0, immediate != 0 and random hint is enabled: Set hint_o flag.
+                  //   - Instruction will be replaced by a random add/and/mul/bltu (hint_replacement_i from the dummy module)
+                  //   - Instruction will appear as c.slli on RVFI
+                  if (|instr[6:2] && xsecure_ctrl_i.cpuctrl.rndhint) begin
+                    hint_o = 1'b1;
+                    instr_o.bus_resp.rdata = hint_replacement_i;
+                  end
                 end else begin
                   // c.slli -> slli rd, rd, shamt
                   instr_o.bus_resp.rdata = {7'b0, instr[6:2], instr[11:7], 3'b001, instr[11:7], OPCODE_OPIMM};

@@ -35,6 +35,8 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
     input logic                           clk,
     input logic                           rst_n,
 
+    input logic                           hint_instr_id_i,
+    input logic                           hint_instr_wb_i,
     input logic                           dummy_instr_id_i,
     input logic                           dummy_instr_wb_i,
 
@@ -63,7 +65,7 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
   //-----------------------------------------------------------------------------
   generate
     if (SECURE) begin
-      assign mem_gated[0] = dummy_instr_id_i ? mem[0] : RF_REG_RV;
+      assign mem_gated[0] = (dummy_instr_id_i || hint_instr_id_i) ? mem[0] : RF_REG_RV;
       for (genvar addr=1; addr < REGFILE_NUM_WORDS; addr++) begin
         assign mem_gated[addr] = mem[addr];
       end
@@ -104,7 +106,7 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
         if(~rst_n) begin
           mem[0] <= RF_REG_RV;
         end else begin
-          if (dummy_instr_wb_i) begin
+          if (dummy_instr_wb_i || hint_instr_wb_i) begin
             for(int j=0; j<REGFILE_NUM_WRITE_PORTS; j++) begin : dummy_rf_write_ports
               if(we_dec[j][0] == 1'b1) begin
                 mem[0] <= wdata_i[j];
