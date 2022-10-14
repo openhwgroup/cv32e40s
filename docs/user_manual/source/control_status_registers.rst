@@ -2285,6 +2285,9 @@ Detailed:
     +-------+------------------+---------------------------+
 
   .. note::
+     When PMP_GRANULARITY >= 1, the NA4 mode (``pmpxcfg.A == 0x2``) mode is not selectable. ``pmpxcfg.A`` will remain unchanged when attempting to enable NA4 mode.
+
+  .. note::
      ``pmpxcfg`` is WARL (0x0) if x >= ``PMP_NUM_REGIONS``.
 
   .. note::
@@ -2308,6 +2311,11 @@ Detailed:
     +=======+=======================+===========================+
     | 31:0  | WARL / WARL (0x0)     | ADDRESS[33:2]             |
     +-------+-----------------------+---------------------------+
+
+  .. note::
+     When PMP_GRANULARITY >= 1, ``pmpaddrx[PMP_GRANULARITY-1:0]`` will be read as 0 if the PMP mode is TOR (``pmpcfgx.A == 0x1``) or OFF (``pmpcfgx.A == 0x0``).
+     When PMP_GRANULARITY >= 2, ``pmpaddrx[PMP_GRANULARITY-2:0]`` will be read as 1 if the PMP mode is NAPOT (``pmpcfgx.A == 0x3``).
+     Although changing ``pmpcfgx.A`` affects the value read from ``pmpaddrx``, it does not affect the underlying value stored in that register.
 
   .. note::
      ``pmpaddrx`` is WARL if x < ``PMP_NUM_REGIONS`` and WARL (0x0) otherwise.
