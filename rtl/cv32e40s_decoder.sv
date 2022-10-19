@@ -29,7 +29,8 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
 #(
   parameter b_ext_e      B_EXT                  = B_NONE,
   parameter m_ext_e      M_EXT                  = M,
-  parameter              DEBUG_TRIGGER_EN       = 1
+  parameter              DEBUG_TRIGGER_EN       = 1,
+  parameter bit          SMCLIC                 = 1
 )
 (
   // singals running to/from controller
@@ -117,7 +118,8 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   // RV32I Base instruction set decoder
   cv32e40s_i_decoder
   #(
-    .DEBUG_TRIGGER_EN (DEBUG_TRIGGER_EN)
+    .DEBUG_TRIGGER_EN (DEBUG_TRIGGER_EN),
+    .SMCLIC           (SMCLIC          )
   )
   i_decoder_i
   (

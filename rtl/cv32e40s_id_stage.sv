@@ -36,7 +36,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   parameter m_ext_e      M_EXT                  = M,
   parameter bit          X_EXT                  = 0,
   parameter              DEBUG_TRIGGER_EN       = 1,
-  parameter int unsigned REGFILE_NUM_READ_PORTS = 2
+  parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
+  parameter bit          SMCLIC                 = 1
 )
 (
   input  logic        clk,                    // Gated clock
@@ -428,7 +429,8 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   #(
     .B_EXT                           ( B_EXT                     ),
     .M_EXT                           ( M_EXT                     ),
-    .DEBUG_TRIGGER_EN                ( DEBUG_TRIGGER_EN          )
+    .DEBUG_TRIGGER_EN                ( DEBUG_TRIGGER_EN          ),
+    .SMCLIC                          ( SMCLIC                    )
   )
   decoder_i
   (
