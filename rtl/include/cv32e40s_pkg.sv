@@ -476,7 +476,6 @@ parameter CSR_MTVEC_BASIC_MASK  = 32'hFFFFFF81;
 parameter CSR_MTVEC_CLIC_MASK   = 32'hFFFFFF83;
 parameter CSR_MTVT_MASK         = 32'hFFFFFFE0;
 parameter CSR_MINTSTATUS_MASK   = 32'hFF000000;
-parameter CSR_MCLICBASE_MASK    = 32'hFFFFF000;
 parameter CSR_MSCRATCH_MASK     = 32'hFFFFFFFF;
 parameter CSR_CPUCTRL_MASK      = 32'h000F001F;
 parameter CSR_PMPNCFG_MASK      = 8'hFF;
