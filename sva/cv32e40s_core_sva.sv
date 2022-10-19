@@ -477,6 +477,13 @@ end
                      ((ex_wb_pipe.instr_valid && ex_wb_pipe.sys_dret_insn && (dcsr.prv == PRIV_LVL_U))))
     else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
 
+  // Assert that MPRV is cleared when privilege mode is changed to user
+  a_priv_lvl_u_mode_mprv_clr:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                     $changed(priv_lvl) && (priv_lvl == PRIV_LVL_U) |->
+                     cs_registers_mstatus_q.mprv == 1'b0)
+    else `uvm_error("core", "mstatus.mprv not cleared when entering user mode")
+
   // Helper signal. Indicate that pc_mux is set to a trap
   logic pc_mux_is_trap;
   assign pc_mux_is_trap = (ctrl_fsm.pc_mux == PC_TRAP_EXC) ||
