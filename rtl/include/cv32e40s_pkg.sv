@@ -476,8 +476,6 @@ parameter CSR_MTVEC_BASIC_MASK  = 32'hFFFFFF81;
 parameter CSR_MTVEC_CLIC_MASK   = 32'hFFFFFF83;
 parameter CSR_MTVT_MASK         = 32'hFFFFFFE0;
 parameter CSR_MINTSTATUS_MASK   = 32'hFF000000;
-parameter CSR_MINTTHRESH_MASK   = 32'h000000FF;
-parameter CSR_MCLICBASE_MASK    = 32'hFFFFF000;
 parameter CSR_MSCRATCH_MASK     = 32'hFFFFFFFF;
 parameter CSR_CPUCTRL_MASK      = 32'h000F001F;
 parameter CSR_PMPNCFG_MASK      = 8'hFF;
@@ -676,7 +674,8 @@ typedef struct packed {
 
 typedef struct packed {
   logic [31:7] addr;
-  logic [ 6:2] zero0;
+  logic        zero0;
+  logic [ 5:2] submode;
   logic [ 1:0] mode;
 } mtvec_t;
 
@@ -702,11 +701,13 @@ parameter dcsr_t DCSR_RESET_VAL = '{
 parameter mtvec_t MTVEC_BASIC_RESET_VAL = '{
   addr: 'd0,
   zero0: 'd0,
+  submode: 'd0,
   mode:  MTVEC_MODE_BASIC};
 
 parameter mtvec_t MTVEC_CLIC_RESET_VAL = '{
   addr: 'd0,
   zero0: 'd0,
+  submode: 'd0,
   mode:  MTVEC_MODE_CLIC};
 
 parameter mtvt_t MTVT_RESET_VAL = '{
