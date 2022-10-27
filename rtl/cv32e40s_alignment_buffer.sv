@@ -112,7 +112,6 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // Privilege level for the IF stage
   privlvl_t instr_priv_lvl_q;
 
-  // CLIC vectoring (and Zc table jumps)
   // Flag for signalling that results is a CLIC function pointer
   logic is_clic_ptr_q;
   // Flag for table jump pointer
