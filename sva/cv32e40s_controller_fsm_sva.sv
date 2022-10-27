@@ -711,7 +711,25 @@ if (SMCLIC) begin
                   !(ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.abort_op || lsu_err_wb_i || (lsu_mpu_status_wb_i != MPU_OK))))
     else `uvm_error("controller", "EX and WB may cause exceptions when mret with mcause.minhv is performed")
 
-end // SMCLIC
+end else begin // SMCLIC
+  // Check that CLIC related signals are inactive when CLIC is not configured.
+  a_clic_inactive:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  1'b1
+                  |->
+                  (ctrl_fsm_cs != POINTER_FETCH)    &&
+                  !ctrl_fsm_o.csr_cause.minhv       &&
+                  !ctrl_fsm_o.csr_clear_minhv       &&
+                  !mcause_i.minhv                   &&
+                  !if_id_pipe_i.instr_meta.clic_ptr &&
+                  !id_ex_pipe_i.instr_meta.clic_ptr &&
+                  !ex_wb_pipe_i.instr_meta.clic_ptr &&
+                  !ctrl_fsm_o.pc_set_clicv          &&
+                  !(|ctrl_fsm_o.irq_level)          &&
+                  !ctrl_fsm_o.irq_shv               &&
+                  !(|ctrl_fsm_o.irq_priv) )
+    else `uvm_error("controller", "CLIC signals active when CLIC is not configured.")
+end
 
 
 

@@ -1611,8 +1611,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     //    and a successful pointer fetch is in the ID stage (clears mcause.minhv).
     // The fields mstatus.mpp and mstatus.mpie er aliased between mcause and mstatus. The mcause write
     // due to csr_celar_minhv will however only write to mcause.minhv, and no updates to mstatus.mpp/mpie.
-    if (ctrl_fsm_i.csr_clear_minhv) begin
-      if (SMCLIC) begin
+    if (SMCLIC) begin
+      if (ctrl_fsm_i.csr_clear_minhv) begin
         // Keep mcause values, only clear minhv bit.
         // Note that mcause_rdata may have the wrong values for mpp and mpie if an mret is also in WB.
         //  - This is ok as the aliased mpp/mpie bits are stored in mstatus and not mcause, and the clearing
