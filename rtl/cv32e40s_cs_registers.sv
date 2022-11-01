@@ -1601,27 +1601,19 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         mstatus_we     = 1'b1;
 
       end //ctrl_fsm_i.csr_restore_dret
+
+      ctrl_fsm_i.csr_clear_minhv: begin
+        if (SMCLIC) begin
+          // Keep mcause values, only clear minhv bit.
+          mcause_n = mcause_rdata;
+          mcause_n.minhv = 1'b0;
+          mcause_we = 1'b1;
+        end // SMCLIC
+      end // ctrl_fsm_i.csr_clear_minhv
       default:;
     endcase
 
-    // mcause.minhv shall be cleared if vector fetch is successful
-    // Not part of the above unique case, as csr_clear_minv and csr_restore_mret
-    // may happen at the same time when an mret is executed when mcause.minhv==1
-    // -- In this case, the mret may be in WB while the controller FSM is in POINTER state
-    //    and a successful pointer fetch is in the ID stage (clears mcause.minhv).
-    // The fields mstatus.mpp and mstatus.mpie er aliased between mcause and mstatus. The mcause write
-    // due to csr_celar_minhv will however only write to mcause.minhv, and no updates to mstatus.mpp/mpie.
-    if (SMCLIC) begin
-      if (ctrl_fsm_i.csr_clear_minhv) begin
-        // Keep mcause values, only clear minhv bit.
-        // Note that mcause_rdata may have the wrong values for mpp and mpie if an mret is also in WB.
-        //  - This is ok as the aliased mpp/mpie bits are stored in mstatus and not mcause, and the clearing
-        //    of minhv does not attempt to change mcause.mpp/mpie.
-        mcause_n = mcause_rdata;
-        mcause_n.minhv = 1'b0;
-        mcause_we = 1'b1;
-      end
-    end
+
   end
 
   // Mirroring mstatus_n to mnxti_n for RVFI
@@ -2430,8 +2422,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign mtvec_rdata        = mtvec_q;
   assign mtvt_rdata         = mtvt_q;
   assign mintstatus_rdata   = mintstatus_q;
-  // Implemented threshold bits are left justified, unimplemented bits are tied to 1.
-  assign mintthresh_rdata   = {mintthresh_q[31:(7-(SMCLIC_INTTHRESHBITS-1))], {(8-SMCLIC_INTTHRESHBITS) {1'b1}}};
   assign mclicbase_rdata    = 32'h00000000;
   assign mie_rdata          = mie_q;
 
@@ -2439,6 +2429,17 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign pmpncfg_rdata      = pmpncfg_q;
   assign pmp_mseccfg_rdata  = pmp_mseccfg_q;
+  // Implemented threshold bits are left justified, unimplemented bits are tied to 1.
+  // Special case when all 8 bits are implemented to avoid zero-replication
+  generate
+    if (SMCLIC_INTTHRESHBITS < 8) begin : gen_partial_thresh
+      // Unimplemented bits within [7:0] are tied to 1. Bits 31:8 always tied to 0.
+      assign mintthresh_rdata   = {mintthresh_q[31:(7-(SMCLIC_INTTHRESHBITS-1))], {(8-SMCLIC_INTTHRESHBITS) {1'b1}}};
+    end else begin : gen_full_thresh
+      // Bits 31:8 tied to 0, all bits within [7:0] are implemented in flipflops.
+      assign mintthresh_rdata   = mintthresh_q[31:0];
+    end
+  endgenerate
 
   // mnxti_rdata breaks the regular convension for CSRs. The read data used for read-modify-write is the mstatus_rdata,
   // while the value read and written back to the GPR is a pointer address if an interrupt is pending, or zero
@@ -2609,7 +2610,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   //                                                             //
   /////////////////////////////////////////////////////////////////
 
-  localparam bit [31:0] MCOUNTINHIBIT_MASK = {{(29-NUM_MHPMCOUNTERS){1'b0}},{(NUM_MHPMCOUNTERS){1'b1}},3'b101};
+  // Calculate mask for MHPMCOUNTERS depending on how many that are implemented.
+  localparam bit [28:0] MHPMCOUNTERS_MASK = (2 ** NUM_MHPMCOUNTERS) -1;
+  // Set mask for mcountinhibit, include always included counters for mcycle and minstret.
+  localparam bit [31:0] MCOUNTINHIBIT_MASK = (MHPMCOUNTERS_MASK << 3) | 3'b101;
+
 
   // ------------------------
   // Events to count
