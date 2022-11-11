@@ -191,7 +191,9 @@ module cv32e40s_wrapper
 
   bind cv32e40s_register_file:
     core_i.register_file_wrapper_i.register_file_i cv32e40s_register_file_sva
-      #(.REGFILE_NUM_READ_PORTS (REGFILE_NUM_READ_PORTS), .RV32(RV32)) register_file_sva (.*);
+      #(.REGFILE_NUM_READ_PORTS (REGFILE_NUM_READ_PORTS),
+        .REGFILE_NUM_WORDS(core_i.register_file_wrapper_i.register_file_i.REGFILE_NUM_WORDS),
+        .RV32(RV32)) register_file_sva (.*);
 
   generate
     if (SECURE) begin
@@ -238,11 +240,6 @@ module cv32e40s_wrapper
                  .rf_waddr      (core_i.id_stage_i.rf_waddr        ),
                  .illegal_insn  (core_i.id_stage_i.illegal_insn    ),
                  .*);
-
-  bind cv32e40x_register_file:
-    core_i.register_file_wrapper_i.register_file_i cv32e40x_register_file_sva #(.RV32(RV32))
-  register_file_sva
-      (.*);
 
   generate
     if(M_EXT != M_NONE) begin: mul_sva

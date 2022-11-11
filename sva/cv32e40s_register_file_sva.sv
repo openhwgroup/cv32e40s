@@ -30,11 +30,15 @@ module cv32e40s_register_file_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
   #(
-      parameter int unsigned REGFILE_NUM_READ_PORTS = 2
+      parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
+      parameter int unsigned REGFILE_NUM_WORDS      = 32,
+      parameter rv32_e       RV32                   = RV32I
   )
   (
    input logic                          clk,
    input logic                          rst_n,
+   input rf_addr_t                      waddr_i   [REGFILE_NUM_WRITE_PORTS],
+   input logic                          we_i      [REGFILE_NUM_WRITE_PORTS],
    input logic [REGFILE_WORD_WIDTH-1:0] wdata_i   [REGFILE_NUM_WRITE_PORTS],
    input logic [REGFILE_WORD_WIDTH-1:0] rdata_o   [REGFILE_NUM_READ_PORTS],
    input logic [REGFILE_WORD_WIDTH-1:0] mem_gated [REGFILE_NUM_WORDS],
@@ -106,6 +110,17 @@ module cv32e40s_register_file_sva
 
     end
 
+  endgenerate
+
+  generate
+    if(RV32 == RV32E) begin: a_rv32e
+
+      a_rf_we_illegal :
+        assert property (@(posedge clk) disable iff (!rst_n)
+                         we_i[0] |-> waddr_i[0] <= 15)
+          else `uvm_error("regiter_file", "Write to GPR > 15 with RV32E")
+
+    end
   endgenerate
 
 endmodule : cv32e40s_register_file_sva

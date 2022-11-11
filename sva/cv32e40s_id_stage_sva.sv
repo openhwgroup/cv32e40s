@@ -35,7 +35,6 @@ module cv32e40s_id_stage_sva
 
   input logic [31:0]    instr,
   input logic [1:0]     rf_re,
-  input rf_addr_t       rf_raddr_o[2],
   input logic           rf_we,
   input logic           rf_we_dec,
   input rf_addr_t       rf_waddr,

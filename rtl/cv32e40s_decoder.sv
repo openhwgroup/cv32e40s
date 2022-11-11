@@ -113,8 +113,6 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   logic       div_en;
   logic       sys_en;
 
-  logic [31:0] instr_rdata;
-
   logic dec_i_rf_illegal_addr;
   logic dec_b_rf_illegal_addr;
   logic dec_m_rf_illegal_addr;
