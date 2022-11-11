@@ -32,7 +32,7 @@
 module cv32e40s_core import cv32e40s_pkg::*;
 #(
   parameter                             LIB                                     = 0,
-  parameter rv32_e                      RV32                                    = RV32I, // todo: Add support for RV32E
+  parameter rv32_e                      RV32                                    = RV32I,
   parameter b_ext_e                     B_EXT                                   = B_NONE,
   parameter m_ext_e                     M_EXT                                   = M,
   parameter int                         DBG_NUM_TRIGGERS                        = 1,
@@ -518,6 +518,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   //////////////////////////////////////////////////
   cv32e40s_if_stage
   #(
+    .RV32                ( RV32                     ),
     .B_EXT               ( B_EXT                    ),
     .X_EXT               ( X_EXT                    ),
     .X_ID_WIDTH          ( X_ID_WIDTH               ),
@@ -610,6 +611,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   /////////////////////////////////////////////////
   cv32e40s_id_stage
   #(
+    .RV32                         ( RV32                      ),
     .B_EXT                        ( B_EXT                     ),
     .M_EXT                        ( M_EXT                     ),
     .X_EXT                        ( X_EXT                     ),
@@ -874,6 +876,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   cv32e40s_cs_registers
   #(
     .LIB                        ( LIB                    ),
+    .RV32                       ( RV32                   ),
     .M_EXT                      ( M_EXT                  ),
     .X_EXT                      ( X_EXT                  ),
     .X_MISA                     ( X_MISA                 ),
@@ -1204,7 +1207,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   cv32e40s_register_file_wrapper
   #(
-    .REGFILE_NUM_READ_PORTS       ( REGFILE_NUM_READ_PORTS    )
+    .REGFILE_NUM_READ_PORTS       ( REGFILE_NUM_READ_PORTS ),
+    .RV32                         ( RV32                   )
   )
   register_file_wrapper_i
   (

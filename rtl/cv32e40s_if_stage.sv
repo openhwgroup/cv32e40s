@@ -28,6 +28,7 @@
 
 module cv32e40s_if_stage import cv32e40s_pkg::*;
 #(
+  parameter rv32_e       RV32            = RV32I,
   parameter b_ext_e      B_EXT           = B_NONE,
   parameter bit          X_EXT           = 0,
   parameter int          X_ID_WIDTH      = 4,
@@ -561,6 +562,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   generate
     if (ZC_EXT) begin : gen_seq
       cv32e40s_sequencer
+        #(.RV32(RV32))
       sequencer_i
       (
         .clk                  ( clk                     ),
