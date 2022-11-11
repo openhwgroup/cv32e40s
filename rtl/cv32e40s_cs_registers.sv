@@ -2516,12 +2516,14 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   cv32e40s_debug_triggers
     #(
+        .LIB              (LIB             ),
         .DBG_NUM_TRIGGERS (DBG_NUM_TRIGGERS)
     )
     debug_triggers_i
     (
-      .clk              ( clk    ),
-      .rst_n            ( rst_n  ),
+      .clk              ( clk          ),
+      .rst_n            ( rst_n        ),
+      .scan_cg_en_i     ( scan_cg_en_i ),
 
       // CSR inputs write inputs
       .csr_wdata_i      ( csr_wdata_int),

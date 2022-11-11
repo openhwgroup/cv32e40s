@@ -32,11 +32,13 @@
 module cv32e40s_debug_triggers
 import cv32e40s_pkg::*;
 #(
+  parameter     LIB              = 0,
   parameter int DBG_NUM_TRIGGERS = 1
 )
 (
   input  logic       clk,
   input  logic       rst_n,
+  input  logic       scan_cg_en_i,
 
   // CSR inputs write inputs
   input  logic [31:0] csr_wdata_i,
@@ -77,6 +79,10 @@ import cv32e40s_pkg::*;
   // CSR instance outputs
   logic [31:0] tdata1_q;
   logic [31:0] tdata2_q;
+
+  // read error signals
+  logic        tdata1_rd_error;
+  logic        tdata2_rd_error;
 
   logic unused_signals;
 
@@ -124,30 +130,38 @@ import cv32e40s_pkg::*;
 
   cv32e40s_csr
   #(
+    .LIB        (LIB),
     .WIDTH      (32),
+    .SHADOWCOPY (1'b0),
     .RESETVALUE (TDATA1_RST_VAL)
   )
   tdata1_csr_i
   (
     .clk                ( clk                   ),
     .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
     .wr_data_i          ( tdata1_n              ),
     .wr_en_i            ( tdata1_we_i           ),
-    .rd_data_o          ( tdata1_q              )
+    .rd_data_o          ( tdata1_q              ),
+    .rd_error_o         ( tdata1_rd_error       )
   );
 
   cv32e40s_csr
   #(
+    .LIB        (LIB),
     .WIDTH      (32),
+    .SHADOWCOPY (1'b0),
     .RESETVALUE (32'd0)
   )
   tdata2_csr_i
   (
     .clk                ( clk                   ),
     .rst_n              ( rst_n                 ),
+    .scan_cg_en_i       ( scan_cg_en_i          ),
     .wr_data_i          ( tdata2_n              ),
     .wr_en_i            ( tdata2_we_i           ),
-    .rd_data_o          ( tdata2_q              )
+    .rd_data_o          ( tdata2_q              ),
+    .rd_error_o         ( tdata2_rd_error       )
   );
 
   // Assign CSR read data outputs
@@ -158,5 +172,6 @@ import cv32e40s_pkg::*;
   assign tinfo_rdata_o    = 32'h4;
   assign tcontrol_rdata_o = 32'h00000000;
 
-  assign unused_signals = tselect_we_i | tinfo_we_i | tcontrol_we_i | tdata3_we_i;
+  assign unused_signals = tselect_we_i | tinfo_we_i | tcontrol_we_i | tdata3_we_i ||
+                          tdata1_rd_error | tdata2_rd_error;
 endmodule
