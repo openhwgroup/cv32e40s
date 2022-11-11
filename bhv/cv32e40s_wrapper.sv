@@ -274,6 +274,7 @@ module cv32e40s_wrapper
                               .prefetch_valid_if_i          (core_i.if_stage_i.prefetch_valid),
                               .prefetch_is_tbljmp_ptr_if_i  (core_i.if_stage_i.prefetch_is_tbljmp_ptr),
                               .lsu_trans_valid_i            (core_i.load_store_unit_i.trans_valid),
+                              .csr_en_id_i                  (core_i.id_stage_i.csr_en),
                               .*);
   bind cv32e40s_cs_registers:
     core_i.cs_registers_i
@@ -629,13 +630,13 @@ endgenerate
          .csr_mclicbase_n_i        ( core_i.cs_registers_i.mclicbase_n                                    ),
          .csr_mclicbase_q_i        ( core_i.cs_registers_i.mclicbase_rdata                                ),
          .csr_mclicbase_we_i       ( core_i.cs_registers_i.mclicbase_we                                   ),
-         .csr_tdata1_n_i           ( core_i.cs_registers_i.tdata1_n                                       ),
+         .csr_tdata1_n_i           ( core_i.cs_registers_i.debug_triggers_i.tdata1_n                      ),
          .csr_tdata1_q_i           ( core_i.cs_registers_i.tdata1_rdata                                   ),
          .csr_tdata1_we_i          ( core_i.cs_registers_i.tdata1_we                                      ),
-         .csr_tdata2_n_i           ( core_i.cs_registers_i.tdata2_n                                       ),
+         .csr_tdata2_n_i           ( core_i.cs_registers_i.debug_triggers_i.tdata2_n                      ),
          .csr_tdata2_q_i           ( core_i.cs_registers_i.tdata2_rdata                                   ),
          .csr_tdata2_we_i          ( core_i.cs_registers_i.tdata2_we                                      ),
-         .csr_tinfo_n_i            ( core_i.cs_registers_i.tinfo_n                                        ),
+         .csr_tinfo_n_i            ( core_i.cs_registers_i.debug_triggers_i.tinfo_n                       ),
          .csr_tinfo_q_i            ( core_i.cs_registers_i.tinfo_rdata                                    ),
          .csr_tinfo_we_i           ( core_i.cs_registers_i.tinfo_we                                       ),
          .csr_dcsr_n_i             ( core_i.cs_registers_i.dcsr_n                                         ),
@@ -662,7 +663,7 @@ endgenerate
          .csr_mstatush_n_i         ( core_i.cs_registers_i.mstatush_n                                     ),
          .csr_mstatush_q_i         ( core_i.cs_registers_i.mstatush_rdata                                 ),
          .csr_mstatush_we_i        ( core_i.cs_registers_i.mstatush_we                                    ),
-         .csr_tcontrol_n_i         ( core_i.cs_registers_i.tcontrol_n                                     ),
+         .csr_tcontrol_n_i         ( core_i.cs_registers_i.debug_triggers_i.tcontrol_n                    ),
          .csr_tcontrol_q_i         ( core_i.cs_registers_i.tcontrol_rdata                                 ),
          .csr_tcontrol_we_i        ( core_i.cs_registers_i.tcontrol_we                                    ),
 //todo: add tselect, tdata3

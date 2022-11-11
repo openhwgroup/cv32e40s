@@ -155,11 +155,10 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // todo:low:Above loop reasoning only applies to halt_id; for other pipeline stages a local instr_valid signal can maybe be used.
 
   // Detect when a CSR insn  in in EX or WB
-  // mret and dret implicitly writes to CSR. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.
-
+  // mret, dret and CLIC pointers implicitly writes to CSR. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.
   assign csr_write_in_ex_wb = (
-                              (id_ex_pipe_i.instr_valid && (id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn))) ||
-                              (ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn)))
+                              (id_ex_pipe_i.instr_valid && (id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn) || id_ex_pipe_i.instr_meta.clic_ptr)) ||
+                              (ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn) || ex_wb_pipe_i.instr_meta.clic_ptr))
                               );
 
   // Detect if a secure mret has its last phase (2/2) in ID while the first is in EX or WB.
