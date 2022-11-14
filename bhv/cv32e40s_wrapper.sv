@@ -191,7 +191,9 @@ module cv32e40s_wrapper
 
   bind cv32e40s_register_file:
     core_i.register_file_wrapper_i.register_file_i cv32e40s_register_file_sva
-      #(.REGFILE_NUM_READ_PORTS (REGFILE_NUM_READ_PORTS)) register_file_sva (.*);
+      #(.REGFILE_NUM_READ_PORTS (REGFILE_NUM_READ_PORTS),
+        .REGFILE_NUM_WORDS(core_i.register_file_wrapper_i.register_file_i.REGFILE_NUM_WORDS),
+        .RV32(RV32)) register_file_sva (.*);
 
   generate
     if (SECURE) begin
@@ -208,7 +210,7 @@ module cv32e40s_wrapper
   endgenerate
 
   bind cv32e40s_id_stage:
-    core_i.id_stage_i cv32e40s_id_stage_sva id_stage_sva
+    core_i.id_stage_i cv32e40s_id_stage_sva #(.RV32(RV32)) id_stage_sva
     (
       .ex_wb_pipe             (core_i.ex_wb_pipe                                  ),
       .jmp_taken_id_ctrl_i    (core_i.controller_i.controller_fsm_i.jump_taken_id ),

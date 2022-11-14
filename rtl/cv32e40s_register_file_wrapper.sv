@@ -31,7 +31,8 @@
 
 module cv32e40s_register_file_wrapper import cv32e40s_pkg::*;
   #(
-    parameter int unsigned REGFILE_NUM_READ_PORTS = 2
+    parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
+    parameter rv32_e       RV32                   = RV32I
   )
   (
    // Clock and Reset
@@ -63,7 +64,8 @@ module cv32e40s_register_file_wrapper import cv32e40s_pkg::*;
 
   cv32e40s_register_file
     #(
-      .REGFILE_NUM_READ_PORTS ( REGFILE_NUM_READ_PORTS )
+      .REGFILE_NUM_READ_PORTS ( REGFILE_NUM_READ_PORTS ),
+      .RV32                   ( RV32                   )
       )
     register_file_i
       (

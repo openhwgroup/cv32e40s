@@ -27,6 +27,8 @@
 
 module cv32e40s_decoder import cv32e40s_pkg::*;
 #(
+  parameter rv32_e       RV32                   = RV32I,
+  parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
   parameter b_ext_e      B_EXT                  = B_NONE,
   parameter m_ext_e      M_EXT                  = M,
   parameter              DEBUG_TRIGGER_EN       = 1,
@@ -83,6 +85,10 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   output logic          rf_we_o,                // Write enable for register file
   output logic [1:0]    rf_re_o,
 
+  input rf_addr_t                           rf_raddr_i[REGFILE_NUM_READ_PORTS],
+  input rf_addr_t                           rf_waddr_i,
+  output logic [REGFILE_NUM_READ_PORTS-1:0] rf_illegal_raddr_o,
+
   // Mux selects
   output op_c_mux_e     op_c_mux_sel_o,         // Operand c selection: reg value or jump target
   output imm_a_mux_e    imm_a_mux_sel_o,        // Immediate selection for operand a
@@ -107,13 +113,27 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   logic       div_en;
   logic       sys_en;
 
-  decoder_ctrl_t decoder_i_ctrl;
-  decoder_ctrl_t decoder_m_ctrl;
-  decoder_ctrl_t decoder_b_ctrl;
-  decoder_ctrl_t decoder_ctrl_mux_subdec;
+  logic dec_i_rf_illegal_addr;
+  logic dec_b_rf_illegal_addr;
+  logic dec_m_rf_illegal_addr;
+  logic rf_illegal_waddr;
+
+  decoder_ctrl_t decoder_i_ctrl, decoder_i_ctrl_int;
+  decoder_ctrl_t decoder_m_ctrl, decoder_m_ctrl_int;
+  decoder_ctrl_t decoder_b_ctrl, decoder_b_ctrl_int;
   decoder_ctrl_t decoder_ctrl_mux;
 
   assign instr_rdata = if_id_pipe_i.instr.bus_resp.rdata;
+
+  // Check for illegal GPR address if using RV32E
+  genvar rf_rport_idx;
+  generate
+    for (rf_rport_idx = 0; rf_rport_idx < REGFILE_NUM_READ_PORTS; rf_rport_idx++) begin: gen_rf_raddr_illegal
+      assign rf_illegal_raddr_o[rf_rport_idx] = (RV32 == RV32I) ? 1'b0 : rf_raddr_i[rf_rport_idx][4];
+    end
+  endgenerate
+
+  assign rf_illegal_waddr = (RV32 == RV32I) ? 1'b0 : rf_waddr_i[4];
 
   // RV32I Base instruction set decoder
   cv32e40s_i_decoder
@@ -127,8 +147,17 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
     .ctrl_fsm_i     ( ctrl_fsm_i            ),
     .priv_lvl_i     ( if_id_pipe_i.priv_lvl ),
     .mstatus_i      ( mstatus_i             ),
-    .decoder_ctrl_o ( decoder_i_ctrl        )
+    .decoder_ctrl_o ( decoder_i_ctrl_int    )
   );
+
+  assign dec_i_rf_illegal_addr = (decoder_i_ctrl_int.rf_re[0] && rf_illegal_raddr_o[0]) ||
+                                 (decoder_i_ctrl_int.rf_re[1] && rf_illegal_raddr_o[1]) ||
+                                 (decoder_i_ctrl_int.rf_we    && rf_illegal_waddr);
+
+  // Take illegal compressed instruction and illegal RV32E GPR address into account
+  assign decoder_i_ctrl = (dec_i_rf_illegal_addr || if_id_pipe_i.illegal_c_insn) ?
+                          DECODER_CTRL_ILLEGAL_INSN :
+                          decoder_i_ctrl_int;
 
   generate
 
@@ -141,9 +170,20 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
       b_decoder_i
       (
         .instr_rdata_i      ( instr_rdata                        ),
-        .decoder_ctrl_o     ( decoder_b_ctrl                     )
+        .decoder_ctrl_o     ( decoder_b_ctrl_int                 )
       );
+
+      assign dec_b_rf_illegal_addr = (decoder_b_ctrl_int.rf_re[0] && rf_illegal_raddr_o[0]) ||
+                                     (decoder_b_ctrl_int.rf_re[1] && rf_illegal_raddr_o[1]) ||
+                                     (decoder_b_ctrl_int.rf_we    && rf_illegal_waddr);
+
+      // Take illegal compressed instruction and illegal RV32E GPR address into account
+      assign decoder_b_ctrl = (dec_b_rf_illegal_addr || if_id_pipe_i.illegal_c_insn) ?
+                              DECODER_CTRL_ILLEGAL_INSN :
+                              decoder_b_ctrl_int;
+
     end else begin: no_b_decoder
+      assign dec_b_rf_illegal_addr = 1'b0;
       assign decoder_b_ctrl = DECODER_CTRL_ILLEGAL_INSN;
     end
 
@@ -155,10 +195,21 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
           )
       m_decoder_i
       (
-       .instr_rdata_i  ( instr_rdata    ),
-       .decoder_ctrl_o ( decoder_m_ctrl )
+       .instr_rdata_i  ( instr_rdata        ),
+       .decoder_ctrl_o ( decoder_m_ctrl_int )
       );
+
+      assign dec_m_rf_illegal_addr = (decoder_m_ctrl_int.rf_re[0] && rf_illegal_raddr_o[0]) ||
+                                     (decoder_m_ctrl_int.rf_re[1] && rf_illegal_raddr_o[1]) ||
+                                     (decoder_m_ctrl_int.rf_we    && rf_illegal_waddr);
+
+      // Take illegal compressed instruction and illegal RV32E GPR address into account
+      assign decoder_m_ctrl = (dec_m_rf_illegal_addr || if_id_pipe_i.illegal_c_insn) ?
+                              DECODER_CTRL_ILLEGAL_INSN :
+                              decoder_m_ctrl_int;
+
     end else begin: no_m_decoder
+      assign dec_m_rf_illegal_addr = 1'b0;
       assign decoder_m_ctrl = DECODER_CTRL_ILLEGAL_INSN;
     end
 
@@ -168,21 +219,11 @@ module cv32e40s_decoder import cv32e40s_pkg::*;
   always_comb
   begin
     unique case (1'b1)
-      !decoder_m_ctrl.illegal_insn : decoder_ctrl_mux_subdec = decoder_m_ctrl; // M decoder got a match
-      !decoder_i_ctrl.illegal_insn : decoder_ctrl_mux_subdec = decoder_i_ctrl; // I decoder got a match
-      !decoder_b_ctrl.illegal_insn : decoder_ctrl_mux_subdec = decoder_b_ctrl; // B decoder got a match
-      default                      : decoder_ctrl_mux_subdec = DECODER_CTRL_ILLEGAL_INSN; // No match from decoders, illegal instruction
+      !decoder_m_ctrl.illegal_insn : decoder_ctrl_mux = decoder_m_ctrl; // M decoder got a match
+      !decoder_i_ctrl.illegal_insn : decoder_ctrl_mux = decoder_i_ctrl; // I decoder got a match
+      !decoder_b_ctrl.illegal_insn : decoder_ctrl_mux = decoder_b_ctrl; // B decoder got a match
+      default                      : decoder_ctrl_mux = DECODER_CTRL_ILLEGAL_INSN; // No match from decoders, illegal instruction
     endcase
-  end
-
-  // Take illegal compressed instruction into account
-  always_comb begin
-    if (if_id_pipe_i.illegal_c_insn) begin
-      decoder_ctrl_mux = DECODER_CTRL_ILLEGAL_INSN;
-    end
-    else begin
-      decoder_ctrl_mux = decoder_ctrl_mux_subdec;
-    end
   end
 
   assign alu_en             = decoder_ctrl_mux.alu_en;

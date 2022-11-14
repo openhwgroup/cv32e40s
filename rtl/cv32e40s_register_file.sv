@@ -28,7 +28,8 @@
 
 module cv32e40s_register_file import cv32e40s_pkg::*;
   #(
-      parameter int unsigned REGFILE_NUM_READ_PORTS = 2
+      parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
+      parameter rv32_e       RV32                   = RV32I
   )
   (
     // Clock and Reset
@@ -52,6 +53,10 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
 
   // When implemented, reset registers with valid ECC (w/every other ecc bit inverted)
   localparam logic [REGFILE_WORD_WIDTH-1:0] RF_REG_RV = (SECURE) ? {6'b10_1010, 32'h0} : 32'h0;
+
+  // Number of regfile integer registers
+  localparam REGFILE_NUM_WORDS = (RV32 == RV32I) ? 32 : 16;
+  localparam REGFILE_IMPL_ADDR_WIDTH = $clog2(REGFILE_NUM_WORDS);
 
   // integer register file
   logic [REGFILE_WORD_WIDTH-1:0]          mem       [REGFILE_NUM_WORDS];
@@ -77,7 +82,7 @@ module cv32e40s_register_file import cv32e40s_pkg::*;
   genvar ridx;
   generate
     for (ridx=0; ridx<REGFILE_NUM_READ_PORTS; ridx++) begin : gen_regfile_rdata
-      assign rdata_o[ridx] = mem_gated[raddr_i[ridx]];
+      assign rdata_o[ridx] = mem_gated[raddr_i[ridx][REGFILE_IMPL_ADDR_WIDTH-1:0]];
     end
   endgenerate
 
