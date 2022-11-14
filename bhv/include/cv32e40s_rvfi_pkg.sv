@@ -21,10 +21,11 @@
 package cv32e40s_rvfi_pkg;
   import cv32e40s_pkg::*;
 
-  parameter STAGE_IF = 0;
-  parameter STAGE_ID = 1;
-  parameter STAGE_EX = 2;
-  parameter STAGE_WB = 3;
+  parameter STAGE_IF      = 0;
+  parameter STAGE_ID      = 1;
+  parameter STAGE_EX      = 2;
+  parameter STAGE_WB      = 3;
+  parameter STAGE_WB_PAST = 4;
 
   parameter NMEM = 128;
 
