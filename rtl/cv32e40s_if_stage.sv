@@ -505,12 +505,13 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
           if_id_pipe_o.pc                    <= pc_if_o;
           // Sequenced instructions are marked as illegal by the compressed decoder, however, the instr_compressed
           // flag is still set and can be used when propagating to ID.
+          // Dummy instructions are never marked as compressed or tablejumps.
           if_id_pipe_o.instr_meta.compressed <= dummy_insert ? 1'b0 : instr_compressed;
-          if_id_pipe_o.instr_meta.tbljmp     <= seq_tbljmp;
+          if_id_pipe_o.instr_meta.tbljmp     <= dummy_insert ? 1'b0 : seq_tbljmp;
 
           // Only update compressed_instr for compressed instructions
           if (instr_compressed) begin
-            if_id_pipe_o.compressed_instr      <= prefetch_instr.bus_resp.rdata[15:0];
+            if_id_pipe_o.compressed_instr    <= prefetch_instr.bus_resp.rdata[15:0];
           end
         end
 

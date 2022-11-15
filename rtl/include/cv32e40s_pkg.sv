@@ -1300,6 +1300,7 @@ typedef struct packed {
 
   logic         first_op;         // First part of multi operation instruction
   logic         last_op;          // Last part of multi operation instruction
+  logic         last_sec_op;      // Last part of SECURE jump/mret/branch. (NB: mret may have last_sec_op && !last_op in case it caused a pointer fetch)
   logic         abort_op;         // Instruction will be aborted due to known exceptions or trigger matches
 
 } id_ex_pipe_t;
@@ -1350,6 +1351,7 @@ typedef struct packed {
 
   logic         first_op;         // First part of multi operation instruction
   logic         last_op;          // Last part of multi operation instruction
+  logic         last_sec_op;      // Last part of SECURE jump/mret/branch. (NB: mret may have last_sec_op && !last_op in case it caused a pointer fetch)
   logic         abort_op;         // Instruction will be aborted due to known exceptions or trigger matches
 } ex_wb_pipe_t;
 
