@@ -357,7 +357,7 @@ module cv32e40s_wrapper
                 .mret_self_stall_bypass           (core_i.controller_i.bypass_i.mret_self_stall),
                 .jumpr_self_stall_bypass          (core_i.controller_i.bypass_i.jumpr_self_stall),
                 .last_sec_op_id_i                 (core_i.id_stage_i.last_sec_op),
-                .last_op_id                       (core_i.id_stage_i.last_op),
+                .last_op_id                       (core_i.id_stage_i.last_op_o),
                 .mie_n                            (core_i.cs_registers_i.mie_n),
                 .mie_we                           (core_i.cs_registers_i.mie_we),
                 .*);
