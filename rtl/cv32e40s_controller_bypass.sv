@@ -167,8 +167,18 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // Using qualified or unqualified from ID does not matter for the value of the self_stall (assert in core_sva).
   // ctrl_byp_o.deassert_we needs to be 1 for the sys_en to be deasserted, and this cannot
   // happen for the last part (ID) if it didn't already happen to the first part (EX or WB).
+  //
   // Note that if an mret restarts a CLIC pointer fetch, the second part of the mret with last_sec_op == 1
   // will have last_op == 0, the final step carrying the pointer will be marked with last_op == 1.
+  // MRET pointers will still have sys_mret_unqual_id set to 1 when the pointer is in the ID stage, and last_sec_op_id_i will be 1 as the ID stage does not split/harden mret pointers.
+  //   This may cause a condition where the first mret operation is in WB, the second in EX and the pointer is in ID (given optimal bus timing). This will then not cause a mret_self_stall
+  //   as described below. This will cause a stall cycle for the mret_ptr in ID until the first part of the mret has finished in WB.
+  //
+  //      ID      |  EX              | WB
+  //     mret_ptr | mret last_sec_op | mret !last_sec_op
+  //     mret_ptr | <bubble>         | mret last_sec_op
+  //     x        | mret_ptr         | <bubble>
+  //
   //
   // Last line excludes setting the self stall signal in case a last part of an mret is in EX stage.
   // - Last part of mret in EX means any mret in ID must a different mret instruction.
