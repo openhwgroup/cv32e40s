@@ -99,7 +99,6 @@ module cv32e40s_core_sva
   input logic [31:0]   operand_a_id_i,
   input logic [31:0]   operand_b_id_i,
   input logic [31:0]   jalr_fw_id_i,
-  input logic          last_op_id,
   input logic [31:0]   rf_wdata_wb,
   input logic          rf_we_wb,
   input rf_addr_t      rf_waddr_wb,
