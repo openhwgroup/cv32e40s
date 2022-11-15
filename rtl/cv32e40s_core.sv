@@ -642,6 +642,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // CSR ID/EX
     .mstatus_i                    ( mstatus                   ),
     .xsecure_ctrl_i               ( xsecure_ctrl              ),
+    .mcause_i                     ( mcause                    ),
 
     // Register file write back and forwards
     .rf_wdata_ex_i                ( rf_wdata_ex               ),

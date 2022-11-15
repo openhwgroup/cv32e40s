@@ -46,7 +46,9 @@ module cv32e40s_if_stage_sva
   input  logic          prefetch_is_tbljmp_ptr,
   input  logic          first_op_nondummy_o,
   input  logic          first_op,
-  input  logic          last_op_o
+  input  logic          last_op_o,
+  input  logic          prefetch_is_clic_ptr,
+  input  logic          prefetch_is_mret_ptr
 );
 
   // Check that bus interface transactions are halfword aligned (will be forced word aligned at core boundary)
@@ -154,5 +156,13 @@ module cv32e40s_if_stage_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                       dummy_insert |-> (first_op && last_op_o))
         else `uvm_error("if_stage", "Dummies must have first_op and last_opo set.")
+
+  // CLIC pointers and mret pointers can't both be set at the same time
+  a_clic_mret_ptr_unique:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (prefetch_is_mret_ptr || prefetch_is_clic_ptr)
+                      |->
+                      prefetch_is_mret_ptr != prefetch_is_clic_ptr)
+        else `uvm_error("if_stage", "prefetch_is_mret_ptr high at the same time as prefetch_is_clic_ptr.")
 endmodule
 
