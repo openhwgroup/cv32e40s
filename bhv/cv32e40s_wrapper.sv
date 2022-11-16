@@ -70,7 +70,8 @@ module cv32e40s_wrapper
   parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
   parameter lfsr_cfg_t   LFSR0_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
   parameter lfsr_cfg_t   LFSR1_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
-  parameter lfsr_cfg_t   LFSR2_CFG                    = LFSR_CFG_DEFAULT  // Do not use default value for LFSR configuration
+  parameter lfsr_cfg_t   LFSR2_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
+  parameter bit          CORE_LOG_ENABLE              = 1
 )
 (
   // Clock and Reset
@@ -480,6 +481,7 @@ endgenerate
 `endif //  `ifndef COREV_ASSERT_OFF
 
     cv32e40s_core_log
+      #(.ENABLE(CORE_LOG_ENABLE))
     core_log_i(
           .clk_i              ( core_i.id_stage_i.clk              ),
           .ex_wb_pipe_i       ( core_i.ex_wb_pipe                  ),
