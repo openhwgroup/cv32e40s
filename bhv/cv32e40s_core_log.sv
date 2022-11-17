@@ -38,26 +38,32 @@
 
 module cv32e40s_core_log import cv32e40s_pkg::*;
 #(
+  parameter bit ENABLE = 1
 // todo: log all parameters
 )
 (
   input logic        clk_i,
   input ex_wb_pipe_t ex_wb_pipe_i,
   input logic [31:0] mhartid_i
-  
+
 );
 
 `ifndef FORMAL
-  // todo: Log top level parameter values
+  generate begin
+    if (ENABLE == 1'b1) begin
+      // todo: Log top level parameter values
 
-  // Log illegal instructions
-  always_ff @(negedge clk_i)
-  begin
-    // print warning in case of decoding errors
-    if (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.illegal_insn) begin
-      $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, mhartid_i[3:0], ex_wb_pipe_i.pc);
+      // Log illegal instructions
+      always_ff @(negedge clk_i)
+      begin
+        // print warning in case of decoding errors
+        if (ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.illegal_insn) begin
+          $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, mhartid_i[3:0], ex_wb_pipe_i.pc);
+        end
+      end
     end
   end
+  endgenerate
 `endif
 
 endmodule // cv32e40s_core_log
