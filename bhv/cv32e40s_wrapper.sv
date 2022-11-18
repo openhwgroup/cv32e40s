@@ -439,12 +439,10 @@ endgenerate
                .PMA_CFG(PMA_CFG))
       write_buffer_sva(.*);
 
-/* todo: reintroduce once ZC_EXT is set to 1 by default.
   bind cv32e40s_sequencer:
     core_i.if_stage_i.gen_seq.sequencer_i
       cv32e40s_sequencer_sva
         sequencer_sva (.*);
-*/
 
   bind cv32e40s_instr_obi_interface :
     core_i.if_stage_i.instruction_obi_i
