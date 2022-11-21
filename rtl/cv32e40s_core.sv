@@ -154,8 +154,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   localparam int unsigned REGFILE_NUM_READ_PORTS = X_EXT ? X_NUM_RS : 2;
 
   // Zc is always present
-  // todo: turn on when Zc is ready for core-v-verif
-  localparam bit ZC_EXT = 0;
+  localparam bit ZC_EXT = 1;
 
   // Determine alignedness of mtvt
   // mtvt[31:N] holds mtvt table entry
