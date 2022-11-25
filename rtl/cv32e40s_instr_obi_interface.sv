@@ -165,7 +165,7 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
       ^{m_c_obi_instr_if.req_payload.addr[31:24]},
       ^{m_c_obi_instr_if.req_payload.addr[23:16]},
       ^{m_c_obi_instr_if.req_payload.addr[15:8]},
-      ^{m_c_obi_instr_if.req_payload.addr[7:2]}
+      ^{m_c_obi_instr_if.req_payload.addr[7:0]}
     };
   end
 
