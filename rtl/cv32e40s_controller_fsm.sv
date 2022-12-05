@@ -695,6 +695,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           // Set alert major if NMI is due to integrity
           ctrl_fsm_o.exception_alert_major = nmi_is_integrity_q;
 
+          // Set minor alert if NMI is due to bus errors
+          ctrl_fsm_o.exception_alert_minor = !nmi_is_integrity_q;
+
           // Keep mcause.minhv when taking exceptions and interrupts, only cleared on successful pointer fetches or CSR writes.
           ctrl_fsm_o.csr_cause.minhv  = mcause_i.minhv;
 
