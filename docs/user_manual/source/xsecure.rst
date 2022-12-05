@@ -34,6 +34,7 @@ The following issues result in a major security alert on ``alert_major_o``:
 * Instruction parity/checksum fault (i.e. when triggering the related exception).
 * Store parity/checksum fault (i.e. when triggering the related NMI).
 * Load parity/checksum fault NMI (i.e. when triggering the related NMI).
+* Bus protocol error.
 
 The following issues result in a minor security alert on ``alert_minor_o``:
 
