@@ -40,6 +40,7 @@
   `include "cv32e40s_clic_int_controller_sva.sv"
   `include "cv32e40s_instr_obi_interface_sva.sv"
   `include "cv32e40s_data_obi_interface_sva.sv"
+  `include "cv32e40s_wpt_sva.sv"
 `endif
 
 `include "cv32e40s_wrapper.vh"
@@ -285,7 +286,8 @@ module cv32e40s_wrapper
     core_i.cs_registers_i
       cv32e40s_cs_registers_sva
         #(.SMCLIC(SMCLIC))
-        cs_registers_sva (.wb_valid_i (core_i.wb_valid),
+        cs_registers_sva (.wb_valid_i  (core_i.wb_valid                                 ),
+                          .ctrl_fsm_cs (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
                           .*);
 
   bind cv32e40s_load_store_unit:
@@ -293,9 +295,24 @@ module cv32e40s_wrapper
       // The SVA's monitor modport can't connect to a master modport, so it is connected to the interface instance directly:
       .m_c_obi_data_if(core_i.m_c_obi_data_if),
       .ex_wb_pipe_i   (core_i.ex_wb_pipe),
+      .id_valid       (core_i.id_valid),
+      .ex_ready       (core_i.ex_ready),
+      .lsu_en_id      (core_i.id_stage_i.lsu_en),
+      .ctrl_fsm_cs    (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
+      .ctrl_fsm_ns    (core_i.controller_i.controller_fsm_i.ctrl_fsm_ns),
       .*);
 
-  bind cv32e40s_prefetch_unit:
+  generate
+    if (DBG_NUM_TRIGGERS > 0) begin : wpt_sva
+      bind cv32e40x_wpt:
+        core_i.load_store_unit_i.gen_wpt.wpt_i
+          cv32e40x_wpt_sva wpt_sva(
+            .mpu_state (core_i.load_store_unit_i.mpu_i.state_q),
+            .*);
+    end
+  endgenerate
+
+  bind cv32e40x_prefetch_unit:
     core_i.if_stage_i.prefetch_unit_i
       cv32e40s_prefetch_unit_sva
       #(.SMCLIC(SMCLIC))
@@ -335,9 +352,11 @@ module cv32e40s_wrapper
                 .exc_cause                        (core_i.controller_i.controller_fsm_i.exc_cause),
                 // probed controller signals
                 .ctrl_debug_mode_n                (core_i.controller_i.controller_fsm_i.debug_mode_n),
-                .ctrl_pending_debug               (core_i.controller_i.controller_fsm_i.pending_debug),
-                .ctrl_debug_allowed               (core_i.controller_i.controller_fsm_i.debug_allowed),
                 .id_stage_multi_op_id_stall       (core_i.id_stage_i.multi_op_id_stall),
+                .ctrl_pending_async_debug         (core_i.controller_i.controller_fsm_i.pending_async_debug),
+                .ctrl_async_debug_allowed         (core_i.controller_i.controller_fsm_i.async_debug_allowed),
+                .ctrl_pending_sync_debug          (core_i.controller_i.controller_fsm_i.pending_sync_debug),
+                .ctrl_sync_debug_allowed          (core_i.controller_i.controller_fsm_i.sync_debug_allowed),
                 .ctrl_pending_interrupt           (core_i.controller_i.controller_fsm_i.pending_interrupt),
                 .ctrl_interrupt_allowed           (core_i.controller_i.controller_fsm_i.interrupt_allowed),
                 .ctrl_debug_cause_n               (core_i.controller_i.controller_fsm_i.debug_cause_n),
@@ -574,7 +593,6 @@ endgenerate
          .single_step_allowed_i    ( core_i.controller_i.controller_fsm_i.single_step_allowed             ),
          .nmi_pending_i            ( core_i.controller_i.controller_fsm_i.nmi_pending_q                   ),
          .nmi_is_store_i           ( core_i.controller_i.controller_fsm_i.nmi_is_store_q                  ),
-         .pending_debug_i          ( core_i.controller_i.controller_fsm_i.pending_debug                   ),
          .debug_mode_q_i           ( core_i.controller_i.controller_fsm_i.debug_mode_q                    ),
          .irq_i                    ( core_i.irq_i & IRQ_MASK                                              ),
          .irq_wu_ctrl_i            ( core_i.irq_wu_ctrl                                                   ),

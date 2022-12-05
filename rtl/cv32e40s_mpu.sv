@@ -90,6 +90,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   logic [33:0] pmp_req_addr;
   logic        instr_fetch_access;
   logic        load_access;
+  logic        wpt_match;
 
   // FSM that will "consume" transfers failing PMA or PMP checks.
   // Upon failing checks, this FSM will prevent the transfer from going out on the bus
@@ -243,10 +244,11 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
       assign pmp_req_type       = PMP_ACC_EXEC;
     end
     else begin: mpu_lsu
-      assign instr_fetch_access = 1'b0;
-      assign load_access        = !core_trans_i.we;
-      assign core_trans_we      = core_trans_i.we;
-      assign pmp_req_type       = core_trans_we ? PMP_ACC_WRITE : PMP_ACC_READ;
+      assign instr_fetch_access    = 1'b0;
+      assign load_access           = !core_trans_i.we;
+      assign core_trans_we         = core_trans_i.we;
+      assign pmp_req_type          = core_trans_we ? PMP_ACC_WRITE : PMP_ACC_READ;
+      assign core_resp_o.wpt_match = 1'b0; // Will be set by upstream wpt-module within load_store_unit
     end
   endgenerate
 

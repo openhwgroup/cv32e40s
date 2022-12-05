@@ -30,6 +30,8 @@ Instantiation Template
       .RV32                     (            RV32I ),
       .B_EXT                    (             NONE ),
       .M_EXT                    (                M ),
+      .DM_REGION_START          (     32'hF0000000 ),
+      .DM_REGION_END            (     32'hF0003FFF ),
       .DBG_NUM_TRIGGERS         (                1 ),
       .PMP_GRANULARITY          (                0 ),
       .PMP_NUM_REGIONS          (                0 ),
@@ -152,6 +154,10 @@ Parameters
   |                              |                |                  | divide instructions are supported. ``M_EXT`` = ZMMUL: The          |
   |                              |                |                  | multiplication subset of the ``M`` extension is supported.         |
   |                              |                |                  | ``M_EXT`` = M: The ``M`` extension is supported.                   |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``DM_REGION_START``          | logic [31:0]   | 32'hF0000000     | Start address of Debug Module region, see :ref:`debug-support`     |
+  +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``DM_REGION_END``            | logic [31:0]   | 32'hF0003FFF     | End address of Debug Module region, see :ref:`debug-support`       |
   +------------------------------+----------------+------------------+--------------------------------------------------------------------+
   | ``DBG_NUM_TRIGGERS``         | int (0..4 )    | 1                | Number of debug triggers, see :ref:`debug-support`                 |
   +------------------------------+----------------+------------------+--------------------------------------------------------------------+

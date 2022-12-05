@@ -32,13 +32,23 @@ module cv32e40s_load_store_unit_sva
    input logic       count_up,
    input logic       count_down,
    input ctrl_fsm_t  ctrl_fsm_i,
+   input ctrl_state_e ctrl_fsm_ns,
+   input ctrl_state_e ctrl_fsm_cs,
    input logic       trans_valid,
    input logic       split_q,
    input mpu_status_e lsu_mpu_status_1_o, // WB mpu status
    input ex_wb_pipe_t ex_wb_pipe_i,
    if_c_obi.monitor  m_c_obi_data_if,
    input logic       xif_req,
-   input logic       xif_res_q
+   input logic       xif_res_q,
+   input logic       id_valid,
+   input logic       ex_ready,
+   input logic       lsu_en_id,
+   input logic       lsu_first_op_0_o,
+   input logic       valid_0_i,
+   input logic       ready_0_i,
+   input logic       trigger_match_0_i,
+   input logic       lsu_wpt_match_1_o
   );
 
   // Check that outstanding transaction count will not overflow DEPTH
@@ -129,10 +139,20 @@ module cv32e40s_load_store_unit_sva
     else `uvm_error("load_store_unit", "Second half of split transaction was killed")
 
   // cnt_q == 2'b00 shall be the same as !(ex_wb_pipe.lsu_en && ex_wb_pipe_i.instr_valid)
+  // With a watchpoint match, the LSU counter may clear while WB is halted for synchronous debug entry, leaving cnt=0 while lsu_en in WB is true.
   a_cnt_zero:
   assert property (@(posedge clk) disable iff (!rst_n)
-                    (cnt_q == 2'b00) |-> !(ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid))
+                    (cnt_q == 2'b00) && !(ctrl_fsm_cs == DEBUG_TAKEN) |-> !(ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid))
       else `uvm_error("load_store_unit", "cnt_q is zero when WB contains a valid LSU instruction")
+
+  // The only cause of (cnt_q==0) with a valid LSU instruction in WB is a watchpoint trigger.
+  // Assertions checks that this is the case and that a debug entry is taking place.
+  a_lsu_cnt_nonzero_wpt:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  (cnt_q == 2'b00) && (ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid)
+                  |->
+                  $past(lsu_wpt_match_1_o) && (ctrl_fsm_cs == DEBUG_TAKEN))
+      else `uvm_error("load_store_unit", "Illegal cause of cnt_q=0 while a valid LSU instruction is in WB")
 
   // Check that no XIF request or result are produced if X_EXT is disabled
   a_lsu_no_xif_req_if_xext_disabled:
@@ -144,5 +164,23 @@ module cv32e40s_load_store_unit_sva
                   !X_EXT |-> !xif_res_q)
     else `uvm_error("load_store_unit", "XIF transaction result despite X_EXT being disabled")
 
-endmodule // cv32e40s_load_store_unit_sva
+  // split_q must be 0 when a new LSU instruction enters the LSU
+  a_clear_splitq:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  (id_valid && ex_ready && lsu_en_id)
+                  |=>
+                  !split_q && lsu_first_op_0_o)
+    else `uvm_error("load_store_unit", "split_q not zero for a new LSU instruction")
+
+  // trigger_match_0_i must remain stable while the instruction is in EX
+  a_stable_tmatch:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  (valid_0_i && !ready_0_i)
+                  |=>
+                  $stable(trigger_match_0_i) until_with(ready_0_i))
+    else `uvm_error("load_store_unit", "trigger_match_0_i changed before ready_0_i became 1")
+
+
+
+endmodule
 

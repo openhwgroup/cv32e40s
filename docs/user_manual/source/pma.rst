@@ -32,7 +32,7 @@ Memory ranges can be defined as either main (``main=1``) or I/O (``main=0``).
 Code execution is allowed from main memory and main memory is considered to be idempotent. Non-aligned transactions are supported in main memory.
 Modifiable transactions are supported in main memory.
 
-Code execution is not allowed from I/O regions and an instruction access fault (exception code 1) is raised when attempting to execute from such regions. 
+Code execution is not allowed from I/O regions and an instruction access fault (exception code 1) is raised when attempting to execute from such regions.
 I/O regions are considered to be non-idempotent and therefore the PMA will prevent speculative accesses to such regions.
 Non-aligned transactions are not supported in I/O regions. An attempt to perform a non-naturally aligned load access to an I/O region causes a precise
 load access fault (exception code 5). An attempt to perform a non-naturally aligned store access to an I/O region causes a precise store access fault (exception code 7).
@@ -48,10 +48,6 @@ load access fault (exception code 5). An attempt to perform a modifiable/modifie
 .. note::
    Modifiable transactions are transactions which allow transformations as for example merging or splitting. For example, a misaligned store word instruction that
    is handled as two subword transactions on the data interface is considered to use modified transactions.
-
-.. note::
-   As execution based debug is used, the Debug Module (with code entry points defined by ``dm_halt_addr_i`` and ``dm_exception_addr_i``) needs to be located
-   in a memory region that supports code execution, i.e. in a region defined as main.
 
 Bufferable and Cacheable
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -80,6 +76,7 @@ Integrity check errors can lead to the following alerts, exceptions and NMIs:
 
 How OBI input signals are checked is further explained in :ref:`interface-integrity`.
 
+
 Default attribution
 ~~~~~~~~~~~~~~~~~~~
 If the PMA is deconfigured (``PMA_NUM_REGIONS=0``), the entire memory range will be treated as main memory (``main=1``), non-bufferable (``bufferable=0``), non-cacheable (``cacheable=0``) and no integrity (``integrity=0``).
@@ -88,3 +85,13 @@ If the PMA is configured (``PMA_NUM_REGIONS > 0``), memory regions not covered b
 
 Every instruction fetch, load and store will be subject to PMA checks and failed checks will result in an exception. PMA checks cannot be disabled.
 See :ref:`exceptions-interrupts` for details.
+
+Debug mode
+~~~~~~~~~~
+Accesses to the Debug Module region, as defined by the ``DM_REGION_START`` and ``DM_REGION_END`` parameters, while in debug mode are treated specially.
+For such accesses the PMA configuration and default attribution rules are ignored and the following applies instead:
+
+ * The access is treated as a main memory access.
+ * The access is treated as a non-bufferable access.
+ * The access is treated as a non-cacheable access.
+ * The access is treated as an access to a region without support for atomic operations.
