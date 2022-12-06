@@ -49,6 +49,8 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   output logic [31:0]    fetch_branch_addr_o,
   output logic           fetch_ptr_access_o,
   input  logic           fetch_ptr_access_i,
+  output privlvl_t       fetch_priv_lvl_o,
+  input  privlvl_t       fetch_priv_lvl_i,
 
   // Resp interface
   input  logic           resp_valid_i,
@@ -646,12 +648,6 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // Output instruction address to if_stage
   assign instr_addr_o = addr_q;
 
-  // Privilege level must be updated immediatly to allow the
-  // IF stage to do PMP checks with the correct privilege level
-  // todo: Route priv_lvl through the prefetcher in the same way as fetch_data_access_o.
-  // todo: remove code below and use priv_lvl_ctrl_i.priv_lvl (should be SEC clean)
-  assign instr_priv_lvl_o = priv_lvl_ctrl_i.priv_lvl_set ? priv_lvl_ctrl_i.priv_lvl:
-                            instr_priv_lvl_q;
 
   always_ff @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
@@ -678,4 +674,14 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
   // Set protocol error
   assign protocol_err_o = resp_valid_i && !(|outstanding_cnt_q);
+
+  // Set privilege level to prefetcher
+  // Privilege level must be updated immediatly to allow the
+  // IF stage to do PMP checks with the correct privilege level
+  // todo: remove code below and use priv_lvl_ctrl_i.priv_lvl (should be SEC clean)
+  assign fetch_priv_lvl_o = priv_lvl_ctrl_i.priv_lvl_set ? priv_lvl_ctrl_i.priv_lvl:
+                            instr_priv_lvl_q;
+
+  // Set privilege level to IF stage
+  assign instr_priv_lvl_o = fetch_priv_lvl_i;
 endmodule

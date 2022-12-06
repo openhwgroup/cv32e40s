@@ -1312,7 +1312,7 @@ typedef struct packed {
   instr_meta_t  instr_meta;
   logic         instr_valid;      // instruction in EX is valid
 
-  // Priviledge level
+  // Privilege level
   privlvl_t    priv_lvl;
 
   // eXtension interface
@@ -1356,6 +1356,8 @@ typedef struct packed {
   instr_meta_t  instr_meta;
   logic         instr_valid;      // instruction in WB is valid
   logic         illegal_insn;
+
+  privlvl_t     priv_lvl;
 
   logic         sys_en;
   logic         sys_dret_insn;

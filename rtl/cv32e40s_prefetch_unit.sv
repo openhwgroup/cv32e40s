@@ -77,6 +77,8 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   logic [31:0] fetch_branch_addr;
   logic        fetch_ptr_access;
   logic        fetch_ptr_resp;
+  privlvl_t    fetch_priv_lvl_access;
+  privlvl_t    fetch_priv_lvl_resp;
 
 
 
@@ -99,7 +101,8 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
     .fetch_ready_o            ( fetch_ready          ),
     .fetch_ptr_access_i       ( fetch_ptr_access     ),
     .fetch_ptr_access_o       ( fetch_ptr_resp       ),
-
+    .fetch_priv_lvl_access_i  ( fetch_priv_lvl_access),
+    .fetch_priv_lvl_access_o  ( fetch_priv_lvl_resp  ),
     .trans_valid_o            ( trans_valid_o        ),
     .trans_ready_i            ( trans_ready_i        ),
     .trans_addr_o             ( trans_addr_o         )
@@ -131,6 +134,8 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
     .fetch_branch_addr_o   ( fetch_branch_addr       ),
     .fetch_ptr_access_o    ( fetch_ptr_access        ),
     .fetch_ptr_access_i    ( fetch_ptr_resp          ),
+    .fetch_priv_lvl_o      ( fetch_priv_lvl_access   ),
+    .fetch_priv_lvl_i      ( fetch_priv_lvl_resp     ),
 
     .resp_valid_i          ( resp_valid_i            ),
     .resp_i                ( resp_i                  ),
