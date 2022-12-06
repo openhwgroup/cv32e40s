@@ -969,7 +969,7 @@ parameter EXC_CAUSE_STORE_FAULT           = 11'h07;
 parameter EXC_CAUSE_ECALL_UMODE           = 11'h08;
 parameter EXC_CAUSE_ECALL_MMODE           = 11'h0B;
 parameter EXC_CAUSE_INSTR_INTEGRITY_FAULT = 11'h19;
-parameter EXC_CAUSE_INSTR_BUS_FAULT       = 11'h30;
+parameter EXC_CAUSE_INSTR_BUS_FAULT       = 11'h18;
 
 parameter logic [31:0] ETRIGGER_TDATA2_MASK = (1 << EXC_CAUSE_INSTR_BUS_FAULT) | (1 << EXC_CAUSE_INSTR_INTEGRITY_FAULT) | (1 << EXC_CAUSE_ECALL_MMODE) | (1 << EXC_CAUSE_ECALL_UMODE) | (1 << EXC_CAUSE_STORE_FAULT) |
                                               (1 << EXC_CAUSE_LOAD_FAULT) | (1 << EXC_CAUSE_BREAKPOINT) | (1 << EXC_CAUSE_ILLEGAL_INSN) | (1 << EXC_CAUSE_INSTR_FAULT);
@@ -1312,7 +1312,7 @@ typedef struct packed {
   instr_meta_t  instr_meta;
   logic         instr_valid;      // instruction in EX is valid
 
-  // Priviledge level
+  // Privilege level
   privlvl_t    priv_lvl;
 
   // eXtension interface
@@ -1356,6 +1356,8 @@ typedef struct packed {
   instr_meta_t  instr_meta;
   logic         instr_valid;      // instruction in WB is valid
   logic         illegal_insn;
+
+  privlvl_t     priv_lvl;
 
   logic         sys_en;
   logic         sys_dret_insn;

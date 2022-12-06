@@ -392,12 +392,14 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
       ex_wb_pipe_o.last_op            <= 1'b0;
       ex_wb_pipe_o.last_sec_op        <= 1'b0;
       ex_wb_pipe_o.abort_op           <= 1'b0;
+
+      ex_wb_pipe_o.priv_lvl           <= PRIV_LVL_M;
     end
     else
     begin
       if (ex_valid_o && wb_ready_i) begin
         ex_wb_pipe_o.instr_valid <= 1'b1;
-
+        ex_wb_pipe_o.priv_lvl    <= id_ex_pipe_i.priv_lvl;
         ex_wb_pipe_o.last_op     <= last_op_o;
         ex_wb_pipe_o.last_sec_op <= id_ex_pipe_i.last_sec_op;
         ex_wb_pipe_o.first_op    <= first_op_o;

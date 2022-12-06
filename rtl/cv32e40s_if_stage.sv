@@ -77,6 +77,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   output logic          csr_mtvec_init_o,       // Tell CS regfile to init mtvec
   output logic          if_busy_o,              // Is the IF stage busy fetching instructions?
   output logic          ptr_in_if_o,            // The IF stage currently holds a pointer
+  output privlvl_t      priv_lvl_if_o,          // Privilege level of the instruction currently in IF
 
   output logic          first_op_nondummy_o,
   output logic          last_op_o,
@@ -445,6 +446,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
                       (instr_decompressed.bus_resp.integrity_err) || trigger_match_i);
 
   assign prefetch_valid_o = prefetch_valid;
+
+  // Signal current privilege level of IF
+  assign priv_lvl_if_o = prefetch_priv_lvl;
+
   // Populate instruction meta data
   // Fields 'compressed' and 'tbljmp' keep their old value by default.
   //   - In case of a table jump we need the fields to stay as 'compressed=1' and 'tbljmp=1'
@@ -485,6 +490,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       if (if_valid_o && id_ready_i) begin
         if_id_pipe_o.instr_valid      <= 1'b1;
         if_id_pipe_o.instr_meta       <= instr_meta_n;
+
         // seq_valid implies no illegal instruction, sequencer successfully decoded an instruction.
         // compressed decoder will still raise illegal_c_insn as it doesn't (currently) recognize Zc push/pop/dmove
         if_id_pipe_o.illegal_c_insn   <= (seq_valid || dummy_insert) ? 1'b0 : illegal_c_insn;
