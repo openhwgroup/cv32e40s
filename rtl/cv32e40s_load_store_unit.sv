@@ -661,7 +661,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   // be returned with the response with WB timing.
   generate
     if (DBG_NUM_TRIGGERS > 0) begin : gen_wpt
-      cv32e40x_wpt wpt_i
+      cv32e40s_wpt wpt_i
         (
         .clk                 ( clk               ),
         .rst_n               ( rst_n             ),

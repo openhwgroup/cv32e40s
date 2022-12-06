@@ -304,15 +304,15 @@ module cv32e40s_wrapper
 
   generate
     if (DBG_NUM_TRIGGERS > 0) begin : wpt_sva
-      bind cv32e40x_wpt:
+      bind cv32e40s_wpt:
         core_i.load_store_unit_i.gen_wpt.wpt_i
-          cv32e40x_wpt_sva wpt_sva(
+          cv32e40s_wpt_sva wpt_sva(
             .mpu_state (core_i.load_store_unit_i.mpu_i.state_q),
             .*);
     end
   endgenerate
 
-  bind cv32e40x_prefetch_unit:
+  bind cv32e40s_prefetch_unit:
     core_i.if_stage_i.prefetch_unit_i
       cv32e40s_prefetch_unit_sva
       #(.SMCLIC(SMCLIC))

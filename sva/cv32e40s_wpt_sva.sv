@@ -23,7 +23,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_wpt_sva import cv32e40x_pkg::*; import uvm_pkg::*;
+module cv32e40s_wpt_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   (
    input logic        clk,
    input logic        rst_n,
