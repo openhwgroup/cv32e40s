@@ -111,8 +111,10 @@ module cv32e40s_core_sva
 
   // probed controller signals
   input logic        ctrl_debug_mode_n,
-  input logic        ctrl_pending_debug,
-  input logic        ctrl_debug_allowed,
+  input logic        ctrl_pending_async_debug,
+  input logic        ctrl_async_debug_allowed,
+  input logic        ctrl_pending_sync_debug,
+  input logic        ctrl_sync_debug_allowed,
   input logic        ctrl_interrupt_allowed,
   input logic        ctrl_pending_interrupt,
   input ctrl_byp_t   ctrl_byp,
@@ -202,6 +204,9 @@ logic [31:0]  expected_ebrk_mepc;
 logic [31:0]  expected_instr_err_mepc;
 logic [31:0]  expected_instr_mpuerr_mepc;
 
+logic pending_debug;
+assign pending_debug = (ctrl_pending_async_debug && ctrl_async_debug_allowed) || (ctrl_pending_sync_debug && ctrl_sync_debug_allowed);
+
 always_ff @(posedge clk , negedge rst_ni)
   begin
     if (rst_ni == 1'b0) begin
@@ -222,42 +227,42 @@ always_ff @(posedge clk , negedge rst_ni)
       // The code below checks for first occurence of each exception type in WB
       // Multiple exceptions may occur at the same time, so the following
       // code needs to check priority of what to expect
-      if (!first_illegal_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
+      if (!first_illegal_found && ex_wb_pipe.instr_valid && !irq_ack && !pending_debug &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK)) &&
         !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           ex_wb_pipe.illegal_insn && !ctrl_debug_mode_n) begin
         first_illegal_found   <= 1'b1;
         expected_illegal_mepc <= ex_wb_pipe.pc;
       end
-      if (!first_mmode_ecall_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
+      if (!first_mmode_ecall_found && ex_wb_pipe.instr_valid && !irq_ack && !pending_debug &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn) &&
         !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           ex_wb_pipe.sys_en &&  ex_wb_pipe.sys_ecall_insn && !ctrl_debug_mode_n && (priv_lvl == PRIV_LVL_M)) begin
         first_mmode_ecall_found   <= 1'b1;
         expected_mmode_ecall_mepc <= ex_wb_pipe.pc;
       end
-      if (!first_umode_ecall_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
+      if (!first_umode_ecall_found && ex_wb_pipe.instr_valid && !irq_ack && !pending_debug &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn) &&
         !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           ex_wb_pipe.sys_en &&  ex_wb_pipe.sys_ecall_insn && !ctrl_debug_mode_n && (priv_lvl == PRIV_LVL_U)) begin
         first_umode_ecall_found   <= 1'b1;
         expected_umode_ecall_mepc <= ex_wb_pipe.pc;
       end
-      if (!first_ebrk_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
+      if (!first_ebrk_found && ex_wb_pipe.instr_valid && !irq_ack && !pending_debug &&
         !(ex_wb_pipe.instr.bus_resp.err || (ex_wb_pipe.instr.mpu_status != MPU_OK) || ex_wb_pipe.illegal_insn || (ex_wb_pipe.sys_en && ex_wb_pipe.sys_ecall_insn)) &&
         !(ctrl_fsm.pc_mux == PC_TRAP_NMI) && ex_wb_pipe.sys_en && ex_wb_pipe.sys_ebrk_insn) begin
         first_ebrk_found   <= 1'b1;
         expected_ebrk_mepc <= ex_wb_pipe.pc;
       end
 
-      if (!first_instr_err_found && (ex_wb_pipe.instr.mpu_status == MPU_OK) && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
+      if (!first_instr_err_found && (ex_wb_pipe.instr.mpu_status == MPU_OK) && !irq_ack && !pending_debug &&
          !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           ex_wb_pipe.instr_valid && ex_wb_pipe.instr.bus_resp.err && !ctrl_debug_mode_n ) begin
         first_instr_err_found   <= 1'b1;
         expected_instr_err_mepc <= ex_wb_pipe.pc;
       end
 
-      if (!first_instr_mpuerr_found && ex_wb_pipe.instr_valid && !irq_ack && !(ctrl_pending_debug && ctrl_debug_allowed) &&
+      if (!first_instr_mpuerr_found && ex_wb_pipe.instr_valid && !irq_ack && !pending_debug &&
          !(ctrl_fsm.pc_mux == PC_TRAP_NMI) &&
           (ex_wb_pipe.instr.mpu_status != MPU_OK) && !ctrl_debug_mode_n) begin
         first_instr_mpuerr_found   <= 1'b1;

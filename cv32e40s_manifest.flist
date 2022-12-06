@@ -77,6 +77,7 @@ ${DESIGN_RTL_DIR}/cv32e40s_mpu.sv
 ${DESIGN_RTL_DIR}/cv32e40s_pma.sv
 ${DESIGN_RTL_DIR}/cv32e40s_pmp.sv
 ${DESIGN_RTL_DIR}/cv32e40s_pc_target.sv
+${DESIGN_RTL_DIR}/cv32e40s_wpt.sv
 ${DESIGN_RTL_DIR}/cv32e40s_pc_check.sv
 ${DESIGN_RTL_DIR}/cv32e40s_rchk_check.sv
 ${DESIGN_RTL_DIR}/cv32e40s_lfsr.sv
