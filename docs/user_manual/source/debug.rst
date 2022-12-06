@@ -9,7 +9,7 @@ Debug & Trigger
 
    As execution based debug is used, the Debug Module region, as defined by the ``DM_REGION_START`` and ``DM_REGION_END`` parameters, needs to support
    code execution, loads and stores when |corev| is in debug mode.
-   In order to achieve this |corev| overrules the PMA settings for the Debug Module region when it is in debug mode (see :ref:`pma`).
+   In order to achieve this |corev| overrules the PMA and PMP settings for the Debug Module region when it is in debug mode (see :ref:`pma` and  :ref:`pmp`).
 
 The following list shows the simplified overview of events that occur in the core when debug is requested:
 

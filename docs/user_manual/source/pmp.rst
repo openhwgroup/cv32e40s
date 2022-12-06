@@ -17,3 +17,10 @@ The reset value of the PMP CSR registers can be set through the top level parame
 ``PMP_MSECCFG_RV`` is of the type ``mseccfg_t`` and determines the reset value of the ``mseccfg`` CSR.
 
 The PMP is compliant to [RISC-V-PRIV]_ and [RISC-V-SMEPMP]_.
+
+Debug mode
+~~~~~~~~~~
+Accesses to the Debug Module region, as defined by the ``DM_REGION_START`` and ``DM_REGION_END`` parameters, while in debug mode are treated specially.
+
+In order for debug to always be possible, the PMP will not disallow fetches, loads, or stores in
+the Debug Module region when the hart is in debug mode, regardless of how the PMP is configured.
