@@ -33,6 +33,7 @@
 module cv32e40s_ex_stage import cv32e40s_pkg::*;
 #(
   parameter bit     X_EXT = 1'b0,
+  parameter b_ext_e B_EXT = B_NONE,
   parameter m_ext_e M_EXT = M
 )
 (
@@ -219,8 +220,9 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   //                        //
   ////////////////////////////
 
-
-  cv32e40s_alu alu_i
+  cv32e40s_alu
+    #(.B_EXT(B_EXT))
+  alu_i
   (
     .operator_i          ( id_ex_pipe_i.alu_operator     ),
     .operand_a_i         ( id_ex_pipe_i.alu_operand_a    ),

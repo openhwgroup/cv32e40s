@@ -295,6 +295,7 @@ module cv32e40s_wrapper
       // The SVA's monitor modport can't connect to a master modport, so it is connected to the interface instance directly:
       .m_c_obi_data_if(core_i.m_c_obi_data_if),
       .ex_wb_pipe_i   (core_i.ex_wb_pipe),
+      .write_buffer_state_i (core_i.load_store_unit_i.write_buffer_i.state),
       .id_valid       (core_i.id_valid),
       .ex_ready       (core_i.ex_ready),
       .lsu_en_id      (core_i.id_stage_i.lsu_en),
@@ -360,6 +361,9 @@ module cv32e40s_wrapper
                 .ctrl_pending_interrupt           (core_i.controller_i.controller_fsm_i.pending_interrupt),
                 .ctrl_interrupt_allowed           (core_i.controller_i.controller_fsm_i.interrupt_allowed),
                 .ctrl_debug_cause_n               (core_i.controller_i.controller_fsm_i.debug_cause_n),
+                .ctrl_pending_nmi                 (core_i.controller_i.controller_fsm_i.pending_nmi),
+                .ctrl_fsm_cs                      (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
+                .id_stage_multi_cycle_id_stall    (core_i.id_stage_i.multi_cycle_id_stall),
 
                 .id_stage_id_valid                (core_i.id_stage_i.id_valid_o),
                 .priv_lvl_if                      (core_i.if_stage_i.prefetch_priv_lvl),
@@ -388,6 +392,9 @@ if (SMCLIC) begin : clic_asserts
       cv32e40s_clic_int_controller_sva
         clic_int_controller_sva (.ctrl_pending_interrupt  (core_i.controller_i.controller_fsm_i.pending_interrupt),
                                  .ctrl_interrupt_allowed  (core_i.controller_i.controller_fsm_i.interrupt_allowed),
+                                 .ctrl_pending_nmi        (core_i.controller_i.controller_fsm_i.pending_nmi),
+                                 .ctrl_pending_async_debug(core_i.controller_i.controller_fsm_i.pending_async_debug),
+                                 .ctrl_fsm_cs             (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
                                  .ctrl_fsm                (core_i.ctrl_fsm),
                                  .dcsr                    (core_i.dcsr),
                                  .*);
@@ -493,6 +500,9 @@ endgenerate
                .dbg_ack(core_i.dbg_ack),
                .ebreak_in_wb_i(core_i.controller_i.controller_fsm_i.ebreak_in_wb),
                .mtvec_addr_i(core_i.mtvec_addr),
+               .obi_instr_fifo_q(rvfi_i.rvfi_instr_obi_i.fifo_q),
+               .obi_instr_rptr_q_inc(rvfi_i.rvfi_instr_obi_i.rptr_q_inc),
+               .obi_instr_rptr_q(rvfi_i.rvfi_instr_obi_i.rptr_q),
                .*);
 
 `endif //  `ifndef COREV_ASSERT_OFF
@@ -528,6 +538,10 @@ endgenerate
          .prefetch_instr_if_i      ( core_i.if_stage_i.prefetch_unit_i.prefetch_instr_o                   ),
          .clic_ptr_if_i            ( core_i.if_stage_i.prefetch_is_clic_ptr                               ),
          .mret_ptr_if_i            ( core_i.if_stage_i.prefetch_is_mret_ptr                               ),
+         .mpu_status_i             ( core_i.if_stage_i.mpu_i.core_resp_o.mpu_status                       ),
+         .prefetch_trans_valid_i   ( core_i.if_stage_i.prefetch_trans_valid                               ),
+         .prefetch_trans_ready_i   ( core_i.if_stage_i.prefetch_trans_ready                               ),
+         .prefetch_resp_valid_i    ( core_i.if_stage_i.prefetch_resp_valid                                ),
 
          // ID Probes
          .id_valid_i               ( core_i.id_stage_i.id_valid_o                                         ),
@@ -558,8 +572,7 @@ endgenerate
          .lsu_pmp_err_ex_i         ( 1'b0                          /* TODO: connect */                    ),
          .lsu_pma_err_atomic_ex_i  ( 1'b0                        /* Atomics not implemented in cv32e40s*/ ),
          .branch_target_ex_i       ( core_i.if_stage_i.branch_target_ex_i                                 ),
-         .buffer_trans_addr_ex_i   ( core_i.load_store_unit_i.buffer_trans.addr                           ),
-         .buffer_trans_wdata_ex_i  ( core_i.load_store_unit_i.buffer_trans.wdata                          ),
+         .buffer_trans             ( core_i.load_store_unit_i.buffer_trans                                ),
          .lsu_split_q_ex_i         ( core_i.load_store_unit_i.split_q                                     ),
 
          // WB Probes
@@ -594,6 +607,7 @@ endgenerate
          .nmi_pending_i            ( core_i.controller_i.controller_fsm_i.nmi_pending_q                   ),
          .nmi_is_store_i           ( core_i.controller_i.controller_fsm_i.nmi_is_store_q                  ),
          .debug_mode_q_i           ( core_i.controller_i.controller_fsm_i.debug_mode_q                    ),
+         .debug_cause_n_i          ( core_i.controller_i.controller_fsm_i.debug_cause_n                   ),
          .irq_i                    ( core_i.irq_i & IRQ_MASK                                              ),
          .irq_wu_ctrl_i            ( core_i.irq_wu_ctrl                                                   ),
          .irq_id_ctrl_i            ( core_i.irq_id_ctrl                                                   ),

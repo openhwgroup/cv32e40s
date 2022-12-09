@@ -701,6 +701,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   cv32e40s_ex_stage
   #(
     .X_EXT                      ( X_EXT                        ),
+    .B_EXT                      ( B_EXT                        ),
     .M_EXT                      ( M_EXT                        )
   )
   ex_stage_i
