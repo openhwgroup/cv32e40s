@@ -482,7 +482,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   //   - A faulted pointer fetch does not perform the second fetch. Instead the exception handler fetch will occur before entering debug due to stepping.
   // todo: Likely flop the wb_valid/last_op/abort_op to be able to evaluate all debug reasons (debug_req when pointer is in WB is not allowed, while single step is allowed)
   // todo: can this be merged with pending_sync_debug in the future?
-  assign pending_single_step = (!debug_mode_q && dcsr_i.step && ((wb_valid_i && (last_op_wb_i || abort_op_wb_i)) || non_shv_irq_ack)) && !(pending_async_debug || pending_sync_debug);
+  assign pending_single_step = (!debug_mode_q && dcsr_i.step && ((wb_valid_i && (last_op_wb_i || abort_op_wb_i)) || non_shv_irq_ack));
 
 
   // Detect if there is a live CLIC pointer in the pipeline
@@ -507,6 +507,15 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   //   - This is guarded with using the sequence_interruptible, which tracks sequence progress through the WB stage.
   // When a CLIC pointer is in the pipeline stages EX or WB, we must block debug.
   //   - Debug would otherwise kill the pointer and use the address of the pointer for dpc. A following dret would then return to the mtvt table, losing program progress.
+  //
+  // Debug entry because of haltreq is disallowed when the LSU is busy and therefore
+  // haltreq can only cause debug entry on the instruction following a load or store that
+  // keep the LSU busy. If such load or store however is being single stepped or has an
+  // associated breakpoint or watchpoint, then debug will be entered because of that
+  // lower priority reason even though haltreq is asserted. This is okay because if instruction
+  // timing is considered haltreq should be considered only asserted on the following
+  // instruction (i.e. the asynchronous haltreq signal is considered asserted too late to
+  // impact the current instruction in the pipeline).
   assign async_debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline && sequence_interruptible;
 
   // synchronous debug entry have far fewer restrictions than asynchronous entries. In principle synchronous debug entry should have the same
@@ -522,8 +531,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Debug pending for external debug request
   assign pending_async_debug = ((debug_req_i || debug_req_q) && !debug_mode_q);
 
-  // Determine cause of debug
-  // pending_single_step may only happen if no other causes for debug are true.
+  // Determine cause of debug. Set for all causes of debug entry.
+  // In case of ebreak during debug mode, the entry code in DEBUG_TAKEN will
+  // make sure not to update any CSRs.
   // The flopped version of this is checked during DEBUG_TAKEN state (one cycle delay)
   // todo: update priority according to updated debug spec
   // 1: resethaltreq (0x5)
@@ -532,10 +542,12 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // 4: trigger match (0x2)
   // 5: ebreak (0x1)
   // 6: single step (0x4)
-  assign debug_cause_n = pending_single_step                               ? DBG_CAUSE_STEP :
-                         (trigger_match_in_wb || etrigger_wb_i)            ? DBG_CAUSE_TRIGGER :
-                         (ebreak_in_wb && dcsr_i.ebreakm && !debug_mode_q) ? DBG_CAUSE_EBREAK :
-                         DBG_CAUSE_HALTREQ;
+  assign debug_cause_n = (trigger_match_in_wb || etrigger_wb_i)            ? DBG_CAUSE_TRIGGER :    // Etrigger will enter DEBUG_TAKEN as a single step (no halting), but kill pipeline as non-stepping entries.
+                         (ebreak_in_wb && dcsr_i.ebreakm && !debug_mode_q) ? DBG_CAUSE_EBREAK  :    // Ebreak during machine mode
+                         (ebreak_in_wb && debug_mode_q)                    ? DBG_CAUSE_EBREAK  :    // Ebreak during debug mode
+                         (pending_async_debug && async_debug_allowed)      ? DBG_CAUSE_HALTREQ :
+                         (pending_single_step && single_step_allowed)      ? DBG_CAUSE_STEP    : DBG_CAUSE_NONE;
+
 
   // Debug cause to CSR from flopped version (valid during DEBUG_TAKEN)
   assign ctrl_fsm_o.debug_cause = debug_cause_q;
@@ -743,10 +755,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             pipe_pc_mux_ctrl = PC_IF;
           end
 
-        // Debug entry (except single step which is handled later)
-        // todo: may split this into two separate if's, and then prioritize synchronous debug entry below interrupts.
-        end else if ((pending_async_debug && async_debug_allowed) ||
-                     (pending_sync_debug && sync_debug_allowed)) begin
+        // External debug entry (async)
+        end else if (pending_async_debug && async_debug_allowed) begin
           // Halt the whole pipeline
           // Halting makes sure instructions stay in the pipeline stage without propagating to the next.
           //  This is needed by the debug entry code in the DEBUG_STAKEN state to pick the correct PC for storing in dpc.
@@ -813,7 +823,20 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             // instruction to be issued from IF to ID.
             pipe_pc_mux_ctrl = PC_IF;
           end
+        // Synchronous debug entry (ebreak, trigger match)
+        end else if (pending_sync_debug && sync_debug_allowed) begin
+          // Halt the whole pipeline
+          // Halting makes sure instructions stay in the pipeline stage without propagating to the next.
+          //  This is needed by the debug entry code in the DEBUG_STAKEN state to pick the correct PC for storing in dpc.
+          //  Note that signals like lsu_wpt_match_wb_i and lsu_mpu_status_wb_i will not be constant while WB is halted as
+          //  these behave as an rvalid. In general LSU instruction shall not be allowed to be halted, unless there is a
+          //  watchpoint address match.
+          ctrl_fsm_o.halt_if = 1'b1;
+          ctrl_fsm_o.halt_id = 1'b1;
+          ctrl_fsm_o.halt_ex = 1'b1;
+          ctrl_fsm_o.halt_wb = 1'b1;
 
+          ctrl_fsm_ns = DEBUG_TAKEN;
         end else begin
           if (exception_in_wb && exception_allowed) begin
             // Kill all stages
@@ -1084,8 +1107,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           // Neither ebreak nor trigger match have any state updates in WB. For trigger match, all write enables are suppressed in the ID stage.
           //   Thus this change is not visible to core state, only for RVFI use.
           // todo: Move some logic to RVFI instead?
-          ctrl_fsm_o.kill_wb = !((debug_cause_q == DBG_CAUSE_EBREAK) || (debug_cause_q == DBG_CAUSE_TRIGGER) ||
-                                (debug_mode_q && ebreak_in_wb));
+          ctrl_fsm_o.kill_wb = !((debug_cause_q == DBG_CAUSE_EBREAK) || (debug_cause_q == DBG_CAUSE_TRIGGER));
+
 
           // Save pc from oldest valid instruction
           if (ex_wb_pipe_i.instr_valid) begin
