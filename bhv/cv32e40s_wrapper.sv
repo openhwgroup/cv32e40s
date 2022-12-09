@@ -363,7 +363,6 @@ module cv32e40s_wrapper
                 .ctrl_debug_cause_n               (core_i.controller_i.controller_fsm_i.debug_cause_n),
                 .ctrl_pending_nmi                 (core_i.controller_i.controller_fsm_i.pending_nmi),
                 .ctrl_fsm_cs                      (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
-                .id_stage_multi_cycle_id_stall    (core_i.id_stage_i.multi_cycle_id_stall),
 
                 .id_stage_id_valid                (core_i.id_stage_i.id_valid_o),
                 .priv_lvl_if                      (core_i.if_stage_i.prefetch_priv_lvl),
