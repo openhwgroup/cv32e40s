@@ -572,6 +572,14 @@ parameter MCAUSE_MPIE_BIT      = 27;
 parameter MCAUSE_MPP_BIT_LOW   = 28;
 parameter MCAUSE_MPP_BIT_HIGH  = 29;
 
+parameter MTVEC_MODE_BIT_HIGH  = 1;
+parameter MTVEC_MODE_BIT_LOW   = 0;
+
+parameter DCSR_EBREAKU_BIT     = 12;
+parameter DCSR_PRV_BIT_HIGH    = 1;
+parameter DCSR_PRV_BIT_LOW     = 0;
+
+
 // misa
 parameter logic [1:0] MXL = 2'd1; // M-XLEN: XLEN in M-Mode for RV32
 
@@ -1492,6 +1500,7 @@ typedef struct packed {
   ////////////////////////////////////////
   // Resolution functions
 
+
   function automatic privlvl_t dcsr_prv_resolve
   (
     privlvl_t   current_value,
@@ -1499,6 +1508,15 @@ typedef struct packed {
   );
     // dcsr.prv is WARL(0x0, 0x3)
     return ((next_value != PRIV_LVL_M) && (next_value != PRIV_LVL_U)) ? current_value : privlvl_t'(next_value);
+  endfunction
+
+  function automatic logic dcsr_ebreaku_resolve
+  (
+    logic       current_value,
+    logic       next_value
+  );
+    // dcsr.ebreaku is WARL(0x0)
+    return 1'b0;
   endfunction
 
   function automatic logic [1:0] mstatus_mpp_resolve
@@ -1510,11 +1528,54 @@ typedef struct packed {
     return ((next_value != PRIV_LVL_M) && (next_value != PRIV_LVL_U)) ? current_value : next_value;
   endfunction
 
+  function automatic logic mstatus_mprv_resolve
+  (
+    logic current_value,
+    logic next_value
+  );
+    // mstatus.mprv is WARL(0x0)
+    return 1'b0;
+  endfunction
+
   function automatic logic [3:0] mcontrol6_match_resolve
   (
     logic [3:0] next_value
   );
     return ((next_value != 4'h0) && (next_value != 4'h2) && (next_value != 4'h3)) ? 4'h0 : next_value;
+  endfunction
+
+  function automatic logic mcontrol6_u_resolve
+  (
+    logic next_value
+  );
+    // mcontrol6.u is WARL(0x0)
+    return 1'b0;
+  endfunction
+
+  function automatic logic etrigger_u_resolve
+  (
+    logic next_value
+  );
+    // etrigger.u is WARL(0x0)
+    return 1'b0;
+  endfunction
+
+  function automatic logic[1:0] mtvec_mode_clint_resolve
+  (
+    logic [1:0] current_value,
+    logic [1:0] next_value
+  );
+    // mtvec.mode is WARL(0,1) in CLINT mode
+    return ((next_value != 2'b00) && (next_value != 1'b01)) ? current_value : next_value;
+  endfunction
+
+  function automatic logic[1:0] mtvec_mode_clic_resolve
+  (
+    logic current_value,
+    logic next_value
+  );
+    // mtvec.mode is WARL(0x3) in CLIC mode
+    return 2'b11;
   endfunction
   ///////////////////////////
   //                       //
