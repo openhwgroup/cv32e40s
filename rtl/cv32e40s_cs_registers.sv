@@ -178,7 +178,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   logic                         illegal_csr_read;                               // Current CSR cannot be read
   logic                         illegal_csr_write;                              // Current CSR cannot be written
-  logic                         illegal_csr_instr;                              // Current CSR cannot be accessed with the current instruction (mscratchcsw[l] with non-csrrw)
 
   logic                         instr_valid;                                    // Local instr_valid
 
@@ -454,10 +453,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Any access to JVT is only legal from machine mode, or from user mode when mstateen[2] is 1.
   assign illegal_jvt_access = ((csr_raddr == CSR_JVT) && ((id_ex_pipe_i.priv_lvl < PRIV_LVL_M) && !mstateen0_rdata[2]));
 
-  // Flag illegal instruction if accessing mscratchcsw[l] with non-csrrw instruction or csrrw with rd==x0
-
-  assign illegal_csr_instr = ((csr_raddr == CSR_MSCRATCHCSW) || (csr_raddr == CSR_MSCRATCHCSWL)) && !(id_ex_pipe_i.csr_op == CSR_OP_CSRRW);
-  assign csr_illegal_o = (id_ex_pipe_i.instr_valid && id_ex_pipe_i.csr_en) ? illegal_csr_write || illegal_csr_read || illegal_csr_read_priv || illegal_jvt_access || illegal_csr_instr: 1'b0;
+  assign csr_illegal_o = (id_ex_pipe_i.instr_valid && id_ex_pipe_i.csr_en) ? illegal_csr_write || illegal_csr_read || illegal_csr_read_priv || illegal_jvt_access : 1'b0;
 
 
   ////////////////////////////////////////////
@@ -1672,8 +1668,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       csr_we_int    = 1'b1;
       csr_wdata_int = csr_wdata;
       case (csr_op)
-        CSR_OP_WRITE,
-        CSR_OP_CSRRW: csr_wdata_int = csr_wdata;
+        CSR_OP_WRITE: csr_wdata_int = csr_wdata;
         CSR_OP_SET:   csr_wdata_int = csr_wdata | ex_wb_pipe_i.rf_wdata;
         CSR_OP_CLEAR: csr_wdata_int = (~csr_wdata) & ex_wb_pipe_i.rf_wdata;
 
@@ -2119,7 +2114,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign csr_wr_in_wb = ex_wb_pipe_i.csr_en &&
                         ex_wb_pipe_i.instr_valid &&
                         ((csr_op == CSR_OP_WRITE) ||
-                         (csr_op == CSR_OP_CSRRW) ||
                          (csr_op == CSR_OP_SET)   ||
                          (csr_op == CSR_OP_CLEAR));
 
@@ -2649,6 +2643,16 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   localparam bit [31:0] MCOUNTINHIBIT_MASK = (MHPMCOUNTERS_MASK << 3) | 3'b101;
 
 
+  logic                 debug_stopcount;
+
+  // dcsr.stopcount == 1: Don’t increment any counters while in Debug Mode.
+  // The debug spec states that we should also not increment counters "on ebreak instructions that cause entry into debug mode",
+  // but this implementation does not take ebreak instructions into account.
+  // This is considered OK since most counter events (except wb_invalid and cycle) will be suppressed (in ctrl_fsm_i.mhpmevent) when we
+  // have an ebreak causing debug mode entry in WB.
+  assign debug_stopcount = dcsr_rdata.stopcount && ctrl_fsm_i.debug_mode;
+
+
   // ------------------------
   // Events to count
   assign hpm_events[0] = 1'b1;                               // Cycle counter
@@ -2733,18 +2737,21 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
         assign mhpmcounter_write_increment[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
                                                         !mhpmcounter_write_upper[wcnt_gidx] &&
-                                                        !mcountinhibit_rdata[wcnt_gidx];
+                                                        !mcountinhibit_rdata[wcnt_gidx] &&
+                                                        !debug_stopcount;
       end else if (wcnt_gidx == 2) begin : gen_mhpmcounter_minstret
         // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
         assign mhpmcounter_write_increment[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
                                                         !mhpmcounter_write_upper[wcnt_gidx] &&
                                                         !mcountinhibit_rdata[wcnt_gidx] &&
+                                                        !debug_stopcount &&
                                                         hpm_events[1];
       end else if( (wcnt_gidx>2) && (wcnt_gidx<(NUM_MHPMCOUNTERS+3))) begin : gen_mhpmcounter
         // add +1 if any event is enabled and active
         assign mhpmcounter_write_increment[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
                                                         !mhpmcounter_write_upper[wcnt_gidx] &&
                                                         !mcountinhibit_rdata[wcnt_gidx] &&
+                                                        !debug_stopcount &&
                                                         |(hpm_events & mhpmevent_rdata[wcnt_gidx][NUM_HPM_EVENTS-1:0]);
       end else begin : gen_mhpmcounter_not_implemented
         assign mhpmcounter_write_increment[wcnt_gidx] = 1'b0;

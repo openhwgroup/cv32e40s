@@ -1028,7 +1028,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   controller_i
   (
     .clk                            ( clk                    ),         // Gated clock
-    .clk_ungated_i                  ( clk_i                  ),         // Ungated clock
     .rst_n                          ( rst_ni                 ),
 
     .fetch_enable_i                 ( fetch_enable           ),
