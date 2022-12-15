@@ -467,7 +467,7 @@ typedef enum logic[11:0] {
 
 // CSR Bit Implementation Masks
 parameter CSR_JVT_MASK          = 32'hFFFFFC00;
-parameter CSR_DCSR_MASK         = 32'b1111_0000_0000_0000_1000_1001_1100_0111; // NMI bit taken from ctrl_fsm
+parameter CSR_DCSR_MASK         = 32'b1111_0000_0000_0000_1001_1101_1101_0111; // NMI bit taken from ctrl_fsm
 parameter CSR_MEPC_MASK         = 32'hFFFFFFFE;
 parameter CSR_DPC_MASK          = 32'hFFFFFFFE;
 //        CSR_MIE_MASK          = IRQ_MASK;
