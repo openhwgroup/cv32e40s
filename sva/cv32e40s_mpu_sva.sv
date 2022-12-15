@@ -26,6 +26,7 @@
 
 module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   #(  parameter int PMP_NUM_REGIONS              = 0,
+      parameter int PMP_GRANULARITY              = 0,
       parameter int PMA_NUM_REGIONS              = 0,
       parameter pma_cfg_t PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
       parameter int unsigned IS_INSTR_SIDE = 0)
@@ -422,16 +423,21 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
                          |-> csr_pmp_i.mseccfg.rlb)
           else `uvm_error("mpu", "PMP region unlocked with mseccfg.rlb cleared")
 
+      // Disregard PMP_GRANULARITY+2 LSB's of the PMP address as the value read from these
+      // will change based on PMP mode.
       a_csr_pmp_addr_lock:
         assert property (@(posedge clk) disable iff (!rst_n)
-                         ($changed(csr_pmp_i.addr[i]))
+                         ($changed(csr_pmp_i.addr[i][33:PMP_GRANULARITY+2]))
                          |-> !(csr_pmp_i.cfg[i].lock && !csr_pmp_i.mseccfg.rlb))
           else `uvm_error("mpu", "PMP address changed when it should be locked")
 
       if(i < PMP_NUM_REGIONS-1) begin: pmp_tor_lock
+
+        // Disregard PMP_GRANULARITY+2 LSB's of the PMP address as the value read from these
+        // will change based on PMP mode.
         a_csr_pmp_addr_lock_tor:
           assert property (@(posedge clk) disable iff (!rst_n)
-                           ($changed(csr_pmp_i.addr[i]))
+                           ($changed(csr_pmp_i.addr[i][33:PMP_GRANULARITY+2]))
                            |-> !((csr_pmp_i.cfg[i+1].mode == PMP_MODE_TOR) && csr_pmp_i.cfg[i+1].lock && !csr_pmp_i.mseccfg.rlb))
             else `uvm_error("mpu", "PMP address changed when it should be locked through TOR mode on the next PMP region")
       end

@@ -418,6 +418,7 @@ endgenerate
     core_i.if_stage_i.mpu_i
     cv32e40s_mpu_sva
       #(.PMP_NUM_REGIONS                        (PMP_NUM_REGIONS),
+        .PMP_GRANULARITY                        (PMP_GRANULARITY),
         .PMA_NUM_REGIONS                        (PMA_NUM_REGIONS),
         .PMA_CFG                                (PMA_CFG),
         .IS_INSTR_SIDE                          (1))
@@ -437,6 +438,7 @@ endgenerate
     core_i.load_store_unit_i.mpu_i
     cv32e40s_mpu_sva
       #(.PMP_NUM_REGIONS                        (PMP_NUM_REGIONS),
+        .PMP_GRANULARITY                        (PMP_GRANULARITY),
         .PMA_NUM_REGIONS                        (PMA_NUM_REGIONS),
         .PMA_CFG                                (PMA_CFG),
         .IS_INSTR_SIDE                          (0))
