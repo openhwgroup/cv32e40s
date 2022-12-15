@@ -467,13 +467,13 @@ typedef enum logic[11:0] {
 
 // CSR Bit Implementation Masks
 parameter CSR_JVT_MASK          = 32'hFFFFFC00;
-parameter CSR_DCSR_MASK         = 32'b1111_0000_0000_0000_1000_1001_1100_0111; // NMI bit taken from ctrl_fsm
+parameter CSR_DCSR_MASK         = 32'b1111_0000_0000_0000_1001_1101_1100_0111; // NMI bit taken from ctrl_fsm
 parameter CSR_MEPC_MASK         = 32'hFFFFFFFE;
 parameter CSR_DPC_MASK          = 32'hFFFFFFFE;
 //        CSR_MIE_MASK          = IRQ_MASK;
 parameter CSR_MSTATUS_MASK      = 32'b0000_0000_0010_0010_0001_1000_1000_1000;
 parameter CSR_MTVEC_BASIC_MASK  = 32'hFFFFFF81;
-parameter CSR_MTVEC_CLIC_MASK   = 32'hFFFFFF83;
+parameter CSR_MTVEC_CLIC_MASK   = 32'hFFFFFF80;
 parameter CSR_MTVT_MASK         = 32'hFFFFFFE0;
 parameter CSR_MINTSTATUS_MASK   = 32'hFF000000;
 parameter CSR_MSCRATCH_MASK     = 32'hFFFFFFFF;
@@ -1515,8 +1515,8 @@ typedef struct packed {
     logic       current_value,
     logic       next_value
   );
-    // dcsr.ebreaku is WARL(0x0)
-    return 1'b0;
+    // dcsr.ebreaku is WARL
+    return next_value;
   endfunction
 
   function automatic logic [1:0] mstatus_mpp_resolve
@@ -1533,8 +1533,8 @@ typedef struct packed {
     logic current_value,
     logic next_value
   );
-    // mstatus.mprv is WARL(0x0)
-    return 1'b0;
+    // mstatus.mprv is is RW
+    return next_value;
   endfunction
 
   function automatic logic [3:0] mcontrol6_match_resolve
@@ -1548,16 +1548,16 @@ typedef struct packed {
   (
     logic next_value
   );
-    // mcontrol6.u is WARL(0x0)
-    return 1'b0;
+    // mcontrol6.u is WARL
+    return next_value;
   endfunction
 
   function automatic logic etrigger_u_resolve
   (
     logic next_value
   );
-    // etrigger.u is WARL(0x0)
-    return 1'b0;
+    // etrigger.u is WARL
+    return next_value;
   endfunction
 
   function automatic logic[1:0] mtvec_mode_clint_resolve

@@ -60,8 +60,13 @@ module cv32e40s_csr #(
             cv32e40s_sffs #(.LIB(LIB)) sffs_shadowreg (.clk(clk_gated), .rst_n(rst_n), .d_i(shadow_d[i]), .q_o(shadow_q[i]));
           end
         end else begin : gen_masked
-          assign rdata_q[i]  = 1'b0;
-          assign shadow_q[i] = 1'b1;
+          if (RESETVALUE[i] == 1'b1) begin : gen_constant_1
+            assign rdata_q[i]  = 1'b1;
+            assign shadow_q[i] = 1'b0;
+          end else begin : gen_constant_0
+            assign rdata_q[i]  = 1'b0;
+            assign shadow_q[i] = 1'b1;
+          end
         end
       end
 
