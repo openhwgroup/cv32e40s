@@ -1515,8 +1515,8 @@ typedef struct packed {
     logic       current_value,
     logic       next_value
   );
-    // dcsr.ebreaku is WARL(0x0)
-    return 1'b0;
+    // dcsr.ebreaku is WARL
+    return next_value;
   endfunction
 
   function automatic logic [1:0] mstatus_mpp_resolve
@@ -1533,8 +1533,8 @@ typedef struct packed {
     logic current_value,
     logic next_value
   );
-    // mstatus.mprv is WARL(0x0)
-    return 1'b0;
+    // mstatus.mprv is is RW
+    return next_value;
   endfunction
 
   function automatic logic [3:0] mcontrol6_match_resolve
@@ -1548,16 +1548,16 @@ typedef struct packed {
   (
     logic next_value
   );
-    // mcontrol6.u is WARL(0x0)
-    return 1'b0;
+    // mcontrol6.u is WARL
+    return next_value;
   endfunction
 
   function automatic logic etrigger_u_resolve
   (
     logic next_value
   );
-    // etrigger.u is WARL(0x0)
-    return 1'b0;
+    // etrigger.u is WARL
+    return next_value;
   endfunction
 
   function automatic logic[1:0] mtvec_mode_clint_resolve
