@@ -74,7 +74,6 @@ module cv32e40s_controller_fsm_sva
   input logic           interrupt_allowed,
   input logic           pending_nmi,
   input logic           nmi_allowed,
-  input logic           fencei_ready,
   input privlvl_t       priv_lvl_i,
   input privlvl_t       priv_lvl_n,
   input mstatus_t       mstatus_i,
