@@ -280,6 +280,11 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // index for table jumps taken from instruction word in ID stage.
   assign ctrl_fsm_o.jvt_pc_mux = if_id_pipe_i.instr.bus_resp.rdata[19:12];
 
+  // Set which mtvec index to jump to when an NMI is taken
+  // index 0 for non-vectored CLINT mode and CLIC mode, 0xF for vectored CLINT mode
+  assign ctrl_fsm_o.nmi_mtvec_index = (mtvec_mode_i == 2'b01) ? 5'hF : 5'h0;
+
+
 
   ////////////////////////////////////////////////////////////////////
 
@@ -539,18 +544,18 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // In case of ebreak during debug mode, the entry code in DEBUG_TAKEN will
   // make sure not to update any CSRs.
   // The flopped version of this is checked during DEBUG_TAKEN state (one cycle delay)
-  // todo: update priority according to updated debug spec
+  // For this core, the three top priorities are covered by pending_async_debug.
   // 1: resethaltreq (0x5)
   // 2: halt group (0x6)
   // 3: haltreq (0x3)
   // 4: trigger match (0x2)
   // 5: ebreak (0x1)
   // 6: single step (0x4)
-  assign debug_cause_n = (trigger_match_in_wb || etrigger_wb_i)                                                     ? DBG_CAUSE_TRIGGER :    // Etrigger will enter DEBUG_TAKEN as a single step (no halting), but kill pipeline as non-stepping entries.
+  assign debug_cause_n = (pending_async_debug && async_debug_allowed)                                               ? DBG_CAUSE_HALTREQ :
+                         (trigger_match_in_wb || etrigger_wb_i)                                                     ? DBG_CAUSE_TRIGGER :    // Etrigger will enter DEBUG_TAKEN as a single step (no halting), but kill pipeline as non-stepping entries.
                          (ebreak_in_wb && dcsr_i.ebreakm && (ex_wb_pipe_i.priv_lvl == PRIV_LVL_M) && !debug_mode_q) ? DBG_CAUSE_EBREAK  :    // Ebreak during machine mode
                          (ebreak_in_wb && dcsr_i.ebreaku && (ex_wb_pipe_i.priv_lvl == PRIV_LVL_U) && !debug_mode_q) ? DBG_CAUSE_EBREAK  :    // Ebreak during user mode
                          (ebreak_in_wb && debug_mode_q)                                                             ? DBG_CAUSE_EBREAK  :    // Ebreak during debug mode
-                         (pending_async_debug && async_debug_allowed)                                               ? DBG_CAUSE_HALTREQ :
                          (pending_single_step && single_step_allowed)                                               ? DBG_CAUSE_STEP    : DBG_CAUSE_NONE;
 
 
