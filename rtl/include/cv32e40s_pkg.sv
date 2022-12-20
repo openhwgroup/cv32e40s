@@ -1546,8 +1546,8 @@ typedef struct packed {
     logic [1:0] current_value,
     logic [1:0] next_value
   );
-    // mcause.mpp is WARL(0x3)
-    return PRIV_LVL_M;
+    // mcause.mpp is WARL(0x0, 0x3)
+    return ((next_value != PRIV_LVL_M) && (next_value != PRIV_LVL_U)) ? current_value : next_value;
   endfunction
 
   function automatic logic mstatus_mprv_resolve
