@@ -104,7 +104,7 @@ logic ctrl_flow_untaken_err;  // Signals error on untaken jump/mret/branch
 
 logic [31:0] nmi_addr;
 
-assign nmi_addr = {mtvec_addr_i, NMI_MTVEC_INDEX, 2'b00};
+assign nmi_addr = {mtvec_addr_i, ctrl_fsm_i.nmi_mtvec_index, 2'b00};
 
 
 //////////////////////////////////////////
