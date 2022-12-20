@@ -1433,6 +1433,8 @@ typedef struct packed {
   logic [9:0]  mtvt_pc_mux;           // Id of taken CLIC irq (to IF, EXC_PC_MUX, zeroed if not shv)
                                       // Setting to 11 bits (max), unused bits will be tied off
   logic [7:0]  jvt_pc_mux;            // Index for table jumps
+  logic [4:0]  nmi_mtvec_index;       // Offset into mtvec when taking an NMI
+
 
   logic        irq_ack;               // Irq has been taken
   logic [9:0]  irq_id;                // Id of taken irq. Max width (1024 interrupts), unused bits will be tied off
