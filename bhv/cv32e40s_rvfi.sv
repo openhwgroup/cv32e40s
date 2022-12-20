@@ -724,6 +724,7 @@ module cv32e40s_rvfi
     .prefetch_compressed_i      ( prefetch_compressed_if_i      ),
     .kill_if_i                  ( ctrl_fsm_i.kill_if            ),
     .mpu_status_i               ( mpu_status_i                  ),
+    .pmp_err_i                  ( instr_pmp_err_if_i            ),
     .prefetch_trans_valid_i     ( prefetch_trans_valid_i        ),
     .prefetch_trans_ready_i     ( prefetch_trans_ready_i        ),
     .prefetch_resp_valid_i      ( prefetch_resp_valid_i         ),
@@ -912,7 +913,7 @@ module cv32e40s_rvfi
       //// IF Stage ////
       if (if_valid_i && id_ready_i) begin
         debug_mode [STAGE_ID] <= ctrl_fsm_i.debug_mode; // Probing in IF to ensure LSU instructions that are not killed can complete
-        instr_pmp_err[STAGE_ID] <= instr_pmp_err_if_i;    // Instruction fetch pmp error probed to separate pmp- from pma-errors
+        instr_pmp_err[STAGE_ID] <= obi_instr_if.pmp_err;    // Instruction fetch pmp error probed to separate pmp- from pma-errors
 
         // Capturing events that happen when the IF stage is not valid and
         // propagating them through the pipeline with the next valid instruction

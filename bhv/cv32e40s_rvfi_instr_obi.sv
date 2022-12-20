@@ -33,6 +33,7 @@ module cv32e40s_rvfi_instr_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg:
   input  logic [31:0]                   prefetch_addr_i,
   input  logic                          prefetch_compressed_i,
   input  logic                          kill_if_i,
+  input  logic                          pmp_err_i,
   input  mpu_status_e                   mpu_status_i,
   input logic                           prefetch_trans_valid_i,
   input logic                           prefetch_trans_ready_i,
@@ -143,6 +144,7 @@ module cv32e40s_rvfi_instr_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg:
   begin
     fifo_req_n = fifo_q[wptr_req_q];
     fifo_req_n.req_payload = m_c_obi_instr_if.req_payload;
+    fifo_req_n.pmp_err = pmp_err_i; // pmp_err_i is valid when the MPU accepts a transfer
     wptr_req_n = wptr_req_q + 1'b1;
   end
 
@@ -211,7 +213,8 @@ module cv32e40s_rvfi_instr_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg:
     if (prefetch_compressed_i) begin
       if (prefetch_addr_i[1:0] == 2'b00) begin
         // Compressed instruction in LSBs of 1 rdata item
-        obi_instr.req_payload               =  fifo_q[rptr_q].req_payload;
+        obi_instr.req_payload                        =  fifo_q[rptr_q].req_payload;
+        obi_instr.pmp_err                            =  fifo_q[rptr_q].pmp_err;
         obi_instr.resp_payload.bus_resp.rdata[31:16] =  16'h0;
         obi_instr.resp_payload.bus_resp.rdata[15:0]  =  (rptr_q     == wptr_resp_q) ? fifo_resp_n.resp_payload.bus_resp.rdata[15:0]  : fifo_q[rptr_q].resp_payload.bus_resp.rdata[15:0];
         obi_instr.resp_payload.bus_resp.err          =  (rptr_q     == wptr_resp_q) ? fifo_resp_n.resp_payload.bus_resp.err          : fifo_q[rptr_q].resp_payload.bus_resp.err;
@@ -219,6 +222,7 @@ module cv32e40s_rvfi_instr_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg:
       end else begin
         // Compressed instruction in MSBs of 1 rdata item
         obi_instr.req_payload                        = fifo_q[rptr_q].req_payload;
+        obi_instr.pmp_err                            = fifo_q[rptr_q].pmp_err;
         obi_instr.resp_payload.bus_resp.rdata[31:16] = 16'h0;
         obi_instr.resp_payload.bus_resp.rdata[15:0]  = (rptr_q     == wptr_resp_q) ? fifo_resp_n.resp_payload.bus_resp.rdata[31:16] : fifo_q[rptr_q].resp_payload.bus_resp.rdata[31:16];
         obi_instr.resp_payload.bus_resp.err          = (rptr_q     == wptr_resp_q) ? fifo_resp_n.resp_payload.bus_resp.err          : fifo_q[rptr_q].resp_payload.bus_resp.err;
@@ -228,6 +232,7 @@ module cv32e40s_rvfi_instr_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg:
       if (prefetch_addr_i[1:0] == 2'b00) begin
         // Uncompressed instruction (or pointer) in 1 rdata item
         obi_instr.req_payload                        = fifo_q[rptr_q].req_payload;
+        obi_instr.pmp_err                            = fifo_q[rptr_q].pmp_err;
         obi_instr.resp_payload.bus_resp.rdata[31:16] = (rptr_q     == wptr_resp_q) ? fifo_resp_n.resp_payload.bus_resp.rdata[31:16] : fifo_q[rptr_q].resp_payload.bus_resp.rdata[31:16];
         obi_instr.resp_payload.bus_resp.rdata[15:0]  = (rptr_q     == wptr_resp_q) ? fifo_resp_n.resp_payload.bus_resp.rdata[15:0]  : fifo_q[rptr_q].resp_payload.bus_resp.rdata[15:0];
         obi_instr.resp_payload.bus_resp.err          = (rptr_q     == wptr_resp_q) ? fifo_resp_n.resp_payload.bus_resp.err          : fifo_q[rptr_q].resp_payload.bus_resp.err;
@@ -235,6 +240,7 @@ module cv32e40s_rvfi_instr_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg:
       end else begin
         // Uncompressed instruction (or pointer) in 2 rdata items
         obi_instr.req_payload                        = fifo_q[rptr_q].req_payload;
+        obi_instr.pmp_err                            = fifo_q[rptr_q].pmp_err || fifo_q[rptr_q_inc].pmp_err;
         obi_instr.resp_payload.bus_resp.rdata[31:16] = (rptr_q_inc == wptr_resp_q) ? fifo_resp_n.resp_payload.bus_resp.rdata[15:0]  : fifo_q[rptr_q_inc].resp_payload.bus_resp.rdata[15:0];
         obi_instr.resp_payload.bus_resp.rdata[15:0]  = fifo_q[rptr_q].resp_payload.bus_resp.rdata[31:16];
         obi_instr.resp_payload.bus_resp.err          = ((rptr_q_inc == wptr_resp_q) ? fifo_resp_n.resp_payload.bus_resp.err         : fifo_q[rptr_q_inc].resp_payload.bus_resp.err) ||
