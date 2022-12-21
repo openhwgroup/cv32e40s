@@ -596,6 +596,9 @@ endgenerate
          .clic_ptr_wb_i            ( core_i.wb_stage_i.ex_wb_pipe_i.instr_meta.clic_ptr                   ),
          .hint_wb_i                ( core_i.id_stage_i.ex_wb_pipe_i.instr_meta.hint                       ),
          .mret_ptr_wb_i            ( core_i.wb_stage_i.ex_wb_pipe_i.instr_meta.mret_ptr                   ),
+         .csr_mscratchcsw_in_wb_i  ( core_i.cs_registers_i.mscratchcsw_in_wb                              ),
+         .csr_mscratchcswl_in_wb_i ( core_i.cs_registers_i.mscratchcswl_in_wb                             ),
+         .csr_mnxti_in_wb_i        ( core_i.cs_registers_i.mnxti_in_wb                                    ),
 
          .branch_addr_n_i          ( core_i.if_stage_i.branch_addr_n                                      ),
 
