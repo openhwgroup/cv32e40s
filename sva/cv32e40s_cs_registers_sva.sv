@@ -113,7 +113,7 @@ module cv32e40s_cs_registers_sva
       @(posedge clk) disable iff (!rst_n)
       (  ctrl_fsm_i.csr_save_cause && !ctrl_fsm_i.debug_csr_save && !ctrl_fsm_i.csr_cause.irq && (priv_lvl_n == PRIV_LVL_M) && (priv_lvl_q == PRIV_LVL_U)
           |=>
-          (mintstatus_rdata.mil == '0));
+          (mintstatus_q.mil == '0));
 
     endproperty;
 
