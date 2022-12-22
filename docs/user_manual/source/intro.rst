@@ -40,7 +40,7 @@ It follows these specifications:
    https://github.com/riscv/riscv-isa-manual/releases/download/draft-20211105-c30284b/riscv-privileged.pdf
 
 .. [RISC-V-DEBUG] RISC-V Debug Support, version 1.0-STABLE, 246028cd719426597269b3d717c866802c58bde7,
-   https://github.com/riscv/riscv-debug-spec/blob/05252da1575610e9605d882145da3f4e7f4f3cb1/riscv-debug-stable.pdf 
+   https://github.com/riscv/riscv-debug-spec/blob/05252da1575610e9605d882145da3f4e7f4f3cb1/riscv-debug-stable.pdf
 
 .. [RISC-V-SMCLIC] "Smclic" Core-Local Interrupt Controller (CLIC) RISC-V Privileged Architecture Extension, version 0.9-draft, 11/08/2022,
    https://github.com/riscv/riscv-fast-interrupt/blob/15618901f6e38e92919031eac99b980055353df6/clic.pdf
@@ -52,11 +52,12 @@ It follows these specifications:
 .. [RISC-V-ZBA_ZBB_ZBC_ZBS] RISC-V Bit Manipulation ISA-extensions, Version 1.0.0-38-g865e7a7, 2021-06-28,
    https://github.com/riscv/riscv-bitmanip/releases/download/1.0.0/bitmanip-1.0.0-38-g865e7a7.pdf
 
-.. [RISC-V-ZCA_ZCB_ZCMP_ZCMT] RISC-V Standard Extension for the **Zca**, **Zcb**, **Zcmp**, **Zcmt** subsets of **Zc**, v1.0.0-RC5.6 (not ratified yet),
-   https://github.com/riscv/riscv-code-size-reduction/blob/cd13c6b17ccb7e1b8fc8b69e76179b339bcc2b32/Zc-specification/Zc.adoc
+.. [RISC-V-ZCA_ZCB_ZCMP_ZCMT] RISC-V Standard Extension for the **Zca**, **Zcb**, **Zcmp**, **Zcmt** subsets of **Zc**, v1.0.0-RC5.7 (not ratified yet),
+   https://github.com/riscv/riscv-code-size-reduction/releases/download/v1.0.0-RC5.7/Zc-v1.0.0-RC5.7.pdf
 
 .. [RISC-V-SMEPMP] PMP Enhancements for memory access and execution prevention on Machine mode, version 1.0, 12/2021,
    https://github.com/riscv/riscv-tee/blob/b20fda89e8e05605ca943af5897c0bb7f4db9841/Smepmp/Smepmp.pdf
+
 
 .. [RISC-V-CRYPTO] RISC-V Cryptography Extensions Volume I, Scalar & Entropy Source Instructions, Version v1.0.0, 2'nd December, 2021: Ratified,
    https://github.com/riscv/riscv-crypto/releases/download/v1.0.0-scalar/riscv-crypto-spec-scalar-v1.0.0.pdf
