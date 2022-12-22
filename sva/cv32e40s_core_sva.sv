@@ -32,6 +32,7 @@ module cv32e40s_core_sva
   )
   (
   input logic        clk,
+  input logic        clk_i,
   input logic        rst_ni,
 
   input ctrl_fsm_t   ctrl_fsm,
@@ -94,6 +95,9 @@ module cv32e40s_core_sva
   input  logic [31:0] data_rdata_i,
   input  logic [4:0]  data_rchk_i,
   input  logic        data_err_i,
+  input logic        fetch_enable_i,
+  input logic        debug_req_i,
+
   input alu_op_a_mux_e alu_op_a_mux_sel_id_i,
   input alu_op_b_mux_e alu_op_b_mux_sel_id_i,
   input logic [31:0]   operand_a_id_i,
@@ -803,5 +807,30 @@ endproperty;
 
 a_hint_id_wb: assert property(p_dummy_id_wb)
   else `uvm_error("core", "X0 not stable for hint instruction in ID")
-endmodule
 
+
+// If debug_req_i is asserted when fetch_enable_i gets asserted we should not execute any
+// instruction until the core is in debug mode.
+a_reset_into_debug:
+assert property (@(posedge clk_i) disable iff (!rst_ni)
+                (ctrl_fsm_cs == RESET) &&
+                fetch_enable_i &&
+                debug_req_i
+                ##1
+                debug_req_i // Controller gets a one cycle delayed fetch enable, must keep debug_req_i asserted for two cycles
+                |->
+                !wb_valid until (wb_valid && ctrl_fsm.debug_mode))
+  else `uvm_error("controller", "Debug out of reset but executed instruction outside debug mode")
+
+// When entering debug out of reset, the first fetch must also flag debug on the instruction OBI interface
+a_first_fetch_debug:
+assert property (@(posedge clk_i) disable iff (!rst_ni)
+                (ctrl_fsm_cs == RESET) &&
+                fetch_enable_i &&
+                debug_req_i
+                ##1
+                debug_req_i // Controller gets a one cycle delayed fetch enable, must keep debug_req_i asserted for two cycles
+                |->
+                !instr_req_o until (instr_req_o && instr_dbg_o))
+  else `uvm_error("controller", "Debug out of reset but fetched without setting instr_dbg_o")
+endmodule
