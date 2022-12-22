@@ -407,6 +407,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         dscratch1_rd_error;                             // Not used
   logic                         mcause_rd_error;                                // Not used
 
+  // Signal used for RVFI to set rmask, not used internally
+  logic                         mscratchcsw_in_wb;
+  logic                         mscratchcswl_in_wb;
+  logic                         mnxti_in_wb;
 
   // Local instr_valid for write portion (WB)
   // Not factoring in ctrl_fsm_i.halt_limited_wb. This signal is only set during SLEEP mode, and while in SLEEP
@@ -597,10 +601,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MSCRATCHCSW: begin
         if (SMCLIC) begin
           // CLIC spec 13.2
-          // Depending on MPP, we return either mscratch_rdata or rs1 to rd.
-          // Safe to use mcause_rdata here (EX timing), as there is a generic stall of the ID stage
+          // Depending on mstatus.MPP, we return either mscratch_rdata or rs1 to rd.
+          // Safe to use mstatus_rdata here (EX timing), as there is a generic stall of the ID stage
           // whenever a CSR instruction follows another CSR instruction. Alternative implementation using
-          // a local forward of mcause_rdata is identical (SEC).
+          // a local forward of mstatus_rdata is identical (SEC).
           if (mstatus_rdata.mpp != PRIV_LVL_M) begin
             // Return mscratch for writing to GPR
             csr_rdata_int = mscratch_rdata;
@@ -1310,8 +1314,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_MSCRATCHCSW: begin
           if (SMCLIC) begin
             // mscratchcsw operates on mscratch
-            // Writing only when mcause.mpp != PRIV_LVL_M
-            if (mcause_rdata.mpp != PRIV_LVL_M) begin
+            // Writing only when mstatus.mpp != PRIV_LVL_M
+            if (mstatus_rdata.mpp != PRIV_LVL_M) begin
               mscratchcsw_we = 1'b1;
               mscratch_we    = 1'b1;
             end
@@ -2561,10 +2565,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // if no interrupt is pending.
   assign mnxti_rdata        = mnxti_irq_pending_i ? {mtvt_addr_o, mnxti_irq_id_i, 2'b00} : 32'h00000000;
 
-  // mscratchcsw_rdata breaks the regular convension for CSrs. Read data depend on mcause.mpp
-  // mscratch_rdata is returned if mcause.mpp differs from PRIV_LVL_M, otherwise rs1 is returned.
+  // mscratchcsw_rdata breaks the regular convension for CSRs. Read data depends on mstatus.mpp
+  // mscratch_rdata is returned if mstatus.mpp differs from PRIV_LVL_M, otherwise rs1 is returned.
   // This signal is only used by RVFI, and has WB timing (rs1 comes from ex_wb_pipe_i.csr_wdata, flopped version of id_ex_pipe.alu_operand_a)
-  assign mscratchcsw_rdata  = (mcause_rdata.mpp != PRIV_LVL_M) ? mscratch_rdata : ex_wb_pipe_i.csr_wdata;
+  assign mscratchcsw_rdata  = (mstatus_rdata.mpp != PRIV_LVL_M) ? mscratch_rdata : ex_wb_pipe_i.csr_wdata;
 
   // mscratchcswl_rdata breaks the regular convension for CSrs. Read data depend on mcause.pil and mintstatus.mil.
   // This signal is only used by RVFI, and has WB timing (rs1 comes from ex_wb_pipe_i.csr_wdata, flopped version of id_ex_pipe.alu_operand_a)
@@ -2934,6 +2938,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign mcountinhibit_rdata = mcountinhibit_q;
 
+  // Assign values used for setting rmask in RVFI
+  assign mscratchcsw_in_wb  = ex_wb_pipe_i.csr_en && (csr_waddr == CSR_MSCRATCHCSW);
+  assign mscratchcswl_in_wb = ex_wb_pipe_i.csr_en && (csr_waddr == CSR_MSCRATCHCSWL);
+  assign mnxti_in_wb        = ex_wb_pipe_i.csr_en && (csr_waddr == CSR_MNXTI);
+
   // Some signals are unused on purpose (typically they are used by RVFI code). Use them here for easier LINT waiving.
 
   assign unused_signals = mstatush_we | misa_we | mip_we | mvendorid_we | marchid_we |
@@ -2941,6 +2950,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error | mcause_rd_error |
     mstateen1_we | mstateen2_we | mstateen3_we | mstateen0h_we | mstateen1h_we | mstateen2h_we |
     mstateen3h_we | (|pmp_addr_n_r_unused) | (|mnxti_n) | mscratchcsw_we | mscratchcswl_we |
-    (|mscratchcsw_rdata) | (|mscratchcswl_rdata) | (|mscratchcsw_n) | (|mscratchcswl_n) | (|mclicbase_n) | mclicbase_we;
+    (|mscratchcsw_rdata) | (|mscratchcswl_rdata) | (|mscratchcsw_n) | (|mscratchcswl_n) | (|mclicbase_n) | mclicbase_we |
+    mscratchcsw_in_wb | mscratchcswl_in_wb | mnxti_in_wb;
 
 endmodule
