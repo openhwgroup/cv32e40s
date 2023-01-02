@@ -76,7 +76,6 @@ module cv32e40s_controller_fsm_sva
   input logic           nmi_allowed,
   input privlvl_t       priv_lvl_i,
   input privlvl_t       priv_lvl_n,
-  input mstatus_t       mstatus_i,
   input logic           sys_en_id_i,
   input logic           sys_wfi_insn_id_i,
   input logic           sys_mret_insn_id_i,
