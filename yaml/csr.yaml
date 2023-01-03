@@ -3663,7 +3663,10 @@
       msb: 31
       lsb: 0
 
-### COND PMP 1
+
+# Note: "pmpcfg*", is only defined in this file for 1) "COND PMP N" multiples of 4, and 2) non-warl0
+
+### COND PMP 4
 - csr: pmpcfg0
   description: >
     Physical memory protection configuration
@@ -3848,7 +3851,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 2
+### COND PMP 8
 - csr: pmpcfg1
   description: >
     Physical memory protection configuration
@@ -4033,7 +4036,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 3
+### COND PMP 12
 - csr: pmpcfg2
   description: >
     Physical memory protection configuration
@@ -4218,7 +4221,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 4
+### COND PMP 16
 - csr: pmpcfg3
   description: >
     Physical memory protection configuration
@@ -4403,7 +4406,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 5
+### COND PMP 20
 - csr: pmpcfg4
   description: >
     Physical memory protection configuration
@@ -4588,7 +4591,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 6
+### COND PMP 24
 - csr: pmpcfg5
   description: >
     Physical memory protection configuration
@@ -4773,7 +4776,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 7
+### COND PMP 28
 - csr: pmpcfg6
   description: >
     Physical memory protection configuration
@@ -4958,7 +4961,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 8
+### COND PMP 32
 - csr: pmpcfg7
   description: >
     Physical memory protection configuration
@@ -5143,7 +5146,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 9
+### COND PMP 36
 - csr: pmpcfg8
   description: >
     Physical memory protection configuration
@@ -5328,7 +5331,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 10
+### COND PMP 40
 - csr: pmpcfg9
   description: >
     Physical memory protection configuration
@@ -5513,7 +5516,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 11
+### COND PMP 44
 - csr: pmpcfg10
   description: >
     Physical memory protection configuration
@@ -5698,7 +5701,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 12
+### COND PMP 48
 - csr: pmpcfg11
   description: >
     Physical memory protection configuration
@@ -5883,7 +5886,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 13
+### COND PMP 52
 - csr: pmpcfg12
   description: >
     Physical memory protection configuration
@@ -6068,7 +6071,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 14
+### COND PMP 56
 - csr: pmpcfg13
   description: >
     Physical memory protection configuration
@@ -6253,7 +6256,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 15
+### COND PMP 60
 - csr: pmpcfg14
   description: >
     Physical memory protection configuration
@@ -6438,7 +6441,7 @@
       lsb: 0
 ### ENDCOND
 
-### COND PMP 16
+### COND PMP 64
 - csr: pmpcfg15
   description: >
     Physical memory protection configuration
