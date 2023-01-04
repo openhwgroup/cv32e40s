@@ -240,6 +240,8 @@ module cv32e40s_rvfi_instr_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg:
       end else begin
         // Uncompressed instruction (or pointer) in 2 rdata items
         obi_instr.req_payload                        = fifo_q[rptr_q].req_payload;
+        // Set pmp_err for the instruction if any of the rdata items had a PMP error.
+        // The PMP status for both rdata items are already in the FIFO since PMP errors are captured with the same timing as OBI address phase signals.
         obi_instr.pmp_err                            = fifo_q[rptr_q].pmp_err || fifo_q[rptr_q_inc].pmp_err;
         obi_instr.resp_payload.bus_resp.rdata[31:16] = (rptr_q_inc == wptr_resp_q) ? fifo_resp_n.resp_payload.bus_resp.rdata[15:0]  : fifo_q[rptr_q_inc].resp_payload.bus_resp.rdata[15:0];
         obi_instr.resp_payload.bus_resp.rdata[15:0]  = fifo_q[rptr_q].resp_payload.bus_resp.rdata[31:16];
