@@ -534,7 +534,7 @@ endgenerate
          // IF Probes
          .if_valid_i               ( core_i.if_stage_i.if_valid_o                                         ),
          .pc_if_i                  ( core_i.if_stage_i.pc_if_o                                            ),
-         .instr_pmp_err_if_i       ( 1'b0                          /* TODO: connect */                    ),
+         .instr_pmp_err_if_i       ( core_i.if_stage_i.mpu_i.pmp_err                                      ),
          .last_op_if_i             ( core_i.if_stage_i.last_op_o                                          ),
          .abort_op_if_i            ( core_i.if_stage_i.abort_op_o                                         ),
          .prefetch_valid_if_i      ( core_i.if_stage_i.prefetch_unit_i.prefetch_valid_o                   ),
