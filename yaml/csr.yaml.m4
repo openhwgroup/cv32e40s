@@ -62,7 +62,6 @@
 
 
 changequote(`[[[', `]]]')
-define( [[[ifdefeval]]], [[[ifdef([[[$1]]], [[[ifelse(eval($2),1,[[[$3]]],[[[$4]]])]]], $4)]]] )
 
 
 # Machine CSRs
@@ -123,7 +122,7 @@ define( [[[ifdefeval]]], [[[ifdef([[[$1]]], [[[ifelse(eval($2),1,[[[$3]]],[[[$4]
       msb: 31
       lsb: 0
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: cycle
   description: >
     Unprivileged alias of lower 32 Machine Cycle Counter
@@ -152,7 +151,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: instret
   description: >
     Unprivileged alias of lower 32 Machine Instructions-Retired Counter
@@ -181,7 +180,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: time
   description: >
     Unprivileged alias of lower 32 bits of Time Counter
@@ -222,7 +221,7 @@ ifdef([[[ZICNTR]]], [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 1), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 1), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -241,7 +240,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 1), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 1), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 1), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -261,7 +260,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 1), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 2), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 2), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -280,7 +279,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 2), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 2), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 2), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -300,7 +299,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 2), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 3), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 3), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -319,7 +318,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 3), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 3), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 3), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -339,7 +338,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 3), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 4), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 4), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -358,7 +357,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 4), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 4), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 4), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -378,7 +377,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 4), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 5), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 5), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -397,7 +396,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 5), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 5), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 5), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -417,7 +416,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 5), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 6), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 6), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -436,7 +435,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 6), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 6), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 6), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -456,7 +455,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 6), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 7), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 7), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -475,7 +474,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 7), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 7), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 7), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -495,7 +494,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 7), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 8), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 8), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -514,7 +513,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 8), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 8), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 8), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -534,7 +533,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 8), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 9), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 9), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -553,7 +552,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 9), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 9), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 9), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -573,7 +572,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 9), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 10), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 10), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -592,7 +591,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 10), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 10), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 10), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -612,7 +611,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 10), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 11), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 11), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -631,7 +630,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 11), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 11), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 11), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -651,7 +650,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 11), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 12), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 12), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -670,7 +669,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 12), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 12), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 12), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -690,7 +689,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 12), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 13), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 13), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -709,7 +708,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 13), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 13), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 13), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -729,7 +728,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 13), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 14), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 14), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -748,7 +747,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 14), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 14), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 14), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -768,7 +767,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 14), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 15), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 15), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -787,7 +786,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 15), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 15), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 15), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -807,7 +806,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 15), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 16), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 16), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -826,7 +825,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 16), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 16), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 16), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -846,7 +845,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 16), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 17), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 17), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -865,7 +864,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 17), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 17), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 17), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -885,7 +884,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 17), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 18), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 18), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -904,7 +903,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 18), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 18), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 18), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -924,7 +923,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 18), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 19), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 19), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -943,7 +942,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 19), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 19), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 19), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -963,7 +962,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 19), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 20), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 20), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -982,7 +981,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 20), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 20), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 20), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1002,7 +1001,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 20), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 21), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 21), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1021,7 +1020,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 21), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 21), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 21), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1041,7 +1040,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 21), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 22), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 22), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1060,7 +1059,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 22), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 22), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 22), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1080,7 +1079,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 22), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 23), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 23), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1099,7 +1098,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 23), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 23), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 23), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1119,7 +1118,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 23), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 24), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 24), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1138,7 +1137,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 24), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 24), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 24), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1158,7 +1157,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 24), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 25), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 25), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1177,7 +1176,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 25), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 25), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 25), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1197,7 +1196,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 25), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 26), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 26), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1216,7 +1215,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 26), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 26), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 26), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1236,7 +1235,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 26), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 27), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 27), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1255,7 +1254,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 27), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 27), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 27), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1275,7 +1274,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 27), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 28), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 28), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1294,7 +1293,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 28), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 28), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 28), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1314,7 +1313,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 28), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 29), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 29), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1333,7 +1332,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 29), [[[
       reset_val: 0
       msb: 31
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 29), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 29), 1, [[[
       type: RW
 ]]], [[[dnl
       type: WARL
@@ -1341,7 +1340,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 29), [[[
         val_out = 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter3
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1371,7 +1370,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter4
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1400,7 +1399,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter5
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1429,7 +1428,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter6
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1458,7 +1457,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter7
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1487,7 +1486,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter8
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1516,7 +1515,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter9
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1545,7 +1544,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter10
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1574,7 +1573,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter11
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1603,7 +1602,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter12
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1632,7 +1631,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter13
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1661,7 +1660,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter14
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1690,7 +1689,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter15
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1719,7 +1718,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter16
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1748,7 +1747,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter17
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1777,7 +1776,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter18
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1806,7 +1805,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter19
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1835,7 +1834,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter20
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1864,7 +1863,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter21
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1893,7 +1892,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter22
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1922,7 +1921,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter23
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1951,7 +1950,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter24
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -1980,7 +1979,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter25
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -2009,7 +2008,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter26
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -2038,7 +2037,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter27
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -2067,7 +2066,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter28
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -2096,7 +2095,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter29
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -2125,7 +2124,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter30
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -2154,7 +2153,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZICNTR]]], [[[
+ifelse(eval(ZICNTR != 0), 1, [[[
 - csr: hpmcounter31
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -2183,7 +2182,7 @@ ifdef([[[ZICNTR]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[DEBUG]]], [[[
+ifelse(eval(DEBUG != 0), 1, [[[
 - csr: dcsr
   description: >
     Debug Control and Status
@@ -2253,7 +2252,7 @@ ifdef([[[DEBUG]]], [[[
       description: >
         Set to enter debug mode on ebreak instruction during user mode
       type: R
-ifdef([[[UMODE]]], [[[
+ifelse(eval(UMODE != 0), 1, [[[
       type: WARL
 ]]])
       reset_val: 0
@@ -2330,13 +2329,13 @@ ifdef([[[UMODE]]], [[[
       lsb: 0
       warl_legalize: |
         val_out = 0x3
-ifdef([[[UMODE]]], [[[
+ifelse(eval(UMODE != 0), 1, [[[
       warl_legalize: |
         val_out = val_in if ((val_in == 0x3) or (val_in == 0x0)) else val_orig
 ]]])
 ]]])
 
-ifdef([[[DEBUG]]], [[[
+ifelse(eval(DEBUG != 0), 1, [[[
 - csr: dpc
   description: >
     Debug PC
@@ -2352,7 +2351,7 @@ ifdef([[[DEBUG]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[DEBUG]]], [[[
+ifelse(eval(DEBUG != 0), 1, [[[
 - csr: dscratch0
   description: >
     Debug scratch register
@@ -2368,7 +2367,7 @@ ifdef([[[DEBUG]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[DEBUG]]], [[[
+ifelse(eval(DEBUG != 0), 1, [[[
 - csr: dscratch1
   description: >
     Debug scratch register
@@ -2425,7 +2424,7 @@ ifdef([[[DEBUG]]], [[[
       lsb: 21
       warl_legalize: |
         val_out = 0
-ifdef([[[UMODE]]], [[[
+ifelse(eval(UMODE != 0), 1, [[[
     - field_name: TW
       description: >
         Timeout wait. When set, WFI from user mode causes illegal instruction.
@@ -2464,7 +2463,7 @@ ifdef([[[UMODE]]], [[[
       reset_val: 0
       msb: 17
       lsb: 17
-ifdef([[[UMODE]]], [[[
+ifelse(eval(UMODE != 0), 1, [[[
     - field_name: MPRV
       description: >
         Modify Privilege
@@ -2489,7 +2488,7 @@ ifdef([[[UMODE]]], [[[
       lsb: 13
       warl_legalize: |
         val_out = 0
-ifdef([[[X_EXT]]], [[[
+ifelse(eval(X_EXT != 0), 1, [[[
     - field_name: FS
       # TODO:silabs-robin "X_EXT" means 2 different things
       description: >
@@ -2508,7 +2507,7 @@ ifdef([[[X_EXT]]], [[[
       lsb: 11
       warl_legalize: |
         val_out = 0x3
-ifdef([[[UMODE]]], [[[
+ifelse(eval(UMODE != 0), 1, [[[
       warl_legalize: |
         val_out = val_in if ((val_in == 0x3) or (val_in == 0x0)) else val_orig
 ]]])
@@ -2516,7 +2515,7 @@ ifdef([[[UMODE]]], [[[
       description: >
         Vector Extension Context Status
       type: WPRI
-ifdef([[[X_EXT]]], [[[
+ifelse(eval(X_EXT != 0), 1, [[[
       type: RW
 ]]])
       reset_val: 0
@@ -2653,7 +2652,7 @@ ifdef([[[X_EXT]]], [[[
       lsb: 21
       warl_legalize: |
         val_out = 0
-ifdef([[[V_EXT]]], [[[
+ifelse(eval(V_EXT != 0), 1, [[[
     - field_name: V
       description: >
         Tentatively reserved for Vector extension
@@ -2668,7 +2667,7 @@ ifdef([[[V_EXT]]], [[[
       type: WARL
       msb: 20
       lsb: 20
-ifdef([[[UMODE]]], [[[
+ifelse(eval(UMODE != 0), 1, [[[
       reset_val: 1
       warl_legalize: |
         val_out = 1
@@ -2722,7 +2721,7 @@ ifdef([[[UMODE]]], [[[
       lsb: 15
       warl_legalize: |
         val_out = 0
-ifdef([[[P_EXT]]], [[[
+ifelse(eval(P_EXT != 0), 1, [[[
     - field_name: P
       description: >
         Packed SIMD
@@ -2755,12 +2754,12 @@ ifdef([[[P_EXT]]], [[[
       type: WARL
       msb: 12
       lsb: 12
-ifdef([[[M_EXT]]], [[[
+ifelse(eval(M_EXT != 0), 1, [[[
       reset_val: 1
       warl_legalize: |
         val_out = 1
 ]]])
-ifdef([[[M_NONE]]], [[[
+ifelse(eval(M_NONE != 0), 1, [[[
       reset_val: 0
       warl_legalize: |
         val_out = 0
@@ -2798,12 +2797,12 @@ ifdef([[[M_NONE]]], [[[
       type: WARL
       msb: 8
       lsb: 8
-ifdef([[[I_BASE]]], [[[
+ifelse(eval(I_BASE != 0), 1, [[[
       reset_val: 1
       warl_legalize: |
         val_out = 1
 ]]])
-ifdef([[[E_BASE]]], [[[
+ifelse(eval(E_BASE != 0), 1, [[[
       reset_val: 0
       warl_legalize: |
         val_out = 0
@@ -2835,7 +2834,7 @@ ifdef([[[E_BASE]]], [[[
       lsb: 5
       warl_legalize: |
         val_out = 0
-ifdef([[[F_EXT]]], [[[
+ifelse(eval(F_EXT != 0), 1, [[[
     - field_name: F
       description: >
         Single presition floating point
@@ -2850,12 +2849,12 @@ ifdef([[[F_EXT]]], [[[
       type: WARL
       msb: 4
       lsb: 4
-ifdef([[[E_BASE]]], [[[
+ifelse(eval(E_BASE != 0), 1, [[[
       reset_val: 1
       warl_legalize: |
         val_out = 1
 ]]])
-ifdef([[[I_BASE]]], [[[
+ifelse(eval(I_BASE != 0), 1, [[[
       reset_val: 0
       warl_legalize: |
         val_out = 0
@@ -2896,13 +2895,13 @@ ifdef([[[I_BASE]]], [[[
       reset_val: 0
       warl_legalize: |
         val_out = 0
-ifdef([[[A_EXT]]], [[[
+ifelse(eval(A_EXT != 0), 1, [[[
       reset_val: 1
       warl_legalize: |
         val_out = 1
 ]]])
 
-ifdef([[[CLINT]]], [[[
+ifelse(eval(CLINT != 0), 1, [[[
 - csr: mie
   description: >
     Machine Interrupt Enable
@@ -3029,7 +3028,7 @@ ifdef([[[CLINT]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[CLIC]]], [[[
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mie
   description: >
     Machine Interrupt Enable
@@ -3047,7 +3046,7 @@ ifdef([[[CLIC]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[CLINT]]], [[[
+ifelse(eval(CLINT != 0), 1, [[[
 - csr: mtvec
   description: >
     Machine Trap-Vector Base Address
@@ -3081,7 +3080,7 @@ ifdef([[[CLINT]]], [[[
         val_out = val_in if (val_in == 0 or val_in == 1) else val_orig
 ]]])
 
-ifdef([[[CLIC]]], [[[
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mtvec
   description: >
     Machine Trap-Vector Base Address
@@ -3124,7 +3123,7 @@ ifdef([[[CLIC]]], [[[
         val_out = 3
 ]]])
 
-ifdef([[[CLIC]]], [[[
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mtvt
   description: >
     Machine Trap Vector Table Base Address
@@ -3256,7 +3255,7 @@ ifdef([[[CLIC]]], [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 1), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 1), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3284,7 +3283,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 1), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 2), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 2), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3312,7 +3311,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 2), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 3), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 3), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3340,7 +3339,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 3), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 4), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 4), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3368,7 +3367,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 4), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 5), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 5), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3396,7 +3395,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 5), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 6), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 6), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3424,7 +3423,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 6), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 7), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 7), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3452,7 +3451,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 7), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 8), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 8), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3480,7 +3479,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 8), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 9), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 9), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3508,7 +3507,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 9), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 10), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 10), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3536,7 +3535,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 10), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 11), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 11), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3564,7 +3563,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 11), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 12), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 12), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3592,7 +3591,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 12), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 13), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 13), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3620,7 +3619,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 13), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 14), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 14), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3648,7 +3647,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 14), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 15), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 15), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3676,7 +3675,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 15), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 16), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 16), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3704,7 +3703,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 16), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 17), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 17), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3732,7 +3731,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 17), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 18), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 18), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3760,7 +3759,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 18), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 19), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 19), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3788,7 +3787,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 19), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 20), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 20), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3816,7 +3815,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 20), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 21), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 21), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3844,7 +3843,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 21), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 22), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 22), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3872,7 +3871,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 22), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 23), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 23), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3900,7 +3899,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 23), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 24), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 24), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3928,7 +3927,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 24), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 25), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 25), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3956,7 +3955,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 25), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 26), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 26), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -3984,7 +3983,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 26), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 27), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 27), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -4012,7 +4011,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 27), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 28), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 28), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -4040,7 +4039,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 28), [[[
       reset_val: 0
       msb: 15
       lsb: 0
-ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 29), [[[
+ifelse(eval(NUM_MHPMCOUNTERS >= 29), 1, [[[
 ]]], [[[dnl
       warl_legalize: |
         val_out = 0
@@ -4083,7 +4082,7 @@ ifdefeval( [[[NUM_MHPMCOUNTERS]]], (NUM_MHPMCOUNTERS >= 29), [[[
       warl_legalize: |
         val_out = 0
 
-ifdef([[[CLIC]]], [[[
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mcause
   description: >
     Machine Exception Cause
@@ -4113,7 +4112,7 @@ ifdef([[[CLIC]]], [[[
       lsb: 28
       warl_legalize: |
         val_out = 0x3
-ifdef([[[UMODE]]], [[[
+ifelse(eval(UMODE != 0), 1, [[[
       warl_legalize: |
         val_out = val_in if ((val_in == 0x3) or (val_in == 0x0)) else val_orig
 ]]])
@@ -4167,7 +4166,7 @@ ifdef([[[UMODE]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[CLINT]]], [[[
+ifelse(eval(CLINT != 0), 1, [[[
 - csr: mcause
   description: >
     Machine Exception Cause
@@ -4215,7 +4214,7 @@ ifdef([[[CLINT]]], [[[
       warl_legalize: |
         val_out = 0
 
-ifdef([[[CLINT]]], [[[
+ifelse(eval(CLINT != 0), 1, [[[
 - csr: mip
   description: >
     Machine Interrupt Pending
@@ -4342,7 +4341,7 @@ ifdef([[[CLINT]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[CLIC]]], [[[
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mip
   description: >
     Machine Interrupt Pending
@@ -4360,7 +4359,7 @@ ifdef([[[CLIC]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[CLIC]]], [[[
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mnxti
   description: >
     Machine next interrupt
@@ -4376,7 +4375,7 @@ ifdef([[[CLIC]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[CLIC]]], [[[
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mintstatus
   description: >
     Machine interrupt status
@@ -4413,7 +4412,7 @@ ifdef([[[CLIC]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[CLIC]]], [[[
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mintthresh
   description: >
     Machine interrupt threshold
@@ -4436,7 +4435,7 @@ ifdef([[[CLIC]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[CLIC]]], [[[
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mscratchcsw
   description: >
     Machine scratch swap for privilege mode change
@@ -4452,7 +4451,7 @@ ifdef([[[CLIC]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[CLIC]]], [[[
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mscratchcswl
   description: >
     Machine scratch swap for privilege level change
@@ -4468,7 +4467,7 @@ ifdef([[[CLIC]]], [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tselect
   description: >
     Trigger Select Register
@@ -4483,21 +4482,21 @@ ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
       msb: 31
       lsb: 0
       warl_legalize: |
-ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS == 1), [[[
+ifelse(eval(DBG_NUM_TRIGGERS == 1), 1, [[[
         val_out = 0
 ]]])
-ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS == 2), [[[
+ifelse(eval(DBG_NUM_TRIGGERS == 2), 1, [[[
         val_out = val_in if (val_in == 0 or val_in == 1) else val_orig
 ]]])
-ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS == 3), [[[
+ifelse(eval(DBG_NUM_TRIGGERS == 3), 1, [[[
         val_out = val_in if (val_in == 0 or val_in == 1 or val_in == 2) else val_orig
 ]]])
-ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS == 4), [[[
+ifelse(eval(DBG_NUM_TRIGGERS == 4), 1, [[[
         val_out = val_in if (val_in == 0 or val_in == 1 or val_in == 2 or val_in == 3) else val_orig
 ]]])
 ]]])
 
-ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tdata1
   description: >
     Trigger Data Register 1
@@ -4535,7 +4534,7 @@ ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
             lsb: 0
 ]]])
 
-ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tdata2
   description: >
     Trigger Data Register 2
@@ -4553,7 +4552,7 @@ ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tdata3
   description: >
     Trigger Data Register 3
@@ -4571,7 +4570,7 @@ ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
         val_out = 0
 ]]])
 
-ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tinfo
   description: >
     Trigger Info
@@ -4596,7 +4595,7 @@ ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tcontrol
   description: >
     Trigger control
@@ -4650,7 +4649,7 @@ ifdefeval( [[[DBG_NUM_TRIGGERS]]], (DBG_NUM_TRIGGERS >= 1), [[[
         val_out = 0
 ]]])
 
-ifdef([[[ZC]]], [[[
+ifelse(eval(ZC != 0), 1, [[[
 - csr: jvt
   description: >
     Jump vector table
@@ -4689,7 +4688,7 @@ ifdef([[[ZC]]], [[[
 # {mvendorid, marchid, mimpid, mhartid, mconfigptr} are MRO, and are hence
 # marked with a conditional to denote that a write would give an exception.
 
-ifdef([[[READONLY]]], [[[
+ifelse(eval(READONLY != 0), 1, [[[
 - csr: mvendorid
   description: >
     Machine Vendor ID
@@ -4720,10 +4719,10 @@ ifdef([[[READONLY]]], [[[
       description: >
         Machine Architecture ID of the core
       type: R
-ifdefeval( [[[MARCHID]]], (MARCHID == 0x14), [[[
+ifelse(eval(MARCHID == 0x14), 1, [[[
       reset_val: 0x14
 ]]])
-ifdefeval( [[[MARCHID]]], (MARCHID == 0x15), [[[
+ifelse(eval(MARCHID == 0x15), 1, [[[
       reset_val: 0x15
 ]]])
       msb: 31
@@ -4804,7 +4803,7 @@ ifdefeval( [[[MARCHID]]], (MARCHID == 0x15), [[[
       lsb: 0
 ]]])
 
-ifdef([[[XSECURE]]], [[[
+ifelse(eval(XSECURE != 0), 1, [[[
 - csr: cpuctrl
   description: >
     Controls CPU security features
@@ -4869,7 +4868,7 @@ ifdef([[[XSECURE]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[XSECURE]]], [[[
+ifelse(eval(XSECURE != 0), 1, [[[
 - csr: secureseed0
   description: >
     Seed for LSFR0
@@ -4887,7 +4886,7 @@ ifdef([[[XSECURE]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[XSECURE]]], [[[
+ifelse(eval(XSECURE != 0), 1, [[[
 - csr: secureseed1
   description: >
     Seed for LSFR1
@@ -4905,7 +4904,7 @@ ifdef([[[XSECURE]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[XSECURE]]], [[[
+ifelse(eval(XSECURE != 0), 1, [[[
 - csr: secureseed2
   description: >
     Seed for LSFR0
@@ -4923,7 +4922,7 @@ ifdef([[[XSECURE]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[UMODE]]], [[[
+ifelse(eval(UMODE != 0), 1, [[[
 - csr: mcounteren
   description: >
     Machine counter enable
@@ -4941,7 +4940,7 @@ ifdef([[[UMODE]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[UMODE]]], [[[
+ifelse(eval(UMODE != 0), 1, [[[
 - csr: menvcfg
   description: >
     Machine Environment Configuration
@@ -4992,7 +4991,7 @@ ifdef([[[UMODE]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZC]]], [[[
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen0
   description: >
     Machine state enable 0
@@ -5026,7 +5025,7 @@ ifdef([[[ZC]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[ZC]]], [[[
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen1
   description: >
     Machine state enable 1
@@ -5044,7 +5043,7 @@ ifdef([[[ZC]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[ZC]]], [[[
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen2
   description: >
     Machine state enable 2
@@ -5062,7 +5061,7 @@ ifdef([[[ZC]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[ZC]]], [[[
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen3
   description: >
     Machine state enable 3
@@ -5080,7 +5079,7 @@ ifdef([[[ZC]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[UMODE]]], [[[
+ifelse(eval(UMODE != 0), 1, [[[
 - csr: menvcfgh
   description: >
     Machine Environment Configuration upper 32 bits
@@ -5103,7 +5102,7 @@ ifdef([[[UMODE]]], [[[
       lsb: 0
 ]]])
 
-ifdef([[[ZC]]], [[[
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen0h
   description: >
     Machine state enable 0 upper 32 bits
@@ -5121,7 +5120,7 @@ ifdef([[[ZC]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[ZC]]], [[[
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen1h
   description: >
     Machine state enable 1 upper 32 bits
@@ -5139,7 +5138,7 @@ ifdef([[[ZC]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[ZC]]], [[[
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen2h
   description: >
     Machine state enable 2 upper 32 bits
@@ -5157,7 +5156,7 @@ ifdef([[[ZC]]], [[[
         val_out = 0
 ]]])
 
-ifdef([[[ZC]]], [[[
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen3h
   description: >
     Machine state enable 3 upper 32 bits
@@ -5175,7 +5174,7 @@ ifdef([[[ZC]]], [[[
         val_out = 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 1), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 1), 1, [[[
 - csr: mseccfg
   description: >
     Machine security configuration
@@ -5233,7 +5232,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 1), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 1), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 1), 1, [[[
 - csr: mseccfgh
   description: >
     Machine security configuration upper 32 bits
@@ -5252,7 +5251,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 1), [[[
 
 # Note: "pmpcfg*", is only defined in this file for 1) "PMP N" multiples of 4, and 2) non-warl0
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 4), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 4), 1, [[[
 - csr: pmpcfg0
   description: >
     Physical memory protection configuration
@@ -5437,7 +5436,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 4), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 8), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 8), 1, [[[
 - csr: pmpcfg1
   description: >
     Physical memory protection configuration
@@ -5622,7 +5621,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 8), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 12), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 12), 1, [[[
 - csr: pmpcfg2
   description: >
     Physical memory protection configuration
@@ -5807,7 +5806,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 12), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 16), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 16), 1, [[[
 - csr: pmpcfg3
   description: >
     Physical memory protection configuration
@@ -5992,7 +5991,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 16), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 20), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 20), 1, [[[
 - csr: pmpcfg4
   description: >
     Physical memory protection configuration
@@ -6177,7 +6176,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 20), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 24), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 24), 1, [[[
 - csr: pmpcfg5
   description: >
     Physical memory protection configuration
@@ -6362,7 +6361,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 24), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 28), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 28), 1, [[[
 - csr: pmpcfg6
   description: >
     Physical memory protection configuration
@@ -6547,7 +6546,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 28), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 32), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 32), 1, [[[
 - csr: pmpcfg7
   description: >
     Physical memory protection configuration
@@ -6732,7 +6731,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 32), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 36), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 36), 1, [[[
 - csr: pmpcfg8
   description: >
     Physical memory protection configuration
@@ -6917,7 +6916,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 36), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 40), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 40), 1, [[[
 - csr: pmpcfg9
   description: >
     Physical memory protection configuration
@@ -7102,7 +7101,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 40), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 44), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 44), 1, [[[
 - csr: pmpcfg10
   description: >
     Physical memory protection configuration
@@ -7287,7 +7286,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 44), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 48), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 48), 1, [[[
 - csr: pmpcfg11
   description: >
     Physical memory protection configuration
@@ -7472,7 +7471,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 48), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 52), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 52), 1, [[[
 - csr: pmpcfg12
   description: >
     Physical memory protection configuration
@@ -7657,7 +7656,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 52), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 56), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 56), 1, [[[
 - csr: pmpcfg13
   description: >
     Physical memory protection configuration
@@ -7842,7 +7841,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 56), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 60), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 60), 1, [[[
 - csr: pmpcfg14
   description: >
     Physical memory protection configuration
@@ -8027,7 +8026,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 60), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 64), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 64), 1, [[[
 - csr: pmpcfg15
   description: >
     Physical memory protection configuration
@@ -8212,7 +8211,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 64), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 1), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 1), 1, [[[
 - csr: pmpaddr0
   description: >
     Physical memory address configuration
@@ -8228,7 +8227,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 1), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 2), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 2), 1, [[[
 - csr: pmpaddr1
   description: >
     Physical memory address configuration
@@ -8244,7 +8243,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 2), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 3), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 3), 1, [[[
 - csr: pmpaddr2
   description: >
     Physical memory address configuration
@@ -8260,7 +8259,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 3), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 4), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 4), 1, [[[
 - csr: pmpaddr3
   description: >
     Physical memory address configuration
@@ -8276,7 +8275,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 4), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 5), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 5), 1, [[[
 - csr: pmpaddr4
   description: >
     Physical memory address configuration
@@ -8292,7 +8291,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 5), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 6), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 6), 1, [[[
 - csr: pmpaddr5
   description: >
     Physical memory address configuration
@@ -8308,7 +8307,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 6), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 7), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 7), 1, [[[
 - csr: pmpaddr6
   description: >
     Physical memory address configuration
@@ -8324,7 +8323,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 7), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 8), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 8), 1, [[[
 - csr: pmpaddr7
   description: >
     Physical memory address configuration
@@ -8340,7 +8339,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 8), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 9), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 9), 1, [[[
 - csr: pmpaddr8
   description: >
     Physical memory address configuration
@@ -8356,7 +8355,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 9), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 10), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 10), 1, [[[
 - csr: pmpaddr9
   description: >
     Physical memory address configuration
@@ -8372,7 +8371,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 10), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 11), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 11), 1, [[[
 - csr: pmpaddr10
   description: >
     Physical memory address configuration
@@ -8388,7 +8387,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 11), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 12), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 12), 1, [[[
 - csr: pmpaddr11
   description: >
     Physical memory address configuration
@@ -8404,7 +8403,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 12), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 13), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 13), 1, [[[
 - csr: pmpaddr12
   description: >
     Physical memory address configuration
@@ -8420,7 +8419,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 13), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 14), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 14), 1, [[[
 - csr: pmpaddr13
   description: >
     Physical memory address configuration
@@ -8436,7 +8435,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 14), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 15), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 15), 1, [[[
 - csr: pmpaddr14
   description: >
     Physical memory address configuration
@@ -8452,7 +8451,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 15), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 16), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 16), 1, [[[
 - csr: pmpaddr15
   description: >
     Physical memory address configuration
@@ -8468,7 +8467,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 16), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 17), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 17), 1, [[[
 - csr: pmpaddr16
   description: >
     Physical memory address configuration
@@ -8484,7 +8483,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 17), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 18), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 18), 1, [[[
 - csr: pmpaddr17
   description: >
     Physical memory address configuration
@@ -8500,7 +8499,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 18), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 19), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 19), 1, [[[
 - csr: pmpaddr18
   description: >
     Physical memory address configuration
@@ -8516,7 +8515,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 19), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 20), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 20), 1, [[[
 - csr: pmpaddr19
   description: >
     Physical memory address configuration
@@ -8532,7 +8531,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 20), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 21), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 21), 1, [[[
 - csr: pmpaddr20
   description: >
     Physical memory address configuration
@@ -8548,7 +8547,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 21), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 22), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 22), 1, [[[
 - csr: pmpaddr21
   description: >
     Physical memory address configuration
@@ -8564,7 +8563,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 22), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 23), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 23), 1, [[[
 - csr: pmpaddr22
   description: >
     Physical memory address configuration
@@ -8580,7 +8579,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 23), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 24), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 24), 1, [[[
 - csr: pmpaddr23
   description: >
     Physical memory address configuration
@@ -8596,7 +8595,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 24), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 25), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 25), 1, [[[
 - csr: pmpaddr24
   description: >
     Physical memory address configuration
@@ -8612,7 +8611,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 25), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 26), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 26), 1, [[[
 - csr: pmpaddr25
   description: >
     Physical memory address configuration
@@ -8628,7 +8627,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 26), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 27), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 27), 1, [[[
 - csr: pmpaddr26
   description: >
     Physical memory address configuration
@@ -8644,7 +8643,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 27), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 28), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 28), 1, [[[
 - csr: pmpaddr27
   description: >
     Physical memory address configuration
@@ -8660,7 +8659,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 28), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 29), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 29), 1, [[[
 - csr: pmpaddr28
   description: >
     Physical memory address configuration
@@ -8676,7 +8675,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 29), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 30), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 30), 1, [[[
 - csr: pmpaddr29
   description: >
     Physical memory address configuration
@@ -8692,7 +8691,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 30), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 31), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 31), 1, [[[
 - csr: pmpaddr30
   description: >
     Physical memory address configuration
@@ -8708,7 +8707,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 31), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 32), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 32), 1, [[[
 - csr: pmpaddr31
   description: >
     Physical memory address configuration
@@ -8724,7 +8723,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 32), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 33), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 33), 1, [[[
 - csr: pmpaddr32
   description: >
     Physical memory address configuration
@@ -8740,7 +8739,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 33), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 34), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 34), 1, [[[
 - csr: pmpaddr33
   description: >
     Physical memory address configuration
@@ -8756,7 +8755,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 34), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 35), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 35), 1, [[[
 - csr: pmpaddr34
   description: >
     Physical memory address configuration
@@ -8772,7 +8771,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 35), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 36), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 36), 1, [[[
 - csr: pmpaddr35
   description: >
     Physical memory address configuration
@@ -8788,7 +8787,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 36), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 37), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 37), 1, [[[
 - csr: pmpaddr36
   description: >
     Physical memory address configuration
@@ -8804,7 +8803,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 37), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 38), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 38), 1, [[[
 - csr: pmpaddr37
   description: >
     Physical memory address configuration
@@ -8820,7 +8819,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 38), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 39), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 39), 1, [[[
 - csr: pmpaddr38
   description: >
     Physical memory address configuration
@@ -8836,7 +8835,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 39), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 40), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 40), 1, [[[
 - csr: pmpaddr39
   description: >
     Physical memory address configuration
@@ -8852,7 +8851,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 40), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 41), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 41), 1, [[[
 - csr: pmpaddr40
   description: >
     Physical memory address configuration
@@ -8868,7 +8867,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 41), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 42), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 42), 1, [[[
 - csr: pmpaddr41
   description: >
     Physical memory address configuration
@@ -8884,7 +8883,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 42), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 43), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 43), 1, [[[
 - csr: pmpaddr42
   description: >
     Physical memory address configuration
@@ -8900,7 +8899,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 43), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 44), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 44), 1, [[[
 - csr: pmpaddr43
   description: >
     Physical memory address configuration
@@ -8916,7 +8915,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 44), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 45), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 45), 1, [[[
 - csr: pmpaddr44
   description: >
     Physical memory address configuration
@@ -8932,7 +8931,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 45), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 46), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 46), 1, [[[
 - csr: pmpaddr45
   description: >
     Physical memory address configuration
@@ -8948,7 +8947,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 46), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 47), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 47), 1, [[[
 - csr: pmpaddr46
   description: >
     Physical memory address configuration
@@ -8964,7 +8963,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 47), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 48), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 48), 1, [[[
 - csr: pmpaddr47
   description: >
     Physical memory address configuration
@@ -8980,7 +8979,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 48), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 49), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 49), 1, [[[
 - csr: pmpaddr48
   description: >
     Physical memory address configuration
@@ -8996,7 +8995,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 49), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 50), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 50), 1, [[[
 - csr: pmpaddr49
   description: >
     Physical memory address configuration
@@ -9012,7 +9011,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 50), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 51), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 51), 1, [[[
 - csr: pmpaddr50
   description: >
     Physical memory address configuration
@@ -9028,7 +9027,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 51), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 52), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 52), 1, [[[
 - csr: pmpaddr51
   description: >
     Physical memory address configuration
@@ -9044,7 +9043,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 52), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 53), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 53), 1, [[[
 - csr: pmpaddr52
   description: >
     Physical memory address configuration
@@ -9060,7 +9059,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 53), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 54), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 54), 1, [[[
 - csr: pmpaddr53
   description: >
     Physical memory address configuration
@@ -9076,7 +9075,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 54), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 55), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 55), 1, [[[
 - csr: pmpaddr54
   description: >
     Physical memory address configuration
@@ -9092,7 +9091,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 55), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 56), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 56), 1, [[[
 - csr: pmpaddr55
   description: >
     Physical memory address configuration
@@ -9108,7 +9107,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 56), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 57), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 57), 1, [[[
 - csr: pmpaddr56
   description: >
     Physical memory address configuration
@@ -9124,7 +9123,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 57), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 58), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 58), 1, [[[
 - csr: pmpaddr57
   description: >
     Physical memory address configuration
@@ -9140,7 +9139,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 58), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 59), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 59), 1, [[[
 - csr: pmpaddr58
   description: >
     Physical memory address configuration
@@ -9156,7 +9155,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 59), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 60), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 60), 1, [[[
 - csr: pmpaddr59
   description: >
     Physical memory address configuration
@@ -9172,7 +9171,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 60), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 61), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 61), 1, [[[
 - csr: pmpaddr60
   description: >
     Physical memory address configuration
@@ -9188,7 +9187,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 61), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 62), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 62), 1, [[[
 - csr: pmpaddr61
   description: >
     Physical memory address configuration
@@ -9204,7 +9203,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 62), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 63), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 63), 1, [[[
 - csr: pmpaddr62
   description: >
     Physical memory address configuration
@@ -9220,7 +9219,7 @@ ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 63), [[[
       lsb: 0
 ]]])
 
-ifdefeval( [[[PMP_NUM_REGIONS]]], (PMP_NUM_REGIONS >= 64), [[[
+ifelse(eval(PMP_NUM_REGIONS >= 64), 1, [[[
 - csr: pmpaddr63
   description: >
     Physical memory address configuration
