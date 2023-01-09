@@ -131,7 +131,7 @@ assign ctrl_flow_addr = (pc_mux_q == PC_JUMP)     ? jump_target_id_i      :
                         (pc_mux_q == PC_TRAP_EXC) ? {mtvec_addr_i, 7'h0 } : // Also covered by CSR hardening
                         (pc_mux_q == PC_DRET)     ? dpc_i                 :
                         (pc_mux_q == PC_POINTER)  ? if_id_pipe_i.ptr      : // Only for Zc, gated by not raising pc_set_q for CLIC pointers.
-                        (pc_mux_q == PC_TBLJUMP)  ? {jvt_addr_i, ctrl_fsm_i.jvt_pc_mux, 2'b00} : {boot_addr_i[31:2], 2'b00};
+                        (pc_mux_q == PC_TBLJUMP)  ? jump_target_id_i      : {boot_addr_i[31:2], 2'b00};
 
 // Choose which address to check vs pc_if, sequential or control flow.
 // Instructions are 16 bit aligned since the core supports the C extension.
