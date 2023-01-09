@@ -466,7 +466,7 @@ typedef enum logic[11:0] {
 } csr_num_e;
 
 // CSR Bit Implementation Masks
-parameter CSR_JVT_MASK          = 32'hFFFFFC00;
+parameter CSR_JVT_MASK          = 32'hFFFFFFC0;
 parameter CSR_DCSR_MASK         = 32'b1111_0000_0000_0000_1001_1101_1100_0111; // NMI bit taken from ctrl_fsm
 parameter CSR_MEPC_MASK         = 32'hFFFFFFFE;
 parameter CSR_DPC_MASK          = 32'hFFFFFFFE;
@@ -590,9 +590,7 @@ typedef struct packed {
   logic [5: 0] mode;
 } jvt_t;
 
-// todo: Might change this is Zc TG changes spec to allow some
-// bits of the jvt.base to be WARL
-parameter JVT_ADDR_WIDTH = 22;
+parameter JVT_ADDR_WIDTH = 26;
 
 typedef struct packed {
   logic         sd;     // State dirty
@@ -871,9 +869,10 @@ typedef enum logic[1:0] {
 
 // Control transfer (branch/jump) target mux
 typedef enum logic[1:0] {
-                         CT_JAL  = 2'b01,
-                         CT_JALR = 2'b10,
-                         CT_BCH  = 2'b11
+                         CT_TBLJMP = 2'b00,
+                         CT_JAL    = 2'b01,
+                         CT_JALR   = 2'b10,
+                         CT_BCH    = 2'b11
                          } bch_jmp_mux_e;
 
 // Decoder control signals
@@ -1439,7 +1438,6 @@ typedef struct packed {
   logic [4:0]  mtvec_pc_mux;          // Id of taken basic mode irq (to IF, EXC_PC_MUX, zeroed if mtvec_mode==0)
   logic [9:0]  mtvt_pc_mux;           // Id of taken CLIC irq (to IF, EXC_PC_MUX, zeroed if not shv)
                                       // Setting to 11 bits (max), unused bits will be tied off
-  logic [7:0]  jvt_pc_mux;            // Index for table jumps
   logic [4:0]  nmi_mtvec_index;       // Offset into mtvec when taking an NMI
 
 

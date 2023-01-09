@@ -557,7 +557,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mepc_i              ( mepc                     ), // Exception PC (restore upon return from exception/interrupt)
     .mtvec_addr_i        ( mtvec_addr               ), // Exception/interrupt address (MSBs only)
     .mtvt_addr_i         ( mtvt_addr                ), // CLIC vector base
-    .jvt_addr_i          ( jvt_addr                 ),
 
     .branch_decision_ex_i( branch_decision_ex       ),
 
@@ -654,6 +653,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mstatus_i                    ( mstatus                   ),
     .xsecure_ctrl_i               ( xsecure_ctrl              ),
     .mcause_i                     ( mcause                    ),
+    .jvt_addr_i                   ( jvt_addr                  ),
 
     // Register file write back and forwards
     .rf_wdata_ex_i                ( rf_wdata_ex               ),
