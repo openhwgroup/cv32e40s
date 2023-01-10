@@ -127,7 +127,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Unprivileged alias of lower 32 Machine Cycle Counter
   address: 0xC00
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -140,7 +140,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Unprivileged alias of upper 32 Machine Cycle Counter
   address: 0xC80
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -156,7 +156,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Unprivileged alias of lower 32 Machine Instructions-Retired Counter
   address: 0xC02
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -169,7 +169,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Unprivileged alias of upper 32 Machine Instructions-Retired Counter
   address: 0xC82
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -185,7 +185,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Unprivileged alias of lower 32 bits of Time Counter
   address: 0xC01
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -198,7 +198,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Unprivileged alias of upper 32 bits of Time Counter
   address: 0xC81
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1345,7 +1345,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC03
-  privilege_mode: M
+  privilege_mode: U
   # TODO:silabs-robin  Wrong privmode
   rv32:
     - field_name: Count
@@ -1359,7 +1359,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC83
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1375,7 +1375,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC04
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1388,7 +1388,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC84
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1404,7 +1404,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC05
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1417,7 +1417,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC85
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1433,7 +1433,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC06
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1446,7 +1446,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC86
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1462,7 +1462,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC07
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1475,7 +1475,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC87
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1491,7 +1491,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC08
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1504,7 +1504,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC88
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1520,7 +1520,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC09
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1533,7 +1533,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC89
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1549,7 +1549,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC0A
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1562,7 +1562,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC8A
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1578,7 +1578,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC0B
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1591,7 +1591,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC8B
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1607,7 +1607,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC0C
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1620,7 +1620,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC8C
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1636,7 +1636,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC0D
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1649,7 +1649,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC8D
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1665,7 +1665,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC0E
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1678,7 +1678,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC8E
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1694,7 +1694,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC0F
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1707,7 +1707,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC8F
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1723,7 +1723,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC10
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1736,7 +1736,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC90
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1752,7 +1752,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC11
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1765,7 +1765,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC91
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1781,7 +1781,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC12
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1794,7 +1794,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC92
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1810,7 +1810,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC13
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1823,7 +1823,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC93
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1839,7 +1839,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC14
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1852,7 +1852,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC94
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1868,7 +1868,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC15
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1881,7 +1881,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC95
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1897,7 +1897,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC16
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1910,7 +1910,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC96
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1926,7 +1926,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC17
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1939,7 +1939,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC97
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1955,7 +1955,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC18
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1968,7 +1968,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC98
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1984,7 +1984,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC19
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -1997,7 +1997,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC99
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2013,7 +2013,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC1A
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2026,7 +2026,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC9A
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2042,7 +2042,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC1B
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2055,7 +2055,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC9B
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2071,7 +2071,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC1C
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2084,7 +2084,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC9C
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2100,7 +2100,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC1D
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2113,7 +2113,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC9D
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2129,7 +2129,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC1E
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2142,7 +2142,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC9E
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2158,7 +2158,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
   address: 0xC1F
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -2171,7 +2171,7 @@ ifelse(eval(ZICNTR != 0), 1, [[[
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
   address: 0xC9F
-  privilege_mode: M
+  privilege_mode: U
   rv32:
     - field_name: Count
       description: >
@@ -4504,34 +4504,36 @@ ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
   privilege_mode: M
   reset_val: 0x28001000
   rv32:
-          - field_name: Type
-            description: >
-               Address/data match trigger type
-            type: WARL
-            reset_val: 2
-            msb: 31
-            lsb: 28
-            values:
-               mcontrol:   2
-               etrigger:   5
-               mcontrol6:  6
-               disabled:  15
-          - field_name: dmode
-            description: >
-               Only debug mode can write tdata registers
-            type: WARL
-            reset_val: 1
-            msb: 27
-            lsb: 27
-            warl_legalize: |
-              val_out = 1
-          - field_name: data
-            description: >
-               Only debug mode can write tdata registers
-            type: WARL
-            reset_val: 1
-            msb: 26
-            lsb: 0
+    - field_name: Type
+      description: >
+         Address/data match trigger type
+      type: WARL
+      reset_val: 2
+      msb: 31
+      lsb: 28
+      values:
+         mcontrol:   2
+         etrigger:   5
+         mcontrol6:  6
+         disabled:  15
+      warl_legalize: |
+        val_out = val_in if (val_in == 2 or val_in == 5 or val_in == 6) else 0xF
+    - field_name: dmode
+      description: >
+         Only debug mode can write tdata registers
+      type: WARL
+      reset_val: 1
+      msb: 27
+      lsb: 27
+      warl_legalize: |
+        val_out = 1
+    - field_name: data
+      description: >
+         Only debug mode can write tdata registers
+      type: WARL
+      reset_val: 1
+      msb: 26
+      lsb: 0
 ]]])
 
 ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
