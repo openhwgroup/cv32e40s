@@ -2118,6 +2118,11 @@ Detailed:
 
 The ``secureseed0`` CSR contains seed data for LFSR0.
 
+.. note::
+  Only the read-modify-write (swap/CSRRW) operation is useful for ``secureseed0``.
+  The behavior of the non-CSRRW variants (i.e. CSRRS/C, CSRRWI, CSRRS/CI) and CSRRW variants with **rs1** = **x0** on ``secureseed0`` are implementation-defined.
+  |corev| will treat such instructions as illegal instructions.
+
 Secure Seed 1
 ~~~~~~~~~~~~~
 CSR Address: 0xBFA
@@ -2138,6 +2143,11 @@ Detailed:
 
 The ``secureseed1`` CSR contains seed data for LFSR1.
 
+.. note::
+  Only the read-modify-write (swap/CSRRW) operation is useful for ``secureseed1``.
+  The behavior of the non-CSRRW variants (i.e. CSRRS/C, CSRRWI, CSRRS/CI) and CSRRW variants with **rs1** = **x0** on ``secureseed1`` are implementation-defined.
+  |corev| will treat such instructions as illegal instructions.
+
 Secure Seed 2
 ~~~~~~~~~~~~~
 CSR Address: 0xBFC
@@ -2157,6 +2167,11 @@ Detailed:
   +-------------+------------+------------------------------------------------------------------------+
 
 The ``secureseed2`` CSR contains seed data for LFSR2.
+
+.. note::
+  Only the read-modify-write (swap/CSRRW) operation is useful for ``secureseed2``.
+  The behavior of the non-CSRRW variants (i.e. CSRRS/C, CSRRWI, CSRRS/CI) and CSRRW variants with **rs1** = **x0** on ``secureseed2`` are implementation-defined.
+  |corev| will treat such instructions as illegal instructions.
 
 Machine Vendor ID (``mvendorid``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
