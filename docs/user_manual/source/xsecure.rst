@@ -100,7 +100,7 @@ The frequency of injected instructions can be tuned via the ``rnddummyfreq`` bit
 Other ``rnddummyfreq`` values are legal as well, but will have a less predictable performance impact.
 
 The frequency of the dummy instruction insertion is randomized using an LFSR (LFSR0). The dummy instruction itself is also randomized based on LFSR0
-and is constrained to ``add``, ``mul``, and ``bltu`` instructions. The source data for the dummy instructions is obtained from LFSRs (LFSR1 and LFSR2) as opposed to sourcing
+and is constrained to ``add``, ``mul``, ``and`` and ``bltu`` instructions. The source data for the dummy instructions is obtained from LFSRs (LFSR1 and LFSR2) as opposed to sourcing
 it from the register file.
 
 The initial seed and output permutation for the LFSRs can be set using the following parameters from the |corev| top-level:
@@ -142,7 +142,7 @@ Random instruction for hint
 The ``c.slli with rd=x0, nzimm!=0`` RVC custom use hint is replaced by a random instruction if enabled via the ``rndhint`` bit in the ``cpuctrl`` CSR (and will act as a regular ``nop`` otherwise).
 The random instruction has no functional impact on the processor state (i.e. it is functionally equivalent to a ``nop``, but it can result in different
 cycle count, instruction fetch and power behavior). The random instruction is randomized based on LFSR0 and is constrained to
-``add``, ``mul``, and ``bltu`` instructions. The source data for the random instruction is obtained from LFSRs (LFSR1 and LFSR2) as opposed
+``add``, ``mul``, ``and`` and ``bltu`` instructions. The source data for the random instruction is obtained from LFSRs (LFSR1 and LFSR2) as opposed
 to sourcing it from the register file.
 
 .. note::
