@@ -288,7 +288,8 @@ module cv32e40s_wrapper
   bind cv32e40s_cs_registers:
     core_i.cs_registers_i
       cv32e40s_cs_registers_sva
-        #(.SMCLIC(SMCLIC))
+        #(.SMCLIC(SMCLIC),
+          .PMP_ADDR_WIDTH (core_i.cs_registers_i.PMP_ADDR_WIDTH))
         cs_registers_sva (.wb_valid_i  (core_i.wb_valid                                 ),
                           .ctrl_fsm_cs (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
                           .*);

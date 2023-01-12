@@ -26,7 +26,8 @@ module cv32e40s_cs_registers_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
 #(
-    parameter bit SMCLIC = 0
+    parameter bit SMCLIC = 0,
+    parameter int PMP_ADDR_WIDTH = 32
   )
 
   (
@@ -74,7 +75,12 @@ module cv32e40s_cs_registers_sva
    input mtvec_t      mtvec_q,
    input logic [31:0] mintthresh_q,
    input logic [31:0] mie_q,
-   input mtvt_t       mtvt_q
+   input mtvt_t       mtvt_q,
+   input logic [31:0] mstateen0_q,
+   input cpuctrl_t    cpuctrl_q,
+   input mseccfg_t    pmp_mseccfg_q,
+   input logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_q[PMP_MAX_REGIONS],
+   input pmpncfg_t    pmpncfg_q[PMP_MAX_REGIONS]
    );
 
 
@@ -376,6 +382,60 @@ module cv32e40s_cs_registers_sva
     else `uvm_error("cs_registers", "mie_q changed after set/clear with rs1==0")
 
 
+  a_set_clear_mstateen0_q:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  (csr_waddr == CSR_MSTATEEN0) &&
+                  ((csr_op == CSR_OP_SET) || (csr_op == CSR_OP_CLEAR)) &&
+                  !(|csr_wdata) &&
+                  ex_wb_pipe_i.csr_en &&
+                  !ctrl_fsm_i.kill_wb
+                  |=>
+                  $stable(mstateen0_q))
+    else `uvm_error("cs_registers", "mstateen0_q changed after set/clear with rs1==0")
+  a_set_clear_cpuctrl_q:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  (csr_waddr == CSR_CPUCTRL) &&
+                  ((csr_op == CSR_OP_SET) || (csr_op == CSR_OP_CLEAR)) &&
+                  !(|csr_wdata) &&
+                  ex_wb_pipe_i.csr_en &&
+                  !ctrl_fsm_i.kill_wb
+                  |=>
+                  $stable(cpuctrl_q))
+    else `uvm_error("cs_registers", "cpuctrl_q changed after set/clear with rs1==0")
+  a_set_clear_pmp_mseccfg_q:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  (csr_waddr == CSR_MSECCFG) &&
+                  ((csr_op == CSR_OP_SET) || (csr_op == CSR_OP_CLEAR)) &&
+                  !(|csr_wdata) &&
+                  ex_wb_pipe_i.csr_en &&
+                  !ctrl_fsm_i.kill_wb
+                  |=>
+                  $stable(pmp_mseccfg_q))
+    else `uvm_error("cs_registers", "pmp_mseccfg_q changed after set/clear with rs1==0")
+
+  // Check all pmp_addr CSRs for consistency on set/clear with rs1==0 at once
+  a_set_clear_pmp_addr_q:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  (csr_waddr inside {[CSR_PMPADDR0:CSR_PMPADDR63]}) &&       // Write to any PMPADDRxx
+                  ((csr_op == CSR_OP_SET) || (csr_op == CSR_OP_CLEAR)) &&
+                  !(|csr_wdata) &&
+                  ex_wb_pipe_i.csr_en &&
+                  !ctrl_fsm_i.kill_wb
+                  |=>
+                  $stable(pmp_addr_q))   // Check all PMP address registers
+    else `uvm_error("cs_registers", "pmp_addr_q changed after set/clear with rs1==0")
+
+  // Check all pmp_cfg CSRs for consistency on set/clear with rs1==0 at once
+  a_set_clear_pmpncfg_q:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  (csr_waddr inside {[CSR_PMPCFG0:CSR_PMPCFG15]}) &&       // Write to any PMPCFGxx
+                  ((csr_op == CSR_OP_SET) || (csr_op == CSR_OP_CLEAR)) &&
+                  !(|csr_wdata) &&
+                  ex_wb_pipe_i.csr_en &&
+                  !ctrl_fsm_i.kill_wb
+                  |=>
+                  $stable(pmpncfg_q))   // Check all PMP CFG registers
+    else `uvm_error("cs_registers", "pmpncfg_q changed after set/clear with rs1==0")
 
 
 endmodule
