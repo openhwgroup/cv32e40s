@@ -434,7 +434,7 @@ module cv32e40s_cs_registers_sva
                   ex_wb_pipe_i.csr_en &&
                   !ctrl_fsm_i.kill_wb
                   |=>
-                  $stable(pmpncfg_q))   // Check all PMP address registers
+                  $stable(pmpncfg_q))   // Check all PMP CFG registers
     else `uvm_error("cs_registers", "pmpncfg_q changed after set/clear with rs1==0")
 
 
