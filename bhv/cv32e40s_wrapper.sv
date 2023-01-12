@@ -41,6 +41,7 @@
   `include "cv32e40s_instr_obi_interface_sva.sv"
   `include "cv32e40s_data_obi_interface_sva.sv"
   `include "cv32e40s_wpt_sva.sv"
+  `include "cv32e40s_debug_triggers_sva.sv"
 `endif
 
 `include "cv32e40s_wrapper.vh"
@@ -306,12 +307,25 @@ module cv32e40s_wrapper
       .*);
 
   generate
-    if (DBG_NUM_TRIGGERS > 0) begin : wpt_sva
+    if (DBG_NUM_TRIGGERS > 0) begin : debug_sva
       bind cv32e40s_wpt:
         core_i.load_store_unit_i.gen_wpt.wpt_i
           cv32e40s_wpt_sva wpt_sva(
             .mpu_state (core_i.load_store_unit_i.mpu_i.state_q),
             .*);
+
+      bind cv32e40s_debug_triggers:
+        core_i.cs_registers_i.debug_triggers_i
+          cv32e40s_debug_triggers_sva
+            #(.DBG_NUM_TRIGGERS(DBG_NUM_TRIGGERS))
+            debug_triggers_sva (.csr_wdata     (core_i.cs_registers_i.csr_wdata),
+                                .csr_waddr     (core_i.cs_registers_i.csr_waddr),
+                                .csr_op        (core_i.cs_registers_i.csr_op),
+                                .ex_wb_pipe_i  (core_i.ex_wb_pipe),
+                                .tselect_q     (core_i.cs_registers_i.debug_triggers_i.gen_triggers.tselect_q),
+                                .tdata1_q      (core_i.cs_registers_i.debug_triggers_i.gen_triggers.tdata1_q),
+                                .tdata2_q      (core_i.cs_registers_i.debug_triggers_i.gen_triggers.tdata2_q),
+                                .*);
     end
   endgenerate
 
