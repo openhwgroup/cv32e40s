@@ -18,7 +18,7 @@
 #
 ################################################################################
 #
-# CSR definitions for the CV32E40S CORE-V processor.
+# CSR definitions for the CV32E40X/S CORE-V processors.
 #
 # This file can be used as input to "gen_csr_test.py" delivered as part of
 # Google's riscv-dv project.  Assuming you are running this from
@@ -30,6 +30,7 @@
 #            --xlen 32
 #
 # Source document is the core's User Manual:
+# https://docs.openhwgroup.org/projects/cv32e40x-user-manual/en/latest/control_status_registers.html
 # https://docs.openhwgroup.org/projects/cv32e40s-user-manual/en/latest/control_status_registers.html
 #
 # Assumptions:
@@ -58,6 +59,10 @@
 #      - description: ...
 #      - type: ...
 #      - ...
+
+
+changequote(`[[[', `]]]')
+
 
 # Machine CSRs
 
@@ -117,6 +122,93 @@
       msb: 31
       lsb: 0
 
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: cycle
+  description: >
+    Unprivileged alias of lower 32 Machine Cycle Counter
+  address: 0xC00
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine cycle counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: cycleh
+  description: >
+    Unprivileged alias of upper 32 Machine Cycle Counter
+  address: 0xC80
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine cycle counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: instret
+  description: >
+    Unprivileged alias of lower 32 Machine Instructions-Retired Counter
+  address: 0xC02
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine instructions retired counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: instreth
+  description: >
+    Unprivileged alias of upper 32 Machine Instructions-Retired Counter
+  address: 0xC82
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine instructions retired counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: time
+  description: >
+    Unprivileged alias of lower 32 bits of Time Counter
+  address: 0xC01
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit time counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: timeh
+  description: >
+    Unprivileged alias of upper 32 bits of Time Counter
+  address: 0xC81
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit time counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
 - csr: mhpmcounter3
   description: >
     Lower 32-bit Machine Performance Monitoring Counter
@@ -126,12 +218,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 1), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter3h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -141,12 +237,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 1), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter4
   description: >
@@ -157,12 +257,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 2), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter4h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -172,12 +276,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 2), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter5
   description: >
@@ -188,12 +296,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 3), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter5h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -203,12 +315,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 3), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter6
   description: >
@@ -219,12 +335,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 4), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter6h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -234,12 +354,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 4), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter7
   description: >
@@ -250,12 +374,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 5), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter7h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -265,12 +393,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 5), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter8
   description: >
@@ -281,12 +413,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 6), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter8h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -296,12 +432,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 6), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter9
   description: >
@@ -312,12 +452,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 7), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter9h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -327,12 +471,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 7), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter10
   description: >
@@ -343,12 +491,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 8), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter10h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -358,12 +510,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 8), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter11
   description: >
@@ -374,12 +530,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 9), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter11h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -389,12 +549,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 9), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter12
   description: >
@@ -405,12 +569,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 10), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter12h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -420,12 +588,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 10), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter13
   description: >
@@ -436,12 +608,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 11), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter13h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -451,12 +627,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 11), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter14
   description: >
@@ -467,12 +647,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 12), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter14h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -482,12 +666,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 12), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter15
   description: >
@@ -498,12 +686,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 13), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter15h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -513,12 +705,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 13), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter16
   description: >
@@ -529,12 +725,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 14), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter16h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -544,12 +744,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 14), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter17
   description: >
@@ -560,12 +764,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 15), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter17h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -575,12 +783,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 15), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter18
   description: >
@@ -591,12 +803,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 16), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter18h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -606,12 +822,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 16), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter19
   description: >
@@ -622,12 +842,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 17), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter19h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -637,12 +861,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 17), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter20
   description: >
@@ -653,12 +881,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 18), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter20h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -668,12 +900,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 18), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter21
   description: >
@@ -684,12 +920,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 19), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter21h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -699,12 +939,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 19), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter22
   description: >
@@ -715,12 +959,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 20), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter22h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -730,12 +978,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 20), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter23
   description: >
@@ -746,12 +998,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 21), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter23h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -761,12 +1017,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 21), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter24
   description: >
@@ -777,12 +1037,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 22), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter24h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -792,12 +1056,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 22), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter25
   description: >
@@ -808,12 +1076,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 23), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter25h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -823,12 +1095,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 23), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter26
   description: >
@@ -839,12 +1115,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 24), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter26h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -854,12 +1134,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 24), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter27
   description: >
@@ -870,12 +1154,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 25), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter27h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -885,12 +1173,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 25), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter28
   description: >
@@ -901,12 +1193,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 26), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter28h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -916,12 +1212,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 26), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter29
   description: >
@@ -932,12 +1232,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 27), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter29h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -947,12 +1251,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 27), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter30
   description: >
@@ -963,12 +1271,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 28), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter30h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -978,12 +1290,16 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 28), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmcounter31
   description: >
@@ -994,12 +1310,16 @@
     - field_name: Count
       description: >
         Lower 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 29), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 - csr: mhpmcounter31h
   description: >
     Upper 32-bit Machine Performance Monitoring Counter
@@ -1009,14 +1329,860 @@
     - field_name: Count
       description: >
         Upper 32-bits of 64-bit machine performance-monitoring counter
-      type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 29), 1, [[[
+      type: RW
+]]], [[[dnl
+      type: WARL
       warl_legalize: |
         val_out = 0
+]]])
 
-### COND DEBUG
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter3
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC03
+  privilege_mode: U
+  # TODO:silabs-robin  Wrong privmode
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter3h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC83
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter4
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC04
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter4h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC84
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter5
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC05
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter5h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC85
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter6
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC06
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter6h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC86
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter7
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC07
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter7h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC87
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter8
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC08
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter8h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC88
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter9
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC09
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter9h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC89
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter10
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC0A
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter10h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC8A
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter11
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC0B
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter11h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC8B
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter12
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC0C
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter12h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC8C
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter13
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC0D
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter13h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC8D
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter14
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC0E
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter14h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC8E
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter15
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC0F
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter15h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC8F
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter16
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC10
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter16h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC90
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter17
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC11
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter17h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC91
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter18
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC12
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter18h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC92
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter19
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC13
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter19h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC93
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter20
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC14
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter20h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC94
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter21
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC15
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter21h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC95
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter22
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC16
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter22h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC96
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter23
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC17
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter23h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC97
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter24
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC18
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter24h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC98
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter25
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC19
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter25h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC99
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter26
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC1A
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter26h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC9A
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter27
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC1B
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter27h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC9B
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter28
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC1C
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter28h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC9C
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter29
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC1D
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter29h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC9D
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter30
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC1E
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter30h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC9E
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(ZICNTR != 0), 1, [[[
+- csr: hpmcounter31
+  description: >
+    Lower 32-bit Machine Performance Monitoring Counter
+  address: 0xC1F
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Lower 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+- csr: hpmcounter31h
+  description: >
+    Upper 32-bit Machine Performance Monitoring Counter
+  address: 0xC9F
+  privilege_mode: U
+  rv32:
+    - field_name: Count
+      description: >
+        Upper 32-bits of 64-bit machine performance-monitoring counter
+      type: R
+      reset_val: 0
+      msb: 31
+      lsb: 0
+]]])
+
+ifelse(eval(DEBUG != 0), 1, [[[
 - csr: dcsr
   description: >
     Debug Control and Status
@@ -1030,7 +2196,7 @@
       reset_val: 4
       msb: 31
       lsb: 28
-    - field_name: RESERVED
+    - field_name: RESERVED_27_18
       description: >
         Always return zero
       type: WARL
@@ -1064,7 +2230,7 @@
       reset_val: 0
       msb: 15
       lsb: 15
-    - field_name: RESERVED
+    - field_name: RESERVED_14_14
       description: >
         Always return zero
       type: WARL
@@ -1085,7 +2251,10 @@
     - field_name: EBREAKU
       description: >
         Set to enter debug mode on ebreak instruction during user mode
+      type: R
+ifelse(eval(UMODE != 0), 1, [[[
       type: WARL
+]]])
       reset_val: 0
       msb: 12
       lsb: 12
@@ -1159,10 +2328,14 @@
       msb: 1
       lsb: 0
       warl_legalize: |
+        val_out = 0x3
+ifelse(eval(UMODE != 0), 1, [[[
+      warl_legalize: |
         val_out = val_in if ((val_in == 0x3) or (val_in == 0x0)) else val_orig
-### ENDCOND
+]]])
+]]])
 
-### COND DEBUG
+ifelse(eval(DEBUG != 0), 1, [[[
 - csr: dpc
   description: >
     Debug PC
@@ -1176,9 +2349,9 @@
       reset_val: 0
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND DEBUG
+ifelse(eval(DEBUG != 0), 1, [[[
 - csr: dscratch0
   description: >
     Debug scratch register
@@ -1192,9 +2365,9 @@
       reset_val: 0
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND DEBUG
+ifelse(eval(DEBUG != 0), 1, [[[
 - csr: dscratch1
   description: >
     Debug scratch register
@@ -1208,7 +2381,7 @@
       reset_val: 0
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
 - csr: mstatus
   description: >
@@ -1225,7 +2398,7 @@
       lsb: 31
       warl_legalize: |
         val_out = 0
-    - field_name: RESERVED
+    - field_name: RESERVED_30_23
       description: >
         Always return zero
       type: WPRI
@@ -1244,11 +2417,22 @@
         val_out = 0
     - field_name: TW
       description: >
+        Timeout wait
+      type: WARL
+      reset_val: 0
+      msb: 21
+      lsb: 21
+      warl_legalize: |
+        val_out = 0
+ifelse(eval(UMODE != 0), 1, [[[
+    - field_name: TW
+      description: >
         Timeout wait. When set, WFI from user mode causes illegal instruction.
       type: WARL
       reset_val: 0
       msb: 21
       lsb: 21
+]]])
     - field_name: TVM
       description: >
         TVM. Hardwired to 0.
@@ -1275,10 +2459,19 @@
     - field_name: MPRV
       description: >
         Modify Privilege
+      type: R
+      reset_val: 0
+      msb: 17
+      lsb: 17
+ifelse(eval(UMODE != 0), 1, [[[
+    - field_name: MPRV
+      description: >
+        Modify Privilege
       type: RW
       reset_val: 0
       msb: 17
       lsb: 17
+]]])
     - field_name: XS
       description: >
         Other Extension Context Status.
@@ -1295,6 +2488,16 @@
       lsb: 13
       warl_legalize: |
         val_out = 0
+ifelse(eval(X_EXT != 0), 1, [[[
+    - field_name: FS
+      # TODO:silabs-robin "X_EXT" means 2 different things
+      description: >
+        FPU Extension Context Status.
+      type: RW
+      reset_val: 0  # Note: Based on default value of "X_ECS_XS"
+      msb: 14
+      lsb: 13
+]]])
     - field_name: MPP
       description: >
         Machine Previous Privilege mode
@@ -1303,16 +2506,21 @@
       msb: 12
       lsb: 11
       warl_legalize: |
-        # Can only be set to 0 or 3
+        val_out = 0x3
+ifelse(eval(UMODE != 0), 1, [[[
+      warl_legalize: |
         val_out = val_in if ((val_in == 0x3) or (val_in == 0x0)) else val_orig
+]]])
     - field_name: VS
       description: >
         Vector Extension Context Status
       type: WPRI
+ifelse(eval(X_EXT != 0), 1, [[[
+      type: RW
+]]])
       reset_val: 0
       msb: 10
       lsb: 9
-      # WPRI not further specified
     - field_name: SPP
       description: >
         SPP. Hardwired to 0.
@@ -1345,7 +2553,7 @@
       reset_val: 0
       msb: 5
       lsb: 5
-    - field_name: RESERVED
+    - field_name: RESERVED_4_4
       description: >
         Always return zero
       type: WPRI
@@ -1360,7 +2568,7 @@
       reset_val: 0
       msb: 3
       lsb: 3
-    - field_name: RESERVED
+    - field_name: RESERVED_2_2
       description: >
         Always return zero
       type: WPRI
@@ -1375,7 +2583,7 @@
       reset_val: 0
       msb: 1
       lsb: 1
-    - field_name: RESERVED
+    - field_name: RESERVED_0_0
       description: >
         Always return zero
       type: WPRI
@@ -1444,15 +2652,30 @@
       lsb: 21
       warl_legalize: |
         val_out = 0
+ifelse(eval(V_EXT != 0), 1, [[[
+    - field_name: V
+      description: >
+        Tentatively reserved for Vector extension
+      type: WARL
+      reset_val: 0
+      msb: 21
+      lsb: 21
+]]])
     - field_name: U
       description: >
         User mode
       type: WARL
-      reset_val: 1
       msb: 20
       lsb: 20
+ifelse(eval(UMODE != 0), 1, [[[
+      reset_val: 1
       warl_legalize: |
         val_out = 1
+]]], [[[dnl
+      reset_val: 0
+      warl_legalize: |
+        val_out = 0
+]]])
     - field_name: T
       description: >
         Tentatively reserved for Transactional Memory extension
@@ -1498,6 +2721,15 @@
       lsb: 15
       warl_legalize: |
         val_out = 0
+ifelse(eval(P_EXT != 0), 1, [[[
+    - field_name: P
+      description: >
+        Packed SIMD
+      type: WARL
+      reset_val: 0
+      msb: 15
+      lsb: 15
+]]])
     - field_name: O
       description: >
         Reserved
@@ -1522,16 +2754,16 @@
       type: WARL
       msb: 12
       lsb: 12
-### COND M_EXT
+ifelse(eval(M_EXT != 0), 1, [[[
       reset_val: 1
       warl_legalize: |
         val_out = 1
-### ENDCOND
-### COND M_NONE
+]]])
+ifelse(eval(M_NONE != 0), 1, [[[
       reset_val: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
     - field_name: L
       description: >
         Tentatively reserved for decimal floating point extension
@@ -1565,16 +2797,16 @@
       type: WARL
       msb: 8
       lsb: 8
-### COND I_BASE
+ifelse(eval(I_BASE != 0), 1, [[[
       reset_val: 1
       warl_legalize: |
         val_out = 1
-### ENDCOND
-### COND E_BASE
+]]])
+ifelse(eval(E_BASE != 0), 1, [[[
       reset_val: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
     - field_name: H
       description: >
         Hypervisor extension
@@ -1602,22 +2834,31 @@
       lsb: 5
       warl_legalize: |
         val_out = 0
+ifelse(eval(F_EXT != 0), 1, [[[
+    - field_name: F
+      description: >
+        Single presition floating point
+      type: WARL
+      reset_val: 0
+      msb: 5
+      lsb: 5
+]]])
     - field_name: E
       description: >
         RV32E base ISA
       type: WARL
       msb: 4
       lsb: 4
-### COND E_BASE
+ifelse(eval(E_BASE != 0), 1, [[[
       reset_val: 1
       warl_legalize: |
         val_out = 1
-### ENDCOND
-### COND I_BASE
+]]])
+ifelse(eval(I_BASE != 0), 1, [[[
       reset_val: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
     - field_name: D
       description: >
         Double presition floating point extension
@@ -1649,13 +2890,18 @@
       description: >
         Atomic extension
       type: WARL
-      reset_val: 0
       msb: 0
       lsb: 0
+      reset_val: 0
       warl_legalize: |
         val_out = 0
+ifelse(eval(A_EXT != 0), 1, [[[
+      reset_val: 1
+      warl_legalize: |
+        val_out = 1
+]]])
 
-### COND CLINT
+ifelse(eval(CLINT != 0), 1, [[[
 - csr: mie
   description: >
     Machine Interrupt Enable
@@ -1669,7 +2915,7 @@
       reset_val: 0
       msb: 31
       lsb: 16
-    - field_name: RESERVED
+    - field_name: RESERVED_15_12
       description: >
         Always return zero
       type: WARL
@@ -1685,7 +2931,7 @@
       reset_val: 0
       msb: 11
       lsb: 11
-    - field_name: RESERVED
+    - field_name: RESERVED_10_10
       description: >
         Always return zero
       type: WARL
@@ -1703,7 +2949,7 @@
       lsb: 9
       warl_legalize: |
         val_out = 0
-    - field_name: RESERVED
+    - field_name: RESERVED_8_8
       description: >
         Always return zero
       type: WARL
@@ -1719,7 +2965,7 @@
       reset_val: 0
       msb: 7
       lsb: 7
-    - field_name: RESERVED
+    - field_name: RESERVED_6_6
       description: >
         Always return zero
       type: WARL
@@ -1737,7 +2983,7 @@
       lsb: 5
       warl_legalize: |
         val_out = 0
-    - field_name: RESERVED
+    - field_name: RESERVED_4_4
       description: >
         Always return zero
       type: WARL
@@ -1753,7 +2999,7 @@
       reset_val: 0
       msb: 3
       lsb: 3
-    - field_name: RESERVED
+    - field_name: RESERVED_2_2
       description: >
         Always return zero
       type: WARL
@@ -1771,7 +3017,7 @@
       lsb: 1
       warl_legalize: |
         val_out = 0
-    - field_name: RESERVED
+    - field_name: RESERVED_0_0
       description: >
         Always return zero
       type: WARL
@@ -1780,9 +3026,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
 
-### COND CLIC
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mie
   description: >
     Machine Interrupt Enable
@@ -1798,9 +3044,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
 
-### COND CLINT
+ifelse(eval(CLINT != 0), 1, [[[
 - csr: mtvec
   description: >
     Machine Trap-Vector Base Address
@@ -1832,9 +3078,9 @@
       lsb: 0
       warl_legalize: |
         val_out = val_in if (val_in == 0 or val_in == 1) else val_orig
-### ENDCOND
+]]])
 
-### COND CLIC
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mtvec
   description: >
     Machine Trap-Vector Base Address
@@ -1875,9 +3121,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 3
-### ENDCOND
+]]])
 
-### COND CLIC
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mtvt
   description: >
     Machine Trap Vector Table Base Address
@@ -1907,11 +3153,11 @@
       reset_val: 0
       msb: 5
       lsb: 0
-### ENDCOND
+]]])
 
 - csr: mstatush
   description: >
-    Machine ISA register
+    Machine Status Registers
   address: 0x310
   privilege_mode: M
   rv32:
@@ -1993,15 +3239,27 @@
   address: 0x323
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 1), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent4
   description: >
@@ -2009,15 +3267,27 @@
   address: 0x324
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 2), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent5
   description: >
@@ -2025,15 +3295,27 @@
   address: 0x325
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 3), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent6
   description: >
@@ -2041,15 +3323,27 @@
   address: 0x326
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 4), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent7
   description: >
@@ -2057,15 +3351,27 @@
   address: 0x327
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 5), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent8
   description: >
@@ -2073,15 +3379,27 @@
   address: 0x328
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 6), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent9
   description: >
@@ -2089,15 +3407,27 @@
   address: 0x329
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 7), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent10
   description: >
@@ -2105,15 +3435,27 @@
   address: 0x32a
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 8), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent11
   description: >
@@ -2121,15 +3463,27 @@
   address: 0x32b
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 9), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent12
   description: >
@@ -2137,15 +3491,27 @@
   address: 0x32c
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 10), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent13
   description: >
@@ -2153,15 +3519,27 @@
   address: 0x32d
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 11), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent14
   description: >
@@ -2169,15 +3547,27 @@
   address: 0x32e
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 12), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent15
   description: >
@@ -2185,15 +3575,27 @@
   address: 0x32f
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 13), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent16
   description: >
@@ -2201,15 +3603,27 @@
   address: 0x330
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 14), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent17
   description: >
@@ -2217,15 +3631,27 @@
   address: 0x331
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 15), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent18
   description: >
@@ -2233,15 +3659,27 @@
   address: 0x332
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 16), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent19
   description: >
@@ -2249,15 +3687,27 @@
   address: 0x333
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 17), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent20
   description: >
@@ -2265,15 +3715,27 @@
   address: 0x334
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 18), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent21
   description: >
@@ -2281,15 +3743,27 @@
   address: 0x335
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 19), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent22
   description: >
@@ -2297,15 +3771,27 @@
   address: 0x336
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 20), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent23
   description: >
@@ -2313,15 +3799,27 @@
   address: 0x337
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 21), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent24
   description: >
@@ -2329,15 +3827,27 @@
   address: 0x338
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 22), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent25
   description: >
@@ -2345,15 +3855,27 @@
   address: 0x339
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 23), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent26
   description: >
@@ -2361,15 +3883,27 @@
   address: 0x33a
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 24), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent27
   description: >
@@ -2377,15 +3911,27 @@
   address: 0x33b
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 25), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent28
   description: >
@@ -2393,15 +3939,27 @@
   address: 0x33c
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 26), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent29
   description: >
@@ -2409,15 +3967,27 @@
   address: 0x33d
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 27), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent30
   description: >
@@ -2425,15 +3995,27 @@
   address: 0x33e
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 28), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mhpmevent31
   description: >
@@ -2441,15 +4023,27 @@
   address: 0x33f
   privilege_mode: M
   rv32:
+    - field_name: RESERVED_31_16
+      description: >
+        Reserved, hard coded 0
+      type: WARL
+      reset_val: 0
+      msb: 31
+      lsb: 16
+      warl_legalize: |
+        val_out = 0
     - field_name: SELECTORS
       description: >
         Selects counter events
       type: WARL
       reset_val: 0
-      msb: 31
+      msb: 15
       lsb: 0
+ifelse(eval(NUM_MHPMCOUNTERS >= 29), 1, [[[
+]]], [[[dnl
       warl_legalize: |
         val_out = 0
+]]])
 
 - csr: mscratch
   description: >
@@ -2488,7 +4082,7 @@
       warl_legalize: |
         val_out = 0
 
-### COND CLIC
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mcause
   description: >
     Machine Exception Cause
@@ -2517,7 +4111,11 @@
       msb: 29
       lsb: 28
       warl_legalize: |
+        val_out = 0x3
+ifelse(eval(UMODE != 0), 1, [[[
+      warl_legalize: |
         val_out = val_in if ((val_in == 0x3) or (val_in == 0x0)) else val_orig
+]]])
     - field_name: MPIE
       description: >
           Alias for mstatus.MPIE
@@ -2566,9 +4164,9 @@
       reset_val: 0
       msb: 10
       lsb: 0
-### ENDCOND
+]]])
 
-### COND CLINT
+ifelse(eval(CLINT != 0), 1, [[[
 - csr: mcause
   description: >
     Machine Exception Cause
@@ -2598,7 +4196,7 @@
       reset_val: 0
       msb: 10
       lsb: 0
-### ENDCOND
+]]])
 
 - csr: mtval
   description: >
@@ -2616,7 +4214,7 @@
       warl_legalize: |
         val_out = 0
 
-### COND CLINT
+ifelse(eval(CLINT != 0), 1, [[[
 - csr: mip
   description: >
     Machine Interrupt Pending
@@ -2630,7 +4228,7 @@
       reset_val: 0
       msb: 31
       lsb: 16
-    - field_name: RESERVED
+    - field_name: RESERVED_15_12
       description: >
         Always return zero
       type: WARL
@@ -2646,7 +4244,7 @@
       reset_val: 0
       msb: 11
       lsb: 11
-    - field_name: RESERVED
+    - field_name: RESERVED_10_10
       description: >
         Always return zero
       type: WARL
@@ -2664,7 +4262,7 @@
       lsb: 9
       warl_legalize: |
         val_out = 0
-    - field_name: RESERVED
+    - field_name: RESERVED_8_8
       description: >
         Always return zero
       type: WARL
@@ -2680,7 +4278,7 @@
       reset_val: 0
       msb: 7
       lsb: 7
-    - field_name: RESERVED
+    - field_name: RESERVED_6_6
       description: >
         Always return zero
       type: WARL
@@ -2698,7 +4296,7 @@
       lsb: 5
       warl_legalize: |
         val_out = 0
-    - field_name: RESERVED
+    - field_name: RESERVED_4_4
       description: >
         Always return zero
       type: WARL
@@ -2714,7 +4312,7 @@
       reset_val: 0
       msb: 3
       lsb: 3
-    - field_name: RESERVED
+    - field_name: RESERVED_2_2
       description: >
         Always return zero
       type: WARL
@@ -2732,7 +4330,7 @@
       lsb: 1
       warl_legalize: |
         val_out = 0
-    - field_name: RESERVED
+    - field_name: RESERVED_0_0
       description: >
         Always return zero
       type: WARL
@@ -2741,16 +4339,16 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
 
-### COND CLIC
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mip
   description: >
     Machine Interrupt Pending
   address: 0x344
   privilege_mode: M
   rv32:
-    - field_name: RESERVED
+    - field_name: RESERVED_31_0
       description: >
          Always zero
       type: WARL
@@ -2759,9 +4357,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
 
-### COND CLIC
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mnxti
   description: >
     Machine next interrupt
@@ -2775,9 +4373,9 @@
       reset_val: 0
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND CLIC
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mintstatus
   description: >
     Machine interrupt status
@@ -2791,7 +4389,7 @@
       reset_val: 0
       msb: 31
       lsb: 24
-    - field_name: RESERVED
+    - field_name: RESERVED_23_16
       description: >
         Always return zero
       type: R
@@ -2812,16 +4410,16 @@
       reset_val: 0
       msb: 7
       lsb: 0
-### ENDCOND
+]]])
 
-### COND CLIC
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mintthresh
   description: >
     Machine interrupt threshold
   address: 0x347
   privilege_mode: M
   rv32:
-    - field_name: RESERVED
+    - field_name: RESERVED_31_8
       description: >
         Always return zero
       type: R
@@ -2835,9 +4433,9 @@
       reset_val: 0
       msb: 7
       lsb: 0
-### ENDCOND
+]]])
 
-### COND CLIC
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mscratchcsw
   description: >
     Machine scratch swap for privilege mode change
@@ -2851,9 +4449,9 @@
       reset_val: 0
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND CLIC
+ifelse(eval(CLIC != 0), 1, [[[
 - csr: mscratchcswl
   description: >
     Machine scratch swap for privilege level change
@@ -2867,9 +4465,9 @@
       reset_val: 0
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND TRIGGER 1
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tselect
   description: >
     Trigger Select Register
@@ -2884,64 +4482,21 @@
       msb: 31
       lsb: 0
       warl_legalize: |
+ifelse(eval(DBG_NUM_TRIGGERS == 1), 1, [[[
         val_out = 0
-### ENDCOND
-
-### COND TRIGGER 2
-- csr: tselect
-  description: >
-    Trigger Select Register
-  address: 0x7A0
-  privilege_mode: M
-  rv32:
-    - field_name: Trigger
-      description: >
-         Trigger select field
-      type: WARL
-      reset_val: 0
-      msb: 31
-      lsb: 0
-      warl_legalize: |
+]]])
+ifelse(eval(DBG_NUM_TRIGGERS == 2), 1, [[[
         val_out = val_in if (val_in == 0 or val_in == 1) else val_orig
-### ENDCOND
-
-### COND TRIGGER 3
-- csr: tselect
-  description: >
-    Trigger Select Register
-  address: 0x7A0
-  privilege_mode: M
-  rv32:
-    - field_name: Trigger
-      description: >
-         Trigger select field
-      type: WARL
-      reset_val: 0
-      msb: 31
-      lsb: 0
-      warl_legalize: |
+]]])
+ifelse(eval(DBG_NUM_TRIGGERS == 3), 1, [[[
         val_out = val_in if (val_in == 0 or val_in == 1 or val_in == 2) else val_orig
-### ENDCOND
-
-### COND TRIGGER 4
-- csr: tselect
-  description: >
-    Trigger Select Register
-  address: 0x7A0
-  privilege_mode: M
-  rv32:
-    - field_name: Trigger
-      description: >
-         Trigger select field
-      type: WARL
-      reset_val: 0
-      msb: 31
-      lsb: 0
-      warl_legalize: |
+]]])
+ifelse(eval(DBG_NUM_TRIGGERS == 4), 1, [[[
         val_out = val_in if (val_in == 0 or val_in == 1 or val_in == 2 or val_in == 3) else val_orig
-### ENDCOND
+]]])
+]]])
 
-### COND TRIGGER 1
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tdata1
   description: >
     Trigger Data Register 1
@@ -2949,35 +4504,39 @@
   privilege_mode: M
   reset_val: 0x28001000
   rv32:
-          - field_name: Type
-            description: >
-               Address/data match trigger type
-            type: WARL
-            reset_val: 2
-            msb: 31
-            lsb: 28
-            values:
-               mcontrol:   2
-               etrigger:   5
-               mcontrol6:  6
-               disabled:  15
-          - field_name: dmode
-            description: >
-               Only debug mode can write tdata registers
-            type: WARL
-            reset_val: 1
-            msb: 27
-            lsb: 27
-          - field_name: data
-            description: >
-               Only debug mode can write tdata registers
-            type: WARL
-            reset_val: 1
-            msb: 26
-            lsb: 0
-### ENDCOND
+    - field_name: Type
+      description: >
+         Address/data match trigger type
+      type: WARL
+      reset_val: 2
+      msb: 31
+      lsb: 28
+      values:
+         mcontrol:   2
+         etrigger:   5
+         mcontrol6:  6
+         disabled:  15
+      warl_legalize: |
+        val_out = val_in if (val_in == 2 or val_in == 5 or val_in == 6) else 0xF
+    - field_name: dmode
+      description: >
+         Only debug mode can write tdata registers
+      type: WARL
+      reset_val: 1
+      msb: 27
+      lsb: 27
+      warl_legalize: |
+        val_out = 1
+    - field_name: data
+      description: >
+         Only debug mode can write tdata registers
+      type: WARL
+      reset_val: 1
+      msb: 26
+      lsb: 0
+]]])
 
-### COND TRIGGER 1
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tdata2
   description: >
     Trigger Data Register 2
@@ -2993,9 +4552,9 @@
         val_out = val_in  # Note: Actual behavior depends on the values of tdata1.TYPE and tdata1.DMODE!
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND TRIGGER 1
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tdata3
   description: >
     Trigger Data Register 3
@@ -3004,16 +4563,16 @@
   rv32:
     - field_name: Zero
       description: >
-        CV32E40S does not support the features requiring this register.
+        Not supported.
       type: WARL
       reset_val: 0
       msb: 31
       lsb: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
 
-### COND TRIGGER 1
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tinfo
   description: >
     Trigger Info
@@ -3036,9 +4595,9 @@
       reset_val: 0x8064
       msb: 15
       lsb: 0
-### ENDCOND
+]]])
 
-### COND TRIGGER 1
+ifelse(eval(DBG_NUM_TRIGGERS >= 1), 1, [[[
 - csr: tcontrol
   description: >
     Trigger control
@@ -3090,9 +4649,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
 
-### COND ZC
+ifelse(eval(ZC != 0), 1, [[[
 - csr: jvt
   description: >
     Jump vector table
@@ -3124,14 +4683,14 @@
       lsb: 0
       warl_legalize: |
         val_out = val_in if val_in == 0 else val_orig
-### ENDCOND
+]]])
 
 
 ###############################################################################
 # {mvendorid, marchid, mimpid, mhartid, mconfigptr} are MRO, and are hence
 # marked with a conditional to denote that a write would give an exception.
 
-### COND READONLY
+ifelse(eval(READONLY != 0), 1, [[[
 - csr: mvendorid
   description: >
     Machine Vendor ID
@@ -3160,9 +4719,14 @@
   rv32:
     - field_name: ID
       description: >
-        Machine Architecture ID of CV32E40S is 0x15
+        Machine Architecture ID of the core
       type: R
+ifelse(eval(MARCHID == 0x14), 1, [[[
+      reset_val: 0x14
+]]])
+ifelse(eval(MARCHID == 0x15), 1, [[[
       reset_val: 0x15
+]]])
       msb: 31
       lsb: 0
 - csr: mimpid
@@ -3171,7 +4735,7 @@
   address: 0xF13
   privilege_mode: M
   rv32:
-    - field_name: RESERVED
+    - field_name: RESERVED_31_20
       description: >
         Always return zero
       type: R
@@ -3185,7 +4749,7 @@
       reset_val: 0
       msb: 19
       lsb: 16
-    - field_name: RESERVED
+    - field_name: RESERVED_15_12
       description: >
         Always return zero
       type: R
@@ -3199,7 +4763,7 @@
       reset_val: 0
       msb: 11
       lsb: 8
-    - field_name: RESERVED
+    - field_name: RESERVED_7_4
       description: >
         Always return zero
       type: R
@@ -3232,23 +4796,23 @@
   address: 0xF15
   privilege_mode: M
   rv32:
-    - field_name: RESERVED
+    - field_name: RESERVED_31_0
       description: >
         Always return zero
       type: R
       reset_val: 0
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND XSECURE
+ifelse(eval(XSECURE != 0), 1, [[[
 - csr: cpuctrl
   description: >
     Controls CPU security features
   address: 0xBF0
   privilege_mode: M
   rv32:
-    - field_name: RESERVED
+    - field_name: RESERVED_31_20
       description: >
         Always return zero
       type: R
@@ -3262,7 +4826,7 @@
       reset_val: 0
       msb: 19
       lsb: 16
-    - field_name: RESERVED
+    - field_name: RESERVED_15_5
       description: >
         Always return zero
       type: R
@@ -3304,9 +4868,9 @@
       reset_val: 1
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND XSECURE
+ifelse(eval(XSECURE != 0), 1, [[[
 - csr: secureseed0
   description: >
     Seed for LSFR0
@@ -3322,9 +4886,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
 
-### COND XSECURE
+ifelse(eval(XSECURE != 0), 1, [[[
 - csr: secureseed1
   description: >
     Seed for LSFR1
@@ -3340,9 +4904,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
 
-### COND XSECURE
+ifelse(eval(XSECURE != 0), 1, [[[
 - csr: secureseed2
   description: >
     Seed for LSFR0
@@ -3358,8 +4922,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
-### ENDCOND
+]]])
 
+ifelse(eval(UMODE != 0), 1, [[[
 - csr: mcounteren
   description: >
     Machine counter enable
@@ -3375,7 +4940,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
+]]])
 
+ifelse(eval(UMODE != 0), 1, [[[
 - csr: menvcfg
   description: >
     Machine Environment Configuration
@@ -3424,8 +4991,9 @@
       reset_val: 0
       msb: 0
       lsb: 0
+]]])
 
-
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen0
   description: >
     Machine state enable 0
@@ -3457,7 +5025,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
+]]])
 
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen1
   description: >
     Machine state enable 1
@@ -3473,7 +5043,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
+]]])
 
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen2
   description: >
     Machine state enable 2
@@ -3489,7 +5061,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
+]]])
 
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen3
   description: >
     Machine state enable 3
@@ -3505,7 +5079,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
+]]])
 
+ifelse(eval(UMODE != 0), 1, [[[
 - csr: menvcfgh
   description: >
     Machine Environment Configuration upper 32 bits
@@ -3526,7 +5102,9 @@
       reset_val: 0
       msb: 30
       lsb: 0
+]]])
 
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen0h
   description: >
     Machine state enable 0 upper 32 bits
@@ -3542,7 +5120,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
+]]])
 
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen1h
   description: >
     Machine state enable 1 upper 32 bits
@@ -3558,7 +5138,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
+]]])
 
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen2h
   description: >
     Machine state enable 2 upper 32 bits
@@ -3574,7 +5156,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
+]]])
 
+ifelse(eval(ZC != 0), 1, [[[
 - csr: mstateen3h
   description: >
     Machine state enable 3 upper 32 bits
@@ -3590,8 +5174,9 @@
       lsb: 0
       warl_legalize: |
         val_out = 0
+]]])
 
-### COND PMP 1
+ifelse(eval(PMP_NUM_REGIONS >= 1), 1, [[[
 - csr: mseccfg
   description: >
     Machine security configuration
@@ -3647,8 +5232,9 @@
       reset_val: 0  # Note: Based on MSECCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
+ifelse(eval(PMP_NUM_REGIONS >= 1), 1, [[[
 - csr: mseccfgh
   description: >
     Machine security configuration upper 32 bits
@@ -3662,11 +5248,12 @@
       reset_val: 0
       msb: 31
       lsb: 0
+]]])
 
 
-# Note: "pmpcfg*", is only defined in this file for 1) "COND PMP N" multiples of 4, and 2) non-warl0
+# Note: "pmpcfg*", is only defined in this file for 1) "PMP N" multiples of 4, and 2) non-warl0
 
-### COND PMP 4
+ifelse(eval(PMP_NUM_REGIONS >= 4), 1, [[[
 - csr: pmpcfg0
   description: >
     Physical memory protection configuration
@@ -3849,9 +5436,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 8
+ifelse(eval(PMP_NUM_REGIONS >= 8), 1, [[[
 - csr: pmpcfg1
   description: >
     Physical memory protection configuration
@@ -4034,9 +5621,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 12
+ifelse(eval(PMP_NUM_REGIONS >= 12), 1, [[[
 - csr: pmpcfg2
   description: >
     Physical memory protection configuration
@@ -4219,9 +5806,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 16
+ifelse(eval(PMP_NUM_REGIONS >= 16), 1, [[[
 - csr: pmpcfg3
   description: >
     Physical memory protection configuration
@@ -4404,9 +5991,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 20
+ifelse(eval(PMP_NUM_REGIONS >= 20), 1, [[[
 - csr: pmpcfg4
   description: >
     Physical memory protection configuration
@@ -4589,9 +6176,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 24
+ifelse(eval(PMP_NUM_REGIONS >= 24), 1, [[[
 - csr: pmpcfg5
   description: >
     Physical memory protection configuration
@@ -4774,9 +6361,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 28
+ifelse(eval(PMP_NUM_REGIONS >= 28), 1, [[[
 - csr: pmpcfg6
   description: >
     Physical memory protection configuration
@@ -4959,9 +6546,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 32
+ifelse(eval(PMP_NUM_REGIONS >= 32), 1, [[[
 - csr: pmpcfg7
   description: >
     Physical memory protection configuration
@@ -5144,9 +6731,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 36
+ifelse(eval(PMP_NUM_REGIONS >= 36), 1, [[[
 - csr: pmpcfg8
   description: >
     Physical memory protection configuration
@@ -5329,9 +6916,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 40
+ifelse(eval(PMP_NUM_REGIONS >= 40), 1, [[[
 - csr: pmpcfg9
   description: >
     Physical memory protection configuration
@@ -5514,9 +7101,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 44
+ifelse(eval(PMP_NUM_REGIONS >= 44), 1, [[[
 - csr: pmpcfg10
   description: >
     Physical memory protection configuration
@@ -5699,9 +7286,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 48
+ifelse(eval(PMP_NUM_REGIONS >= 48), 1, [[[
 - csr: pmpcfg11
   description: >
     Physical memory protection configuration
@@ -5884,9 +7471,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 52
+ifelse(eval(PMP_NUM_REGIONS >= 52), 1, [[[
 - csr: pmpcfg12
   description: >
     Physical memory protection configuration
@@ -6069,9 +7656,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 56
+ifelse(eval(PMP_NUM_REGIONS >= 56), 1, [[[
 - csr: pmpcfg13
   description: >
     Physical memory protection configuration
@@ -6254,9 +7841,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 60
+ifelse(eval(PMP_NUM_REGIONS >= 60), 1, [[[
 - csr: pmpcfg14
   description: >
     Physical memory protection configuration
@@ -6439,9 +8026,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 64
+ifelse(eval(PMP_NUM_REGIONS >= 64), 1, [[[
 - csr: pmpcfg15
   description: >
     Physical memory protection configuration
@@ -6624,9 +8211,9 @@
       reset_val: 0  # Note: Based on PMPNCFG_DEFAULT
       msb: 0
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 1
+ifelse(eval(PMP_NUM_REGIONS >= 1), 1, [[[
 - csr: pmpaddr0
   description: >
     Physical memory address configuration
@@ -6640,9 +8227,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 2
+ifelse(eval(PMP_NUM_REGIONS >= 2), 1, [[[
 - csr: pmpaddr1
   description: >
     Physical memory address configuration
@@ -6656,9 +8243,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 3
+ifelse(eval(PMP_NUM_REGIONS >= 3), 1, [[[
 - csr: pmpaddr2
   description: >
     Physical memory address configuration
@@ -6672,9 +8259,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 4
+ifelse(eval(PMP_NUM_REGIONS >= 4), 1, [[[
 - csr: pmpaddr3
   description: >
     Physical memory address configuration
@@ -6688,9 +8275,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 5
+ifelse(eval(PMP_NUM_REGIONS >= 5), 1, [[[
 - csr: pmpaddr4
   description: >
     Physical memory address configuration
@@ -6704,9 +8291,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 6
+ifelse(eval(PMP_NUM_REGIONS >= 6), 1, [[[
 - csr: pmpaddr5
   description: >
     Physical memory address configuration
@@ -6720,9 +8307,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 7
+ifelse(eval(PMP_NUM_REGIONS >= 7), 1, [[[
 - csr: pmpaddr6
   description: >
     Physical memory address configuration
@@ -6736,9 +8323,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 8
+ifelse(eval(PMP_NUM_REGIONS >= 8), 1, [[[
 - csr: pmpaddr7
   description: >
     Physical memory address configuration
@@ -6752,9 +8339,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 9
+ifelse(eval(PMP_NUM_REGIONS >= 9), 1, [[[
 - csr: pmpaddr8
   description: >
     Physical memory address configuration
@@ -6768,9 +8355,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 10
+ifelse(eval(PMP_NUM_REGIONS >= 10), 1, [[[
 - csr: pmpaddr9
   description: >
     Physical memory address configuration
@@ -6784,9 +8371,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 11
+ifelse(eval(PMP_NUM_REGIONS >= 11), 1, [[[
 - csr: pmpaddr10
   description: >
     Physical memory address configuration
@@ -6800,9 +8387,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 12
+ifelse(eval(PMP_NUM_REGIONS >= 12), 1, [[[
 - csr: pmpaddr11
   description: >
     Physical memory address configuration
@@ -6816,9 +8403,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 13
+ifelse(eval(PMP_NUM_REGIONS >= 13), 1, [[[
 - csr: pmpaddr12
   description: >
     Physical memory address configuration
@@ -6832,9 +8419,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 14
+ifelse(eval(PMP_NUM_REGIONS >= 14), 1, [[[
 - csr: pmpaddr13
   description: >
     Physical memory address configuration
@@ -6848,9 +8435,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 15
+ifelse(eval(PMP_NUM_REGIONS >= 15), 1, [[[
 - csr: pmpaddr14
   description: >
     Physical memory address configuration
@@ -6864,9 +8451,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 16
+ifelse(eval(PMP_NUM_REGIONS >= 16), 1, [[[
 - csr: pmpaddr15
   description: >
     Physical memory address configuration
@@ -6880,9 +8467,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 17
+ifelse(eval(PMP_NUM_REGIONS >= 17), 1, [[[
 - csr: pmpaddr16
   description: >
     Physical memory address configuration
@@ -6896,9 +8483,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 18
+ifelse(eval(PMP_NUM_REGIONS >= 18), 1, [[[
 - csr: pmpaddr17
   description: >
     Physical memory address configuration
@@ -6912,9 +8499,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 19
+ifelse(eval(PMP_NUM_REGIONS >= 19), 1, [[[
 - csr: pmpaddr18
   description: >
     Physical memory address configuration
@@ -6928,9 +8515,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 20
+ifelse(eval(PMP_NUM_REGIONS >= 20), 1, [[[
 - csr: pmpaddr19
   description: >
     Physical memory address configuration
@@ -6944,9 +8531,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 21
+ifelse(eval(PMP_NUM_REGIONS >= 21), 1, [[[
 - csr: pmpaddr20
   description: >
     Physical memory address configuration
@@ -6960,9 +8547,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 22
+ifelse(eval(PMP_NUM_REGIONS >= 22), 1, [[[
 - csr: pmpaddr21
   description: >
     Physical memory address configuration
@@ -6976,9 +8563,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 23
+ifelse(eval(PMP_NUM_REGIONS >= 23), 1, [[[
 - csr: pmpaddr22
   description: >
     Physical memory address configuration
@@ -6992,9 +8579,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 24
+ifelse(eval(PMP_NUM_REGIONS >= 24), 1, [[[
 - csr: pmpaddr23
   description: >
     Physical memory address configuration
@@ -7008,9 +8595,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 25
+ifelse(eval(PMP_NUM_REGIONS >= 25), 1, [[[
 - csr: pmpaddr24
   description: >
     Physical memory address configuration
@@ -7024,9 +8611,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 26
+ifelse(eval(PMP_NUM_REGIONS >= 26), 1, [[[
 - csr: pmpaddr25
   description: >
     Physical memory address configuration
@@ -7040,9 +8627,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 27
+ifelse(eval(PMP_NUM_REGIONS >= 27), 1, [[[
 - csr: pmpaddr26
   description: >
     Physical memory address configuration
@@ -7056,9 +8643,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 28
+ifelse(eval(PMP_NUM_REGIONS >= 28), 1, [[[
 - csr: pmpaddr27
   description: >
     Physical memory address configuration
@@ -7072,9 +8659,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 29
+ifelse(eval(PMP_NUM_REGIONS >= 29), 1, [[[
 - csr: pmpaddr28
   description: >
     Physical memory address configuration
@@ -7088,9 +8675,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 30
+ifelse(eval(PMP_NUM_REGIONS >= 30), 1, [[[
 - csr: pmpaddr29
   description: >
     Physical memory address configuration
@@ -7104,9 +8691,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 31
+ifelse(eval(PMP_NUM_REGIONS >= 31), 1, [[[
 - csr: pmpaddr30
   description: >
     Physical memory address configuration
@@ -7120,9 +8707,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 32
+ifelse(eval(PMP_NUM_REGIONS >= 32), 1, [[[
 - csr: pmpaddr31
   description: >
     Physical memory address configuration
@@ -7136,9 +8723,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 33
+ifelse(eval(PMP_NUM_REGIONS >= 33), 1, [[[
 - csr: pmpaddr32
   description: >
     Physical memory address configuration
@@ -7152,9 +8739,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 34
+ifelse(eval(PMP_NUM_REGIONS >= 34), 1, [[[
 - csr: pmpaddr33
   description: >
     Physical memory address configuration
@@ -7168,9 +8755,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 35
+ifelse(eval(PMP_NUM_REGIONS >= 35), 1, [[[
 - csr: pmpaddr34
   description: >
     Physical memory address configuration
@@ -7184,9 +8771,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 36
+ifelse(eval(PMP_NUM_REGIONS >= 36), 1, [[[
 - csr: pmpaddr35
   description: >
     Physical memory address configuration
@@ -7200,9 +8787,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 37
+ifelse(eval(PMP_NUM_REGIONS >= 37), 1, [[[
 - csr: pmpaddr36
   description: >
     Physical memory address configuration
@@ -7216,9 +8803,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 38
+ifelse(eval(PMP_NUM_REGIONS >= 38), 1, [[[
 - csr: pmpaddr37
   description: >
     Physical memory address configuration
@@ -7232,9 +8819,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 39
+ifelse(eval(PMP_NUM_REGIONS >= 39), 1, [[[
 - csr: pmpaddr38
   description: >
     Physical memory address configuration
@@ -7248,9 +8835,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 40
+ifelse(eval(PMP_NUM_REGIONS >= 40), 1, [[[
 - csr: pmpaddr39
   description: >
     Physical memory address configuration
@@ -7264,9 +8851,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 41
+ifelse(eval(PMP_NUM_REGIONS >= 41), 1, [[[
 - csr: pmpaddr40
   description: >
     Physical memory address configuration
@@ -7280,9 +8867,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 42
+ifelse(eval(PMP_NUM_REGIONS >= 42), 1, [[[
 - csr: pmpaddr41
   description: >
     Physical memory address configuration
@@ -7296,9 +8883,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 43
+ifelse(eval(PMP_NUM_REGIONS >= 43), 1, [[[
 - csr: pmpaddr42
   description: >
     Physical memory address configuration
@@ -7312,9 +8899,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 44
+ifelse(eval(PMP_NUM_REGIONS >= 44), 1, [[[
 - csr: pmpaddr43
   description: >
     Physical memory address configuration
@@ -7328,9 +8915,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 45
+ifelse(eval(PMP_NUM_REGIONS >= 45), 1, [[[
 - csr: pmpaddr44
   description: >
     Physical memory address configuration
@@ -7344,9 +8931,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 46
+ifelse(eval(PMP_NUM_REGIONS >= 46), 1, [[[
 - csr: pmpaddr45
   description: >
     Physical memory address configuration
@@ -7360,9 +8947,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 47
+ifelse(eval(PMP_NUM_REGIONS >= 47), 1, [[[
 - csr: pmpaddr46
   description: >
     Physical memory address configuration
@@ -7376,9 +8963,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 48
+ifelse(eval(PMP_NUM_REGIONS >= 48), 1, [[[
 - csr: pmpaddr47
   description: >
     Physical memory address configuration
@@ -7392,9 +8979,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 49
+ifelse(eval(PMP_NUM_REGIONS >= 49), 1, [[[
 - csr: pmpaddr48
   description: >
     Physical memory address configuration
@@ -7408,9 +8995,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 50
+ifelse(eval(PMP_NUM_REGIONS >= 50), 1, [[[
 - csr: pmpaddr49
   description: >
     Physical memory address configuration
@@ -7424,9 +9011,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 51
+ifelse(eval(PMP_NUM_REGIONS >= 51), 1, [[[
 - csr: pmpaddr50
   description: >
     Physical memory address configuration
@@ -7440,9 +9027,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 52
+ifelse(eval(PMP_NUM_REGIONS >= 52), 1, [[[
 - csr: pmpaddr51
   description: >
     Physical memory address configuration
@@ -7456,9 +9043,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 53
+ifelse(eval(PMP_NUM_REGIONS >= 53), 1, [[[
 - csr: pmpaddr52
   description: >
     Physical memory address configuration
@@ -7472,9 +9059,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 54
+ifelse(eval(PMP_NUM_REGIONS >= 54), 1, [[[
 - csr: pmpaddr53
   description: >
     Physical memory address configuration
@@ -7488,9 +9075,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 55
+ifelse(eval(PMP_NUM_REGIONS >= 55), 1, [[[
 - csr: pmpaddr54
   description: >
     Physical memory address configuration
@@ -7504,9 +9091,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 56
+ifelse(eval(PMP_NUM_REGIONS >= 56), 1, [[[
 - csr: pmpaddr55
   description: >
     Physical memory address configuration
@@ -7520,9 +9107,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 57
+ifelse(eval(PMP_NUM_REGIONS >= 57), 1, [[[
 - csr: pmpaddr56
   description: >
     Physical memory address configuration
@@ -7536,9 +9123,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 58
+ifelse(eval(PMP_NUM_REGIONS >= 58), 1, [[[
 - csr: pmpaddr57
   description: >
     Physical memory address configuration
@@ -7552,9 +9139,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 59
+ifelse(eval(PMP_NUM_REGIONS >= 59), 1, [[[
 - csr: pmpaddr58
   description: >
     Physical memory address configuration
@@ -7568,9 +9155,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 60
+ifelse(eval(PMP_NUM_REGIONS >= 60), 1, [[[
 - csr: pmpaddr59
   description: >
     Physical memory address configuration
@@ -7584,9 +9171,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 61
+ifelse(eval(PMP_NUM_REGIONS >= 61), 1, [[[
 - csr: pmpaddr60
   description: >
     Physical memory address configuration
@@ -7600,9 +9187,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 62
+ifelse(eval(PMP_NUM_REGIONS >= 62), 1, [[[
 - csr: pmpaddr61
   description: >
     Physical memory address configuration
@@ -7616,9 +9203,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 63
+ifelse(eval(PMP_NUM_REGIONS >= 63), 1, [[[
 - csr: pmpaddr62
   description: >
     Physical memory address configuration
@@ -7632,9 +9219,9 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
 
-### COND PMP 64
+ifelse(eval(PMP_NUM_REGIONS >= 64), 1, [[[
 - csr: pmpaddr63
   description: >
     Physical memory address configuration
@@ -7648,4 +9235,4 @@
       reset_val: 0  # Note: Based on its default value
       msb: 31
       lsb: 0
-### ENDCOND
+]]])
