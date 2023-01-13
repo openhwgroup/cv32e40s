@@ -51,14 +51,14 @@ module cv32e40s_alert
    output logic     alert_major_o
    );
 
-  // Alert_minor Output
+  // Alert_minor output
   always_ff @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
       alert_minor_o <= 1'b0;
     end else begin
       // Minor Alert
       alert_minor_o <=  ctrl_fsm_i.exception_alert_minor || // Trigger condtion constructed in controller FSM
-                        lfsr_lockup_i;                // LFSR lockup
+                        lfsr_lockup_i;                      // LFSR lockup
     end
   end
 
