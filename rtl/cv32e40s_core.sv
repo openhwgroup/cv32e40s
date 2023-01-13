@@ -501,6 +501,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   cv32e40s_alert
     alert_i
       (.clk                 ( clk               ),
+       .clk_ungated_i       ( clk_i             ),
        .rst_n               ( rst_ni            ),
 
        // Alert Triggers

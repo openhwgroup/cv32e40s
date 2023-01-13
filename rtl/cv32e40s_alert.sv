@@ -33,6 +33,7 @@
 module cv32e40s_alert
   import cv32e40s_pkg::*;
   (input logic      clk,
+   input logic      clk_ungated_i,
    input logic      rst_n,
 
    // Alert Trigger input Signals
@@ -50,16 +51,22 @@ module cv32e40s_alert
    output logic     alert_major_o
    );
 
-  // Alert Outputs
+  // Alert_minor output
   always_ff @(posedge clk, negedge rst_n) begin
     if (!rst_n) begin
       alert_minor_o <= 1'b0;
-      alert_major_o <= 1'b0;
     end else begin
-
       // Minor Alert
       alert_minor_o <=  ctrl_fsm_i.exception_alert_minor || // Trigger condtion constructed in controller FSM
-                        lfsr_lockup_i;                // LFSR lockup
+                        lfsr_lockup_i;                      // LFSR lockup
+    end
+  end
+
+  // alert_major output
+  always_ff @(posedge clk_ungated_i, negedge rst_n) begin
+    if (!rst_n) begin
+      alert_major_o <= 1'b0;
+    end else begin
       // Major Alert
       alert_major_o <= rf_ecc_err_i   || // Register File ECC Error
                        pc_err_i       || // Program Counter Error
@@ -67,7 +74,6 @@ module cv32e40s_alert
                        itf_int_err_i  || // Interface Integrity Error
                        itf_prot_err_i || // Interface protocol error
                        ctrl_fsm_i.exception_alert_major; // Instruction integrity error exception
-
     end
   end
 
