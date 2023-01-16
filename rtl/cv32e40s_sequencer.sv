@@ -39,6 +39,7 @@ module cv32e40s_sequencer import cv32e40s_pkg::*;
     input  logic       clk,
     input  logic       rst_n,
 
+    input  logic [5:0] jvt_mode_i,
     input  inst_resp_t instr_i,               // Instruction from prefetch unit
     input  logic       instr_is_clic_ptr_i,   // CLIC pointer flag, instr_i does not contain an instruction
     input  logic       instr_is_mret_ptr_i,   // mret pointer flag, instr_i does not contain an instruction
@@ -153,8 +154,10 @@ module cv32e40s_sequencer import cv32e40s_pkg::*;
           unique case (instr[12:10])
             3'b000: begin
               if ((priv_lvl_i == PRIV_LVL_M) || mstateen0_i[2]) begin
-                seq_tbljmp_o = 1'b1;
-                seq_instr = TBLJMP;
+                if (!(|jvt_mode_i)) begin
+                  seq_tbljmp_o = 1'b1;
+                  seq_instr = TBLJMP;
+                end
               end
             end
 
@@ -306,12 +309,12 @@ module cv32e40s_sequencer import cv32e40s_pkg::*;
           instr_o.bus_resp.rdata = {12'h000, 5'd10, 3'b000, sn_to_regnum(5'(instr[9:7])), OPCODE_OPIMM};
           seq_state_n = S_DMOVE;
         end else if (seq_tbljmp_o) begin
-          if (instr[9:8] == 2'b00) begin
+          if (instr[9:7] == 3'b000) begin
             // cm.jt -> JAL x0, index
-            instr_o.bus_resp.rdata = {13'b0000000000000, instr[7:2], 5'b00000, OPCODE_JAL};
+            instr_o.bus_resp.rdata = {15'b000000000000000, instr[6:2], 5'b00000, OPCODE_JAL};
           end else begin
             // cm.jalt -> JAL, x1, index
-            instr_o.bus_resp.rdata = {11'b00000000000, instr[9:2], 5'b00001, OPCODE_JAL};
+            instr_o.bus_resp.rdata = {12'b000000000000, instr[9:2], 5'b00001, OPCODE_JAL};
           end
           // The second half of tablejumps (pointer) will not use the FSM (the jump will kill the sequencer anyway).
           // Signalling ready here will acknowledge the prefetcher.
