@@ -60,7 +60,6 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
   input  logic [31:0] mepc_i,
   input  logic [24:0] mtvec_addr_i,
   input  logic [31:0] dpc_i,
-  input  logic [JVT_ADDR_WIDTH-1:0] jvt_addr_i,
 
   // Static core inputs
   input  logic [31:0] boot_addr_i,         // Boot address from toplevel pins
