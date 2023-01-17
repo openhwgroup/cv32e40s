@@ -2634,7 +2634,6 @@ This applies to the following registers:
  - ``cpuctrl``
  - ``dcsr``
  - ``jvt``
- - ``mclicbase``
  - ``mepc``
  - ``mie``
  - ``mintstatus``
@@ -2647,4 +2646,4 @@ This applies to the following registers:
  - ``mtvec``
  - ``mtvt``
  - ``pmpaddr*``
- - ``pmpcfg``
+ - ``pmpcfg*``
