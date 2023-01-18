@@ -231,6 +231,9 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   // Current index for JVT instructions
   logic [7:0]           jvt_index;
 
+  // Next-PC (+2/4, for use in EX in case of dataindependent non-taken branches)
+  logic [31:0]          pc_next;
+
   assign instr_valid = if_id_pipe_i.instr_valid && !ctrl_fsm_i.kill_id && !ctrl_fsm_i.halt_id;
 
   assign sys_mret_insn_o = sys_mret_insn;
@@ -309,16 +312,18 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   cv32e40s_pc_target cv32e40x_pc_target_i
   (
-    .bch_jmp_mux_sel_i ( bch_jmp_mux_sel ),
-    .pc_id_i           ( if_id_pipe_i.pc ),
-    .imm_uj_type_i     ( imm_uj_type     ),
-    .imm_sb_type_i     ( imm_sb_type     ),
-    .imm_i_type_i      ( imm_i_type      ),
-    .jalr_fw_i         ( jalr_fw         ),
-    .jvt_addr_i        ( jvt_addr_i      ),
-    .jvt_index_i       ( jvt_index       ),
-    .bch_target_o      ( bch_target      ),
-    .jmp_target_o      ( jmp_target_o    )
+    .bch_jmp_mux_sel_i ( bch_jmp_mux_sel                   ),
+    .pc_id_i           ( if_id_pipe_i.pc                   ),
+    .imm_uj_type_i     ( imm_uj_type                       ),
+    .imm_sb_type_i     ( imm_sb_type                       ),
+    .imm_i_type_i      ( imm_i_type                        ),
+    .jalr_fw_i         ( jalr_fw                           ),
+    .jvt_addr_i        ( jvt_addr_i                        ),
+    .jvt_index_i       ( jvt_index                         ),
+    .compressed_i      ( if_id_pipe_i.instr_meta.compressed),
+    .bch_target_o      ( bch_target                        ),
+    .jmp_target_o      ( jmp_target_o                      ),
+    .pc_next_o         ( pc_next                           )
   );
 
   ////////////////////////////////////////////////////////
@@ -589,6 +594,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.rf_waddr               <= '0;
 
         // Exceptions and debug
+      id_ex_pipe_o.pc_next                <= 32'b0;
       id_ex_pipe_o.pc                     <= 32'b0;
       id_ex_pipe_o.instr                  <= INST_RESP_RESET_VAL;
       id_ex_pipe_o.instr_meta             <= '0;
@@ -681,6 +687,12 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
         // Exceptions and debug
         id_ex_pipe_o.pc                     <= if_id_pipe_i.pc;
         id_ex_pipe_o.instr_meta             <= if_id_pipe_i.instr_meta;
+
+        // Next PC (pc_if) is only needed for branches in case of
+        // dataindependent timing branches to the next instruction
+        if (alu_en && alu_bch) begin
+          id_ex_pipe_o.pc_next              <= pc_next;
+        end
 
         if (if_id_pipe_i.instr_meta.compressed) begin
           // Overwrite instruction word in case of compressed instruction

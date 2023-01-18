@@ -33,14 +33,17 @@ module cv32e40s_pc_target import cv32e40s_pkg::*;
    input  logic [31:0]                jalr_fw_i,
    input  logic [JVT_ADDR_WIDTH-1:0]  jvt_addr_i,
    input  logic [7:0]                 jvt_index_i,
+   input  logic                       compressed_i,
    output logic [31:0]                bch_target_o,
-   output logic [31:0]                jmp_target_o
+   output logic [31:0]                jmp_target_o,
+   output logic [31:0]                pc_next_o
   );
 
   logic [31:0] pc_target;
 
   assign bch_target_o = pc_target;
   assign jmp_target_o = pc_target; // Used for both regular jumps and tablejumps
+  assign pc_next_o    = pc_id_i + (compressed_i ? 32'd2 : 32'd4);
 
   always_comb begin : pc_target_mux
     unique case (bch_jmp_mux_sel_i)

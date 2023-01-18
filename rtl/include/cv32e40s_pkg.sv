@@ -1325,6 +1325,7 @@ typedef struct packed {
   rf_addr_t     rf_waddr;
 
   // Signals for exception handling etc passed on for evaluation in WB stage
+  logic [31:0]  pc_next;          // PC for the following instruction
   logic [31:0]  pc;
   inst_resp_t   instr;            // Contains instruction word (may be compressed),bus error status and MPU status
   instr_meta_t  instr_meta;
