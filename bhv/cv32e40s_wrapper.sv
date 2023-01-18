@@ -224,6 +224,7 @@ module cv32e40s_wrapper
     core_i.ex_stage_i cv32e40s_ex_stage_sva ex_stage_sva
     (
       .branch_taken_ex_ctrl_i (core_i.controller_i.controller_fsm_i.branch_taken_ex ),
+      .ctrl_flush_ack_n       (core_i.controller_i.controller_fsm_i.csr_flush_ack_n ),
       .*
     );
 

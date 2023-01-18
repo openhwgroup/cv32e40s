@@ -639,6 +639,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Jumps and branches
     .jmp_target_o                 ( jump_target_id            ),
 
+    .pc_if_i                      ( pc_if                     ),
     // IF/ID pipeline
     .if_id_pipe_i                 ( if_id_pipe                ),
 

@@ -47,6 +47,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   // Jumps and branches
   output logic [31:0] jmp_target_o,
 
+  input  logic [31:0] pc_if_i,
   // IF/ID pipeline
   input  if_id_pipe_t if_id_pipe_i,
 
@@ -589,6 +590,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       id_ex_pipe_o.rf_waddr               <= '0;
 
         // Exceptions and debug
+      id_ex_pipe_o.pc_next                <= 32'b0;
       id_ex_pipe_o.pc                     <= 32'b0;
       id_ex_pipe_o.instr                  <= INST_RESP_RESET_VAL;
       id_ex_pipe_o.instr_meta             <= '0;
@@ -681,6 +683,12 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
         // Exceptions and debug
         id_ex_pipe_o.pc                     <= if_id_pipe_i.pc;
         id_ex_pipe_o.instr_meta             <= if_id_pipe_i.instr_meta;
+
+        // Next PC (pc_if) is only needed for branches in case of
+        // dataindependent timing branches to the next instruction
+        if (alu_bch) begin
+          id_ex_pipe_o.pc_next              <= pc_if_i;
+        end
 
         if (if_id_pipe_i.instr_meta.compressed) begin
           // Overwrite instruction word in case of compressed instruction

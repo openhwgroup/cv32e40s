@@ -190,7 +190,11 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
           end
           else begin
             // ID and EX stage both contain the branch instruction, target addr is in IF.
-            branch_target_o = pc_if_i;
+            // Using the IF stage PC as observed when the branch was in ID,
+            // flopped to the id_ex_pipe. This ensures that branch_target_o
+            // remains stable for all parts of a branch when dataindependent
+            // timing is turned on.
+            branch_target_o = id_ex_pipe_i.pc_next;
           end
         end
         else begin
