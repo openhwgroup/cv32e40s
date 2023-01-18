@@ -40,8 +40,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   input  logic        clk,
   input  logic        rst_n,
 
-  input  logic [31:0] pc_if_i,
-
   // IF/ID pipeline
   input if_id_pipe_t  if_id_pipe_i,
 
