@@ -35,6 +35,7 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
   input  logic        clk,
   input  logic        rst_n,
 
+  input xsecure_ctrl_t  xsecure_ctrl_i,
   input  logic        if_valid_i,
   input  logic        id_ready_i,
   input  logic        id_valid_i,
@@ -77,6 +78,8 @@ logic    jmp_taken_q;     // A jump was taken. Sticky until last part of instruc
 logic    bch_taken_q;     // A branch was taken. Sticky until last part of instruction is done
 pc_mux_e pc_mux_q;        // Last value of pc_mux (for address comparison)
 
+logic    enable;          // cpuctrl.pc_hardening
+logic    enable_q;        // 1 cycle delayed enable, used to disable checking the cycle after enable goes high.
 
 logic    compare_enable_q;
 
@@ -105,6 +108,7 @@ logic [31:0] nmi_addr;
 
 assign nmi_addr = {mtvec_addr_i, ctrl_fsm_i.nmi_mtvec_index, 2'b00};
 
+assign enable = xsecure_ctrl_i.cpuctrl.pc_hardening;
 
 //////////////////////////////////////////
 // PC checking
@@ -140,7 +144,8 @@ assign check_addr = !pc_set_q ? incr_addr : {ctrl_flow_addr[31:1], 1'b0};
 // Comparator for address
 // Comparison is only valid the cycle after pc_set or the cycle
 // after an instruction goes from IF to ID.
-assign addr_err = (pc_set_q || if_id_q) ? (check_addr != pc_if_i)  : 1'b0;
+assign addr_err = !enable ? 1'b0 :
+                  (pc_set_q || if_id_q) ? (check_addr != pc_if_i)  : 1'b0;
 
 //////////////////////////////////
 // Decision check
@@ -154,16 +159,19 @@ assign addr_err = (pc_set_q || if_id_q) ? (check_addr != pc_if_i)  : 1'b0;
 // control signals shall still be present in the pipeline stages.
 // Not factoring in last_sec_op_* signals, as this would cause the checks to fail if a jump or branch
 // was stalled such that the taken flags would be set while the first half was still in ID or EX.
-assign jump_mret_taken_err   = jmp_taken_q && !(ctrl_fsm_i.jump_in_id_raw);
-assign branch_taken_err      = bch_taken_q && !(ctrl_fsm_i.branch_in_ex_raw && branch_decision_ex_i);
+// When cpuctrl.pc_hardening is written, the controller will flush the pipeline the cycle after the CSR write
+// finished in WB. When the flush happens, the pipeline may contain conditions that lead to errors. Thus disregarding
+// the first enable cycle by using both enable and enable_q.
+assign jump_mret_taken_err   = (enable_q && enable) && (jmp_taken_q && !(ctrl_fsm_i.jump_in_id_raw));
+assign branch_taken_err      = (enable_q && enable) && (bch_taken_q && !(ctrl_fsm_i.branch_in_ex_raw && branch_decision_ex_i));
 
 // Check if jumps or branches should have been taken when the controller did not take them.
 // Since jumps and branches shall be taken during the first operation of the instruction,
 // we cannot observe an untaken jump/branch (*_taken_q is not set) and at the same time have a valid
 // jump or branch instruction with the last_sec_op bit set. Qualifying with registered instr_valid to make sure
 // the instruction was not killed earlier, which would cause the jump or branch to correctly be not taken.
-assign jump_mret_untaken_err = !jmp_taken_q && (ctrl_fsm_i.jump_in_id_raw   && if_id_pipe_i.instr_valid && last_sec_op_id_i);
-assign branch_untaken_err    = !bch_taken_q && (ctrl_fsm_i.branch_in_ex_raw && id_ex_pipe_i.instr_valid && last_op_ex_i && branch_decision_ex_i);
+assign jump_mret_untaken_err = (enable_q && enable) && (!jmp_taken_q && (ctrl_fsm_i.jump_in_id_raw   && if_id_pipe_i.instr_valid && last_sec_op_id_i));
+assign branch_untaken_err    = (enable_q && enable) && (!bch_taken_q && (ctrl_fsm_i.branch_in_ex_raw && id_ex_pipe_i.instr_valid && last_op_ex_i && branch_decision_ex_i));
 
 
 assign ctrl_flow_taken_err = jump_mret_taken_err || branch_taken_err;
@@ -186,6 +194,7 @@ always_ff @(posedge clk, negedge rst_n) begin
     if_id_q          <= 1'b0;
     jmp_taken_q      <= 1'b0;
     bch_taken_q      <= 1'b0;
+    enable_q         <= 1'b0;
   end else begin
     // Signal that a pc_set set was performed.
     // Exclude cases of PC_WB_PLUS4, PC_TRAP_IRQ and CLIC pointers as the pipeline currently has no easy way to recompute these targets.
@@ -233,6 +242,8 @@ always_ff @(posedge clk, negedge rst_n) begin
       pc_mux_q <= ctrl_fsm_i.pc_mux;
       compare_enable_q <= 1'b1;
     end
+
+    enable_q <= enable;
   end
 end
 

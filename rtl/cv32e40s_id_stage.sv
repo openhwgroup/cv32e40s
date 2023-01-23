@@ -321,6 +321,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
     .jvt_addr_i        ( jvt_addr_i                        ),
     .jvt_index_i       ( jvt_index                         ),
     .compressed_i      ( if_id_pipe_i.instr_meta.compressed),
+    .dummy_i           ( if_id_pipe_i.instr_meta.dummy     ),
     .bch_target_o      ( bch_target                        ),
     .jmp_target_o      ( jmp_target_o                      ),
     .pc_next_o         ( pc_next                           )
@@ -732,10 +733,11 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
       assign jmp_bch_insn = ((alu_jmp || alu_bch) && alu_en) || (sys_mret_insn && sys_en);
 
       // Detect last operation of current instruction.
-      assign last_sec_op = jmp_bch_insn ? (multi_op_cnt == JMP_BCH_CYCLES - 1)
-                                    : 1'b1;
+      // Only when pc_hardening is enabled, otherwise no instruction will be split for pc_hardening.
+      assign last_sec_op = (jmp_bch_insn && xsecure_ctrl_i.cpuctrl.pc_hardening) ? (multi_op_cnt == JMP_BCH_CYCLES - 1)
+                                                                                 : 1'b1;
 
-      assign first_sec_op = jmp_bch_insn ? (multi_op_cnt == '0) : 1'b1;
+      assign first_sec_op = (jmp_bch_insn && xsecure_ctrl_i.cpuctrl.pc_hardening) ? (multi_op_cnt == '0) : 1'b1;
 
       // Count number of operations performed by an instruction.
       always_ff @(posedge clk, negedge rst_n) begin

@@ -100,6 +100,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  logic  [1:0] mtvec_mode_i,
   input  dcsr_t       dcsr_i,
   input  mcause_t     mcause_i,
+  input  xsecure_ctrl_t xsecure_ctrl_i,
 
   // Trigger module
   input  logic        etrigger_wb_i,              // Trigger module detected match in WB (etrigger)
@@ -522,7 +523,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // impact the current instruction in the pipeline).
   // If the core woke up from sleep due to interrupts, the wakeup reason will be honored
   // by not allowing async debug the cycle after wakeup.
-  assign async_debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline && sequence_interruptible && !woke_to_interrupt_q;
+  assign async_debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline && sequence_interruptible && !woke_to_interrupt_q && !csr_flush_ack_q;
 
   // synchronous debug entry have far fewer restrictions than asynchronous entries. In principle synchronous debug entry should have the same
   // 'allowed' signal as exceptions - that is it should always be possible.
@@ -581,12 +582,12 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   //   - This is guarded with using the sequence_interruptible, which tracks sequence progress through the WB stage.
   // When a CLIC pointer is in the pipeline stages EX or WB, we must block interrupts.
   //   - Interrupt would otherwise kill the pointer and use the address of the pointer for mepc. A following mret would then return to the mtvt table, losing program progress.
-  assign interrupt_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline && sequence_interruptible && !interrupt_blanking_q;
+  assign interrupt_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline && sequence_interruptible && !interrupt_blanking_q && !csr_flush_ack_q;
 
   // Allowing NMI's follow the same rule as regular interrupts, except we don't need to regard blanking of NMIs after a load/store.
   // If the core woke up from sleep due to either debug or regular interrupts, the wakeup reason is honored by not allowing NMIs in the cycle after
   // waking up to such an event.
-  assign nmi_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline && sequence_interruptible && !(woke_to_debug_q || woke_to_interrupt_q);
+  assign nmi_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline && sequence_interruptible && !(woke_to_debug_q || woke_to_interrupt_q || csr_flush_ack_q);
 
   // Do not allow interrupts if in debug mode, or single stepping without dcsr.stepie set.
   assign debug_interruptible = !(debug_mode_q || (dcsr_i.step && !dcsr_i.stepie));
@@ -985,7 +986,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           end else if (branch_taken_ex) begin
             ctrl_fsm_o.kill_if = 1'b1;
             // For SECURE, branches will be both in ID and EX when the branch is taken, avoid killing ID.
-            ctrl_fsm_o.kill_id = SECURE ? 1'b0 : 1'b1;
+            ctrl_fsm_o.kill_id = (SECURE && xsecure_ctrl_i.cpuctrl.pc_hardening) ? 1'b0 : 1'b1;
 
             ctrl_fsm_o.pc_mux  = PC_BRANCH;
             ctrl_fsm_o.pc_set  = 1'b1;
