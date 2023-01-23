@@ -462,7 +462,9 @@ endgenerate
         .PMP_GRANULARITY                        (PMP_GRANULARITY),
         .PMA_NUM_REGIONS                        (PMA_NUM_REGIONS),
         .PMA_CFG                                (PMA_CFG),
-        .IS_INSTR_SIDE                          (0))
+        .IS_INSTR_SIDE                          (0),
+        .CORE_RESP_TYPE                         (cv32e40s_pkg::data_resp_t),
+        .X_EXT                                  (X_EXT))
   mpu_lsu_sva(.pma_addr                         (pma_i.trans_addr_i),
               .pma_cfg                          (pma_i.pma_cfg),
               .obi_memtype                      (core_i.data_memtype_o),
