@@ -352,6 +352,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .clk                  ( clk                  ),
     .rst_n                ( rst_n                ),
 
+    .xsecure_ctrl_i       ( xsecure_ctrl_i       ),
     .if_valid_i           ( if_valid_o           ),
     .id_ready_i           ( id_ready_i           ),
 

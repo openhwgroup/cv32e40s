@@ -101,6 +101,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   input logic  [1:0]  mtvec_mode_i,
   input  mcause_t     mcause_i,
+  input  xsecure_ctrl_t xsecure_ctrl_i,
 
   input  logic        etrigger_wb_i,
 
@@ -223,6 +224,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .debug_req_i                 ( debug_req_i              ),
     .dcsr_i                      ( dcsr_i                   ),
     .mcause_i                    ( mcause_i                 ),
+    .xsecure_ctrl_i              ( xsecure_ctrl_i           ),
 
     // Fencei flush handshake
     .fencei_flush_ack_i          ( fencei_flush_ack_i       ),

@@ -202,10 +202,19 @@ module cv32e40s_id_stage_sva
   a_mret_self_stall :
     assert property (@(posedge clk) disable iff (!rst_n)
                       (sys_en && sys_mret_insn && last_sec_op) &&
-                      ((id_ex_pipe_o.sys_en && id_ex_pipe_o.sys_mret_insn) ||
-                       (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn))
+                      ((id_ex_pipe_o.sys_en && id_ex_pipe_o.sys_mret_insn && !id_ex_pipe_o.last_sec_op && id_ex_pipe_o.instr_valid) ||
+                       (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn && !ex_wb_pipe.last_sec_op && ex_wb_pipe.instr_valid))
                        |-> !ctrl_byp_i.csr_stall)
       else `uvm_error("id_stage", "mret stalls on itself")
+
+  // Check that an mret will cause a csr_stall if there is a different mret in front of it in the pipeline
+  a_mret_stall :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                      (sys_en && sys_mret_insn) &&
+                      ((id_ex_pipe_o.sys_en && id_ex_pipe_o.sys_mret_insn && (if_id_pipe_i.pc != id_ex_pipe_o.pc) && id_ex_pipe_o.instr_valid)||
+                       (ex_wb_pipe.sys_en   && ex_wb_pipe.sys_mret_insn   && (if_id_pipe_i.pc != ex_wb_pipe.pc)   && ex_wb_pipe.instr_valid))
+                        |-> ctrl_byp_i.csr_stall)
+      else `uvm_error("id_stage", "mret not causing a csr_stall")
 
 
   // Assert that jalr_fw has the same value as operand_a_fw when a jump is taken
@@ -253,6 +262,6 @@ module cv32e40s_id_stage_sva
 
       end
     endgenerate
-  
+
 endmodule
 
