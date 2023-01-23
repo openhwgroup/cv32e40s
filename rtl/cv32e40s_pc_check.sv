@@ -201,46 +201,58 @@ always_ff @(posedge clk, negedge rst_n) begin
     // Pointers (if_id_pipe.ptr) should already be hardened by parity checks.
     // Used for the address comparison
     // Todo: may stretch this until the target instruction leaves IF stage
-    pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ) ||
-                                       (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV) ||
-                                       ((ctrl_fsm_i.pc_mux == PC_POINTER) && !if_id_pipe_i.instr_meta.tbljmp));
+    if (enable) begin
+      pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ) ||
+                                        (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV) ||
+                                        ((ctrl_fsm_i.pc_mux == PC_POINTER) && !if_id_pipe_i.instr_meta.tbljmp));
 
-    // Set a flag for a valid IF->ID stage transition.
-    // Used for checking sequential PCs.
-    // Exlude the case where a pointer goes from IF to ID as to avoid mismatch on addresses
-    // (pointer address may have LSBs that indicate a compressed instruction)
-    if_id_q  <= (if_valid_i && id_ready_i) && !prefetch_is_ptr_i;
+      // Set a flag for a valid IF->ID stage transition.
+      // Used for checking sequential PCs.
+      // Exlude the case where a pointer goes from IF to ID as to avoid mismatch on addresses
+      // (pointer address may have LSBs that indicate a compressed instruction)
+      if_id_q  <= (if_valid_i && id_ready_i) && !prefetch_is_ptr_i;
 
-    // Flag for taken jump
-    // Jumps are taken from ID, and the flag can thus only be cleared when the last part (2/2) of the instruction
-    // is done in the ID stage, or ID stage is killed.
-    if((id_valid_i && ex_ready_i && last_sec_op_id_i) || ctrl_fsm_i.kill_id) begin
+      // Flag for taken jump
+      // Jumps are taken from ID, and the flag can thus only be cleared when the last part (2/2) of the instruction
+      // is done in the ID stage, or ID stage is killed.
+      if((id_valid_i && ex_ready_i && last_sec_op_id_i) || ctrl_fsm_i.kill_id) begin
+        jmp_taken_q <= 1'b0;
+      end else begin
+        // Set flag for jumps and mret
+        // Both operations of a table jump counts as a jump (instruction word remain the same, only the pointer field change)
+        if(ctrl_fsm_i.pc_set && ((ctrl_fsm_i.pc_mux == PC_JUMP) || (ctrl_fsm_i.pc_mux == PC_MRET) ||
+          (ctrl_fsm_i.pc_mux == PC_TBLJUMP) || ((ctrl_fsm_i.pc_mux == PC_POINTER) && if_id_pipe_i.instr_meta.tbljmp))) begin
+          jmp_taken_q <= 1'b1;
+        end
+      end
+
+      // Flag for taken branches
+      // Branches are taken from EX, and the flag can thus only be cleared when the last part (2/2) of the instruction
+      // is done in the EX stage, or EX stage is killed.
+      if((ex_valid_i && wb_ready_i && last_op_ex_i) || ctrl_fsm_i.kill_ex) begin
+        bch_taken_q <= 1'b0;
+      end else begin
+        // Set flag for branches
+        if(ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_mux == PC_BRANCH)) begin
+          bch_taken_q <= 1'b1;
+        end
+      end
+
+      // On a pc_set, flop the pc_mux and set a sticky compare_enable_q bit.
+      // When enabling, the CSR write to cpuctrl will cause a pipeline flush and a pc_set to the next instruction.
+      //   This ensure compare_enable_q will be set after enabling pc_hardening.
+      if(ctrl_fsm_i.pc_set) begin
+        pc_mux_q <= ctrl_fsm_i.pc_mux;
+        compare_enable_q <= 1'b1;
+      end
+    end else begin
+      // Reset to default values when not enabled
+      pc_set_q <= 1'b0;
+      pc_mux_q <= PC_BOOT;
+      if_id_q  <= 1'b0;
       jmp_taken_q <= 1'b0;
-    end else begin
-      // Set flag for jumps and mret
-      // Both operations of a table jump counts as a jump (instruction word remain the same, only the pointer field change)
-      if(ctrl_fsm_i.pc_set && ((ctrl_fsm_i.pc_mux == PC_JUMP) || (ctrl_fsm_i.pc_mux == PC_MRET) ||
-        (ctrl_fsm_i.pc_mux == PC_TBLJUMP) || ((ctrl_fsm_i.pc_mux == PC_POINTER) && if_id_pipe_i.instr_meta.tbljmp))) begin
-        jmp_taken_q <= 1'b1;
-      end
-    end
-
-    // Flag for taken branches
-    // Branches are taken from EX, and the flag can thus only be cleared when the last part (2/2) of the instruction
-    // is done in the EX stage, or EX stage is killed.
-    if((ex_valid_i && wb_ready_i && last_op_ex_i) || ctrl_fsm_i.kill_ex) begin
       bch_taken_q <= 1'b0;
-    end else begin
-      // Set flag for branches
-      if(ctrl_fsm_i.pc_set && (ctrl_fsm_i.pc_mux == PC_BRANCH)) begin
-        bch_taken_q <= 1'b1;
-      end
-    end
-
-    // On a pc_set, flop the pc_mux and set a sticky compare_enable_q bit.
-    if(ctrl_fsm_i.pc_set) begin
-      pc_mux_q <= ctrl_fsm_i.pc_mux;
-      compare_enable_q <= 1'b1;
+      compare_enable_q <= 1'b0;
     end
 
     enable_q <= enable;
