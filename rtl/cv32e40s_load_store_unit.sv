@@ -32,7 +32,9 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     parameter int          PMP_NUM_REGIONS = 0,
     parameter int          PMA_NUM_REGIONS = 0,
     parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
-    parameter int          DBG_NUM_TRIGGERS = 1)
+    parameter int          DBG_NUM_TRIGGERS = 1,
+    parameter logic [31:0] DM_REGION_START = 32'hF0000000,
+    parameter logic [31:0] DM_REGION_END   = 32'hF0003FFF)
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -741,7 +743,9 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .PMA_NUM_REGIONS    ( PMA_NUM_REGIONS      ),
     .PMA_CFG            ( PMA_CFG              ),
     .PMP_GRANULARITY    ( PMP_GRANULARITY      ),
-    .PMP_NUM_REGIONS    ( PMP_NUM_REGIONS      )
+    .PMP_NUM_REGIONS    ( PMP_NUM_REGIONS      ),
+    .DM_REGION_START    ( DM_REGION_START      ),
+    .DM_REGION_END      ( DM_REGION_END        )
   )
   mpu_i
   (
