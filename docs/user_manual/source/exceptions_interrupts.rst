@@ -71,7 +71,8 @@ Non Maskable Interrupts (NMIs) update ``mepc``, ``mcause`` and ``mstatus`` simil
 
 .. note::
 
-   Specifically ``mstatus.mie`` will get cleared to 0 when an (unrecoverable) NMI is taken. [RISC-V-PRIV]_ does not specify the behavior of
+   (Unrecoverable) NMIs and regular interrupts have identical effects on the ``mstatus`` CSR". Specifically ``mstatus.mie`` will get cleared
+   to 0 when an (unrecoverable) NMI is taken. [RISC-V-PRIV]_ does not specify the behavior of
    ``mstatus`` in response to NMIs, see https://github.com/riscv/riscv-isa-manual/issues/756. If this behavior is
    specified at a future date, then we will reconsider our implementation.
 
@@ -229,8 +230,8 @@ In Debug Mode, all interrupts are ignored independent of ``mstatus.MIE`` and the
 
 .. note::
 
-   The NMI vector location is at index 15 of the machine trap vector table for both non-vectored CLINT mode and vectored CLINT mode (i.e. at {**mtvec[31:7]**, 5'hF, 2'b00}).
-   The NMI vector location therefore does **not** match its exception code.
+   The NMI vector location is at index 15 of the machine trap vector table for vectored CLINT mode (i.e. at {**mtvec[31:7]**, 5'hF, 2'b00}).
+   The NMI vector location therefore does **not** match its exception code as is otherwise the case for vectored CLINT mode.
 
 Nested Interrupt Handling
 ~~~~~~~~~~~~~~~~~~~~~~~~~

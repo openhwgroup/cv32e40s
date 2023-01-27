@@ -35,6 +35,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter rv32_e                      RV32                                    = RV32I,
   parameter b_ext_e                     B_EXT                                   = B_NONE,
   parameter m_ext_e                     M_EXT                                   = M,
+  parameter logic [31:0]                DM_REGION_START                         = 32'hF0000000,
+  parameter logic [31:0]                DM_REGION_END                           = 32'hF0003FFF,
   parameter int                         DBG_NUM_TRIGGERS                        = 1,
   parameter int                         PMA_NUM_REGIONS                         = 0,
   parameter pma_cfg_t                   PMA_CFG[PMA_NUM_REGIONS-1:0]            = '{default:PMA_R_DEFAULT},
@@ -543,7 +545,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .SMCLIC              ( SMCLIC                   ),
     .SMCLIC_ID_WIDTH     ( SMCLIC_ID_WIDTH          ),
     .ZC_EXT              ( ZC_EXT                   ),
-    .M_EXT               ( M_EXT                    )
+    .M_EXT               ( M_EXT                    ),
+    .DM_REGION_START     ( DM_REGION_START          ),
+    .DM_REGION_END       ( DM_REGION_END            )
   )
   if_stage_i
   (
@@ -768,13 +772,15 @@ module cv32e40s_core import cv32e40s_pkg::*;
   ////////////////////////////////////////////////////////////////////////////////////////
 
   cv32e40s_load_store_unit
-    #(.X_EXT                 (X_EXT           ),
-      .X_ID_WIDTH            (X_ID_WIDTH      ),
-      .PMP_GRANULARITY       (PMP_GRANULARITY ),
-      .PMP_NUM_REGIONS       (PMP_NUM_REGIONS ),
-      .PMA_NUM_REGIONS       (PMA_NUM_REGIONS ),
-      .PMA_CFG               (PMA_CFG         ),
-      .DBG_NUM_TRIGGERS      (DBG_NUM_TRIGGERS))
+    #(.X_EXT                 (X_EXT             ),
+      .X_ID_WIDTH            (X_ID_WIDTH        ),
+      .PMP_GRANULARITY       (PMP_GRANULARITY   ),
+      .PMP_NUM_REGIONS       (PMP_NUM_REGIONS   ),
+      .PMA_NUM_REGIONS       (PMA_NUM_REGIONS   ),
+      .PMA_CFG               (PMA_CFG           ),
+      .DBG_NUM_TRIGGERS      (DBG_NUM_TRIGGERS  ),
+      .DM_REGION_START       (DM_REGION_START   ),
+      .DM_REGION_END         (DM_REGION_END     ))
   load_store_unit_i
   (
     .clk                   ( clk                ),

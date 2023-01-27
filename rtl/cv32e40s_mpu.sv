@@ -32,7 +32,9 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
       parameter int          PMP_GRANULARITY              = 0,
       parameter int          PMP_NUM_REGIONS              = 0,
       parameter int          PMA_NUM_REGIONS              = 0,
-      parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT})
+      parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
+      parameter logic [31:0] DM_REGION_START              = 32'hF0000000,
+      parameter logic [31:0] DM_REGION_END                = 32'hF0003FFF)
   (
    input logic  clk,
    input logic  rst_n,
@@ -94,6 +96,10 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   logic        instr_fetch_access;
   logic        load_access;
   logic        wpt_match;
+  logic        core_trans_debug_region;
+
+  // Detect a debug mode transaction to the Debug Module region
+  assign core_trans_debug_region = (core_trans_i.addr >= DM_REGION_START) && (core_trans_i.addr <= DM_REGION_END) && core_trans_i.dbg;
 
   // FSM that will "consume" transfers failing PMA or PMP checks.
   // Upon failing checks, this FSM will prevent the transfer from going out on the bus
@@ -197,19 +203,20 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
 
   // PMA - Physical Memory Attribution
   cv32e40s_pma
-    #(.PMA_NUM_REGIONS          ( PMA_NUM_REGIONS      ),
-      .PMA_CFG                  ( PMA_CFG              )
+    #(.PMA_NUM_REGIONS          ( PMA_NUM_REGIONS         ),
+      .PMA_CFG                  ( PMA_CFG                 )
   )
   pma_i
     (
-    .trans_addr_i               ( core_trans_i.addr    ),
-    .instr_fetch_access_i       ( instr_fetch_access   ),
-    .misaligned_access_i        ( misaligned_access_i  ),
-    .load_access_i              ( load_access          ),
-    .pma_err_o                  ( pma_err              ),
-    .pma_integrity_o            ( bus_trans_integrity  ),
-    .pma_bufferable_o           ( bus_trans_bufferable ),
-    .pma_cacheable_o            ( bus_trans_cacheable  )
+    .trans_addr_i               ( core_trans_i.addr       ),
+    .trans_debug_region_i       ( core_trans_debug_region ),
+    .instr_fetch_access_i       ( instr_fetch_access      ),
+    .misaligned_access_i        ( misaligned_access_i     ),
+    .load_access_i              ( load_access             ),
+    .pma_err_o                  ( pma_err                 ),
+    .pma_integrity_o            ( bus_trans_integrity     ),
+    .pma_bufferable_o           ( bus_trans_bufferable    ),
+    .pma_cacheable_o            ( bus_trans_cacheable     )
   );
 
   assign pmp_req_addr = {2'b00, core_trans_i.addr};
