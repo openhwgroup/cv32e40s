@@ -53,6 +53,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
 
    // PMP signals
    input pmp_csr_t    csr_pmp_i,
+   input logic        pmp_err,
 
    // Core OBI signals
    input logic [ 1:0] obi_memtype,
@@ -521,6 +522,7 @@ end
                   is_pma_dbg_matched
                   |->
                   !pma_err &&               // Always 'main' while accessing DM in debug mode
+                  !pmp_err &&
                   !bus_trans_cacheable &&
                   !bus_trans_bufferable &&
                   !bus_trans_integrity)
