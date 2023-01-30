@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Copyright 2021 Silicon Labs, Inc.
-//   
+//
 // This file, and derivatives thereof are licensed under the
 // Solderpad License, Version 2.0 (the "License");
 // Use of this file means you agree to the terms and conditions
 // of the license and are in full compliance with the License.
 // You may obtain a copy of the License at
-//   
+//
 //     https://solderpad.org/licenses/SHL-2.0/
-//   
+//
 // Unless required by applicable law or agreed to in writing, software
 // and hardware implementations thereof
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -48,6 +48,7 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
    input              privlvl_t priv_lvl_i,
    // Access checking
    input logic [33:0] pmp_req_addr_i,
+   input logic        pmp_req_debug_region_i,
    input              pmp_req_e pmp_req_type_i,
    output logic       pmp_req_err_o
    );
@@ -70,7 +71,7 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
       // ---------------
       // Region matching
       // ---------------
-      
+
       // Start address for TOR matching
       if (r_a == 0) begin : g_entry0
         assign region_start_addr[r_a] = (csr_pmp_i.cfg[r_a].mode == PMP_MODE_TOR) ? 34'h000000000 :
@@ -79,7 +80,7 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
         assign region_start_addr[r_a] = (csr_pmp_i.cfg[r_a].mode == PMP_MODE_TOR) ? csr_pmp_i.addr[r_a-1] :
                                         csr_pmp_i.addr[r_a];
       end
-      
+
       // Address mask for NA matching
       for (genvar b = PMP_GRANULARITY+2; b < 34; b++) begin : g_bitmask
         if (b == 2) begin : g_bit0
@@ -100,7 +101,7 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
           end
         end
       end
-      
+
       // Comparators are sized according to granularity
       assign region_match_eq[r_a] = (pmp_req_addr_i[33:PMP_GRANULARITY+2]         & region_addr_mask[r_a]) ==
                                     (region_start_addr[r_a][33:PMP_GRANULARITY+2] & region_addr_mask[r_a]);
@@ -123,7 +124,7 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
           default        : region_match_all[r_a] = 1'b0;
         endcase
       end
-      
+
     end // block: addr_match
   endgenerate
 
@@ -138,11 +139,11 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
       assign region_basic_perm_check[r_c] = ((pmp_req_type_i == PMP_ACC_EXEC)  && csr_pmp_i.cfg[r_c].exec)  ||
                                             ((pmp_req_type_i == PMP_ACC_WRITE) && csr_pmp_i.cfg[r_c].write) ||
                                             ((pmp_req_type_i == PMP_ACC_READ)  && csr_pmp_i.cfg[r_c].read);
-      
+
       // Compute permission checks that apply when MSECCFG.MML is set.
       always_comb begin
         region_mml_perm_check[r_c] = 1'b0;
-        
+
         if (!csr_pmp_i.cfg[r_c].read && csr_pmp_i.cfg[r_c].write) begin
           // Special-case shared regions where R = 0, W = 1
           unique case ({csr_pmp_i.cfg[r_c].lock, csr_pmp_i.cfg[r_c].exec})
@@ -213,8 +214,9 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
   end
 
   // PMP is always present (even if PMP_NUM_REGIONS == 0)
-  assign pmp_req_err_o = access_fault;
-  
+  // Do not block access if it is accessing the Debug Module region in debug mode
+  assign pmp_req_err_o = pmp_req_debug_region_i ? 1'b0 : access_fault;
+
   // RLB, rule locking bypass, is only relevant to cv32e40s_cs_registers which controls writes to the
   // PMP CSRs. Tie to unused signal here to prevent lint warnings.
   logic unused_csr_pmp_mseccfg_rlb;

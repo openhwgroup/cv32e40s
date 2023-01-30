@@ -225,18 +225,19 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
     if (PMP) begin: pmp
       cv32e40s_pmp
         #(// Parameters
-          .PMP_GRANULARITY                  (PMP_GRANULARITY),
-          .PMP_NUM_REGIONS                  (PMP_NUM_REGIONS))
+          .PMP_GRANULARITY                  (PMP_GRANULARITY        ),
+          .PMP_NUM_REGIONS                  (PMP_NUM_REGIONS        ))
       pmp_i
         (// Outputs
-         .pmp_req_err_o                     (pmp_err),
+         .pmp_req_err_o                     (pmp_err                ),
          // Inputs
-         .clk                               (clk),
-         .rst_n                             (rst_n),
-         .pmp_req_type_i                    (pmp_req_type),
-         .csr_pmp_i                         (csr_pmp_i),
-         .priv_lvl_i                        (priv_lvl_i),
-         .pmp_req_addr_i                    (pmp_req_addr));
+         .clk                               (clk                    ),
+         .rst_n                             (rst_n                  ),
+         .pmp_req_type_i                    (pmp_req_type           ),
+         .csr_pmp_i                         (csr_pmp_i              ),
+         .priv_lvl_i                        (priv_lvl_i             ),
+         .pmp_req_addr_i                    (pmp_req_addr           ),
+         .pmp_req_debug_region_i            (core_trans_debug_region));
     end
     else begin: no_pmp
       assign pmp_err = 1'b0;
