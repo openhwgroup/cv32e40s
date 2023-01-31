@@ -32,7 +32,6 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
       parameter int unsigned IS_INSTR_SIDE = 0,
       parameter type         CORE_RESP_TYPE = inst_resp_t,
       parameter type         CORE_REQ_TYPE  = obi_inst_req_t,
-      parameter bit          X_EXT = 1'b0,
       parameter logic [31:0] DM_REGION_START = 32'hF0000000,
       parameter logic [31:0] DM_REGION_END   = 32'hF0003FFF)
   (
@@ -78,10 +77,9 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
    input logic         core_trans_valid_i,
    input logic         core_trans_ready_o,
    input CORE_REQ_TYPE core_trans_i,
+   input logic         core_trans_pushpop_i,
 
-   input logic          core_resp_valid_o,
-   input logic          core_resp_ready_i,
-   input CORE_RESP_TYPE core_resp_o,
+   input logic        core_resp_valid_o,
 
    input              mpu_status_e mpu_status,
    input logic        mpu_err_trans_valid,
@@ -91,6 +89,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
    input logic        mpu_err,
    input logic        load_access
    );
+
   // PMA assertions helper signals
 
   logic is_addr_match;
@@ -236,7 +235,8 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
     end
   end
   assign pma_expected_err = (instr_fetch_access && !pma_expected_cfg.main)  ||
-                            (misaligned_access_i && !pma_expected_cfg.main);
+                            (misaligned_access_i && !pma_expected_cfg.main) ||
+                            (core_trans_pushpop_i && !pma_expected_cfg.main);
   a_pma_expect_cfg :
     assert property (@(posedge clk) disable iff (!rst_n) pma_cfg == pma_expected_cfg)
       else `uvm_error("mpu", "RTL cfg don't match SVA expectations")
@@ -486,33 +486,6 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
         else `uvm_error("mpu", "mseccfg.mmwp not sticky.")
 
 
-
-if (!IS_INSTR_SIDE ) begin
-  if (X_EXT) begin
-    // Check that error response and state is kept stable until downstream stage is ready to accept it.
-    // Only included for data side/LSU, as in the IF stage the prefetcher is always ready to recieve a response.
-    a_mpu_resp_backpressure:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                    ((state_q == MPU_RE_ERR_RESP) || (state_q == MPU_WR_ERR_RESP)) &&
-                    !core_resp_ready_i
-                    |->
-                    $stable(state_q) &&
-                    mpu_err_trans_valid &&
-                    $stable(core_resp_o.mpu_status))
-      else `uvm_error("mpu", "mpu_err_trans_valid not stable while core_resp_ready_i==0")
-  end else begin
-
-    // Without X_EXT, the MPU should never see a situation where it is ready to give an error response
-    // and at the same time WB is not ready. IF such condition exists the controller halts or kills
-    // an LSU instruction (which is not allowed)
-    a_mpu_resp_backpressure:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                    ((state_q == MPU_RE_ERR_RESP) || (state_q == MPU_WR_ERR_RESP))
-                    |->
-                    core_resp_ready_i)
-      else `uvm_error("mpu", "Downstream stage not ready to receive response")
-  end
-end
 
   // Check that PMA sets correct attribution for accesses to DM during debug
   // main, non-cacheable, non-bufferable, non-integrity

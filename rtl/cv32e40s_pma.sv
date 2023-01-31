@@ -31,6 +31,7 @@ module cv32e40s_pma import cv32e40s_pkg::*;
 (
   input  logic [31:0] trans_addr_i,
   input  logic        trans_debug_region_i, // Transaction address is inside the debug region
+  input  logic        trans_pushpop_i,      // Transaction is part of a PUSH or POP sequence
   input  logic        instr_fetch_access_i, // Indicate that ongoing access is an instruction fetch
   input  logic        misaligned_access_i,  // Indicate that ongoing access is part of a misaligned access
   input  logic        load_access_i,        // Indicate that ongoing access is a load
@@ -107,6 +108,11 @@ module cv32e40s_pma import cv32e40s_pkg::*;
 
     // Misaligned access to I/O memory
     if (misaligned_access_i && !pma_cfg.main) begin
+      pma_err_o   = 1'b1;
+    end
+
+    // PUSH/POP outside of main is not allowed
+    if (trans_pushpop_i && !pma_cfg.main) begin
       pma_err_o   = 1'b1;
     end
   end
