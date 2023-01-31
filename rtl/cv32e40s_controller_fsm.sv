@@ -72,16 +72,16 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  lsu_err_wb_t lsu_err_wb_i,               // LSU caused bus_error or integrity error in WB stage, gated with data_rvalid_i inside load_store_unit
   input  logic        last_op_wb_i,               // WB stage contains the last operation of an instruction
   input  logic        abort_op_wb_i,              // WB stage contains an (to be) aborted instruction or sequence
+  input  mpu_status_e mpu_status_wb_i,            // MPU status (WB timing)
+  input  logic        wpt_match_wb_i,             // LSU watchpoint trigger (WB)
+
 
   // From LSU (WB)
-  input  mpu_status_e lsu_mpu_status_wb_i,        // MPU status (WB timing)
   input  logic        data_stall_wb_i,            // WB stalled by LSU
   input  logic        lsu_valid_wb_i,             // LSU instruction in WB is valid
 
   input  logic        lsu_busy_i,                 // LSU is busy with outstanding transfers
   input  logic        lsu_interruptible_i,        // LSU can be interrupted
-
-  input  logic        lsu_wpt_match_wb_i,         // LSU watchpoint trigger (WB)
 
   // Interrupt Controller Signals
   input  logic        irq_wu_ctrl_i,              // Irq wakeup control
@@ -350,7 +350,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign exception_alert_minor_wb  = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK) ||
                                       ex_wb_pipe_i.instr.bus_resp.err           ||
                                       ex_wb_pipe_i.illegal_insn                 ||
-                                      (lsu_mpu_status_wb_i != MPU_OK))          && ex_wb_pipe_i.instr_valid;
+                                      (mpu_status_wb_i != MPU_OK))              && ex_wb_pipe_i.instr_valid;
 
   // Major alert will be set if we take an exception for an instruction side integrity error
   assign exception_alert_major_wb = (ex_wb_pipe_i.instr.bus_resp.integrity_err && ex_wb_pipe_i.instr_valid);
@@ -364,7 +364,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                             ex_wb_pipe_i.illegal_insn                                              ||
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)                   ||
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn)                    ||
-                            (lsu_mpu_status_wb_i != MPU_OK)) && ex_wb_pipe_i.instr_valid;
+                            (mpu_status_wb_i != MPU_OK)) && ex_wb_pipe_i.instr_valid;
 
   assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
 
@@ -379,8 +379,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                                                                                           EXC_CAUSE_ECALL_MMODE :
                                                                                           EXC_CAUSE_ECALL_UMODE )  :
                               (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn)     ? EXC_CAUSE_BREAKPOINT      :
-                              (lsu_mpu_status_wb_i == MPU_WR_FAULT)                   ? EXC_CAUSE_STORE_FAULT     :
-                              EXC_CAUSE_LOAD_FAULT; // (lsu_mpu_status_wb_i == MPU_RE_FAULT)
+                              (mpu_status_wb_i == MPU_WR_FAULT)                       ? EXC_CAUSE_STORE_FAULT     :
+                              EXC_CAUSE_LOAD_FAULT; // (mpu_status_wb_i == MPU_RE_FAULT)
 
   assign ctrl_fsm_o.exception_cause_wb = exception_cause_wb;
 
@@ -425,7 +425,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // Trigger match in wb
   // Trigger_match during debug mode is masked in the trigger logic inside cs_registers.sv
-  assign trigger_match_in_wb = ((ex_wb_pipe_i.trigger_match || lsu_wpt_match_wb_i) && ex_wb_pipe_i.instr_valid);
+  assign trigger_match_in_wb = ((ex_wb_pipe_i.trigger_match || wpt_match_wb_i) && ex_wb_pipe_i.instr_valid);
 
   // Only set the etrigger_in_wb flag when wb_valid is true (WB is not halted or killed).
   // If a higher priority event than taking an exception (NMI, external debug or interrupts) are present, wb_valid_i will be
@@ -781,9 +781,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           // Halt the whole pipeline
           // Halting makes sure instructions stay in the pipeline stage without propagating to the next.
           //  This is needed by the debug entry code in the DEBUG_STAKEN state to pick the correct PC for storing in dpc.
-          //  Note that signals like lsu_wpt_match_wb_i and lsu_mpu_status_wb_i will not be constant while WB is halted as
-          //  these behave as an rvalid. In general LSU instruction shall not be allowed to be halted, unless there is a
-          //  watchpoint address match.
           ctrl_fsm_o.halt_if = 1'b1;
           ctrl_fsm_o.halt_id = 1'b1;
           ctrl_fsm_o.halt_ex = 1'b1;
@@ -849,9 +846,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           // Halt the whole pipeline
           // Halting makes sure instructions stay in the pipeline stage without propagating to the next.
           //  This is needed by the debug entry code in the DEBUG_STAKEN state to pick the correct PC for storing in dpc.
-          //  Note that signals like lsu_wpt_match_wb_i and lsu_mpu_status_wb_i will not be constant while WB is halted as
-          //  these behave as an rvalid. In general LSU instruction shall not be allowed to be halted, unless there is a
-          //  watchpoint address match.
           ctrl_fsm_o.halt_if = 1'b1;
           ctrl_fsm_o.halt_id = 1'b1;
           ctrl_fsm_o.halt_ex = 1'b1;
@@ -1370,7 +1364,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
         // If debug entry is caused by a watchpoint address trigger, then abort_op_wb_i will be 1 and a debug entry is initiated.
         // This must also cause the sequence_in_progress_wb to be reset as the sequence is effectively terminated, although the instruction itself is not killed or completed
         // in a normal manner. As the WB stage is halted for debug entry on a watchcpoint trigger, wb_valid_i is zero.
-        if (ex_wb_pipe_i.instr_valid && lsu_wpt_match_wb_i && abort_op_wb_i) begin
+        if (ex_wb_pipe_i.instr_valid && wpt_match_wb_i && abort_op_wb_i) begin
           sequence_in_progress_wb <= 1'b0;
         end
       end

@@ -39,6 +39,7 @@ module cv32e40s_wpt import cv32e40s_pkg::*;
    // Interface towards mpu interface
    input  logic           mpu_trans_ready_i,
    output logic           mpu_trans_valid_o,
+   output logic           mpu_trans_pushpop_o,
    output obi_data_req_t  mpu_trans_o,
 
    input  logic           mpu_resp_valid_i,
@@ -47,10 +48,10 @@ module cv32e40s_wpt import cv32e40s_pkg::*;
    // Interface towards core
    input  logic           core_trans_valid_i,
    output logic           core_trans_ready_o,
+   input  logic           core_trans_pushpop_i,
    input  obi_data_req_t  core_trans_i,
 
    output logic           core_resp_valid_o,
-   input  logic           core_resp_ready_i,
    output data_resp_t     core_resp_o,
 
    // Indication from the core that there will be one pending transaction in the next cycle
@@ -62,7 +63,7 @@ module cv32e40s_wpt import cv32e40s_pkg::*;
 
    // Report watchpoint triggers to the core immediatly (used in case core_wpt_wait_i is not asserted)
    output logic           core_wpt_match_o
-  );
+   );
 
   logic        wpt_block_core;
   logic        wpt_block_bus;
@@ -124,10 +125,9 @@ module cv32e40s_wpt import cv32e40s_pkg::*;
         wpt_trans_valid = 1'b1;
         wpt_match       = 1'b1;
 
-        // Go back to IDLE when downstream stage (WB) is ready
-        if (core_resp_ready_i) begin
-          state_n = WPT_IDLE;
-        end
+        // Go back to IDLE uncoditionally.
+        // The core is expected to always be ready for the response
+        state_n = WPT_IDLE;
 
       end
       default: ;
@@ -144,8 +144,9 @@ module cv32e40s_wpt import cv32e40s_pkg::*;
   end
 
   // Forward transaction request towards MPU
-  assign mpu_trans_valid_o = core_trans_valid_i && !wpt_block_bus;
-  assign mpu_trans_o       = core_trans_i;
+  assign mpu_trans_valid_o   = core_trans_valid_i && !wpt_block_bus;
+  assign mpu_trans_o         = core_trans_i;
+  assign mpu_trans_pushpop_o = core_trans_pushpop_i;
 
 
   // Forward transaction response towards core

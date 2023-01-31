@@ -25,7 +25,6 @@
 
 module cv32e40s_mpu import cv32e40s_pkg::*;
   #(  parameter bit          IF_STAGE                     = 1,
-      parameter bit          X_EXT                        = 0,
       parameter type         CORE_REQ_TYPE                = obi_inst_req_t,
       parameter type         CORE_RESP_TYPE               = inst_resp_t,
       parameter type         BUS_RESP_TYPE                = obi_inst_resp_t,
@@ -51,11 +50,11 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
 
    // Interface towards core
    input logic  core_trans_valid_i,
+   input logic  core_trans_pushpop_i,
    output logic core_trans_ready_o,
    input        CORE_REQ_TYPE core_trans_i,
 
    output logic core_resp_valid_o,
-   input  logic core_resp_ready_i,
    output       CORE_RESP_TYPE core_resp_o,
 
    // PMP CSR's
@@ -73,7 +72,6 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
 
    // Report MPU errors to the core immediatly (used in case core_mpu_err_wait_i is not asserted)
    output logic core_mpu_err_o
-
    );
 
   localparam bit PMP = SECURE;
@@ -161,10 +159,9 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
         mpu_err_trans_valid = 1'b1;
         mpu_status = (state_q == MPU_RE_ERR_RESP) ? MPU_RE_FAULT : MPU_WR_FAULT;
 
-        // Go back to IDLE when downstream stage (WB) is ready
-        if (core_resp_ready_i) begin
-          state_n = MPU_IDLE;
-        end
+        // Go back to IDLE uncoditionally.
+        // The core is expected to always be ready for the response
+        state_n = MPU_IDLE;
 
       end
       default: ;
@@ -210,6 +207,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
     (
     .trans_addr_i               ( core_trans_i.addr       ),
     .trans_debug_region_i       ( core_trans_debug_region ),
+    .trans_pushpop_i            ( core_trans_pushpop_i    ),
     .instr_fetch_access_i       ( instr_fetch_access      ),
     .misaligned_access_i        ( misaligned_access_i     ),
     .load_access_i              ( load_access             ),

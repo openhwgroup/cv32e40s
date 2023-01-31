@@ -110,11 +110,13 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   // Aligned transaction request (to cv32e40x_wpt)
   logic           wpt_trans_valid;
   logic           wpt_trans_ready;
+  logic           wpt_trans_pushpop;
   obi_data_req_t  wpt_trans;
 
   // Transaction request to cv32e40x_mpu
   logic           mpu_trans_valid;
   logic           mpu_trans_ready;
+  logic           mpu_trans_pushpop;
   obi_data_req_t  mpu_trans;
 
   // Transaction response
@@ -124,13 +126,11 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   // Transaction response interface (from cv32e40x_wpt)
   logic           wpt_resp_valid;
-  logic           wpt_resp_ready;
   logic [31:0]    wpt_resp_rdata;
   data_resp_t     wpt_resp;
 
   // Transaction response interface (from cv32e40x_mpu)
   logic           mpu_resp_valid;
-  logic           mpu_resp_ready;
   data_resp_t     mpu_resp;
 
   // Transaction request (from cv32e40x_mpu to cv32e40x_write_buffer)
@@ -498,6 +498,9 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   assign wpt_trans_valid = trans_valid;
   assign trans_ready     = wpt_trans_ready;
 
+  // Indicate if transaction is part of a PUSH/POP sequence
+  assign wpt_trans_pushpop = id_ex_pipe_i.instr_meta.pushpop;
+
   // Transaction request generation
   // OBI compatible (avoids combinatorial path from data_rvalid_i to data_req_o). Multiple trans_* transactions can be
   // issued (and accepted) before a response (resp_*) is received.
@@ -678,6 +681,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
         // Interface towards mpu interface
         .mpu_trans_ready_i   ( mpu_trans_ready   ),
         .mpu_trans_valid_o   ( mpu_trans_valid   ),
+        .mpu_trans_pushpop_o ( mpu_trans_pushpop ),
         .mpu_trans_o         ( mpu_trans         ),
 
         .mpu_resp_valid_i    ( mpu_resp_valid    ),
@@ -686,10 +690,10 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
         // Interface towards core
         .core_trans_valid_i  ( wpt_trans_valid   ),
         .core_trans_ready_o  ( wpt_trans_ready   ),
+        .core_trans_pushpop_i( wpt_trans_pushpop ),
         .core_trans_i        ( wpt_trans         ),
 
         .core_resp_valid_o   ( wpt_resp_valid    ),
-        .core_resp_ready_i   ( wpt_resp_ready    ),
         .core_resp_o         ( wpt_resp          ),
 
         // Indication from the core that there will be one pending transaction in the next cycle
@@ -705,18 +709,19 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
       // Extract rdata from response struct
       assign wpt_resp_rdata = wpt_resp.bus_resp.rdata;
-      assign wpt_resp_ready = ready_0_i;
 
       assign resp_valid = wpt_resp_valid;
       assign resp_rdata = wpt_resp_rdata;
       assign resp       = wpt_resp;
 
       assign lsu_wpt_match_1_o = resp.wpt_match;
+
     end else begin : gen_no_wpt
       // Bypass WPT in case DBG_NUM_TRIGGERS is zero
       assign lsu_wpt_match_1_o = resp.wpt_match;
       assign mpu_trans_valid   = wpt_trans_valid;
       assign mpu_trans         = wpt_trans;
+      assign mpu_trans_pushpop = wpt_trans_pushpop;
       assign wpt_trans_ready   = mpu_trans_ready;
       assign wpt_resp_valid    = mpu_resp_valid;
       assign wpt_resp          = mpu_resp;
@@ -736,7 +741,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   cv32e40s_mpu
   #(
     .IF_STAGE           ( 0                    ),
-    .X_EXT              ( X_EXT                ),
     .CORE_RESP_TYPE     ( data_resp_t          ),
     .BUS_RESP_TYPE      ( obi_data_resp_t      ),
     .CORE_REQ_TYPE      ( obi_data_req_t       ),
@@ -759,10 +763,10 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .core_mpu_err_wait_i  ( !xif_req           ),
     .core_mpu_err_o       ( xif_mpu_err        ),
     .core_trans_valid_i   ( mpu_trans_valid    ),
+    .core_trans_pushpop_i ( mpu_trans_pushpop  ),
     .core_trans_ready_o   ( mpu_trans_ready    ),
     .core_trans_i         ( mpu_trans          ),
     .core_resp_valid_o    ( mpu_resp_valid     ),
-    .core_resp_ready_i    ( mpu_resp_ready     ),
     .core_resp_o          ( mpu_resp           ),
 
     .bus_trans_valid_o    ( filter_trans_valid ),
@@ -774,8 +778,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   // Extract protocol error from response struct
   assign protocol_err_mpu = resp_valid && !(|cnt_q);
-
-  assign mpu_resp_ready = ready_0_i;
 
   //////////////////////////////////////////////////////////////////////////////
   // Response Filter
