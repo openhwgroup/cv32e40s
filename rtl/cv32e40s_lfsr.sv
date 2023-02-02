@@ -35,7 +35,6 @@ module cv32e40s_lfsr import cv32e40s_pkg::*;
   (input logic         clk,
    input logic         rst_n,
 
-   input logic         enable_i,
    input logic [31:0]  seed_i,
    input logic         seed_we_i,
    input logic         shift_i,
@@ -75,10 +74,10 @@ module cv32e40s_lfsr import cv32e40s_pkg::*;
   end
 
   // Detect lockup (all 0's with XOR based feedback) in next cycle due to shift
-  assign lockup_shift = !(|lfsr_n) && shift_i && !seed_we_i && enable_i;
+  assign lockup_shift = !(|lfsr_n) && shift_i && !seed_we_i;
 
   // Detect lockup (all 0's with XOR based feedback) in next cycle due to writes
-  assign lockup_wr = !(|seed_i) && seed_we_i && enable_i;
+  assign lockup_wr = !(|seed_i) && seed_we_i;
 
   assign lockup_o = lockup_shift || lockup_wr;
 
