@@ -362,13 +362,18 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Not checking for ex_wb_pipe_i.last_op to enable exceptions to be taken as soon as possible for
   // split load/stores or Zc sequences.
   //
-  // For ebreak instructions, the following scenarios are possible. Only one scenario could cause an exception:
-  // priv_lvl | ebreakm | debug_mode | action
-  //----------|---------|------------|-----------------------------------------
-  //   M      |   0     |      0     | Exception
-  //   M      |   0     |      1     | Debug entry (restart from dm_halt_addr_i)
-  //   M      |   1     |      0     | Debug entry
-  //   M      |   1     |      1     | Debug entry (restart from dm_halt_addr_i)
+  // For ebreak instructions, the following scenarios are possible. Only one scenario per privilege level could cause an exception:
+  // priv_lvl | ebreakm | ebreaku | debug_mode | action
+  //----------|---------|---------|------------|-----------------------------------------
+  //   M      |   0     |   x     |      0     | Exception
+  //   M      |   0     |   x     |      1     | Debug entry (restart from dm_halt_addr_i)
+  //   M      |   1     |   x     |      0     | Debug entry
+  //   M      |   1     |   x     |      1     | Debug entry (restart from dm_halt_addr_i)
+  //----------|---------|---------|------------|-----------------------------------------
+  //   U      |   x     |   0     |      0     | Exception
+  //   U      |   x     |   0     |      1     | Debug entry (restart from dm_halt_addr_i)
+  //   U      |   x     |   1     |      0     | Debug entry
+  //   U      |   x     |   1     |      1     | Debug entry (restart from dm_halt_addr_i)
   //
   assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK)                                                      ||
                              ex_wb_pipe_i.instr.bus_resp.integrity_err                                                     ||
@@ -376,7 +381,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                              ex_wb_pipe_i.illegal_insn                                                                     ||
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)                                           ||
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn && (ex_wb_pipe_i.priv_lvl == PRIV_LVL_M) &&
-                              !dcsr_i.ebreakm && !debug_mode_q) ||
+                              !dcsr_i.ebreakm && !debug_mode_q)                                                            ||
+                            (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn && (ex_wb_pipe_i.priv_lvl == PRIV_LVL_U) &&
+                              !dcsr_i.ebreaku && !debug_mode_q)                                                            ||
                             (mpu_status_wb_i != MPU_OK)) && ex_wb_pipe_i.instr_valid;
 
   assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
@@ -393,6 +400,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                                                                                                                                 EXC_CAUSE_ECALL_UMODE )  :
                               (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn && (ex_wb_pipe_i.priv_lvl == PRIV_LVL_M) &&
                                 !dcsr_i.ebreakm && !debug_mode_q)                                                            ? EXC_CAUSE_BREAKPOINT      :
+                              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn && (ex_wb_pipe_i.priv_lvl == PRIV_LVL_U) &&
+                                !dcsr_i.ebreaku && !debug_mode_q)                                                            ? EXC_CAUSE_BREAKPOINT      :
                               (mpu_status_wb_i == MPU_WR_FAULT)                                                              ? EXC_CAUSE_STORE_FAULT     :
                               EXC_CAUSE_LOAD_FAULT; // (mpu_status_wb_i == MPU_RE_FAULT)
 
