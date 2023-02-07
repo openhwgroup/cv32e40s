@@ -275,7 +275,6 @@ typedef enum logic[11:0] {
   CSR_MTVAL          = 12'h343,
   CSR_MIP            = 12'h344,
   CSR_MNXTI          = 12'h345,
-  CSR_MINTSTATUS     = 12'h346,
   CSR_MINTTHRESH     = 12'h347,
   CSR_MSCRATCHCSW    = 12'h348,
   CSR_MSCRATCHCSWL   = 12'h349,
@@ -457,12 +456,15 @@ typedef enum logic[11:0] {
   CSR_MIMPID         = 12'hF13,
   CSR_MHARTID        = 12'hF14,
   CSR_MCONFIGPTR     = 12'hF15,
+  CSR_MINTSTATUS     = 12'hF46,
 
   // Xsecure custom CSRs
   CSR_CPUCTRL        = 12'hBF0,
   CSR_SECURESEED0    = 12'hBF9,
   CSR_SECURESEED1    = 12'hBFA,
   CSR_SECURESEED2    = 12'hBFC
+
+
 } csr_num_e;
 
 // CSR Bit Implementation Masks
