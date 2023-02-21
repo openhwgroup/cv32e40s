@@ -32,9 +32,11 @@
 module cv32e40s_controller import cv32e40s_pkg::*;
 #(
   parameter bit          X_EXT                  = 0,
+  parameter a_ext_e      A_EXT                  = A_NONE,
   parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
   parameter bit          SMCLIC                 = 0,
-  parameter int          SMCLIC_ID_WIDTH        = 5
+  parameter int          SMCLIC_ID_WIDTH        = 5,
+  parameter int          DEBUG                  = 1
 )
 (
   input  logic        clk,                        // Gated clock
@@ -80,10 +82,13 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   // LSU
   input  logic        data_stall_wb_i,            // WB stalled by LSU
-  input  lsu_err_wb_t lsu_err_wb_i,               // LSU bus error or integrity error in WB stage
-  input  logic        lsu_busy_i,                 // LSU is busy with outstanding transfers
+  input  logic [1:0]  lsu_err_wb_i,               // LSU bus error in WB stage
+  input  logic        lsu_busy_i,                 // LSU is busy with outstanding transfers or is initiating a new transfer
+  input  logic        lsu_bus_busy_i,             // LSU is busy with outstanding transfers
   input  logic        lsu_interruptible_i,        // LSU may be interrupted
   input  logic        lsu_valid_wb_i,             // LSU is valid in WB (factors in rvalid from either OBI bus or write buffer)
+  input  lsu_atomic_e lsu_atomic_ex_i,
+  input  lsu_atomic_e lsu_atomic_wb_i,
 
   // jump/branch signals
   input  logic        branch_decision_ex_i,       // branch decision signal from EX ALU
@@ -150,7 +155,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   #(
     .X_EXT                       ( X_EXT                    ),
     .SMCLIC                      ( SMCLIC                   ),
-    .SMCLIC_ID_WIDTH             ( SMCLIC_ID_WIDTH          )
+    .SMCLIC_ID_WIDTH             ( SMCLIC_ID_WIDTH          ),
+    .DEBUG                       ( DEBUG                    )
   )
   controller_fsm_i
   (
@@ -247,7 +253,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   // Hazard/bypass/stall control instance
   cv32e40s_controller_bypass
   #(
-    .REGFILE_NUM_READ_PORTS     ( REGFILE_NUM_READ_PORTS   )
+    .REGFILE_NUM_READ_PORTS     ( REGFILE_NUM_READ_PORTS   ),
+    .A_EXT                      ( A_EXT                    )
   )
   bypass_i
   (
@@ -273,6 +280,11 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     // From WB
     .wb_ready_i                 ( wb_ready_i               ),
     .csr_irq_enable_write_i     ( csr_irq_enable_write_i   ),
+
+    // From LSU
+    .lsu_atomic_ex_i            ( lsu_atomic_ex_i          ),
+    .lsu_atomic_wb_i            ( lsu_atomic_wb_i          ),
+    .lsu_bus_busy_i             ( lsu_bus_busy_i           ),
 
     // Outputs
     .ctrl_byp_o                 ( ctrl_byp_o               )

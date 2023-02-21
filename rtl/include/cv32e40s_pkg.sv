@@ -1255,6 +1255,14 @@ typedef struct packed
   logic        integrity_err;
   logic        store;
 } lsu_err_wb_t;
+// Struct for signaling if there is an atomic LSU instruction, and of which type
+typedef enum logic [1:0]
+{
+  AT_NONE   = 2'b00,  // There is no atomic instruction
+  AT_LR     = 2'b01,  // Atomic of LR.W type
+  AT_SC     = 2'b10,  // Atomic of SC.W type
+  AT_AMO    = 2'b11   // Atomic of AMO type
+} lsu_atomic_e;
 
 // IF/ID pipeline
 typedef struct packed {
@@ -1424,6 +1432,7 @@ typedef struct packed {
   logic         id_stage_abort;         // Same signal as deassert_we, with better name for use in the controller.
   logic         xif_exception_stall;    // Stall (EX) if xif insn in WB can cause an exception
   logic         irq_enable_stall;       // Stall (EX) if an interrupt may be enabled by the instruction in WB.
+  logic         atomic_stall;           // Stall (EX) if an Atomic/non-atomic LSU is in EX while an non-atomic/Atomic is in WB
 } ctrl_byp_t;
 
 // Controller FSM outputs
@@ -1619,6 +1628,9 @@ typedef struct packed {
 
   // OBI interface FSM state encoding
   typedef enum logic {TRANSPARENT, REGISTERED} obi_if_state_e;
+
+  // Enum used for configuration of A extension
+  typedef enum logic [1:0] {A_NONE, ZALRSC, A} a_ext_e;
 
   // Enum used for configuration of B extension
   typedef enum logic [1:0] {B_NONE, ZBA_ZBB, ZBA_ZBB_ZBS, ZBA_ZBB_ZBC_ZBS} b_ext_e;

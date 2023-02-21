@@ -54,10 +54,12 @@ supported.
   | ``data_rchk_i[4:0]``      | input           | Checksum for response phase signals                                                                                          |
   +---------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
 
+.. _misaligned-accesses:
+
 Misaligned Accesses
 -------------------
 
-Misaligned transaction are supported in hardware for Main memory regions, see :ref:`pma`. For loads and stores in Main memory where the effective
+Misaligned transactions (by non-atomics instructions) are supported in hardware for Main memory regions, see :ref:`pma`. For loads and stores in Main memory where the effective
 address is not naturally aligned to the referenced datatype (i.e., on a four-byte boundary for word accesses, and a two-byte boundary for halfword
 accesses) the load/store is performed as two bus transactions in case that the data item crosses a word boundary. A single load/store instruction
 is therefore performed as two bus transactions for the following scenarios:
@@ -67,7 +69,7 @@ is therefore performed as two bus transactions for the following scenarios:
 
 In both cases the transfer corresponding to the lowest address is performed first. All other scenarios can be handled with a single bus transaction.
 
-Misaligned transactions are not supported in I/O regions and will result in an exception trap when attempted, see :ref:`exceptions-interrupts`. 
+Misaligned transactions are not supported in I/O regions and will result in an exception trap when attempted, see :ref:`exceptions-interrupts`.
 
 Protocol
 --------
@@ -94,7 +96,7 @@ granting a request, the memory answers with a ``data_rvalid_i`` set high
 if ``data_rdata_i`` is valid. This may happen one or more cycles after the
 request has been granted. Note that ``data_rvalid_i`` must also be set high
 to signal the end of the response phase for a write transaction (although
-the ``data_rdata_i`` has no meaning in that case). When multiple granted requests 
+the ``data_rdata_i`` has no meaning in that case). When multiple granted requests
 are outstanding, it is assumed that the memory requests will be kept in-order and
 one ``data_rvalid_i`` will be signalled for each of them, in the order they were issued.
 
@@ -160,10 +162,10 @@ The write buffer (when not full) allows |corev| to proceed executing instruction
 .. note::
 
    On the OBI interface ``data_gnt_i`` = 1 and ``data_rvalid_i`` = 1 still need to be signaled for every transfer (as specified in [OPENHW-OBI]_), also for bufferable transfers.
- 
+
 Bus transfers will occur in program order, no matter if transfers are bufferable and non-bufferable.
 Transactions in the write buffer must be completed before the |corev| is able to:
- 
+
  * Retire a ``fence`` instruction
  * Retire a ``fence.i`` instruction
  * Enter SLEEP mode
