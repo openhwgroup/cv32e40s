@@ -729,14 +729,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         end
       end
 
-      CSR_TIME: begin
-        csr_rdata_int = time_i[31:0];
-      end
-
-      CSR_TIMEH: begin
-        csr_rdata_int = time_i[63:32];
-      end
-
       // Hardware Performance Monitor
       CSR_MCYCLE,
       CSR_MINSTRET,

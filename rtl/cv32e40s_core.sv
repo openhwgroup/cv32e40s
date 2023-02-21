@@ -107,7 +107,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Cycle count
   output logic [63:0]                   mcycle_o,
 
-    // Basic interrupt architecture
+  // Basic interrupt architecture
   input  logic [31:0]                   irq_i,
 
   // Event wakeup signal
