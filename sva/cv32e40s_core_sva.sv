@@ -586,11 +586,8 @@ end
     if (!A_EXT) begin
       a_atomic_disabled_never_atop :
         assert property (@(posedge clk) disable iff (!rst_ni)
-                         (data_atop_o == 6'b0) &&
-                         (lsu_atomic_wb == AT_NONE))
+                         (data_atop_o == 6'b0))
           else `uvm_error("core", "Atomic operations should never occur without A-extension enabled")
-
-
     end
     else begin
       // Check that atomic operations are always non-bufferable
@@ -598,33 +595,6 @@ end
         assert property (@(posedge clk) disable iff (!rst_ni)
                          (data_req_o && |data_atop_o |-> !data_memtype_o[0]))
           else `uvm_error("core", "Atomic operation classified as bufferable")
-
-
-      // All instructions from the A-extension write the register file
-      a_all_atop_write_rf:
-        assert property (@(posedge clk) disable iff (!rst_ni)
-                        (lsu_atomic_wb != AT_NONE) && lsu_valid_wb && !lsu_exception_wb && !lsu_wpt_match_wb
-                        |->
-                        rf_we_wb)
-          else `uvm_error("core", "Atomic instruction did not write the register file")
-
-      // SC.W which receives !exokay must write 1 to the register file
-      a_atop_sc_fault_rf_wdata:
-        assert property (@(posedge clk) disable iff (!rst_ni)
-                        (lsu_atomic_wb == AT_SC) && lsu_valid_wb && !lsu_exception_wb && !lsu_wpt_match_wb &&
-                        !lsu_exokay_wb
-                        |->
-                        (lsu_rdata_wb == 32'h1))
-          else `uvm_error("core", "Register file not written with 1 on SC fault due to exokay==0")
-
-      // SC.W which receives exokay must write 0 to the register file
-      a_atop_sc_success_rf_wdata:
-        assert property (@(posedge clk) disable iff (!rst_ni)
-                        (lsu_atomic_wb == AT_SC) && lsu_valid_wb && !lsu_exception_wb && !lsu_wpt_match_wb &&
-                        lsu_exokay_wb
-                        |->
-                        (lsu_rdata_wb == 32'h0))
-          else `uvm_error("core", "Register file not written with 0 on SC success.")
     end
   endgenerate
 
