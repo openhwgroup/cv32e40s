@@ -239,7 +239,6 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   assign pma_expected_err = (instr_fetch_access && !pma_expected_cfg.main)  ||
                             (misaligned_access_i && !pma_expected_cfg.main) ||
                             (atomic_access_i && !pma_expected_cfg.atomic)   ||
-                            (misaligned_access_i && atomic_access_i)        ||
                             (core_trans_pushpop_i && !pma_expected_cfg.main);
   a_pma_expect_cfg :
     assert property (@(posedge clk) disable iff (!rst_n) pma_cfg == pma_expected_cfg)
