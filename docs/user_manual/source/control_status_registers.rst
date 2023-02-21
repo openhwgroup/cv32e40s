@@ -571,6 +571,10 @@ Detailed:
 
 All bitfields in the ``misa`` CSR read as 0 except for the following:
 
+<<<<<<< HEAD
+=======
+* **A** = 1 if ``A_EXT`` == 1
+>>>>>>> parent of 65be5c0f (Updated user manual to describe the updated A_EXT parameter, and added a note about mret instructions not clearing reservation sets.)
 * **C** = 1
 * **I** = 1 if ``RV32`` == RV32I
 * **E** = 1 if ``RV32`` == RV32E
