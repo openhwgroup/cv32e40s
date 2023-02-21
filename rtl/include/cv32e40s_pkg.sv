@@ -1258,10 +1258,10 @@ typedef struct packed
 // Struct for signaling if there is an atomic LSU instruction, and of which type
 typedef enum logic [1:0]
 {
-  AT_NONE   = 2'b00,  // There is no atomic instruction
-  AT_LR     = 2'b01,  // Atomic of LR.W type
-  AT_SC     = 2'b10,  // Atomic of SC.W type
-  AT_AMO    = 2'b11   // Atomic of AMO type
+  AT_NONE   = 2'b00,  // There is no atomic instruction in WB
+  AT_LR     = 2'b01,  // Atomic of LR.W type in WB
+  AT_SC     = 2'b10,  // Atomic of SC.W type in WB
+  AT_AMO    = 2'b11   // Atomic of AMO type in WB
 } lsu_atomic_e;
 
 // IF/ID pipeline

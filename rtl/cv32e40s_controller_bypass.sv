@@ -308,23 +308,23 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     end
   end
 
-  generate
-    if (A_EXT) begin : atomic_stall
-      always_comb begin
-        ctrl_byp_o.atomic_stall = 1'b0;
+generate
+  if (A_EXT) begin : atomic_stall
+    always_comb begin
+      ctrl_byp_o.atomic_stall = 1'b0;
 
-        // Stall EX for the following two scenarios
-        // 1: There is an atomic instruction in EX while we have outstanding transactions on the bus
-        // 2: There is any LSU instruction in EX while there is an outstanding atomic transfer in progress
-        if ((id_ex_pipe_i.lsu_en && (lsu_atomic_ex_i != AT_NONE) && id_ex_pipe_i.instr_valid) ||
-            (id_ex_pipe_i.lsu_en && id_ex_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en && (lsu_atomic_wb_i != AT_NONE) && ex_wb_pipe_i.instr_valid)) begin
-            ctrl_byp_o.atomic_stall = lsu_bus_busy_i;
-        end
+      // Stall EX for the following two scenarios
+      // 1: There is an atomic instruction in EX while we have outstanding transactions on the bus
+      // 2: There is any LSU instruction in EX while there is an outstanding atomic transfer in progress
+      if ((id_ex_pipe_i.lsu_en && (lsu_atomic_ex_i != AT_NONE) && id_ex_pipe_i.instr_valid) ||
+          (id_ex_pipe_i.lsu_en && ex_wb_pipe_i.lsu_en && (lsu_atomic_wb_i != AT_NONE) && ex_wb_pipe_i.instr_valid)) begin
+          ctrl_byp_o.atomic_stall = lsu_bus_busy_i;
       end
-    end else begin : no_atomic_stall
-      assign ctrl_byp_o.atomic_stall = 1'b0;
     end
-  endgenerate
+  end else begin : no_atomic_stall
+    assign ctrl_byp_o.atomic_stall = 1'b0;
+  end
+endgenerate
 
   assign ctrl_byp_o.id_stage_abort = ctrl_byp_o.deassert_we;
 
