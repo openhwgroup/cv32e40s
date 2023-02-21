@@ -25,7 +25,7 @@
 
 module cv32e40s_pma import cv32e40s_pkg::*;
 #(
-  parameter a_ext_e      A_EXT = A_NONE,
+  parameter bit          A_EXT = 0,
   parameter int          PMA_NUM_REGIONS = 0,
   parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )

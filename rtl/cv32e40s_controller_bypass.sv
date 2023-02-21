@@ -33,7 +33,7 @@
 module cv32e40s_controller_bypass import cv32e40s_pkg::*;
 #(
   parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
-  parameter a_ext_e      A_EXT                  = A_NONE
+  parameter bit          A_EXT                  = 1'b0
 )
 (
   // From decoder
@@ -309,7 +309,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   end
 
   generate
-    if (A_EXT != A_NONE) begin : atomic_stall
+    if (A_EXT) begin : atomic_stall
       always_comb begin
         ctrl_byp_o.atomic_stall = 1'b0;
 

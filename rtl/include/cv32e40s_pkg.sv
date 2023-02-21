@@ -1629,9 +1629,6 @@ typedef struct packed {
   // OBI interface FSM state encoding
   typedef enum logic {TRANSPARENT, REGISTERED} obi_if_state_e;
 
-  // Enum used for configuration of A extension
-  typedef enum logic [1:0] {A_NONE, ZALRSC, A} a_ext_e;
-
   // Enum used for configuration of B extension
   typedef enum logic [1:0] {B_NONE, ZBA_ZBB, ZBA_ZBB_ZBS, ZBA_ZBB_ZBC_ZBS} b_ext_e;
 

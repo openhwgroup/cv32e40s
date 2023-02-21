@@ -110,9 +110,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     // Basic interrupt architecture
   input  logic [31:0]                   irq_i,
 
-  // Event wakeup signals
-  input  logic                          wu_wfe_i,   // Wait-for-event wakeup
-  input  logic                          wu_wrs_i,   // Wait-for-reservation-set wakeup
+  // Event wakeup signal
+  input  logic                          wu_wfe_i,
 
   // Smclic interrupt architecture
   input  logic                          clic_irq_i,

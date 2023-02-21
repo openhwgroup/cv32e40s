@@ -57,7 +57,7 @@ module cv32e40s_wrapper
 #(
   parameter              LIB                          = 0,
   parameter rv32_e       RV32                         = RV32I,
-  parameter a_ext_e      A_EXT                        = A_NONE,
+  parameter bit          A_EXT                        = 0,
   parameter b_ext_e      B_EXT                        = B_NONE,
   parameter m_ext_e      M_EXT                        = M,
   parameter int          PMP_GRANULARITY              = 0,
@@ -148,9 +148,6 @@ module cv32e40s_wrapper
 
   // WFE input
   input  logic        wu_wfe_i,
-
-  // WRS input
-  input  logic        wu_wrs_i,
 
   // CLIC Interface
   input  logic                       clic_irq_i,

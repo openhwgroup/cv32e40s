@@ -27,7 +27,7 @@
 
 module cv32e40s_load_store_unit import cv32e40x_pkg::*;
 #(
-  parameter a_ext_e      A_EXT = A_NONE,
+  parameter bit          A_EXT = 0,
   parameter bit          X_EXT = 0,
   parameter int          X_ID_WIDTH = 4,
   parameter int          PMA_NUM_REGIONS = 0,
@@ -418,7 +418,7 @@ module cv32e40s_load_store_unit import cv32e40x_pkg::*;
 
   // Set rdata output and atomic type output depending on A_EXT
   generate
-    if (A_EXT != A_NONE) begin : a_ext
+    if (A_EXT) begin : a_ext
       lsu_atomic_e lsu_atomic_q;
 
       always_ff @(posedge clk, negedge rst_n)

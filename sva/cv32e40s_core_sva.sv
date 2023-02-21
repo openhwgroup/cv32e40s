@@ -583,7 +583,7 @@ end
                   1'b1 |-> !itf_prot_err)
         else `uvm_error("core", "itf_prot_err shall be zero.")
   generate
-    if (A_EXT == A_NONE) begin
+    if (!A_EXT) begin
       a_atomic_disabled_never_atop :
         assert property (@(posedge clk) disable iff (!rst_ni)
                          (data_atop_o == 6'b0) &&

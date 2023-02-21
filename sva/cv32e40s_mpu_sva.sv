@@ -32,7 +32,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
       parameter int unsigned IS_INSTR_SIDE = 0,
       parameter type         CORE_RESP_TYPE = inst_resp_t,
       parameter type         CORE_REQ_TYPE  = obi_inst_req_t,
-      parameter a_ext_e      A_EXT = A_NONE,
+      parameter bit          A_EXT = 1'b0,
       parameter int          DEBUG = 1,
       parameter logic [31:0] DM_REGION_START = 32'hF0000000,
       parameter logic [31:0] DM_REGION_END   = 32'hF0003FFF)
@@ -496,7 +496,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
 
   a_dm_region_dbg:
 
-if (A_EXT != A_NONE) begin
+if (A_EXT) begin
   if (DEBUG) begin
     // Check that PMA sets correct attribution for non-atomic accesses DM during debug
     // main, non-cacheable, non-bufferable, non-atomics
