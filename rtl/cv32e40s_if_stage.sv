@@ -283,15 +283,17 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   cv32e40s_mpu
   #(
-    .IF_STAGE             ( 1                           ),
-    .CORE_REQ_TYPE        ( obi_inst_req_t              ),
-    .CORE_RESP_TYPE       ( inst_resp_t                 ),
-    .BUS_RESP_TYPE        ( obi_inst_resp_t             ),
-    .PMA_NUM_REGIONS      ( PMA_NUM_REGIONS             ),
-    .PMA_CFG              ( PMA_CFG                     ),
-    .DEBUG                ( DEBUG                       ),
-    .DM_REGION_START      ( DM_REGION_START             ),
-    .DM_REGION_END        ( DM_REGION_END               )
+    .IF_STAGE             ( 1                       ),
+    .CORE_REQ_TYPE        ( obi_inst_req_t          ),
+    .CORE_RESP_TYPE       ( inst_resp_t             ),
+    .BUS_RESP_TYPE        ( obi_inst_resp_t         ),
+    .PMA_NUM_REGIONS      ( PMA_NUM_REGIONS         ),
+    .PMA_CFG              ( PMA_CFG                 ),
+    .PMP_GRANULARITY      ( PMP_GRANULARITY         ),
+    .PMP_NUM_REGIONS      ( PMP_NUM_REGIONS         ),
+    .DEBUG                ( DEBUG                   ),
+    .DM_REGION_START      ( DM_REGION_START         ),
+    .DM_REGION_END        ( DM_REGION_END           )
   )
   mpu_i
   (

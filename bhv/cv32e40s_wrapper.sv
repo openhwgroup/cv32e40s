@@ -296,6 +296,7 @@ module cv32e40s_wrapper
     core_i.cs_registers_i
       cv32e40s_cs_registers_sva
         #(.SMCLIC(SMCLIC),
+        .PMP_ADDR_WIDTH (core_i.cs_registers_i.PMP_ADDR_WIDTH),
           .DEBUG (DEBUG))
         cs_registers_sva (.wb_valid_i  (core_i.wb_valid                                 ),
                           .ctrl_fsm_cs (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
@@ -370,7 +371,8 @@ module cv32e40s_wrapper
     core_i cv32e40s_core_sva
       #(.DEBUG (DEBUG),
         .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
-        .SMCLIC(SMCLIC))
+        .SMCLIC(SMCLIC),
+        .REGFILE_NUM_READ_PORTS(core_i.REGFILE_NUM_READ_PORTS))
       core_sva (// probed cs_registers signals
                 .cs_registers_mie_q               (core_i.cs_registers_i.mie_q),
                 .cs_registers_mepc_n              (core_i.cs_registers_i.mepc_n),
@@ -615,8 +617,8 @@ endgenerate
          .branch_decision_ex_i     ( core_i.ex_stage_i.branch_decision_o                                  ),
          .dret_in_ex_i             ( core_i.ex_stage_i.id_ex_pipe_i.sys_dret_insn                         ),
          .lsu_en_ex_i              ( core_i.ex_stage_i.id_ex_pipe_i.lsu_en                                ),
-         .lsu_pmp_err_ex_i         ( 1'b0                          /* PMP not implemented in cv32e40x */  ),
-         .lsu_pma_err_atomic_ex_i  ( 1'b0                                                                 ),
+         .lsu_pmp_err_ex_i         ( 1'b0                          /* TODO: connect */                    ),
+         .lsu_pma_err_atomic_ex_i  ( 1'b0                        /* Atomics not implemented in cv32e40s*/ ),
          .buffer_trans             ( core_i.load_store_unit_i.buffer_trans                                ),
          .lsu_split_q_ex_i         ( core_i.load_store_unit_i.split_q                                     ),
 

@@ -1786,7 +1786,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     if (DEBUG) begin : gen_debug_csr
       cv32e40s_csr
       #(
+        .LIB        (LIB),
         .WIDTH      (32),
+        .SHADOWCOPY (1'b0),
         .RESETVALUE (32'd0)
       )
       dscratch0_csr_i
@@ -1802,7 +1804,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       cv32e40s_csr
       #(
+        .LIB        (LIB),
         .WIDTH      (32),
+        .SHADOWCOPY (1'b0),
         .RESETVALUE (32'd0)
       )
       dscratch1_csr_i
@@ -1818,7 +1822,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       cv32e40s_csr
       #(
+        .LIB        (LIB),
         .WIDTH      (32),
+        .MASK       (CSR_DCSR_MASK),
+        .SHADOWCOPY (SECURE),
         .RESETVALUE (DCSR_RESET_VAL)
       )
       dcsr_csr_i
@@ -1834,7 +1841,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       cv32e40s_csr
       #(
+        .LIB        (LIB),
         .WIDTH      (32),
+        .SHADOWCOPY (1'b0),
         .RESETVALUE (32'd0)
       )
       dpc_csr_i
@@ -2647,6 +2656,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // When DEBUG==0, DBG_NUM_TRIGGERS is assumed to be 0 as well.
   cv32e40s_debug_triggers
     #(
+        .LIB              (LIB             ),
         .DBG_NUM_TRIGGERS (DBG_NUM_TRIGGERS)
     )
     debug_triggers_i
