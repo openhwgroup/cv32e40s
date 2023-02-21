@@ -181,8 +181,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // Busy signals
   logic        if_busy;
-  logic        lsu_busy;       // LSU is busy, outstanding OBI or new transaction being initiated
-  logic        lsu_bus_busy;   // LSU has outstanding transactions on the OBI bus
+  logic        lsu_busy;
   logic        lsu_interruptible;
 
   // ID/EX pipeline
@@ -276,7 +275,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        lsu_split_ex;
   logic        lsu_first_op_ex;
   logic        lsu_last_op_ex;
-  lsu_atomic_e lsu_atomic_ex;
   mpu_status_e lsu_mpu_status_wb;
   logic        lsu_wpt_match_wb;
   logic [31:0] lsu_rdata_wb;
@@ -817,7 +815,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Control signals
     .busy_o                ( lsu_busy           ),
-    .bus_busy_o            ( lsu_bus_busy       ),
     .interruptible_o       ( lsu_interruptible  ),
 
     // Trigger match
@@ -827,7 +824,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lsu_split_0_o         ( lsu_split_ex       ),
     .lsu_first_op_0_o      ( lsu_first_op_ex    ),
     .lsu_last_op_0_o       ( lsu_last_op_ex     ),
-    .lsu_atomic_0_o        ( lsu_atomic_ex      ),
 
     // Outputs to trigger module
     .lsu_addr_o            ( lsu_addr_ex        ),
@@ -1065,7 +1061,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   cv32e40s_controller
   #(
     .X_EXT                          ( X_EXT                  ),
-    .A_EXT                          ( A_EXT                  ),
     .REGFILE_NUM_READ_PORTS         ( REGFILE_NUM_READ_PORTS ),
     .SMCLIC                         ( SMCLIC                 ),
     .SMCLIC_ID_WIDTH                ( SMCLIC_ID_WIDTH        ),
@@ -1123,11 +1118,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .data_stall_wb_i                ( data_stall_wb          ),
     .lsu_err_wb_i                   ( lsu_err_wb             ),
     .lsu_busy_i                     ( lsu_busy               ),
-    .lsu_bus_busy_i                 ( lsu_bus_busy           ),
     .lsu_interruptible_i            ( lsu_interruptible      ),
     .lsu_valid_wb_i                 ( lsu_valid_wb           ),
-    .lsu_atomic_ex_i                ( lsu_atomic_ex          ),
-    .lsu_atomic_wb_i                ( lsu_atomic_wb          ),
 
     // jump/branch control
     .branch_decision_ex_i           ( branch_decision_ex     ),
