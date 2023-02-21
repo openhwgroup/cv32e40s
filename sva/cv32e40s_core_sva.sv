@@ -28,11 +28,8 @@ module cv32e40s_core_sva
   #(
     parameter int PMA_NUM_REGIONS = 0,
     parameter bit SMCLIC = 0,
-    parameter int REGFILE_NUM_READ_PORTS = 2
-    parameter a_ext_e A_EXT = A_NONE,
-    parameter int     DEBUG = 1,
-    parameter int     PMA_NUM_REGIONS = 0,
-    parameter bit     SMCLIC = 0
+    parameter int REGFILE_NUM_READ_PORTS = 2,
+    parameter int DEBUG = 1
   )
   (
   input logic        clk,
@@ -113,12 +110,6 @@ module cv32e40s_core_sva
 
   input rf_addr_t      rf_raddr_id[REGFILE_NUM_READ_PORTS],
   input rf_data_t      rf_rdata_id[REGFILE_NUM_READ_PORTS],
-  input lsu_atomic_e   lsu_atomic_wb,
-  input logic          lsu_valid_wb,
-  input logic          lsu_exception_wb,
-  input logic          lsu_wpt_match_wb,
-  input logic [31:0]   lsu_rdata_wb,
-  input logic          lsu_exokay_wb,
 
   input logic        alu_jmpr_id_i,
   input logic        alu_en_id_i,
@@ -582,21 +573,6 @@ end
   assert property (@(posedge clk) disable iff (!rst_ni)
                   1'b1 |-> !itf_prot_err)
         else `uvm_error("core", "itf_prot_err shall be zero.")
-  generate
-    if (!A_EXT) begin
-      a_atomic_disabled_never_atop :
-        assert property (@(posedge clk) disable iff (!rst_ni)
-                         (data_atop_o == 6'b0))
-          else `uvm_error("core", "Atomic operations should never occur without A-extension enabled")
-    end
-    else begin
-      // Check that atomic operations are always non-bufferable
-      a_atomic_non_bufferable :
-        assert property (@(posedge clk) disable iff (!rst_ni)
-                         (data_req_o && |data_atop_o |-> !data_memtype_o[0]))
-          else `uvm_error("core", "Atomic operation classified as bufferable")
-    end
-  endgenerate
 
   a_no_pc_err:
     assert property (@(posedge clk) disable iff (!rst_ni)
@@ -852,7 +828,6 @@ assert property (@(posedge clk_i) disable iff (!rst_ni)
                 |->
                 !instr_req_o until (instr_req_o && instr_dbg_o))
   else `uvm_error("controller", "Debug out of reset but fetched without setting instr_dbg_o")
-endmodule
 
 
 generate
@@ -925,4 +900,4 @@ generate
 
   end
 endgenerate
-endmodule // cv32e40x_core_sva
+endmodule

@@ -415,7 +415,7 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
             end
 
             // Mnxti is only accessible using CSRR (CSRRS rd, csr, x0), CSRRSI or CSRRCI
-            // In addition, when using CSRRSI, if immediate bits 0, 2 or 4 is set the instruction is reserved (illegal in cv32e40x case)
+            // In addition, when using CSRRSI, if immediate bits 0, 2 or 4 is set the instruction is reserved (illegal in cv32e40s case)
             if ((instr_rdata_i[31:20] == CSR_MNXTI)) begin
               if (instr_rdata_i[14:12] == 3'b010) begin // CSRRS
                 // Only legal if rs1 == x0

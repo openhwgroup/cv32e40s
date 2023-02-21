@@ -57,7 +57,6 @@ module cv32e40s_wrapper
 #(
   parameter              LIB                          = 0,
   parameter rv32_e       RV32                         = RV32I,
-  parameter bit          A_EXT                        = 0,
   parameter b_ext_e      B_EXT                        = B_NONE,
   parameter m_ext_e      M_EXT                        = M,
   parameter int          PMP_GRANULARITY              = 0,
@@ -131,14 +130,6 @@ module cv32e40s_wrapper
 
   // Cycle Count
   output logic [63:0] mcycle_o,
-
-  // eXtension interface
-  if_xif.cpu_compressed xif_compressed_if,
-  if_xif.cpu_issue      xif_issue_if,
-  if_xif.cpu_commit     xif_commit_if,
-  if_xif.cpu_mem        xif_mem_if,
-  if_xif.cpu_mem_result xif_mem_result_if,
-  if_xif.cpu_result     xif_result_if,
 
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
@@ -242,8 +233,8 @@ module cv32e40s_wrapper
       .*
     );
 
-  bind cv32e40x_wb_stage:
-    core_i.wb_stage_i cv32e40x_wb_stage_sva #(.DEBUG(DEBUG)) wb_stage_sva
+  bind cv32e40s_wb_stage:
+    core_i.wb_stage_i cv32e40s_wb_stage_sva #(.DEBUG(DEBUG)) wb_stage_sva
     (
       .*
     );
@@ -303,7 +294,7 @@ module cv32e40s_wrapper
                               .*);
   bind cv32e40s_cs_registers:
     core_i.cs_registers_i
-      cv32e40x_cs_registers_sva
+      cv32e40s_cs_registers_sva
         #(.SMCLIC(SMCLIC),
           .DEBUG (DEBUG))
         cs_registers_sva (.wb_valid_i  (core_i.wb_valid                                 ),
@@ -311,8 +302,8 @@ module cv32e40s_wrapper
                           .*);
 
 
-  bind cv32e40x_load_store_unit:
-    core_i.load_store_unit_i cv32e40x_load_store_unit_sva #(.DEPTH (DEPTH), .DEBUG(DEBUG)) load_store_unit_sva (
+  bind cv32e40s_load_store_unit:
+    core_i.load_store_unit_i cv32e40s_load_store_unit_sva #(.DEPTH (DEPTH), .DEBUG(DEBUG)) load_store_unit_sva (
       // The SVA's monitor modport can't connect to a master modport, so it is connected to the interface instance directly:
       .m_c_obi_data_if(core_i.m_c_obi_data_if),
       .ex_wb_pipe_i   (core_i.ex_wb_pipe),
@@ -334,7 +325,7 @@ module cv32e40s_wrapper
 
       bind cv32e40s_debug_triggers:
         core_i.cs_registers_i.debug_triggers_i
-          cv32e40x_debug_triggers_sva
+          cv32e40s_debug_triggers_sva
             #(.DBG_NUM_TRIGGERS(DBG_NUM_TRIGGERS))
             debug_triggers_sva (.csr_wdata     (core_i.cs_registers_i.csr_wdata),
                                 .csr_waddr     (core_i.cs_registers_i.csr_waddr),
@@ -375,10 +366,9 @@ module cv32e40s_wrapper
         prefetcher_sva ( .prefetch_is_clic_ptr (core_i.if_stage_i.prefetch_unit_i.prefetch_is_clic_ptr_o),
                         .*);
 
-  bind cv32e40x_core:
-    core_i cv32e40x_core_sva
-      #(.A_EXT(A_EXT),
-        .DEBUG (DEBUG),
+  bind cv32e40s_core:
+    core_i cv32e40s_core_sva
+      #(.DEBUG (DEBUG),
         .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
         .SMCLIC(SMCLIC))
       core_sva (// probed cs_registers signals
@@ -460,8 +450,8 @@ endgenerate
         .PMA_NUM_REGIONS                        (PMA_NUM_REGIONS),
         .PMA_CFG                                (PMA_CFG),
         .IS_INSTR_SIDE                          (1),
-        .CORE_RESP_TYPE                         (cv32e40x_pkg::inst_resp_t),
-        .CORE_REQ_TYPE                          (cv32e40x_pkg::obi_inst_req_t),
+        .CORE_RESP_TYPE                         (cv32e40s_pkg::inst_resp_t),
+        .CORE_REQ_TYPE                          (cv32e40s_pkg::obi_inst_req_t),
         .DEBUG                                  (DEBUG),
         .DM_REGION_START                        (DM_REGION_START),
         .DM_REGION_END                          (DM_REGION_END))
@@ -487,9 +477,8 @@ endgenerate
         .PMA_NUM_REGIONS                        (PMA_NUM_REGIONS),
         .PMA_CFG                                (PMA_CFG),
         .IS_INSTR_SIDE                          (0),
-        .CORE_RESP_TYPE                         (cv32e40x_pkg::data_resp_t),
-        .CORE_REQ_TYPE                          (cv32e40x_pkg::obi_data_req_t),
-        .A_EXT                                  (A_EXT),
+        .CORE_RESP_TYPE                         (cv32e40s_pkg::data_resp_t),
+        .CORE_REQ_TYPE                          (cv32e40s_pkg::obi_data_req_t),
         .DEBUG                                  (DEBUG),
         .DM_REGION_START                        (DM_REGION_START),
         .DM_REGION_END                          (DM_REGION_END))
@@ -548,7 +537,7 @@ endgenerate
 
   bind cv32e40s_rvfi:
     rvfi_i
-    cv32e40x_rvfi_sva
+    cv32e40s_rvfi_sva
       #(.SMCLIC(SMCLIC),
         .DEBUG (DEBUG))
       rvfi_sva(.irq_ack(core_i.irq_ack),
@@ -571,7 +560,7 @@ endgenerate
 
       );
 
-    cv32e40x_rvfi
+    cv32e40s_rvfi
       #(.SMCLIC(SMCLIC),
         .DEBUG (DEBUG))
       rvfi_i
@@ -627,8 +616,7 @@ endgenerate
          .dret_in_ex_i             ( core_i.ex_stage_i.id_ex_pipe_i.sys_dret_insn                         ),
          .lsu_en_ex_i              ( core_i.ex_stage_i.id_ex_pipe_i.lsu_en                                ),
          .lsu_pmp_err_ex_i         ( 1'b0                          /* PMP not implemented in cv32e40x */  ),
-         .lsu_pma_err_atomic_ex_i  ( core_i.load_store_unit_i.mpu_i.pma_i.atomic_access_i && // Todo: Consider making this a signal in the pma (no expressions allowed in module hookup)
-                                    !core_i.load_store_unit_i.mpu_i.pma_i.pma_cfg_atomic                 ),
+         .lsu_pma_err_atomic_ex_i  ( 1'b0                                                                 ),
          .buffer_trans             ( core_i.load_store_unit_i.buffer_trans                                ),
          .lsu_split_q_ex_i         ( core_i.load_store_unit_i.split_q                                     ),
 

@@ -34,7 +34,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40s_wb_stage import cv32e40x_pkg::*;
+module cv32e40s_wb_stage import cv32e40s_pkg::*;
 #(
     parameter int DEBUG = 1
 )

@@ -26,9 +26,6 @@
 module cv32e40s_decoder_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
-#(
-  parameter bit A_EXT     = 1'b0
-)
 (
   input logic           clk,
   input logic           rst_n,
@@ -72,15 +69,6 @@ module cv32e40s_decoder_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      (instr_rdata[6:0] == OPCODE_AMO) |-> (decoder_ctrl_mux.illegal_insn == 'b1))
       else `uvm_error("decoder", "AMO instruction should be illegal")
-  generate
-    if (!A_EXT) begin : gen_no_a_extension_assertions
-      // Check that A extension opcodes are decoded as illegal when A extension not enabled
-      a_illegal_0 :
-        assert property (@(posedge clk) disable iff (!rst_n)
-          (instr_rdata[6:0] == OPCODE_AMO) |-> (decoder_ctrl_mux.illegal_insn == 'b1))
-        else `uvm_error("decoder", "AMO instruction should be illegal")
-    end
-  endgenerate
 
   // Ensure that the A operand is only used for certain functional units
   a_alu_op_a_mux_sel :

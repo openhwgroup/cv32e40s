@@ -91,5 +91,5 @@ module cv32e40s_clic_int_controller_sva
 
   a_clic_disable: assert property(p_clic_disable)
     else `uvm_error("core", "Interrupt taken after disabling");
-endmodule // cv32e40x_cs_registers_sva
+endmodule
 

@@ -139,4 +139,4 @@ generate
       else `uvm_error("wb_stage", "LSU signal sticky when debug support is not enabled.")
   end
 endgenerate
-endmodule // cv32e40x_wb_stage_sva
+endmodule // cv32e40s_wb_stage_sva

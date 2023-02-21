@@ -23,7 +23,7 @@
 //                 Module blocks any trans to the MPU if a watchpoint trigger //
 //                 fires for the current address. Trigger match is reported   //
 //                 with WB timing similar to how the MPU reports status.      //
-//                 cv32e40s_wpt is inherited from cv32e40x_mpu and adataped   //
+//                 cv32e40s_wpt is inherited from cv32e40s_mpu and adataped   //
 //                 for watchpoint triggers.                                   //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////

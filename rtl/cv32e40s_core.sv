@@ -278,7 +278,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   mpu_status_e lsu_mpu_status_wb;
   logic        lsu_wpt_match_wb;
   logic [31:0] lsu_rdata_wb;
-  logic [1:0]  lsu_err_wb;
+  lsu_err_wb_t lsu_err_wb;
 
   logic        lsu_valid_0;             // Handshake with EX
   logic        lsu_ready_ex;
@@ -788,9 +788,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   cv32e40s_load_store_unit
   #(
-    .A_EXT                 (A_EXT               ),
     .X_EXT                 (X_EXT               ),
     .X_ID_WIDTH            (X_ID_WIDTH          ),
+    .PMP_GRANULARITY       (PMP_GRANULARITY     ),
+    .PMP_NUM_REGIONS       (PMP_NUM_REGIONS     ),
     .PMA_NUM_REGIONS       (PMA_NUM_REGIONS     ),
     .PMA_CFG               (PMA_CFG             ),
     .DBG_NUM_TRIGGERS      (DBG_NUM_TRIGGERS    ),
@@ -1028,8 +1029,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lfsr_shift_if_i            ( lfsr_shift_if          ),
     .lfsr_shift_id_i            ( lfsr_shift_id          ),
     .xsecure_ctrl_o             ( xsecure_ctrl           ),
-    // Time input
-    .time_i                     ( time_i                 ),
 
     // CSR write strobes
     .csr_wr_in_wb_flush_o       ( csr_wr_in_wb_flush     ),

@@ -310,7 +310,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   assign jvt_index = if_id_pipe_i.instr.bus_resp.rdata[19:12];
 
-  cv32e40s_pc_target cv32e40x_pc_target_i
+  cv32e40s_pc_target cv32e40s_pc_target_i
   (
     .bch_jmp_mux_sel_i ( bch_jmp_mux_sel                   ),
     .pc_id_i           ( if_id_pipe_i.pc                   ),

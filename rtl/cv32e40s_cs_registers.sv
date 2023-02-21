@@ -191,7 +191,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // Trigger
   // Trigger CSR write enables are decoded in cs_registers, all other (WARL behavior, write data and trigger matches)
-  // are handled within cv32e40x_debug_triggers
+  // are handled within cv32e40s_debug_triggers
   logic [31:0]                  tselect_rdata;
   logic                         tselect_we;
 
@@ -1793,9 +1793,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       (
         .clk                ( clk                   ),
         .rst_n              ( rst_n                 ),
+        .scan_cg_en_i       ( scan_cg_en_i          ),
         .wr_data_i          ( dscratch0_n           ),
         .wr_en_i            ( dscratch0_we          ),
-        .rd_data_o          ( dscratch0_q           )
+        .rd_data_o          ( dscratch0_q           ),
+        .rd_error_o         ( dscratch0_rd_error    )
       );
 
       cv32e40s_csr
@@ -1807,9 +1809,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       (
         .clk                ( clk                   ),
         .rst_n              ( rst_n                 ),
+        .scan_cg_en_i       ( scan_cg_en_i          ),
         .wr_data_i          ( dscratch1_n           ),
         .wr_en_i            ( dscratch1_we          ),
-        .rd_data_o          ( dscratch1_q           )
+        .rd_data_o          ( dscratch1_q           ),
+        .rd_error_o         ( dscratch1_rd_error    )
       );
 
       cv32e40s_csr
@@ -1821,9 +1825,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       (
         .clk                ( clk                   ),
         .rst_n              ( rst_n                 ),
+        .scan_cg_en_i       ( scan_cg_en_i          ),
         .wr_data_i          ( dcsr_n                ),
         .wr_en_i            ( dcsr_we               ),
-        .rd_data_o          ( dcsr_q                )
+        .rd_data_o          ( dcsr_q                ),
+        .rd_error_o         ( dcsr_rd_error         )
       );
 
       cv32e40s_csr
@@ -1835,15 +1841,21 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       (
         .clk                ( clk                   ),
         .rst_n              ( rst_n                 ),
+        .scan_cg_en_i       ( scan_cg_en_i          ),
         .wr_data_i          ( dpc_n                 ),
         .wr_en_i            ( dpc_we                ),
-        .rd_data_o          ( dpc_q                 )
+        .rd_data_o          ( dpc_q                 ),
+        .rd_error_o         ( dpc_rd_error          )
       );
     end else begin : debug_csr_tieoff
         assign dscratch0_q = 32'h0;
         assign dscratch1_q = 32'h0;
         assign dpc_q       = 32'h0;
         assign dcsr_q      = 32'h0;
+        assign dscratch0_rd_error = 1'b0;
+        assign dscratch1_rd_error = 1'b0;
+        assign dcsr_rd_error      = 1'b0;
+        assign dpc_rd_error       = 1'b0;
     end
   endgenerate
 

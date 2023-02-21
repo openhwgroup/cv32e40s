@@ -284,7 +284,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   cv32e40s_mpu
   #(
     .IF_STAGE             ( 1                           ),
-    .A_EXT                ( A_EXT                       ),
     .CORE_REQ_TYPE        ( obi_inst_req_t              ),
     .CORE_RESP_TYPE       ( inst_resp_t                 ),
     .BUS_RESP_TYPE        ( obi_inst_resp_t             ),

@@ -25,7 +25,6 @@
 
 module cv32e40s_pma import cv32e40s_pkg::*;
 #(
-  parameter bit          A_EXT = 0,
   parameter int          PMA_NUM_REGIONS = 0,
   parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT}
 )
@@ -101,11 +100,6 @@ module cv32e40s_pma import cv32e40s_pkg::*;
   always_comb begin
 
     pma_err_o = 1'b0;
-
-    // Check for atomic access
-    if (atomic_access_i && !pma_cfg_atomic) begin
-      pma_err_o = 1'b1;
-    end
 
     // Instruction fetches only allowed in main memory
     if (instr_fetch_access_i && !pma_cfg.main) begin
