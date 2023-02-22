@@ -52,6 +52,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter lfsr_cfg_t   LFSR0_CFG        = LFSR_CFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR1_CFG        = LFSR_CFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR2_CFG        = LFSR_CFG_DEFAULT,
+  parameter int          DEBUG            = 1,
   parameter int          DBG_NUM_TRIGGERS = 1, // todo: implement support for DBG_NUM_TRIGGERS != 1
   parameter int unsigned MTVT_ADDR_WIDTH  = 26
 )
@@ -190,7 +191,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   // Trigger
   // Trigger CSR write enables are decoded in cs_registers, all other (WARL behavior, write data and trigger matches)
-  // are handled within cv32e40x_debug_triggers
+  // are handled within cv32e40s_debug_triggers
   logic [31:0]                  tselect_rdata;
   logic                         tselect_we;
 
@@ -692,23 +693,39 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       end
 
       CSR_DCSR: begin
-        csr_rdata_int = dcsr_rdata;
-        illegal_csr_read = !ctrl_fsm_i.debug_mode;
+        if (DEBUG) begin
+          csr_rdata_int = dcsr_rdata;
+          illegal_csr_read = !ctrl_fsm_i.debug_mode;
+        end else begin
+          illegal_csr_read = 1'b1;
+        end
       end
 
       CSR_DPC: begin
-        csr_rdata_int = dpc_rdata;
-        illegal_csr_read = !ctrl_fsm_i.debug_mode;
+        if (DEBUG) begin
+          csr_rdata_int = dpc_rdata;
+          illegal_csr_read = !ctrl_fsm_i.debug_mode;
+        end else begin
+          illegal_csr_read = 1'b1;
+        end
       end
 
       CSR_DSCRATCH0: begin
-        csr_rdata_int = dscratch0_rdata;
-        illegal_csr_read = !ctrl_fsm_i.debug_mode;
+        if (DEBUG) begin
+          csr_rdata_int = dscratch0_rdata;
+          illegal_csr_read = !ctrl_fsm_i.debug_mode;
+        end else begin
+          illegal_csr_read = 1'b1;
+        end
       end
 
       CSR_DSCRATCH1: begin
-        csr_rdata_int = dscratch1_rdata;
-        illegal_csr_read = !ctrl_fsm_i.debug_mode;
+        if (DEBUG) begin
+          csr_rdata_int = dscratch1_rdata;
+          illegal_csr_read = !ctrl_fsm_i.debug_mode;
+        end else begin
+          illegal_csr_read = 1'b1;
+        end
       end
 
       // Hardware Performance Monitor
@@ -1765,78 +1782,91 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     .rd_error_o         ( jvt_rd_error          )
   );
 
-  cv32e40s_csr
-  #(
-    .LIB        (LIB),
-    .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
-    .RESETVALUE (32'd0)
-  )
-  dscratch0_csr_i
-  (
-    .clk                ( clk                   ),
-    .rst_n              ( rst_n                 ),
-    .scan_cg_en_i       ( scan_cg_en_i          ),
-    .wr_data_i          ( dscratch0_n           ),
-    .wr_en_i            ( dscratch0_we          ),
-    .rd_data_o          ( dscratch0_q           ),
-    .rd_error_o         ( dscratch0_rd_error    )
-  );
+  generate
+    if (DEBUG) begin : gen_debug_csr
+      cv32e40s_csr
+      #(
+        .LIB        (LIB),
+        .WIDTH      (32),
+        .SHADOWCOPY (1'b0),
+        .RESETVALUE (32'd0)
+      )
+      dscratch0_csr_i
+      (
+        .clk                ( clk                   ),
+        .rst_n              ( rst_n                 ),
+        .scan_cg_en_i       ( scan_cg_en_i          ),
+        .wr_data_i          ( dscratch0_n           ),
+        .wr_en_i            ( dscratch0_we          ),
+        .rd_data_o          ( dscratch0_q           ),
+        .rd_error_o         ( dscratch0_rd_error    )
+      );
 
-  cv32e40s_csr
-  #(
-    .LIB        (LIB),
-    .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
-    .RESETVALUE (32'd0)
-  )
-  dscratch1_csr_i
-  (
-    .clk                ( clk                   ),
-    .rst_n              ( rst_n                 ),
-    .scan_cg_en_i       ( scan_cg_en_i          ),
-    .wr_data_i          ( dscratch1_n           ),
-    .wr_en_i            ( dscratch1_we          ),
-    .rd_data_o          ( dscratch1_q           ),
-    .rd_error_o         ( dscratch1_rd_error    )
-  );
+      cv32e40s_csr
+      #(
+        .LIB        (LIB),
+        .WIDTH      (32),
+        .SHADOWCOPY (1'b0),
+        .RESETVALUE (32'd0)
+      )
+      dscratch1_csr_i
+      (
+        .clk                ( clk                   ),
+        .rst_n              ( rst_n                 ),
+        .scan_cg_en_i       ( scan_cg_en_i          ),
+        .wr_data_i          ( dscratch1_n           ),
+        .wr_en_i            ( dscratch1_we          ),
+        .rd_data_o          ( dscratch1_q           ),
+        .rd_error_o         ( dscratch1_rd_error    )
+      );
 
-  cv32e40s_csr
-  #(
-    .LIB        (LIB),
-    .WIDTH      (32),
-    .MASK       (CSR_DCSR_MASK),
-    .SHADOWCOPY (SECURE),
-    .RESETVALUE (DCSR_RESET_VAL)
-  )
-  dcsr_csr_i
-  (
-    .clk                ( clk                   ),
-    .rst_n              ( rst_n                 ),
-    .scan_cg_en_i       ( scan_cg_en_i          ),
-    .wr_data_i          ( dcsr_n                ),
-    .wr_en_i            ( dcsr_we               ),
-    .rd_data_o          ( dcsr_q                ),
-    .rd_error_o         ( dcsr_rd_error         )
-  );
+      cv32e40s_csr
+      #(
+        .LIB        (LIB),
+        .WIDTH      (32),
+        .MASK       (CSR_DCSR_MASK),
+        .SHADOWCOPY (SECURE),
+        .RESETVALUE (DCSR_RESET_VAL)
+      )
+      dcsr_csr_i
+      (
+        .clk                ( clk                   ),
+        .rst_n              ( rst_n                 ),
+        .scan_cg_en_i       ( scan_cg_en_i          ),
+        .wr_data_i          ( dcsr_n                ),
+        .wr_en_i            ( dcsr_we               ),
+        .rd_data_o          ( dcsr_q                ),
+        .rd_error_o         ( dcsr_rd_error         )
+      );
 
-  cv32e40s_csr
-  #(
-    .LIB        (LIB),
-    .WIDTH      (32),
-    .SHADOWCOPY (1'b0),
-    .RESETVALUE (32'd0)
-  )
-  dpc_csr_i
-  (
-    .clk                ( clk                   ),
-    .rst_n              ( rst_n                 ),
-    .scan_cg_en_i       ( scan_cg_en_i          ),
-    .wr_data_i          ( dpc_n                 ),
-    .wr_en_i            ( dpc_we                ),
-    .rd_data_o          ( dpc_q                 ),
-    .rd_error_o         ( dpc_rd_error          )
-  );
+      cv32e40s_csr
+      #(
+        .LIB        (LIB),
+        .WIDTH      (32),
+        .SHADOWCOPY (1'b0),
+        .RESETVALUE (32'd0)
+      )
+      dpc_csr_i
+      (
+        .clk                ( clk                   ),
+        .rst_n              ( rst_n                 ),
+        .scan_cg_en_i       ( scan_cg_en_i          ),
+        .wr_data_i          ( dpc_n                 ),
+        .wr_en_i            ( dpc_we                ),
+        .rd_data_o          ( dpc_q                 ),
+        .rd_error_o         ( dpc_rd_error          )
+      );
+    end else begin : debug_csr_tieoff
+        assign dscratch0_q = 32'h0;
+        assign dscratch1_q = 32'h0;
+        assign dpc_q       = 32'h0;
+        assign dcsr_q      = 32'h0;
+        assign dscratch0_rd_error = 1'b0;
+        assign dscratch1_rd_error = 1'b0;
+        assign dcsr_rd_error      = 1'b0;
+        assign dpc_rd_error       = 1'b0;
+    end
+  endgenerate
 
   cv32e40s_csr
   #(
@@ -2574,7 +2604,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign mstateen3h_rdata   = 32'h0;
 
   // dcsr_rdata factors in the flop outputs and the nmip bit from the controller
-  assign dcsr_rdata = {dcsr_q[31:4], ctrl_fsm_i.pending_nmi, dcsr_q[2:0]};
+  assign dcsr_rdata = DEBUG ? {dcsr_q[31:4], ctrl_fsm_i.pending_nmi, dcsr_q[2:0]} : 32'h0;
 
 
   assign mcause_rdata = mcause_q;
@@ -2623,6 +2653,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   //                         |___/               |___/ |___/            //
   ////////////////////////////////////////////////////////////////////////
 
+  // When DEBUG==0, DBG_NUM_TRIGGERS is assumed to be 0 as well.
   cv32e40s_debug_triggers
     #(
         .LIB              (LIB             ),

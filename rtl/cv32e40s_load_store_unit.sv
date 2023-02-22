@@ -26,15 +26,17 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_load_store_unit import cv32e40s_pkg::*;
-  #(parameter bit          X_EXT           = 0,
-    parameter int          X_ID_WIDTH      = 4,
-    parameter int          PMP_GRANULARITY = 0,
-    parameter int          PMP_NUM_REGIONS = 0,
-    parameter int          PMA_NUM_REGIONS = 0,
-    parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
-    parameter int          DBG_NUM_TRIGGERS = 1,
-    parameter logic [31:0] DM_REGION_START = 32'hF0000000,
-    parameter logic [31:0] DM_REGION_END   = 32'hF0003FFF)
+#(parameter bit          X_EXT           = 0,
+  parameter int          X_ID_WIDTH      = 4,
+  parameter int          PMP_GRANULARITY = 0,
+  parameter int          PMP_NUM_REGIONS = 0,
+  parameter int          PMA_NUM_REGIONS = 0,
+  parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
+  parameter int          DBG_NUM_TRIGGERS = 1,
+  parameter int          DEBUG           = 1,
+  parameter logic [31:0] DM_REGION_START = 32'hF0000000,
+  parameter logic [31:0] DM_REGION_END   = 32'hF0003FFF
+)
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -107,13 +109,13 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic           trans_valid;
   logic           trans_ready;
 
-  // Aligned transaction request (to cv32e40x_wpt)
+  // Aligned transaction request (to cv32e40s_wpt)
   logic           wpt_trans_valid;
   logic           wpt_trans_ready;
   logic           wpt_trans_pushpop;
   obi_data_req_t  wpt_trans;
 
-  // Transaction request to cv32e40x_mpu
+  // Transaction request to cv32e40s_mpu
   logic           mpu_trans_valid;
   logic           mpu_trans_ready;
   logic           mpu_trans_pushpop;
@@ -124,16 +126,16 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic [31:0]    resp_rdata;
   data_resp_t     resp;
 
-  // Transaction response interface (from cv32e40x_wpt)
+  // Transaction response interface (from cv32e40s_wpt)
   logic           wpt_resp_valid;
   logic [31:0]    wpt_resp_rdata;
   data_resp_t     wpt_resp;
 
-  // Transaction response interface (from cv32e40x_mpu)
+  // Transaction response interface (from cv32e40s_mpu)
   logic           mpu_resp_valid;
   data_resp_t     mpu_resp;
 
-  // Transaction request (from cv32e40x_mpu to cv32e40x_write_buffer)
+  // Transaction request (from cv32e40s_mpu to cv32e40s_write_buffer)
   logic           buffer_trans_valid;
   logic           buffer_trans_ready;
   obi_data_req_t  buffer_trans;
@@ -748,6 +750,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .PMA_CFG            ( PMA_CFG              ),
     .PMP_GRANULARITY    ( PMP_GRANULARITY      ),
     .PMP_NUM_REGIONS    ( PMP_NUM_REGIONS      ),
+    .DEBUG              ( DEBUG                ),
     .DM_REGION_START    ( DM_REGION_START      ),
     .DM_REGION_END      ( DM_REGION_END        )
   )

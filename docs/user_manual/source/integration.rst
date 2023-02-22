@@ -30,6 +30,7 @@ Instantiation Template
       .RV32                     (            RV32I ),
       .B_EXT                    (             NONE ),
       .M_EXT                    (                M ),
+      .DEBUG                    (                1 ),
       .DM_REGION_START          (     32'hF0000000 ),
       .DM_REGION_END            (     32'hF0003FFF ),
       .DBG_NUM_TRIGGERS         (                1 ),
@@ -155,6 +156,8 @@ Parameters
   |                              |                |                  | multiplication subset of the ``M`` extension is supported.         |
   |                              |                |                  | ``M_EXT`` = M: The ``M`` extension is supported.                   |
   +------------------------------+----------------+------------------+--------------------------------------------------------------------+
+  | ``DEBUG``                    | int (0..1)     | 1                | Is Debug supported?                                                |
+  +--------------------------------+----------------+---------------+--------------------------------------------------------------------+
   | ``DM_REGION_START``          | logic [31:0]   | 32'hF0000000     | Start address of Debug Module region, see :ref:`debug-support`     |
   +------------------------------+----------------+------------------+--------------------------------------------------------------------+
   | ``DM_REGION_END``            | logic [31:0]   | 32'hF0003FFF     | End address of Debug Module region, see :ref:`debug-support`       |

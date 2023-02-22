@@ -26,8 +26,6 @@
 module cv32e40s_decoder_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
-#(
-)
 (
   input logic           clk,
   input logic           rst_n,

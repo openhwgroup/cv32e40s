@@ -32,6 +32,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
       parameter int unsigned IS_INSTR_SIDE = 0,
       parameter type         CORE_RESP_TYPE = inst_resp_t,
       parameter type         CORE_REQ_TYPE  = obi_inst_req_t,
+      parameter int          DEBUG = 1,
       parameter logic [31:0] DM_REGION_START = 32'hF0000000,
       parameter logic [31:0] DM_REGION_END   = 32'hF0003FFF)
   (
@@ -485,8 +486,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
                        ##1 !$fell(csr_pmp_i.mseccfg.mmwp))
         else `uvm_error("mpu", "mseccfg.mmwp not sticky.")
 
-
-
+if (DEBUG) begin
   // Check that PMA sets correct attribution for accesses to DM during debug
   // main, non-cacheable, non-bufferable, non-integrity
 
@@ -500,7 +500,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
                   !bus_trans_bufferable &&
                   !bus_trans_integrity)
         else `uvm_error("mpu", "Wrong attributes for access to DM during debug mode")
-
+end
 
 endmodule : cv32e40s_mpu_sva
 

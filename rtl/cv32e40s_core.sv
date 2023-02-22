@@ -35,6 +35,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter rv32_e                      RV32                                    = RV32I,
   parameter b_ext_e                     B_EXT                                   = B_NONE,
   parameter m_ext_e                     M_EXT                                   = M,
+  parameter int                         DEBUG                                   = 1,
   parameter logic [31:0]                DM_REGION_START                         = 32'hF0000000,
   parameter logic [31:0]                DM_REGION_END                           = 32'hF0003FFF,
   parameter int                         DBG_NUM_TRIGGERS                        = 1,
@@ -106,7 +107,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Cycle count
   output logic [63:0]                   mcycle_o,
 
-    // Basic interrupt architecture
+  // Basic interrupt architecture
   input  logic [31:0]                   irq_i,
 
   // Event wakeup signal
@@ -132,6 +133,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic                          debug_havereset_o,
   output logic                          debug_running_o,
   output logic                          debug_halted_o,
+  output logic                          debug_pc_valid_o,
+  output logic [31:0]                   debug_pc_o,
 
   // CPU control signals
   input  logic                          fetch_enable_i,
@@ -193,6 +196,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Controller
   ctrl_byp_t   ctrl_byp;
   ctrl_fsm_t   ctrl_fsm;
+
+  // Gated debug_req_i signal depending on DEBUG parameter
+  logic        debug_req_gated;
 
   // Register File Write Back
   logic        rf_we_wb;
@@ -447,6 +453,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign debug_havereset_o = ctrl_fsm.debug_havereset;
   assign debug_halted_o    = ctrl_fsm.debug_halted;
   assign debug_running_o   = ctrl_fsm.debug_running;
+  assign debug_pc_valid_o  = ctrl_fsm.mhpmevent.minstret;
+  assign debug_pc_o        = ex_wb_pipe.pc;
 
   // Used (only) by verification environment
   assign irq_ack   = ctrl_fsm.irq_ack;
@@ -455,6 +463,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign irq_priv  = ctrl_fsm.irq_priv;
   assign irq_shv   = ctrl_fsm.irq_shv;
   assign dbg_ack   = ctrl_fsm.dbg_ack;
+
+  // Gate off the internal debug_request signal if debug support is not configured.
+  assign debug_req_gated = DEBUG ? debug_req_i : 1'b0;
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -549,6 +560,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .SMCLIC_ID_WIDTH     ( SMCLIC_ID_WIDTH          ),
     .ZC_EXT              ( ZC_EXT                   ),
     .M_EXT               ( M_EXT                    ),
+    .DEBUG               ( DEBUG                    ),
     .DM_REGION_START     ( DM_REGION_START          ),
     .DM_REGION_END       ( DM_REGION_END            )
   )
@@ -775,15 +787,18 @@ module cv32e40s_core import cv32e40s_pkg::*;
   ////////////////////////////////////////////////////////////////////////////////////////
 
   cv32e40s_load_store_unit
-    #(.X_EXT                 (X_EXT             ),
-      .X_ID_WIDTH            (X_ID_WIDTH        ),
-      .PMP_GRANULARITY       (PMP_GRANULARITY   ),
-      .PMP_NUM_REGIONS       (PMP_NUM_REGIONS   ),
-      .PMA_NUM_REGIONS       (PMA_NUM_REGIONS   ),
-      .PMA_CFG               (PMA_CFG           ),
-      .DBG_NUM_TRIGGERS      (DBG_NUM_TRIGGERS  ),
-      .DM_REGION_START       (DM_REGION_START   ),
-      .DM_REGION_END         (DM_REGION_END     ))
+  #(
+    .X_EXT                 (X_EXT               ),
+    .X_ID_WIDTH            (X_ID_WIDTH          ),
+    .PMP_GRANULARITY       (PMP_GRANULARITY     ),
+    .PMP_NUM_REGIONS       (PMP_NUM_REGIONS     ),
+    .PMA_NUM_REGIONS       (PMA_NUM_REGIONS     ),
+    .PMA_CFG               (PMA_CFG             ),
+    .DBG_NUM_TRIGGERS      (DBG_NUM_TRIGGERS    ),
+    .DEBUG                 (DEBUG               ),
+    .DM_REGION_START       (DM_REGION_START     ),
+    .DM_REGION_END         (DM_REGION_END       )
+  )
   load_store_unit_i
   (
     .clk                   ( clk                ),
@@ -857,6 +872,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   ////////////////////////////////////////////////////////////////////////////////////////
 
   cv32e40s_wb_stage
+  #(
+      .DEBUG                    ( DEBUG                        )
+  )
   wb_stage_i
   (
     .clk                        ( clk                          ), // Not used in RTL; only used by assertions
@@ -926,6 +944,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .SMCLIC                     ( SMCLIC                 ),
     .SMCLIC_ID_WIDTH            ( SMCLIC_ID_WIDTH        ),
     .SMCLIC_INTTHRESHBITS       ( SMCLIC_INTTHRESHBITS   ),
+    .DEBUG                      ( DEBUG                  ),
     .DBG_NUM_TRIGGERS           ( DBG_NUM_TRIGGERS       ),
     .NUM_MHPMCOUNTERS           ( NUM_MHPMCOUNTERS       ),
     .PMP_NUM_REGIONS            ( PMP_NUM_REGIONS        ),
@@ -1041,7 +1060,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .X_EXT                          ( X_EXT                  ),
     .REGFILE_NUM_READ_PORTS         ( REGFILE_NUM_READ_PORTS ),
     .SMCLIC                         ( SMCLIC                 ),
-    .SMCLIC_ID_WIDTH                ( SMCLIC_ID_WIDTH        )
+    .SMCLIC_ID_WIDTH                ( SMCLIC_ID_WIDTH        ),
+    .DEBUG                          ( DEBUG                  )
   )
   controller_i
   (
@@ -1126,7 +1146,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_wr_in_wb_flush_i           ( csr_wr_in_wb_flush     ),
 
     // Debug signals
-    .debug_req_i                    ( debug_req_i            ),
+    .debug_req_i                    ( debug_req_gated        ),
     .dcsr_i                         ( dcsr                   ),
 
     // Register File read, write back and forwards

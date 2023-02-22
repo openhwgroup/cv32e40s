@@ -34,7 +34,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   parameter bit          X_EXT                  = 0,
   parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
   parameter bit          SMCLIC                 = 0,
-  parameter int          SMCLIC_ID_WIDTH        = 5
+  parameter int          SMCLIC_ID_WIDTH        = 5,
+  parameter int          DEBUG                  = 1
 )
 (
   input  logic        clk,                        // Gated clock
@@ -150,7 +151,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   #(
     .X_EXT                       ( X_EXT                    ),
     .SMCLIC                      ( SMCLIC                   ),
-    .SMCLIC_ID_WIDTH             ( SMCLIC_ID_WIDTH          )
+    .SMCLIC_ID_WIDTH             ( SMCLIC_ID_WIDTH          ),
+    .DEBUG                       ( DEBUG                    )
   )
   controller_fsm_i
   (

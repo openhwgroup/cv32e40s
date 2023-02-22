@@ -1256,6 +1256,7 @@ typedef struct packed
   logic        store;
 } lsu_err_wb_t;
 
+
 // IF/ID pipeline
 typedef struct packed {
   logic        instr_valid;
