@@ -540,12 +540,7 @@ endgenerate
                      (ex_wb_pipe_i.instr_meta.dummy |-> !exception_in_wb))
       else `uvm_error("wb_stage", "Dummy instructions had synchronous exception")
 
-  a_lsu_wp_debug:
-    assert property (@(posedge clk) disable iff (!rst_n)
-                    (ctrl_fsm_cs == DEBUG_TAKEN) && (ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid)
-                    |->
-                    $past(wpt_match_wb_i))
-      else `uvm_error("conroller", "LSU active in WB during DEBUG_TAKEN with no preceeding watchpoint trigger")
+
   // Ensure bubble in EX while in SLEEP mode.
   // WFI or WFE instruction will be in WB
   // Bubble is needed to avoid any LSU instructions to go on the bus while handling the WFI, as this

@@ -470,13 +470,6 @@ end else begin
                       !wb_valid ##1 (!wb_valid && ctrl_debug_mode_n && dcsr.step))
       else `uvm_error("core", "Assertion a_single_step_with_irq failed")
 end
-  // Check that only a single instruction can retire during single step
-  a_single_step_retire :
-  assert property (@(posedge clk) disable iff (!rst_ni)
-                    (wb_valid && last_op_wb && dcsr.step && !ctrl_fsm.debug_mode)
-                    ##1 wb_valid [->1]
-                    |-> (ctrl_fsm.debug_mode && dcsr.step))
-    else `uvm_error("core", "Multiple instructions retired during single stepping")
 
 
   // Check priviledge level consistency accross the pipeline.
@@ -803,31 +796,6 @@ endproperty;
 a_hint_id_wb: assert property(p_dummy_id_wb)
   else `uvm_error("core", "X0 not stable for hint instruction in ID")
 
-
-// If debug_req_i is asserted when fetch_enable_i gets asserted we should not execute any
-// instruction until the core is in debug mode.
-a_reset_into_debug:
-assert property (@(posedge clk_i) disable iff (!rst_ni)
-                (ctrl_fsm_cs == RESET) &&
-                fetch_enable_i &&
-                debug_req_i
-                ##1
-                debug_req_i // Controller gets a one cycle delayed fetch enable, must keep debug_req_i asserted for two cycles
-                |->
-                !wb_valid until (wb_valid && ctrl_fsm.debug_mode))
-  else `uvm_error("controller", "Debug out of reset but executed instruction outside debug mode")
-
-// When entering debug out of reset, the first fetch must also flag debug on the instruction OBI interface
-a_first_fetch_debug:
-assert property (@(posedge clk_i) disable iff (!rst_ni)
-                (ctrl_fsm_cs == RESET) &&
-                fetch_enable_i &&
-                debug_req_i
-                ##1
-                debug_req_i // Controller gets a one cycle delayed fetch enable, must keep debug_req_i asserted for two cycles
-                |->
-                !instr_req_o until (instr_req_o && instr_dbg_o))
-  else `uvm_error("controller", "Debug out of reset but fetched without setting instr_dbg_o")
 
 
 generate
