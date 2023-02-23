@@ -41,9 +41,9 @@ Instantiation Template
       .PMP_MSECCFG_RV           (   PMP_MSECCFG_RV ),
       .PMA_NUM_REGIONS          (                0 ),
       .PMA_CFG                  (        PMA_CFG[] ),
-      .SMCLIC                   (                0 ),
-      .SMCLIC_ID_WIDTH          (                5 ),
-      .SMCLIC_INTTHRESHBITS     (                8 ),
+      .CLIC                     (                0 ),
+      .CLIC_ID_WIDTH            (                5 ),
+      .CLIC_INTTHRESHBITS       (                8 ),
       .LFSR0_CFG                ( LFSR_CFG_DEFAULT ),
       .LFSR1_CFG                ( LFSR_CFG_DEFAULT ),
       .LFSR2_CFG                ( LFSR_CFG_DEFAULT )
@@ -182,14 +182,14 @@ Parameters
   +------------------------------+----------------+------------------+--------------------------------------------------------------------+
   | ``PMP_MSECCFG_RV``           | mseccfg_t      | 0                | Reset value for ``mseccfg`` CSR, see :ref:`pmp`                    |
   +------------------------------+----------------+------------------+--------------------------------------------------------------------+
-  | ``SMCLIC``                   | bit            | 0                | Is Smclic supported?                                               |
+  | ``CLIC``                     | bit            | 0                | Are Smclic, Smclicshv and Smclicconfig supported?                  |
   +------------------------------+----------------+------------------+--------------------------------------------------------------------+
-  | ``SMCLIC_ID_WIDTH``          | int (1..10 )   | 6                | Width of ``clic_irq_id_i`` and ``clic_irq_id_o``. The maximum      |
+  | ``CLIC_ID_WIDTH``            | int (1..10 )   | 6                | Width of ``clic_irq_id_i`` and ``clic_irq_id_o``. The maximum      |
   |                              |                |                  | number of supported interrupts in CLIC mode is                     |
-  |                              |                |                  | ``2^SMCLIC_ID_WIDTH``. Trap vector table alignment is restricted   |
+  |                              |                |                  | ``2^CLIC_ID_WIDTH``. Trap vector table alignment is restricted     |
   |                              |                |                  | as described in :ref:`csr-mtvt`.                                   |
   +------------------------------+----------------+------------------+--------------------------------------------------------------------+
-  | ``SMCLIC_INTTHRESHBITS``     | int (1..8)     | 8                | Number of bits actually implemented in ``mintthresh.th`` field.    |
+  | ``CLIC_INTTHRESHBITS``       | int (1..8)     | 8                | Number of bits actually implemented in ``mintthresh.th`` field.    |
   +------------------------------+----------------+------------------+--------------------------------------------------------------------+
   | ``LFSR0``                    | lfsr_cfg_t     | LFSR_CFG_DEFAULT | LFSR0 configuration, see :ref:`xsecure`.                           |
   +------------------------------+----------------+------------------+--------------------------------------------------------------------+

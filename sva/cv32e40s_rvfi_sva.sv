@@ -28,7 +28,7 @@ module cv32e40s_rvfi_sva
   import cv32e40s_pkg::*;
   import cv32e40s_rvfi_pkg::*;
 #(
-    parameter bit SMCLIC = 0,
+    parameter bit CLIC   = 0,
     parameter int DEBUG  = 1
 )
 (

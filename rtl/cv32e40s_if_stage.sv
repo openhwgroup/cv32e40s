@@ -38,8 +38,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   parameter int          PMP_NUM_REGIONS = 0,
   parameter bit          DUMMY_INSTRUCTIONS = 0,
   parameter int unsigned MTVT_ADDR_WIDTH = 26,
-  parameter bit          SMCLIC          = 1'b0,
-  parameter int          SMCLIC_ID_WIDTH = 5,
+  parameter bit          CLIC            = 1'b0,
+  parameter int          CLIC_ID_WIDTH   = 5,
   parameter bit          ZC_EXT          = 0,
   parameter m_ext_e      M_EXT           = M_NONE,
   parameter int          DEBUG           = 1,
@@ -212,7 +212,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       PC_TRAP_DBD:   branch_addr_n = {dm_halt_addr_i[31:2], 2'b0};
       PC_TRAP_DBE:   branch_addr_n = {dm_exception_addr_i[31:2], 2'b0};
       PC_TRAP_NMI:   branch_addr_n = {mtvec_addr_i, ctrl_fsm_i.nmi_mtvec_index, 2'b00};
-      PC_TRAP_CLICV: branch_addr_n = {mtvt_addr_i, ctrl_fsm_i.mtvt_pc_mux[SMCLIC_ID_WIDTH-1:0], 2'b00};
+      PC_TRAP_CLICV: branch_addr_n = {mtvt_addr_i, ctrl_fsm_i.mtvt_pc_mux[CLIC_ID_WIDTH-1:0], 2'b00};
       // CLIC and Zc* spec requires to clear bit 0. This clearing is done in the alignment buffer.
       PC_POINTER :   branch_addr_n = if_id_pipe_o.ptr;
       // JVT + (index << 2)
@@ -228,7 +228,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // prefetch buffer, caches a fixed number of instructions
   cv32e40s_prefetch_unit
   #(
-      .SMCLIC          (SMCLIC),
+      .CLIC            (CLIC),
       .ALBUF_DEPTH     (ALBUF_DEPTH),
       .ALBUF_CNT_WIDTH (ALBUF_CNT_WIDTH)
   )

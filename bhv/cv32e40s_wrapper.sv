@@ -64,9 +64,9 @@ module cv32e40s_wrapper
   parameter pmpncfg_t    PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0] = '{default:PMPNCFG_DEFAULT},
   parameter [31:0]       PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
   parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
-  parameter bit          SMCLIC                       = 0,
-  parameter int          SMCLIC_ID_WIDTH              = 5,
-  parameter int          SMCLIC_INTTHRESHBITS         = 8,
+  parameter bit          CLIC                         = 0,
+  parameter int          CLIC_ID_WIDTH                = 5,
+  parameter int          CLIC_INTTHRESHBITS           = 8,
   parameter int          DBG_NUM_TRIGGERS             = 1,
   parameter int          PMA_NUM_REGIONS              = 0,
   parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
@@ -139,7 +139,7 @@ module cv32e40s_wrapper
 
   // CLIC Interface
   input  logic                       clic_irq_i,
-  input  logic [SMCLIC_ID_WIDTH-1:0] clic_irq_id_i,
+  input  logic [CLIC_ID_WIDTH-1:0]   clic_irq_id_i,
   input  logic [ 7:0]                clic_irq_level_i,
   input  logic [ 1:0]                clic_irq_priv_i,
   input  logic                       clic_irq_shv_i,
@@ -262,7 +262,7 @@ module cv32e40s_wrapper
       cv32e40s_controller_fsm_sva
         #(.X_EXT(X_EXT),
           .DEBUG(DEBUG),
-          .SMCLIC(SMCLIC))
+          .CLIC(CLIC))
         controller_fsm_sva   (
                               .lsu_outstanding_cnt (core_i.load_store_unit_i.cnt_q),
                               .rf_we_wb_i          (core_i.wb_stage_i.rf_we_wb_o  ),
@@ -295,8 +295,7 @@ module cv32e40s_wrapper
   bind cv32e40s_cs_registers:
     core_i.cs_registers_i
       cv32e40s_cs_registers_sva
-        #(.SMCLIC(SMCLIC),
-        .PMP_ADDR_WIDTH (core_i.cs_registers_i.PMP_ADDR_WIDTH),
+        #(.CLIC  (CLIC),
           .DEBUG (DEBUG))
         cs_registers_sva (.wb_valid_i  (core_i.wb_valid                                 ),
                           .ctrl_fsm_cs (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
@@ -342,7 +341,7 @@ module cv32e40s_wrapper
   bind cv32e40s_prefetch_unit:
     core_i.if_stage_i.prefetch_unit_i
       cv32e40s_prefetch_unit_sva
-      #(.SMCLIC(SMCLIC))
+      #(.CLIC(CLIC))
       prefetch_unit_sva (
                           .ctrl_fsm_cs     (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
                           .debug_req_i     (core_i.debug_req_i),
@@ -363,7 +362,7 @@ module cv32e40s_wrapper
   bind cv32e40s_prefetcher:
     core_i.if_stage_i.prefetch_unit_i.prefetcher_i
       cv32e40s_prefetcher_sva
-        #(.SMCLIC(SMCLIC))
+        #(.CLIC(CLIC))
         prefetcher_sva ( .prefetch_is_clic_ptr (core_i.if_stage_i.prefetch_unit_i.prefetch_is_clic_ptr_o),
                         .*);
 
@@ -371,7 +370,7 @@ module cv32e40s_wrapper
     core_i cv32e40s_core_sva
       #(.DEBUG (DEBUG),
         .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
-        .SMCLIC(SMCLIC),
+        .CLIC(CLIC),
         .REGFILE_NUM_READ_PORTS(core_i.REGFILE_NUM_READ_PORTS))
       core_sva (// probed cs_registers signals
                 .cs_registers_mie_q               (core_i.cs_registers_i.mie_q),
@@ -415,7 +414,7 @@ module cv32e40s_wrapper
                 .mie_we                           (core_i.cs_registers_i.mie_we),
                 .*);
 generate
-if (SMCLIC) begin : clic_asserts
+if (CLIC) begin : clic_asserts
   bind cv32e40s_clic_int_controller:
     core_i.gen_clic_interrupt.clic_int_controller_i
       cv32e40s_clic_int_controller_sva
@@ -540,7 +539,7 @@ endgenerate
   bind cv32e40s_rvfi:
     rvfi_i
     cv32e40s_rvfi_sva
-      #(.SMCLIC(SMCLIC),
+      #(.CLIC  (CLIC ),
         .DEBUG (DEBUG))
       rvfi_sva(.irq_ack(core_i.irq_ack),
                .dbg_ack(core_i.dbg_ack),
@@ -563,7 +562,7 @@ endgenerate
       );
 
     cv32e40s_rvfi
-      #(.SMCLIC(SMCLIC),
+      #(.CLIC  (CLIC  ),
         .DEBUG (DEBUG))
       rvfi_i
         (.clk_i                    ( clk_i                                                                ),
@@ -842,9 +841,9 @@ endgenerate
           .PMP_PMPNCFG_RV        ( PMP_PMPNCFG_RV        ),
           .PMP_PMPADDR_RV        ( PMP_PMPADDR_RV        ),
           .PMP_MSECCFG_RV        ( PMP_MSECCFG_RV        ),
-          .SMCLIC                ( SMCLIC                ),
-          .SMCLIC_ID_WIDTH       ( SMCLIC_ID_WIDTH       ),
-          .SMCLIC_INTTHRESHBITS  ( SMCLIC_INTTHRESHBITS  ),
+          .CLIC                  ( CLIC                  ),
+          .CLIC_ID_WIDTH         ( CLIC_ID_WIDTH         ),
+          .CLIC_INTTHRESHBITS    ( CLIC_INTTHRESHBITS    ),
           .DEBUG                 ( DEBUG                 ),
           .DM_REGION_START       ( DM_REGION_START       ),
           .DM_REGION_END         ( DM_REGION_END         ),

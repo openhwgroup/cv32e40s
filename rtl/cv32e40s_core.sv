@@ -41,9 +41,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter int                         DBG_NUM_TRIGGERS                        = 1,
   parameter int                         PMA_NUM_REGIONS                         = 0,
   parameter pma_cfg_t                   PMA_CFG[PMA_NUM_REGIONS-1:0]            = '{default:PMA_R_DEFAULT},
-  parameter bit                         SMCLIC                                  = 0,
-  parameter int                         SMCLIC_ID_WIDTH                         = 5,
-  parameter int                         SMCLIC_INTTHRESHBITS                    = 8,
+  parameter bit                         CLIC                                    = 0,
+  parameter int                         CLIC_ID_WIDTH                           = 5,
+  parameter int                         CLIC_INTTHRESHBITS                      = 8,
   parameter int                         PMP_GRANULARITY                         = 0,
   parameter int                         PMP_NUM_REGIONS                         = 0,
   parameter pmpncfg_t                   PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0]     = '{default:PMPNCFG_DEFAULT},
@@ -113,9 +113,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Event wakeup signal
   input  logic                          wu_wfe_i,
 
-  // Smclic interrupt architecture
+  // CLIC interrupt architecture
   input  logic                          clic_irq_i,
-  input  logic [SMCLIC_ID_WIDTH-1:0]    clic_irq_id_i,
+  input  logic [CLIC_ID_WIDTH-1:0]      clic_irq_id_i,
   input  logic [ 7:0]                   clic_irq_level_i,
   input  logic [ 1:0]                   clic_irq_priv_i,
   input  logic                          clic_irq_shv_i,
@@ -164,7 +164,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   // Determine alignedness of mtvt
   // mtvt[31:N] holds mtvt table entry
   // mtvt[N-1:0] is tied to zero.
-  localparam int unsigned MTVT_LSB = ((SMCLIC_ID_WIDTH + 2) < 6) ? 6 : (SMCLIC_ID_WIDTH + 2);
+  localparam int unsigned MTVT_LSB = ((CLIC_ID_WIDTH + 2) < 6) ? 6 : (CLIC_ID_WIDTH + 2);
   localparam int unsigned MTVT_ADDR_WIDTH = 32 - MTVT_LSB;
 
   logic         clk;                    // Gated clock
@@ -376,15 +376,15 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic [7:0]                 irq_clic_level;
   logic [1:0]                 irq_clic_priv;
   logic                       mnxti_irq_pending;
-  logic [SMCLIC_ID_WIDTH-1:0] mnxti_irq_id;
+  logic [CLIC_ID_WIDTH-1:0]   mnxti_irq_id;
   logic [7:0]                 mnxti_irq_level;
 
   // Used (only) by verification environment
   logic        irq_ack;
   logic [9:0]  irq_id;
-  logic [7:0]  irq_level;       // Only applicable if SMCLIC = 1
-  logic [1:0]  irq_priv;        // Only applicable if SMCLIC = 1
-  logic        irq_shv;         // Only applicable if SMCLIC = 1
+  logic [7:0]  irq_level;       // Only applicable if CLIC = 1
+  logic [1:0]  irq_priv;        // Only applicable if CLIC = 1
+  logic        irq_shv;         // Only applicable if CLIC = 1
   logic        dbg_ack;
 
   // Xsecure control
@@ -556,8 +556,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .PMP_NUM_REGIONS     ( PMP_NUM_REGIONS           ),
     .DUMMY_INSTRUCTIONS  ( SECURE                    ),
     .MTVT_ADDR_WIDTH     ( MTVT_ADDR_WIDTH          ),
-    .SMCLIC              ( SMCLIC                   ),
-    .SMCLIC_ID_WIDTH     ( SMCLIC_ID_WIDTH          ),
+    .CLIC                ( CLIC                     ),
+    .CLIC_ID_WIDTH       ( CLIC_ID_WIDTH            ),
     .ZC_EXT              ( ZC_EXT                   ),
     .M_EXT               ( M_EXT                    ),
     .DEBUG               ( DEBUG                    ),
@@ -648,7 +648,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .M_EXT                        ( M_EXT                     ),
     .X_EXT                        ( X_EXT                     ),
     .REGFILE_NUM_READ_PORTS       ( REGFILE_NUM_READ_PORTS    ),
-    .SMCLIC                       ( SMCLIC                    )
+    .CLIC                         ( CLIC                      )
   )
   id_stage_i
   (
@@ -941,9 +941,9 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .X_MISA                     ( X_MISA                 ),
     .X_ECS_XS                   ( X_ECS_XS               ),
     .ZC_EXT                     ( ZC_EXT                 ),
-    .SMCLIC                     ( SMCLIC                 ),
-    .SMCLIC_ID_WIDTH            ( SMCLIC_ID_WIDTH        ),
-    .SMCLIC_INTTHRESHBITS       ( SMCLIC_INTTHRESHBITS   ),
+    .CLIC                       ( CLIC                   ),
+    .CLIC_ID_WIDTH              ( CLIC_ID_WIDTH          ),
+    .CLIC_INTTHRESHBITS         ( CLIC_INTTHRESHBITS     ),
     .DEBUG                      ( DEBUG                  ),
     .DBG_NUM_TRIGGERS           ( DBG_NUM_TRIGGERS       ),
     .NUM_MHPMCOUNTERS           ( NUM_MHPMCOUNTERS       ),
@@ -1059,8 +1059,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   #(
     .X_EXT                          ( X_EXT                  ),
     .REGFILE_NUM_READ_PORTS         ( REGFILE_NUM_READ_PORTS ),
-    .SMCLIC                         ( SMCLIC                 ),
-    .SMCLIC_ID_WIDTH                ( SMCLIC_ID_WIDTH        ),
+    .CLIC                           ( CLIC                   ),
+    .CLIC_ID_WIDTH                  ( CLIC_ID_WIDTH          ),
     .DEBUG                          ( DEBUG                  )
   )
   controller_i
@@ -1186,12 +1186,12 @@ module cv32e40s_core import cv32e40s_pkg::*;
   ////////////////////////////////////////////////////////////////////////
 
   generate
-    if (SMCLIC) begin : gen_clic_interrupt
+    if (CLIC) begin : gen_clic_interrupt
       assign mip          = '0;
 
       cv32e40s_clic_int_controller
       #(
-          .SMCLIC_ID_WIDTH (SMCLIC_ID_WIDTH)
+          .CLIC_ID_WIDTH (CLIC_ID_WIDTH)
       )
       clic_int_controller_i
       (
