@@ -3141,7 +3141,7 @@ ifelse(eval(CLIC != 0), 1, [[[
   rv32:
     - field_name: BASE_31_N
       description: >
-        Trap-handler vector base address. Alignment depends on SMCLIC_ID_WIDTH parameter.
+        Trap-handler vector base address. Alignment depends on CLIC_ID_WIDTH parameter.
       type: WARL
       reset_val: 0
       msb: 31
@@ -4388,7 +4388,7 @@ ifelse(eval(CLIC != 0), 1, [[[
 - csr: mintstatus
   description: >
     Machine interrupt status
-  address: 0xF46
+  address: 0xFB1
   privilege_mode: M
   rv32:
     - field_name: MIL
