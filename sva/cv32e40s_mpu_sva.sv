@@ -88,7 +88,8 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
    input logic        mpu_block_bus,
    input              mpu_state_e state_q,
    input logic        mpu_err,
-   input logic        load_access
+   input logic        load_access,
+   input logic        pma_misaligned_atomic
    );
 
   // PMA assertions helper signals
@@ -227,6 +228,7 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   // RTL vs SVA expectations
   pma_cfg_t    pma_expected_cfg;
   logic        pma_expected_err;
+  logic        pma_expected_misaligned_err;
   always_comb begin
     pma_expected_cfg = NO_PMA_R_DEFAULT;
     if (PMA_NUM_REGIONS) begin
@@ -238,6 +240,9 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   assign pma_expected_err = (instr_fetch_access && !pma_expected_cfg.main)  ||
                             (misaligned_access_i && !pma_expected_cfg.main) ||
                             (core_trans_pushpop_i && !pma_expected_cfg.main);
+
+  assign pma_expected_misaligned_err = (misaligned_access_i && atomic_access_i);
+
   a_pma_expect_cfg :
     assert property (@(posedge clk) disable iff (!rst_n) pma_cfg == pma_expected_cfg)
       else `uvm_error("mpu", "RTL cfg don't match SVA expectations")
@@ -257,10 +262,14 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   a_pma_expect_cacheable :
     assert property (@(posedge clk) disable iff (!rst_n) bus_trans_cacheable == pma_expected_cfg.cacheable)
       else `uvm_error("mpu", "expected different cacheable flag")
+
   a_pma_expect_err :
     assert property (@(posedge clk) disable iff (!rst_n) pma_err == pma_expected_err)
       else `uvm_error("mpu", "expected different err flag")
 
+  a_pma_expect_misaligned_err :
+    assert property (@(posedge clk) disable iff (!rst_n) pma_misaligned_atomic == pma_expected_misaligned_err)
+      else `uvm_error("mpu", "expected different err flag for misaligned atomics")
   // Bufferable
   generate
     if (bufferable_in_config() && !IS_INSTR_SIDE) begin
