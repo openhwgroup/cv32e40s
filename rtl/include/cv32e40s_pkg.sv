@@ -1052,8 +1052,7 @@ typedef enum logic [1:0] {
                           MPU_WR_FAULT = 2'h2
                           } mpu_status_e;
 
-typedef enum logic [3:0] {MPU_IDLE, MPU_RE_ERR_RESP, MPU_RE_ERR_WAIT, MPU_RE_MISALIGN_RESP, MPU_RE_MISALIGN_WAIT,
-                          MPU_WR_ERR_RESP, MPU_WR_ERR_WAIT, MPU_WR_MISALIGN_RESP, MPU_WR_MISALIGN_WAIT} mpu_state_e;
+typedef enum logic [2:0] {MPU_IDLE, MPU_RE_ERR_RESP, MPU_RE_ERR_WAIT, MPU_WR_ERR_RESP, MPU_WR_ERR_WAIT} mpu_state_e;
 
 // PMP constants
 parameter int unsigned PMP_MAX_REGIONS      = 64;

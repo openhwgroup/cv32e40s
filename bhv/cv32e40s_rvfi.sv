@@ -839,12 +839,6 @@ module cv32e40s_rvfi
         EXC_CAUSE_STORE_FAULT : begin
           rvfi_trap_next.cause_type = mem_err[STAGE_WB];
         end
-        EXC_CAUSE_LOAD_MISALIGNED : begin
-          rvfi_trap_next.cause_type = 2'h0;
-        end
-        EXC_CAUSE_STORE_MISALIGNED : begin
-          rvfi_trap_next.cause_type = 2'h0;
-        end
         default : begin
           // rvfi_trap_next.cause_type is only set for exception codes that can have multiple causes
         end
