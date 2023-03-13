@@ -167,6 +167,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Set mask for minththresh based on number of bits implemented (CLIC_INTTHRESHBITS)
   localparam CSR_MINTTHRESH_MASK = ((2 ** CLIC_INTTHRESHBITS )-1) << (8 - CLIC_INTTHRESHBITS);
 
+  localparam logic [31:0] CSR_MTVT_MASK = {{MTVT_ADDR_WIDTH{1'b1}}, {32-MTVT_ADDR_WIDTH{1'b0}}};
+
+
   // CSR update logic
   logic [31:0]                  csr_wdata_int;
   logic [31:0]                  csr_rdata_int;
