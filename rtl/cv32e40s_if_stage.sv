@@ -516,7 +516,14 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
         //   Any pointer could change instr_compressed and cause a wrong link address.
         // No update to tbljmp flag, we want flag to be high for both operations.
         if (!prefetch_is_tbljmp_ptr) begin
-          if_id_pipe_o.pc                    <= pc_if_o;
+
+          // For mret pointers, the pointer address is only needed downstream if the pointer fetch fails.
+          // If the pointer fetch is successful, the address of the mret (i.e. the previous PC) is needed.
+          if(prefetch_is_mret_ptr ?
+             (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK)) :
+             1'b1) begin
+            if_id_pipe_o.pc                    <= pc_if_o;
+          end
           // Sequenced instructions are marked as illegal by the compressed decoder, however, the instr_compressed
           // flag is still set and can be used when propagating to ID.
           // Dummy instructions are never marked as compressed or tablejumps.
