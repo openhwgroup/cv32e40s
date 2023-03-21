@@ -2424,6 +2424,7 @@ ifelse(eval(DEBUG != 0), 1, [[[
       lsb: 22
       warl_legalize: |
         val_out = 0
+ifelse(eval(UMODE == 0), 1, [[[
     - field_name: TW
       description: >
         Timeout wait
@@ -2433,6 +2434,7 @@ ifelse(eval(DEBUG != 0), 1, [[[
       lsb: 21
       warl_legalize: |
         val_out = 0
+]]])
 ifelse(eval(UMODE != 0), 1, [[[
     - field_name: TW
       description: >
@@ -2465,6 +2467,7 @@ ifelse(eval(UMODE != 0), 1, [[[
       reset_val: 0
       msb: 18
       lsb: 18
+ifelse(eval(UMODE == 0), 1, [[[
     - field_name: MPRV
       description: >
         Modify Privilege
@@ -2472,6 +2475,7 @@ ifelse(eval(UMODE != 0), 1, [[[
       reset_val: 0
       msb: 17
       lsb: 17
+]]])
 ifelse(eval(UMODE != 0), 1, [[[
     - field_name: MPRV
       description: >
@@ -2488,6 +2492,7 @@ ifelse(eval(UMODE != 0), 1, [[[
       reset_val: 0
       msb: 16
       lsb: 15
+ifelse(eval(X_EXT == 0), 1, [[[
     - field_name: FS
       description: >
         FPU Extension Context Status.
@@ -2497,6 +2502,7 @@ ifelse(eval(UMODE != 0), 1, [[[
       lsb: 13
       warl_legalize: |
         val_out = 0
+]]])
 ifelse(eval(X_EXT != 0), 1, [[[
     - field_name: FS
       # TODO:silabs-robin "X_EXT" means 2 different things
@@ -2514,8 +2520,10 @@ ifelse(eval(X_EXT != 0), 1, [[[
       reset_val: 3
       msb: 12
       lsb: 11
+ifelse(eval(UMODE == 0), 1, [[[
       warl_legalize: |
         val_out = 0x3
+]]])
 ifelse(eval(UMODE != 0), 1, [[[
       warl_legalize: |
         val_out = val_in if ((val_in == 0x3) or (val_in == 0x0)) else val_orig
@@ -2652,6 +2660,7 @@ ifelse(eval(X_EXT != 0), 1, [[[
       lsb: 22
       warl_legalize: |
         val_out = 0
+ifelse(eval(V_EXT == 0), 1, [[[
     - field_name: V
       description: >
         Tentatively reserved for Vector extension
@@ -2661,6 +2670,7 @@ ifelse(eval(X_EXT != 0), 1, [[[
       lsb: 21
       warl_legalize: |
         val_out = 0
+]]])
 ifelse(eval(V_EXT != 0), 1, [[[
     - field_name: V
       description: >
@@ -2721,6 +2731,7 @@ ifelse(eval(UMODE != 0), 1, [[[
       lsb: 16
       warl_legalize: |
         val_out = 0
+ifelse(eval(P_EXT == 0), 1, [[[
     - field_name: P
       description: >
         Packed SIMD
@@ -2730,6 +2741,7 @@ ifelse(eval(UMODE != 0), 1, [[[
       lsb: 15
       warl_legalize: |
         val_out = 0
+]]])
 ifelse(eval(P_EXT != 0), 1, [[[
     - field_name: P
       description: >
@@ -2901,22 +2913,24 @@ ifelse(eval(I_BASE != 0), 1, [[[
       type: WARL
       msb: 0
       lsb: 0
+ifelse(eval(A_EXT == 0), 1, [[[
       reset_val: 0
       warl_legalize: |
         val_out = 0
+]]])
 ifelse(eval(A_EXT != 0), 1, [[[
       reset_val: 1
       warl_legalize: |
         val_out = 1
 ]]])
 
-ifelse(eval(CLINT != 0), 1, [[[
 - csr: mie
   description: >
     Machine Interrupt Enable
   address: 0x304
   privilege_mode: M
   rv32:
+ifelse(eval(CLINT != 0), 1, [[[
     - field_name: MFIE
       description: >
         Machine Fast Interrupt Enables
@@ -2924,6 +2938,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       reset_val: 0
       msb: 31
       lsb: 16
+      subtype: clint
     - field_name: RESERVED_15_12
       description: >
         Always return zero
@@ -2933,6 +2948,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 12
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: MEIE
       description: >
         Machine External Interrupt Enable
@@ -2940,6 +2956,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       reset_val: 0
       msb: 11
       lsb: 11
+      subtype: clint
     - field_name: RESERVED_10_10
       description: >
         Always return zero
@@ -2949,6 +2966,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 10
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: SEIE
       description: >
         Supervisor External Interrupt Enable
@@ -2958,6 +2976,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 9
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: RESERVED_8_8
       description: >
         Always return zero
@@ -2967,6 +2986,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 8
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: MTIE
       description: >
         Machine Timer Interrupt Enable
@@ -2974,6 +2994,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       reset_val: 0
       msb: 7
       lsb: 7
+      subtype: clint
     - field_name: RESERVED_6_6
       description: >
         Always return zero
@@ -2983,6 +3004,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 6
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: STIE
       description: >
         Supervisor Timer Interrupt Enable
@@ -2992,6 +3014,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 5
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: RESERVED_4_4
       description: >
         Always return zero
@@ -3001,6 +3024,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 4
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: MSIE
       description: >
         Machine Software Interrupt Enable
@@ -3008,6 +3032,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       reset_val: 0
       msb: 3
       lsb: 3
+      subtype: clint
     - field_name: RESERVED_2_2
       description: >
         Always return zero
@@ -3017,6 +3042,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 2
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: SSIE
       description: >
         Supervisor Software Interrupt Enable
@@ -3026,6 +3052,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 1
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: RESERVED_0_0
       description: >
         Always return zero
@@ -3035,15 +3062,9 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 0
       warl_legalize: |
         val_out = 0
+      subtype: clint
 ]]])
-
 ifelse(eval(CLIC != 0), 1, [[[
-- csr: mie
-  description: >
-    Machine Interrupt Enable
-  address: 0x304
-  privilege_mode: M
-  rv32:
     - field_name: RESERVED_31_0
       description: >
         Reserved
@@ -3053,15 +3074,16 @@ ifelse(eval(CLIC != 0), 1, [[[
       lsb: 0
       warl_legalize: |
         val_out = 0
+      subtype: clic
 ]]])
 
-ifelse(eval(CLINT != 0), 1, [[[
 - csr: mtvec
   description: >
     Machine Trap-Vector Base Address
   address: 0x305
   privilege_mode: M
   rv32:
+ifelse(eval(CLINT != 0), 1, [[[
     - field_name: BASE_31_7
       description: >
         Trap-handler base address, always aligned to 128 bytes
@@ -3069,6 +3091,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       reset_val: 0  # Note: assumes mtvec_i == 0
       msb: 31
       lsb: 7
+      subtype: clint
     - field_name: BASE_6_2
       description: >
         Trap-handler base address, always aligned to 128 bytes
@@ -3078,6 +3101,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 2
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: MODE
       description: >
         0 = Direct mode, 1 = vectored mode
@@ -3087,15 +3111,9 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 0
       warl_legalize: |
         val_out = val_in if (val_in == 0 or val_in == 1) else val_orig
+      subtype: clint
 ]]])
-
 ifelse(eval(CLIC != 0), 1, [[[
-- csr: mtvec
-  description: >
-    Machine Trap-Vector Base Address
-  address: 0x305
-  privilege_mode: M
-  rv32:
     - field_name: BASE_31_7
       description: >
         Trap-handler base address, always aligned to 128 bytes
@@ -3103,6 +3121,7 @@ ifelse(eval(CLIC != 0), 1, [[[
       reset_val: 0  # Note: assumes mtvec_i == 0
       msb: 31
       lsb: 7
+      subtype: clic
     - field_name: BASE_6
       description: >
         Trap-handler base address, always aligned to 128 bytes
@@ -3112,6 +3131,7 @@ ifelse(eval(CLIC != 0), 1, [[[
       lsb: 6
       warl_legalize: |
         val_out = 0
+      subtype: clic
     - field_name: SUBMODE
       description: >
         Sub mode, reserved for future use
@@ -3121,6 +3141,7 @@ ifelse(eval(CLIC != 0), 1, [[[
       lsb: 2
       warl_legalize: |
         val_out = 0
+      subtype: clic
     - field_name: MODE
       description: >
         CLIC mode enabled
@@ -3130,6 +3151,7 @@ ifelse(eval(CLIC != 0), 1, [[[
       lsb: 0
       warl_legalize: |
         val_out = 3
+      subtype: clic
 ]]])
 
 ifelse(eval(CLIC != 0), 1, [[[
@@ -4091,13 +4113,13 @@ ifelse(eval(NUM_MHPMCOUNTERS >= 29), 1, [[[
       warl_legalize: |
         val_out = 0
 
-ifelse(eval(CLIC != 0), 1, [[[
 - csr: mcause
   description: >
     Machine Exception Cause
   address: 0x342
   privilege_mode: M
   rv32:
+ifelse(eval(CLIC != 0), 1, [[[
     - field_name: Interrupt
       description: >
           Set when exception triggered by interrupt
@@ -4105,6 +4127,7 @@ ifelse(eval(CLIC != 0), 1, [[[
       reset_val: 0
       msb: 31
       lsb: 31
+      subtype: clic
     - field_name: Minhv
       description: >
           Set at start of CLIC hardware vectoring, cleared after successful vectoring.
@@ -4112,6 +4135,7 @@ ifelse(eval(CLIC != 0), 1, [[[
       reset_val: 0
       msb: 30
       lsb: 30
+      subtype: clic
     - field_name: MPP
       description: >
           Alias for mstatus.MPP
@@ -4119,19 +4143,23 @@ ifelse(eval(CLIC != 0), 1, [[[
       reset_val: 0
       msb: 29
       lsb: 28
+ifelse(eval(UMODE != 0), 1, [[[
       warl_legalize: |
         val_out = 0x3
-ifelse(eval(UMODE != 0), 1, [[[
+]]])
+ifelse(eval(UMODE == 0), 1, [[[
       warl_legalize: |
         val_out = val_in if ((val_in == 0x3) or (val_in == 0x0)) else val_orig
 ]]])
+      subtype: clic
     - field_name: MPIE
       description: >
-          Alias for mstatus.MPIE
+          Aliaaas for mstatus.MPIE
       type: RW
       reset_val: 0
       msb: 27
       lsb: 27
+      subtype: clic
     - field_name: RESERVED_26_24
       description: >
         Reserved
@@ -4141,6 +4169,7 @@ ifelse(eval(UMODE != 0), 1, [[[
       lsb: 24
       warl_legalize: |
         val_out = 0
+      subtype: clic
     - field_name: MPIL
       description: >
           Machine Previous Interrupt Level
@@ -4148,6 +4177,7 @@ ifelse(eval(UMODE != 0), 1, [[[
       reset_val: 0
       msb: 23
       lsb: 16
+      subtype: clic
     - field_name: RESERVED_15_12
       description: >
         Reserved
@@ -4157,6 +4187,7 @@ ifelse(eval(UMODE != 0), 1, [[[
       lsb: 12
       warl_legalize: |
         val_out = 0
+      subtype: clic
     - field_name: Exccode_11
       description: >
           Exception Code
@@ -4166,6 +4197,7 @@ ifelse(eval(UMODE != 0), 1, [[[
       lsb: 11
       warl_legalize: |
         val_out = 0
+      subtype: clic
     - field_name: Exccode_10_0
       description: >
           Exception Code
@@ -4173,15 +4205,9 @@ ifelse(eval(UMODE != 0), 1, [[[
       reset_val: 0
       msb: 10
       lsb: 0
+      subtype: clic
 ]]])
-
 ifelse(eval(CLINT != 0), 1, [[[
-- csr: mcause
-  description: >
-    Machine Exception Cause
-  address: 0x342
-  privilege_mode: M
-  rv32:
     - field_name: Interrupt
       description: >
           Set when exception triggered by interrupt
@@ -4189,6 +4215,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       reset_val: 0
       msb: 31
       lsb: 31
+      subtype: clint
     - field_name: Exccode_30_11
       description: >
         Reserved
@@ -4198,6 +4225,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       lsb: 11
       warl_legalize: |
         val_out = 0
+      subtype: clint
     - field_name: Exccode_10_0
       description: >
           Exception Code
@@ -4205,6 +4233,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       reset_val: 0
       msb: 10
       lsb: 0
+      subtype: clint
 ]]])
 
 - csr: mtval
@@ -4223,13 +4252,13 @@ ifelse(eval(CLINT != 0), 1, [[[
       warl_legalize: |
         val_out = 0
 
-ifelse(eval(CLINT != 0), 1, [[[
 - csr: mip
   description: >
     Machine Interrupt Pending
   address: 0x344
   privilege_mode: M
   rv32:
+ifelse(eval(CLINT != 0), 1, [[[
     - field_name: MFIP
       description: >
          Fast Interrupts Pending
@@ -4349,14 +4378,7 @@ ifelse(eval(CLINT != 0), 1, [[[
       warl_legalize: |
         val_out = 0
 ]]])
-
 ifelse(eval(CLIC != 0), 1, [[[
-- csr: mip
-  description: >
-    Machine Interrupt Pending
-  address: 0x344
-  privilege_mode: M
-  rv32:
     - field_name: RESERVED_31_0
       description: >
          Always zero
@@ -5120,7 +5142,7 @@ ifelse(eval(ZC != 0), 1, [[[
   address: 0x31C
   privilege_mode: M
   rv32:
-    - field_name: ZEROO
+    - field_name: ZERO
       description: >
         Hardwired to 0.
       type: WARL
