@@ -2392,7 +2392,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
           // Keep old data if PMPADDR is locked
           // Bit 0 needs special handling because modification of the read data in TOR and OFF mode could lead to
-          // wrong data being used as basis for set/clear operations
+          // wrong data being used as basis for set/clear operations.
+          // For example, if PMP_GRANULARITY=1, pmpcfg.mode=OFF, and PMPADDRn=32'hFFFFFFFF, then PMPADDRn would be read as 32'hFFFFFFFE.
+          // A set operation with mask 0 would then result in PMPADDRn = 0 | 32'hFFFFFFFE, which would clear the LSB of PMPADDRn.
+          // Using the value from pmp_addr_q directly avoids this issue.
           assign pmp_addr_n[i] = pmpaddr_locked[i] ? pmp_addr_q[i] : {csr_wdata_int[31-:(PMP_ADDR_WIDTH-1)], pmp_addr_bit_0_n[i]};
 
           cv32e40s_csr
