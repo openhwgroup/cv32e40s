@@ -980,6 +980,7 @@ typedef enum logic[3:0] {
 } pc_mux_e;
 
 // Exception Cause
+parameter EXC_CAUSE_INSTR_MISALIGNED      = 11'h00;
 parameter EXC_CAUSE_INSTR_FAULT           = 11'h01;
 parameter EXC_CAUSE_ILLEGAL_INSN          = 11'h02;
 parameter EXC_CAUSE_BREAKPOINT            = 11'h03;
@@ -990,6 +991,7 @@ parameter EXC_CAUSE_ECALL_MMODE           = 11'h0B;
 parameter EXC_CAUSE_INSTR_INTEGRITY_FAULT = 11'h19;
 parameter EXC_CAUSE_INSTR_BUS_FAULT       = 11'h18;
 
+// todo: add EXC_CAUSE_INSTR_MISALIGNED (merge from E once implemented there)
 parameter logic [31:0] ETRIGGER_TDATA2_MASK = (1 << EXC_CAUSE_INSTR_BUS_FAULT) | (1 << EXC_CAUSE_INSTR_INTEGRITY_FAULT) | (1 << EXC_CAUSE_ECALL_MMODE) | (1 << EXC_CAUSE_ECALL_UMODE) | (1 << EXC_CAUSE_STORE_FAULT) |
                                               (1 << EXC_CAUSE_LOAD_FAULT) | (1 << EXC_CAUSE_BREAKPOINT) | (1 << EXC_CAUSE_ILLEGAL_INSN) | (1 << EXC_CAUSE_INSTR_FAULT);
 
@@ -1114,6 +1116,16 @@ typedef struct packed {
   logic [PMP_MAX_REGIONS-1:0][33:0] addr;
   mseccfg_t                         mseccfg;
 } pmp_csr_t;
+                                      atomic          : 1'b0};
+
+// ALIGN status. Used when checking alignment for atomics and mret pointers
+typedef enum logic [1:0] {
+                          ALIGN_OK         = 2'h0,
+                          ALIGN_RE_ERR     = 2'h1,
+                          ALIGN_WR_ERR     = 2'h2
+                          } align_status_e;
+
+typedef enum logic [2:0] {ALIGN_IDLE, ALIGN_WR_ERR_RESP, ALIGN_WR_ERR_WAIT, ALIGN_RE_ERR_RESP, ALIGN_RE_ERR_WAIT} align_state_e;
 
 // WPT state machine
 typedef enum logic [1:0] {WPT_IDLE, WPT_MATCH_WAIT, WPT_MATCH_RESP} wpt_state_e;
@@ -1181,14 +1193,16 @@ typedef struct packed {
 typedef struct packed {
  obi_inst_resp_t             bus_resp;
  mpu_status_e                mpu_status;
+ align_status_e              align_status;   // Alignment status (for mret pointers)
 } inst_resp_t;
 
 // Reset value for the inst_resp_t type
 parameter inst_resp_t INST_RESP_RESET_VAL = '{
   // Setting rdata[1:0] to 2'b11 to easily assert that all
   // instructions in ID are uncompressed
-  bus_resp    : '{rdata: 32'h3, err: 1'b0, rchk: 5'b0,integrity_err: 1'b0, integrity: 1'b0},
-  mpu_status  : MPU_OK
+  bus_resp     : '{rdata: 32'h3, err: 1'b0, rchk: 5'b0,integrity_err: 1'b0, integrity: 1'b0},
+  mpu_status   : MPU_OK,
+  align_status : ALIGN_OK
 };
 
 // Reset value for the obi_inst_req_t type
@@ -1206,6 +1220,7 @@ typedef struct packed {
   obi_data_resp_t             bus_resp;
   mpu_status_e                mpu_status;
   logic                       wpt_match;
+  align_status_e              align_status;
 } data_resp_t;
 
 // LSU transaction

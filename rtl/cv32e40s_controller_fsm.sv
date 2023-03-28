@@ -31,10 +31,10 @@
 
 module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 #(
-  parameter bit       X_EXT         = 0,
-  parameter int       DEBUG         = 1,
-  parameter bit       CLIC          = 0,
-  parameter int       CLIC_ID_WIDTH = 5
+  parameter bit          X_EXT         = 0,
+  parameter bit          DEBUG         = 1,
+  parameter bit          CLIC          = 0,
+  parameter int unsigned CLIC_ID_WIDTH = 5
 )
 (
   // Clocks and reset
@@ -69,12 +69,13 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  logic        last_op_ex_i,               // EX stage contains the last operation of an instruction
 
   // From WB stage
-  input  ex_wb_pipe_t ex_wb_pipe_i,
-  input  lsu_err_wb_t lsu_err_wb_i,               // LSU caused bus_error or integrity error in WB stage, gated with data_rvalid_i inside load_store_unit
-  input  logic        last_op_wb_i,               // WB stage contains the last operation of an instruction
-  input  logic        abort_op_wb_i,              // WB stage contains an (to be) aborted instruction or sequence
-  input  mpu_status_e mpu_status_wb_i,            // MPU status (WB timing)
-  input  logic        wpt_match_wb_i,             // LSU watchpoint trigger (WB)
+  input  ex_wb_pipe_t   ex_wb_pipe_i,
+  input  lsu_err_wb_t   lsu_err_wb_i,               // LSU caused bus_error or integrity error in WB stage, gated with data_rvalid_i inside load_store_unit
+  input  logic          last_op_wb_i,               // WB stage contains the last operation of an instruction
+  input  logic          abort_op_wb_i,              // WB stage contains an (to be) aborted instruction or sequence
+  input  mpu_status_e   mpu_status_wb_i,            // MPU status (WB timing)
+  input  align_status_e align_status_wb_i,          // Aligned status (atomics) in WB
+  input  logic          wpt_match_wb_i,             // LSU watchpoint trigger (WB)
 
 
   // From LSU (WB)
@@ -379,6 +380,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   //
   assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK)                                                      ||
                              ex_wb_pipe_i.instr.bus_resp.integrity_err                                                     ||
+                            (ex_wb_pipe_i.instr.align_status != ALIGN_OK)                                                  ||
                              ex_wb_pipe_i.instr.bus_resp.err                                                               ||
                              ex_wb_pipe_i.illegal_insn                                                                     ||
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)                                           ||
@@ -386,7 +388,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                               !dcsr_i.ebreakm && !debug_mode_q)                                                            ||
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn && (ex_wb_pipe_i.priv_lvl == PRIV_LVL_U) &&
                               !dcsr_i.ebreaku && !debug_mode_q)                                                            ||
-                            (mpu_status_wb_i != MPU_OK)) && ex_wb_pipe_i.instr_valid;
+                            (mpu_status_wb_i != MPU_OK)                                                                    ||
+                            (align_status_wb_i != ALIGN_OK)) && ex_wb_pipe_i.instr_valid;
 
   assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
 
@@ -395,6 +398,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   //           Bus errors will be converted to NMI as for regular loads.
   assign exception_cause_wb = (ex_wb_pipe_i.instr.mpu_status != MPU_OK)                                                      ? EXC_CAUSE_INSTR_FAULT     :
                                ex_wb_pipe_i.instr.bus_resp.integrity_err                                                     ? EXC_CAUSE_INSTR_INTEGRITY_FAULT :
+                               (ex_wb_pipe_i.instr.align_status != ALIGN_OK)                                                 ? EXC_CAUSE_INSTR_MISALIGNED :
                               ex_wb_pipe_i.instr.bus_resp.err                                                                ? EXC_CAUSE_INSTR_BUS_FAULT :
                               ex_wb_pipe_i.illegal_insn                                                                      ? EXC_CAUSE_ILLEGAL_INSN    :
                               (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)                                           ? (priv_lvl_i==PRIV_LVL_M ?
@@ -404,8 +408,10 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                                 !dcsr_i.ebreakm && !debug_mode_q)                                                            ? EXC_CAUSE_BREAKPOINT      :
                               (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn && (ex_wb_pipe_i.priv_lvl == PRIV_LVL_U) &&
                                 !dcsr_i.ebreaku && !debug_mode_q)                                                            ? EXC_CAUSE_BREAKPOINT      :
-                              (mpu_status_wb_i == MPU_WR_FAULT)                                                              ? EXC_CAUSE_STORE_FAULT     :
-                              EXC_CAUSE_LOAD_FAULT; // (mpu_status_wb_i == MPU_RE_FAULT)
+                              (mpu_status_wb_i == MPU_WR_FAULT)                                                              ? EXC_CAUSE_STORE_FAULT      :
+                              (mpu_status_wb_i == MPU_RE_FAULT)                                                              ? EXC_CAUSE_LOAD_FAULT       :
+                              (align_status_wb_i == ALIGN_WR_ERR)                                                            ? EXC_CAUSE_STORE_MISALIGNED :
+                                                                                                                               EXC_CAUSE_LOAD_MISALIGNED;
 
   assign ctrl_fsm_o.exception_cause_wb = exception_cause_wb;
 
@@ -1085,7 +1091,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
             end
           end else if (clic_ptr_in_id || mret_ptr_in_id) begin
             // todo e40s: Factor in integrity related errors
-            if (!(if_id_pipe_i.instr.bus_resp.err || (if_id_pipe_i.instr.mpu_status != MPU_OK))) begin
+            if (!(if_id_pipe_i.instr.bus_resp.err || (if_id_pipe_i.instr.mpu_status != MPU_OK) || (if_id_pipe_i.instr.align_status != ALIGN_OK))) begin
               if (!branch_taken_q) begin
                 ctrl_fsm_o.pc_set = 1'b1;
                 ctrl_fsm_o.pc_mux = PC_POINTER;

@@ -28,7 +28,7 @@ module cv32e40s_cs_registers_sva
 #(
     parameter bit CLIC = 0,
     parameter int PMP_ADDR_WIDTH = 32,
-    parameter int DEBUG  = 1
+    parameter bit DEBUG  = 1
   )
 
   (
