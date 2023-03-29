@@ -22,8 +22,8 @@ module cv32e40s_rvfi
   import cv32e40s_pkg::*;
   import cv32e40s_rvfi_pkg::*;
   #(
-    parameter bit CLIC   = 0,
-    parameter int DEBUG  = 1
+    parameter bit     CLIC  = 0,
+    parameter bit     DEBUG = 1
   )
   (
    input logic                                clk_i,
@@ -79,8 +79,12 @@ module cv32e40s_rvfi
    input logic                                dret_in_ex_i,
    input logic                                lsu_en_ex_i,
    input logic                                lsu_pmp_err_ex_i,
+   input logic                                lsu_pma_err_ex_i,
    input logic                                lsu_pma_err_atomic_ex_i,
-   input obi_data_req_t                       buffer_trans,
+   input pma_cfg_t                            lsu_pma_cfg_ex_i,
+   input logic                                lsu_misaligned_ex_i,
+   input obi_data_req_t                       buffer_trans_ex_i,
+   input logic                                buffer_trans_valid_ex_i,
    input logic                                lsu_split_q_ex_i,
 
    // WB probes
@@ -701,9 +705,16 @@ module cv32e40s_rvfi
 
   rvfi_obi_instr_t obi_instr_if;
   obi_data_req_t   lsu_data_trans;
+  logic            lsu_data_trans_valid;
 
   // Detect mret initiated CLIC pointer in WB
   logic         mret_ptr_wb;
+
+  // Detect a PMA error due to atomics accessing non-atomic regions
+  logic         lsu_pma_err_atomic_ex;
+
+  // Detect PMA errors due to misaligned accesses
+  logic         lsu_pma_err_misaligned_ex;
 
   assign        mret_ptr_wb = mret_ptr_wb_i;
 
@@ -714,6 +725,11 @@ module cv32e40s_rvfi
   assign insn_rs2    = rvfi_insn[24:20];
   assign insn_funct7 = rvfi_insn[31:25];
   assign insn_csr    = rvfi_insn[31:20];
+
+  assign lsu_pma_err_atomic_ex = 1'b0; // No atomics on cv32e40s
+
+  // PMA error due to misaligned accesses to I/O memory
+  assign lsu_pma_err_misaligned_ex = lsu_pma_err_ex_i && lsu_misaligned_ex_i && !lsu_pma_cfg_ex_i.main;
 
   cv32e40s_rvfi_instr_obi
   rvfi_instr_obi_i
@@ -739,10 +755,12 @@ module cv32e40s_rvfi
   cv32e40s_rvfi_data_obi
   rvfi_data_obi_i
   (
-    .clk                        ( clk_i          ),
-    .rst_n                      ( rst_ni         ),
-    .buffer_trans               ( buffer_trans   ),
-    .lsu_data_trans             ( lsu_data_trans )
+    .clk                        ( clk_i                   ),
+    .rst_n                      ( rst_ni                  ),
+    .buffer_trans_i             ( buffer_trans_ex_i       ),
+    .buffer_trans_valid_i       ( buffer_trans_valid_ex_i ),
+    .lsu_data_trans_o           ( lsu_data_trans          ),
+    .lsu_data_trans_valid_o     ( lsu_data_trans_valid    )
   );
 
 
@@ -764,7 +782,7 @@ module cv32e40s_rvfi
       end
     end
 
-    // Genrate PC for branches taken from EX
+    // Generate PC for branches taken from EX
     pc_wdata_ex_branch = pc_wdata_ex_branch_q;
 
     if (ctrl_fsm_i.pc_set) begin
@@ -797,12 +815,12 @@ module cv32e40s_rvfi
   assign branch_taken_ex = branch_in_ex_i && branch_decision_ex_i;
 
   // Assign rvfi channels
-  assign rvfi_halt = 1'b0; // No instruction causing halt
-  assign rvfi_ixl               = 2'b01; // XLEN for current privilege level, must be 1(32) for RV32 systems
+  assign rvfi_halt = 1'b0; // No instruction causing halt in cv32e40s
+  assign rvfi_ixl = 2'b01; // XLEN for current privilege level, must be 1(32) for RV32 systems
 
   logic         in_trap_clr;
   // Clear in trap pipeline when it reaches rvfi_intr
-  // This is done to avoid reporting already signaled triggers as supressed during by debug
+  // This is done to avoid reporting already signaled triggers as suppressed during by debug
   assign in_trap_clr = wb_valid_lastop && in_trap[STAGE_WB].intr;
 
   // Set rvfi_trap for instructions causing exception or debug entry.
@@ -994,7 +1012,7 @@ module cv32e40s_rvfi
           // A higher priority debug request (e.g. trigger match) will pull ebreak_in_wb_i low and allow the debug cause to propagate
           debug_cause[STAGE_IF] <=  (ebreak_in_wb_i && debug_mode_q_i) ? DBG_CAUSE_EBREAK : ctrl_fsm_i.debug_cause;
 
-          // If there is a trap in the pipeline when debug is taken, the trap will be supressed but the side-effects will not.
+          // If there is a trap in the pipeline when debug is taken, the trap will be suppressed but the side-effects will not.
           // The succeeding instruction therefore needs to re-trigger the intr signals if it it did not reach the rvfi output.
           // When in_trap_clr is set, the in_trap[STAGE_WB] reached the RVFI outputs and we must not propagate it back to the in_trap[STAGE_IF]
           in_trap[STAGE_IF] <= in_trap[STAGE_IF].intr ? in_trap[STAGE_IF] :
@@ -1090,8 +1108,8 @@ module cv32e40s_rvfi
         rs2_addr   [STAGE_WB] <= rs2_addr           [STAGE_EX];
         rs1_rdata  [STAGE_WB] <= rs1_rdata          [STAGE_EX];
         rs2_rdata  [STAGE_WB] <= rs2_rdata          [STAGE_EX];
-        mem_rmask  [STAGE_WB] <= mem_rmask          [STAGE_EX];
-        mem_wmask  [STAGE_WB] <= mem_wmask          [STAGE_EX];
+        mem_rmask  [STAGE_WB] <= lsu_data_trans_valid ? mem_rmask[STAGE_EX] : '0;
+        mem_wmask  [STAGE_WB] <= lsu_data_trans_valid ? mem_wmask[STAGE_EX] : '0;
         in_trap    [STAGE_WB] <= in_trap            [STAGE_EX];
 
         rs1_addr_subop   [STAGE_WB] <= rs1_addr_subop [STAGE_EX];
@@ -1103,14 +1121,14 @@ module cv32e40s_rvfi
 
         lsu_mem_split_wb <= lsu_split_q_ex_i;
         if (!lsu_split_q_ex_i) begin
-          // The second part of the split misaligned acess is suppressed to keep
+          // The second part of the split misaligned access is suppressed to keep
           // the start address and data for the whole misaligned transfer
           ex_mem_trans <= lsu_data_trans;
         end
 
-        mem_err   [STAGE_WB]  <= lsu_pmp_err_ex_i        ? MEM_ERR_PMP :
-                                 lsu_pma_err_atomic_ex_i ? MEM_ERR_ATOMIC :
-                                                           MEM_ERR_IO_ALIGN;
+        mem_err [STAGE_WB]  = lsu_pma_err_misaligned_ex    ? MEM_ERR_IO_ALIGN          : // Non-natrually aligned access to !main
+                              lsu_pma_err_atomic_ex        ? MEM_ERR_ATOMIC            : // Any atomic to non-atomic PMA region
+                                                             MEM_ERR_PMP;                // PMP error
 
         // Read autonomuos CSRs from EX perspective
         ex_csr_rdata        <= ex_csr_rdata_d;

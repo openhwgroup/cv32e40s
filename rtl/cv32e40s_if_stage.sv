@@ -31,7 +31,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   parameter rv32_e       RV32            = RV32I,
   parameter b_ext_e      B_EXT           = B_NONE,
   parameter bit          X_EXT           = 0,
-  parameter int          X_ID_WIDTH      = 4,
+  parameter int unsigned X_ID_WIDTH      = 4,
   parameter int          PMA_NUM_REGIONS = 0,
   parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
   parameter int          PMP_GRANULARITY = 0,
@@ -39,10 +39,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   parameter bit          DUMMY_INSTRUCTIONS = 0,
   parameter int unsigned MTVT_ADDR_WIDTH = 26,
   parameter bit          CLIC            = 1'b0,
-  parameter int          CLIC_ID_WIDTH   = 5,
+  parameter int unsigned CLIC_ID_WIDTH   = 5,
   parameter bit          ZC_EXT          = 0,
   parameter m_ext_e      M_EXT           = M_NONE,
-  parameter int          DEBUG           = 1,
+  parameter bit          DEBUG           = 1,
   parameter logic [31:0] DM_REGION_START = 32'hF0000000,
   parameter logic [31:0] DM_REGION_END   = 32'hF0003FFF
 )
@@ -151,6 +151,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic                       prefetch_trans_valid;
   logic                       prefetch_trans_ready;
   logic [31:0]                prefetch_trans_addr;
+  logic                       prefetch_trans_ptr;
   inst_resp_t                 prefetch_inst_resp;
   logic                       prefetch_one_txn_pend_n;
   logic [ALBUF_CNT_WIDTH-1:0] prefetch_outstnd_cnt_q;
@@ -164,6 +165,14 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   logic              dummy_insert;
   inst_resp_t        dummy_instr;
+  logic              alcheck_resp_valid;
+  inst_resp_t        alcheck_resp;
+  logic              alcheck_trans_valid;
+  logic              alcheck_trans_ready;
+  obi_inst_req_t     alcheck_trans;
+
+  logic              align_check_en;
+  logic              address_misaligned;
 
   // Local instr_valid
   logic              instr_valid;
@@ -254,6 +263,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .trans_valid_o            ( prefetch_trans_valid        ),
     .trans_ready_i            ( prefetch_trans_ready        ),
     .trans_addr_o             ( prefetch_trans_addr         ),
+    .trans_ptr_o              ( prefetch_trans_ptr          ),
 
     .resp_valid_i             ( prefetch_resp_valid         ),
     .resp_i                   ( prefetch_inst_resp          ),
@@ -286,7 +296,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .IF_STAGE             ( 1                       ),
     .CORE_REQ_TYPE        ( obi_inst_req_t          ),
     .CORE_RESP_TYPE       ( inst_resp_t             ),
-    .BUS_RESP_TYPE        ( obi_inst_resp_t         ),
+    .BUS_RESP_TYPE        ( inst_resp_t             ),
     .PMA_NUM_REGIONS      ( PMA_NUM_REGIONS         ),
     .PMA_CFG              ( PMA_CFG                 ),
     .PMP_GRANULARITY      ( PMP_GRANULARITY         ),
@@ -297,24 +307,59 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   )
   mpu_i
   (
+    .clk                  ( clk                         ),
+    .rst_n                ( rst_n                       ),
+    .misaligned_access_i  ( 1'b0                        ), // MPU on instruction side will not issue misaligned access fault
+                                                           // Misaligned access to main is allowed, and accesses outside main will
+                                                           // result in instruction access fault (which will have priority over
+                                                           //  misaligned from I/O fault)
+    .priv_lvl_i           ( prefetch_priv_lvl           ), // todo: this is already encoded in the prot[2:1] bits
+    .csr_pmp_i            ( csr_pmp_i                   ),
+
+    .core_one_txn_pend_n  ( prefetch_one_txn_pend_n     ),
+    .core_mpu_err_wait_i  ( 1'b1                        ),
+    .core_mpu_err_o       (                             ), // Unconnected on purpose
+    .core_trans_valid_i   ( prefetch_trans_valid        ),
+    .core_trans_pushpop_i ( 1'b0                        ), // Prefetches are never part of a PUSH/POP sequence
+    .core_trans_ready_o   ( prefetch_trans_ready        ),
+    .core_trans_i         ( core_trans                  ),
+    .core_resp_valid_o    ( prefetch_resp_valid         ),
+    .core_resp_o          ( prefetch_inst_resp          ),
+
+    .bus_trans_valid_o    ( alcheck_trans_valid         ),
+    .bus_trans_ready_i    ( alcheck_trans_ready         ),
+    .bus_trans_o          ( alcheck_trans               ),
+    .bus_resp_valid_i     ( alcheck_resp_valid          ),
+    .bus_resp_i           ( alcheck_resp                )
+  );
+
+
+  assign align_check_en = prefetch_trans_ptr;
+  assign address_misaligned = |prefetch_trans_addr[1:0];
+
+  cv32e40s_align_check
+  #(
+    .IF_STAGE             ( 1                    ),
+    .CORE_RESP_TYPE       ( inst_resp_t          ),
+    .BUS_RESP_TYPE        ( obi_inst_resp_t      ),
+    .CORE_REQ_TYPE        ( obi_inst_req_t       )
+  )
+  align_check_i
+  (
     .clk                  ( clk                     ),
     .rst_n                ( rst_n                   ),
-    .misaligned_access_i  ( 1'b0                    ), // MPU on instruction side will not issue misaligned access fault
-                                                       // Misaligned access to main is allowed, and accesses outside main will
-                                                       // result in instruction access fault (which will have priority over
-                                                       //  misaligned from I/O fault)
-    .priv_lvl_i           ( prefetch_priv_lvl       ), // todo: this is already encoded in the prot[2:1] bits
-    .csr_pmp_i            ( csr_pmp_i               ),
+    .align_check_en_i     ( align_check_en          ),
+    .misaligned_access_i  ( address_misaligned      ),
 
     .core_one_txn_pend_n  ( prefetch_one_txn_pend_n ),
-    .core_mpu_err_wait_i  ( 1'b1                    ),
-    .core_mpu_err_o       (                         ), // Unconnected on purpose
-    .core_trans_valid_i   ( prefetch_trans_valid    ),
-    .core_trans_pushpop_i ( 1'b0                    ), // Prefetches are never part of a PUSH/POP sequence
-    .core_trans_ready_o   ( prefetch_trans_ready    ),
-    .core_trans_i         ( core_trans              ),
-    .core_resp_valid_o    ( prefetch_resp_valid     ),
-    .core_resp_o          ( prefetch_inst_resp      ),
+    .core_align_err_wait_i( 1'b1                    ),
+    .core_align_err_o     (                         ), // Unconnected on purpose
+
+    .core_trans_valid_i   ( alcheck_trans_valid     ),
+    .core_trans_ready_o   ( alcheck_trans_ready     ),
+    .core_trans_i         ( alcheck_trans           ),
+    .core_resp_valid_o    ( alcheck_resp_valid      ),
+    .core_resp_o          ( alcheck_resp            ),
 
     .bus_trans_valid_o    ( bus_trans_valid         ),
     .bus_trans_ready_i    ( bus_trans_ready         ),
@@ -450,7 +495,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Set flag to indicate that instruction/sequence will be aborted due to known exceptions or trigger match
   assign abort_op_o = dummy_insert ? 1'b0 :
                       (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK) ||
-                      (instr_decompressed.bus_resp.integrity_err) || trigger_match_i);
+                      (instr_decompressed.bus_resp.integrity_err) || (instr_decompressed.align_status != ALIGN_OK) || trigger_match_i);
 
   assign prefetch_valid_o = prefetch_valid;
 
@@ -520,7 +565,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
           // For mret pointers, the pointer address is only needed downstream if the pointer fetch fails.
           // If the pointer fetch is successful, the address of the mret (i.e. the previous PC) is needed.
           if(prefetch_is_mret_ptr ?
-             (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK)) :
+             (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK) || (instr_decompressed.align_status != ALIGN_OK)) :
              1'b1) begin
             if_id_pipe_o.pc                    <= pc_if_o;
           end
@@ -543,9 +588,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
           if_id_pipe_o.ptr                <= instr_decompressed.bus_resp.rdata;
 
           // Need to update bus error status and mpu status, but may omit the 32-bit instruction word
-          if_id_pipe_o.instr.bus_resp.err        <= instr_decompressed.bus_resp.err;
-          if_id_pipe_o.instr.mpu_status          <= instr_decompressed.mpu_status;
+          if_id_pipe_o.instr.bus_resp.err           <= instr_decompressed.bus_resp.err;
+          if_id_pipe_o.instr.mpu_status             <= instr_decompressed.mpu_status;
           if_id_pipe_o.instr.bus_resp.integrity_err <= instr_decompressed.bus_resp.integrity_err;
+          if_id_pipe_o.instr.align_status           <= instr_decompressed.align_status;
         end else begin
           // Regular instruction, update the whole instr field
           // Dummy instructions replace instruction word with a random instruction word

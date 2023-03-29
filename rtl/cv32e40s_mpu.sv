@@ -32,7 +32,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
       parameter int          PMP_NUM_REGIONS              = 0,
       parameter int          PMA_NUM_REGIONS              = 0,
       parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
-      parameter int          DEBUG                        = 1,
+      parameter bit          DEBUG                        = 1,
       parameter logic [31:0] DM_REGION_START              = 32'hF0000000,
       parameter logic [31:0] DM_REGION_END                = 32'hF0003FFF)
   (
@@ -190,10 +190,11 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
 
   // Forward transaction response towards core
   assign core_resp_valid_o      = bus_resp_valid_i || mpu_err_trans_valid;
-  assign core_resp_o.bus_resp   = bus_resp_i;
+  assign core_resp_o.bus_resp   = bus_resp_i.bus_resp;
   assign core_resp_o.mpu_status = mpu_status;
+  assign core_resp_o.align_status = bus_resp_i.align_status;
 
-  // Report MPU errors to the core immediatly
+  // Report MPU errors to the core immediately
   assign core_mpu_err_o = mpu_err;
 
   // Signal ready towards core

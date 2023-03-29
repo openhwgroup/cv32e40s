@@ -27,7 +27,7 @@ module cv32e40s_decoder_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
 #(
-  parameter int     CLIC      = 0
+  parameter bit     CLIC      = 0
 )
 (
   input logic           clk,

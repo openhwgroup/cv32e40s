@@ -701,6 +701,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
           id_ex_pipe_o.instr.bus_resp.err           <= if_id_pipe_i.instr.bus_resp.err;
           id_ex_pipe_o.instr.bus_resp.integrity_err <= if_id_pipe_i.instr.bus_resp.integrity_err;
           id_ex_pipe_o.instr.mpu_status             <= if_id_pipe_i.instr.mpu_status;
+          id_ex_pipe_o.instr.align_status           <= if_id_pipe_i.instr.align_status;
         end else begin
           id_ex_pipe_o.instr                <= if_id_pipe_i.instr;
         end

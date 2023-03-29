@@ -65,8 +65,8 @@ module cv32e40s_wrapper
   parameter [31:0]       PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
   parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
   parameter bit          CLIC                         = 0,
-  parameter int          CLIC_ID_WIDTH                = 5,
-  parameter int          CLIC_INTTHRESHBITS           = 8,
+  parameter int unsigned CLIC_ID_WIDTH                = 5,
+  parameter int unsigned CLIC_INTTHRESHBITS           = 8,
   parameter int          DBG_NUM_TRIGGERS             = 1,
   parameter int          PMA_NUM_REGIONS              = 0,
   parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
@@ -74,7 +74,7 @@ module cv32e40s_wrapper
   parameter lfsr_cfg_t   LFSR1_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
   parameter lfsr_cfg_t   LFSR2_CFG                    = LFSR_CFG_DEFAULT, // Do not use default value for LFSR configuration
   parameter bit          CORE_LOG_ENABLE              = 1,
-  parameter int          DEBUG                        = 1,
+  parameter bit          DEBUG                        = 1,
   parameter logic [31:0] DM_REGION_START              = 32'hF0000000,
   parameter logic [31:0] DM_REGION_END                = 32'hF0003FFF
 )
@@ -188,6 +188,7 @@ module cv32e40s_wrapper
     core_i.if_stage_i cv32e40s_if_stage_sva #(.CLIC(CLIC)) if_stage_sva
     (
       .m_c_obi_instr_if (core_i.m_c_obi_instr_if), // SVA monitor modport cannot connect to a master modport
+      .align_err_i      (core_i.if_stage_i.align_check_i.align_err),
       .*
     );
 
@@ -468,6 +469,7 @@ endgenerate
              .write_buffer_valid_o              ('0),
              .write_buffer_txn_bufferable       ('0),
              .write_buffer_txn_cacheable        ('0),
+             .obi_if_state                      (core_i.if_stage_i.instruction_obi_i.state_q),
              .*);
 
   bind cv32e40s_mpu:
@@ -495,6 +497,7 @@ endgenerate
              .write_buffer_valid_o              (core_i.load_store_unit_i.write_buffer_i.valid_o),
              .write_buffer_txn_bufferable       (core_i.load_store_unit_i.write_buffer_i.trans_o.memtype[0]),
              .write_buffer_txn_cacheable        (core_i.load_store_unit_i.write_buffer_i.trans_o.memtype[1]),
+             .obi_if_state                      (cv32e40s_pkg::TRANSPARENT),
              .*);
 
   bind cv32e40s_lsu_response_filter :
@@ -616,9 +619,13 @@ endgenerate
          .branch_decision_ex_i     ( core_i.ex_stage_i.branch_decision_o                                  ),
          .dret_in_ex_i             ( core_i.ex_stage_i.id_ex_pipe_i.sys_dret_insn                         ),
          .lsu_en_ex_i              ( core_i.ex_stage_i.id_ex_pipe_i.lsu_en                                ),
-         .lsu_pmp_err_ex_i         ( 1'b0                          /* TODO: connect */                    ),
+         .lsu_pmp_err_ex_i         ( 1'b0                           /* TODO: connect */                   ),
+         .lsu_pma_err_ex_i         ( core_i.load_store_unit_i.mpu_i.pma_i.pma_err_o                       ),
          .lsu_pma_err_atomic_ex_i  ( 1'b0                        /* Atomics not implemented in cv32e40s*/ ),
-         .buffer_trans             ( core_i.load_store_unit_i.buffer_trans                                ),
+         .lsu_pma_cfg_ex_i         ( core_i.load_store_unit_i.mpu_i.pma_i.pma_cfg                         ),
+         .lsu_misaligned_ex_i      ( core_i.load_store_unit_i.misaligned_access                           ),
+         .buffer_trans_ex_i        ( core_i.load_store_unit_i.buffer_trans                                ),
+         .buffer_trans_valid_ex_i  ( core_i.load_store_unit_i.buffer_trans_valid                          ),
          .lsu_split_q_ex_i         ( core_i.load_store_unit_i.split_q                                     ),
 
          // WB Probes

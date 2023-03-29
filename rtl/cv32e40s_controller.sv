@@ -34,8 +34,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   parameter bit          X_EXT                  = 0,
   parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
   parameter bit          CLIC                   = 0,
-  parameter int          CLIC_ID_WIDTH          = 5,
-  parameter int          DEBUG                  = 1
+  parameter int unsigned CLIC_ID_WIDTH          = 5,
+  parameter bit          DEBUG                  = 1
 )
 (
   input  logic        clk,                        // Gated clock
@@ -72,6 +72,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  ex_wb_pipe_t ex_wb_pipe_i,
   input  mpu_status_e mpu_status_wb_i,            // MPU status (WB stage)
   input  logic        wpt_match_wb_i,             // LSU watchpoint trigger in WB
+  input  align_status_e align_status_wb_i,        // Aligned status (atomics and mret pointers) in WB
 
   // Last operation bits
   input  logic        last_op_ex_i,               // EX contains the last operation of an instruction
@@ -195,6 +196,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .ex_wb_pipe_i                ( ex_wb_pipe_i             ),
     .lsu_err_wb_i                ( lsu_err_wb_i             ),
     .mpu_status_wb_i             ( mpu_status_wb_i          ),
+    .align_status_wb_i           ( align_status_wb_i        ),
     .data_stall_wb_i             ( data_stall_wb_i          ),
     .wb_ready_i                  ( wb_ready_i               ),
     .wb_valid_i                  ( wb_valid_i               ),
