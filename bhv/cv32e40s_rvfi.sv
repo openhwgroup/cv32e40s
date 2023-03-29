@@ -710,6 +710,12 @@ module cv32e40s_rvfi
   // Detect mret initiated CLIC pointer in WB
   logic         mret_ptr_wb;
 
+  // Detect a PMA error due to atomics accessing non-atomic regions
+  logic         lsu_pma_err_atomic_ex;
+
+  // Detect PMA errors due to misaligned accesses
+  logic         lsu_pma_err_misaligned_ex;
+
   assign        mret_ptr_wb = mret_ptr_wb_i;
 
   assign insn_opcode = rvfi_insn[6:0];
@@ -719,6 +725,11 @@ module cv32e40s_rvfi
   assign insn_rs2    = rvfi_insn[24:20];
   assign insn_funct7 = rvfi_insn[31:25];
   assign insn_csr    = rvfi_insn[31:20];
+
+  assign lsu_pma_err_atomic_ex = 1'b0; // No atomics on cv32e40s
+
+  // PMA error due to misaligned accesses to I/O memory
+  assign lsu_pma_err_misaligned_ex = lsu_pma_err_ex_i && lsu_misaligned_ex_i && !lsu_pma_cfg_ex_i.main;
 
   cv32e40s_rvfi_instr_obi
   rvfi_instr_obi_i
@@ -1115,9 +1126,9 @@ module cv32e40s_rvfi
           ex_mem_trans <= lsu_data_trans;
         end
 
-        mem_err   [STAGE_WB]  <= lsu_pmp_err_ex_i        ? MEM_ERR_PMP :
-                                 lsu_pma_err_atomic_ex_i ? MEM_ERR_ATOMIC :
-                                                           MEM_ERR_IO_ALIGN;
+        mem_err [STAGE_WB]  = lsu_pma_err_misaligned_ex    ? MEM_ERR_IO_ALIGN          : // Non-natrually aligned access to !main
+                              lsu_pma_err_atomic_ex        ? MEM_ERR_ATOMIC            : // Any atomic to non-atomic PMA region
+                                                             MEM_ERR_PMP;                // PMP error
 
         // Read autonomuos CSRs from EX perspective
         ex_csr_rdata        <= ex_csr_rdata_d;
