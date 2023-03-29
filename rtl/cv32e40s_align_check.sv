@@ -23,7 +23,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_align_check import cv32e40x_pkg::*;
+module cv32e40s_align_check import cv32e40s_pkg::*;
   #(  parameter bit          IF_STAGE          = 1,
       parameter type         CORE_REQ_TYPE     = obi_inst_req_t,
       parameter type         CORE_RESP_TYPE    = inst_resp_t,

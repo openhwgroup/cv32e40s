@@ -314,8 +314,6 @@ module cv32e40s_wrapper
       .lsu_en_id      (core_i.id_stage_i.lsu_en),
       .ctrl_fsm_cs    (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
       .ctrl_fsm_ns    (core_i.controller_i.controller_fsm_i.ctrl_fsm_ns),
-      .mpu_err_i      (core_i.load_store_unit_i.mpu_i.mpu_err),
-      .align_err_i    (core_i.load_store_unit_i.align_check_i.align_err),
       .*);
 
   generate
@@ -499,7 +497,7 @@ endgenerate
              .write_buffer_valid_o              (core_i.load_store_unit_i.write_buffer_i.valid_o),
              .write_buffer_txn_bufferable       (core_i.load_store_unit_i.write_buffer_i.trans_o.memtype[0]),
              .write_buffer_txn_cacheable        (core_i.load_store_unit_i.write_buffer_i.trans_o.memtype[1]),
-             .obi_if_state                      (cv32e40x_pkg::TRANSPARENT),
+             .obi_if_state                      (cv32e40s_pkg::TRANSPARENT),
              .*);
 
   bind cv32e40s_lsu_response_filter :
@@ -623,7 +621,7 @@ endgenerate
          .lsu_en_ex_i              ( core_i.ex_stage_i.id_ex_pipe_i.lsu_en                                ),
          .lsu_pmp_err_ex_i         ( 1'b0                           /* TODO: connect */                   ),
          .lsu_pma_err_ex_i         ( core_i.load_store_unit_i.mpu_i.pma_i.pma_err_o                       ),
-         .lsu_pma_atomic_ex_i      ( core_i.load_store_unit_i.mpu_i.pma_i.atomic_access_i                 ),
+         .lsu_pma_err_atomic_ex_i  ( 1'b0                        /* Atomics not implemented in cv32e40s*/ ),
          .lsu_pma_cfg_ex_i         ( core_i.load_store_unit_i.mpu_i.pma_i.pma_cfg                         ),
          .lsu_misaligned_ex_i      ( core_i.load_store_unit_i.misaligned_access                           ),
          .buffer_trans_ex_i        ( core_i.load_store_unit_i.buffer_trans                                ),

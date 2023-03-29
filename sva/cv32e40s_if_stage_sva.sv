@@ -55,7 +55,6 @@ module cv32e40s_if_stage_sva
   input  logic [31:0]   branch_addr_n,
   input  logic          align_err_i,
   input  logic          alcheck_trans_valid,
-  input  logic          id_ready_i,
   input  logic          ptr_in_if_o
 );
 

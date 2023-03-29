@@ -23,8 +23,7 @@ module cv32e40s_rvfi
   import cv32e40s_rvfi_pkg::*;
   #(
     parameter bit     CLIC  = 0,
-    parameter bit     DEBUG = 1,
-    parameter a_ext_e A_EXT = A_NONE
+    parameter bit     DEBUG = 1
   )
   (
    input logic                                clk_i,
@@ -81,7 +80,7 @@ module cv32e40s_rvfi
    input logic                                lsu_en_ex_i,
    input logic                                lsu_pmp_err_ex_i,
    input logic                                lsu_pma_err_ex_i,
-   input logic                                lsu_pma_atomic_ex_i,
+   input logic                                lsu_pma_err_atomic_ex_i,
    input pma_cfg_t                            lsu_pma_cfg_ex_i,
    input logic                                lsu_misaligned_ex_i,
    input obi_data_req_t                       buffer_trans_ex_i,

@@ -296,7 +296,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     .IF_STAGE             ( 1                       ),
     .CORE_REQ_TYPE        ( obi_inst_req_t          ),
     .CORE_RESP_TYPE       ( inst_resp_t             ),
-    .BUS_RESP_TYPE        ( obi_inst_resp_t         ),
+    .BUS_RESP_TYPE        ( inst_resp_t             ),
     .PMA_NUM_REGIONS      ( PMA_NUM_REGIONS         ),
     .PMA_CFG              ( PMA_CFG                 ),
     .PMP_GRANULARITY      ( PMP_GRANULARITY         ),
@@ -309,7 +309,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   (
     .clk                  ( clk                         ),
     .rst_n                ( rst_n                       ),
-    .atomic_access_i      ( 1'b0                        ), // No atomic transfers on instruction side
     .misaligned_access_i  ( 1'b0                        ), // MPU on instruction side will not issue misaligned access fault
                                                            // Misaligned access to main is allowed, and accesses outside main will
                                                            // result in instruction access fault (which will have priority over
@@ -338,7 +337,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   assign align_check_en = prefetch_trans_ptr;
   assign address_misaligned = |prefetch_trans_addr[1:0];
 
-  cv32e40x_align_check
+  cv32e40s_align_check
   #(
     .IF_STAGE             ( 1                    ),
     .CORE_RESP_TYPE       ( inst_resp_t          ),

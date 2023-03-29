@@ -984,7 +984,9 @@ parameter EXC_CAUSE_INSTR_MISALIGNED      = 11'h00;
 parameter EXC_CAUSE_INSTR_FAULT           = 11'h01;
 parameter EXC_CAUSE_ILLEGAL_INSN          = 11'h02;
 parameter EXC_CAUSE_BREAKPOINT            = 11'h03;
+parameter EXC_CAUSE_LOAD_MISALIGNED       = 11'h04;
 parameter EXC_CAUSE_LOAD_FAULT            = 11'h05;
+parameter EXC_CAUSE_STORE_MISALIGNED      = 11'h06;
 parameter EXC_CAUSE_STORE_FAULT           = 11'h07;
 parameter EXC_CAUSE_ECALL_UMODE           = 11'h08;
 parameter EXC_CAUSE_ECALL_MMODE           = 11'h0B;
@@ -993,7 +995,8 @@ parameter EXC_CAUSE_INSTR_BUS_FAULT       = 11'h18;
 
 // todo: add EXC_CAUSE_INSTR_MISALIGNED (merge from E once implemented there)
 parameter logic [31:0] ETRIGGER_TDATA2_MASK = (1 << EXC_CAUSE_INSTR_BUS_FAULT) | (1 << EXC_CAUSE_INSTR_INTEGRITY_FAULT) | (1 << EXC_CAUSE_ECALL_MMODE) | (1 << EXC_CAUSE_ECALL_UMODE) | (1 << EXC_CAUSE_STORE_FAULT) |
-                                              (1 << EXC_CAUSE_LOAD_FAULT) | (1 << EXC_CAUSE_BREAKPOINT) | (1 << EXC_CAUSE_ILLEGAL_INSN) | (1 << EXC_CAUSE_INSTR_FAULT);
+                                              (1 << EXC_CAUSE_LOAD_FAULT) | (1 << EXC_CAUSE_BREAKPOINT) | (1 << EXC_CAUSE_ILLEGAL_INSN) | (1 << EXC_CAUSE_INSTR_FAULT) |
+                                              (1 << EXC_CAUSE_LOAD_MISALIGNED) | (1 << EXC_CAUSE_STORE_MISALIGNED);
 
 parameter INT_CAUSE_LSU_LOAD_FAULT            = 11'h400;
 parameter INT_CAUSE_LSU_STORE_FAULT           = 11'h401;
@@ -1116,7 +1119,7 @@ typedef struct packed {
   logic [PMP_MAX_REGIONS-1:0][33:0] addr;
   mseccfg_t                         mseccfg;
 } pmp_csr_t;
-                                      atomic          : 1'b0};
+
 
 // ALIGN status. Used when checking alignment for atomics and mret pointers
 typedef enum logic [1:0] {

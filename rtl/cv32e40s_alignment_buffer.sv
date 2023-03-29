@@ -187,6 +187,8 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   assign mpu_status   = (valid_q[rptr]) ? resp_q[rptr].mpu_status     : resp_i.mpu_status;
   assign align_status = (valid_q[rptr]) ? resp_q[rptr].align_status   : resp_i.align_status;
 
+  // Integrity error for aligned instructions. Factors inn both parity and rchk errors from either response or buffer entry
+  assign integrity_err = (valid_q[rptr]) ? (rchk_err_q0 || resp_q[rptr].bus_resp.integrity_err) : (resp_i.bus_resp.integrity_err);
 
   // Unaligned instructions will either be split across index 0 and 1, or index 0 and incoming data
   assign instr_unaligned = (valid_q[rptr2]) ? {resp_q[rptr2].bus_resp.rdata[15:0], instr[31:16]} : {resp_i.bus_resp.rdata[15:0], instr[31:16]};

@@ -803,9 +803,9 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   //////////////////////////////////////////////////////////////////////////////
   // Alignment checker for atomics
   //////////////////////////////////////////////////////////////////////////////
-  assign align_check_en = alcheck_trans.atop[5];
+  assign align_check_en = 1'b0; // No atomics on cv32e40s. todo: Could remove the align_check module
 
-  cv32e40x_align_check
+  cv32e40s_align_check
   #(
     .IF_STAGE             ( 0                    ),
     .CORE_RESP_TYPE       ( data_resp_t          ),

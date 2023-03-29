@@ -148,6 +148,7 @@ module cv32e40s_dummy_instr
   assign dummy_instr_o.bus_resp.rdata         = instr;
   assign dummy_instr_o.bus_resp.err           = 1'b0;
   assign dummy_instr_o.mpu_status             = MPU_OK;
+  assign dummy_instr_o.align_status           = ALIGN_OK;
   assign dummy_instr_o.bus_resp.integrity_err = 1'b0;
 
 endmodule : cv32e40s_dummy_instr
