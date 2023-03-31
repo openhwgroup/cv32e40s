@@ -1171,6 +1171,13 @@ end
   end // DEBUG
 endgenerate
 
+  // Ensure that exception codes 4 and 6 never occur (only supported on CV32E40X)
+  a_never_exc_4_6:
+  assert property (@(posedge clk) disable iff (!rst_n)
+                  exception_in_wb
+                  |->
+                  (exception_cause_wb != 11'd4) && (exception_cause_wb != 11'd6))
+    else `uvm_error("controller", "Unsupported exception code 4 or 6.")
 
 
 endmodule
