@@ -27,7 +27,7 @@ module cv32e40s_cs_registers_sva
   import cv32e40s_pkg::*;
 #(
     parameter bit CLIC = 0,
-    parameter int PMP_ADDR_WIDTH = 32,
+    parameter int unsigned PMP_ADDR_WIDTH = 32,
     parameter bit DEBUG  = 1
   )
 

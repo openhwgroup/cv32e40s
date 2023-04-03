@@ -28,7 +28,7 @@ module cv32e40s_core_sva
   #(
     parameter int PMA_NUM_REGIONS = 0,
     parameter bit CLIC = 0,
-    parameter int REGFILE_NUM_READ_PORTS = 2,
+    parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
     parameter bit DEBUG = 1
   )
   (

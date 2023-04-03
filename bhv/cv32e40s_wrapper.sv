@@ -59,7 +59,7 @@ module cv32e40s_wrapper
   parameter rv32_e       RV32                         = RV32I,
   parameter b_ext_e      B_EXT                        = B_NONE,
   parameter m_ext_e      M_EXT                        = M,
-  parameter int          PMP_GRANULARITY              = 0,
+  parameter int unsigned PMP_GRANULARITY              = 0,
   parameter int          PMP_NUM_REGIONS              = 0,
   parameter pmpncfg_t    PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0] = '{default:PMPNCFG_DEFAULT},
   parameter [31:0]       PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0] = '{default:32'h0},
