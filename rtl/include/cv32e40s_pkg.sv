@@ -995,8 +995,7 @@ parameter EXC_CAUSE_INSTR_BUS_FAULT       = 11'h18;
 
 // todo: add EXC_CAUSE_INSTR_MISALIGNED (merge from E once implemented there)
 parameter logic [31:0] ETRIGGER_TDATA2_MASK = (1 << EXC_CAUSE_INSTR_BUS_FAULT) | (1 << EXC_CAUSE_INSTR_INTEGRITY_FAULT) | (1 << EXC_CAUSE_ECALL_MMODE) | (1 << EXC_CAUSE_ECALL_UMODE) | (1 << EXC_CAUSE_STORE_FAULT) |
-                                              (1 << EXC_CAUSE_LOAD_FAULT) | (1 << EXC_CAUSE_BREAKPOINT) | (1 << EXC_CAUSE_ILLEGAL_INSN) | (1 << EXC_CAUSE_INSTR_FAULT) |
-                                              (1 << EXC_CAUSE_LOAD_MISALIGNED) | (1 << EXC_CAUSE_STORE_MISALIGNED);
+                                              (1 << EXC_CAUSE_LOAD_FAULT) | (1 << EXC_CAUSE_BREAKPOINT) | (1 << EXC_CAUSE_ILLEGAL_INSN) | (1 << EXC_CAUSE_INSTR_FAULT);
 
 parameter INT_CAUSE_LSU_LOAD_FAULT            = 11'h400;
 parameter INT_CAUSE_LSU_STORE_FAULT           = 11'h401;
