@@ -44,7 +44,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter bit                         CLIC                                    = 0,
   parameter int unsigned                CLIC_ID_WIDTH                           = 5,
   parameter int unsigned                CLIC_INTTHRESHBITS                      = 8,
-  parameter int                         PMP_GRANULARITY                         = 0,
+  parameter int unsigned                PMP_GRANULARITY                         = 0,
   parameter int                         PMP_NUM_REGIONS                         = 0,
   parameter pmpncfg_t                   PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0]     = '{default:PMPNCFG_DEFAULT},
   parameter logic [31:0]                PMP_PMPADDR_RV[PMP_NUM_REGIONS-1:0]     = '{default:32'h0},

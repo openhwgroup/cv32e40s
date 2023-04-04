@@ -36,7 +36,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
-#(  parameter int          MAX_OUTSTANDING = 2
+#(  parameter int unsigned MAX_OUTSTANDING = 2
  )
 (
   input  logic           clk,
