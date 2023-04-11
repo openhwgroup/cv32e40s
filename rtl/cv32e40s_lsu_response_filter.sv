@@ -33,7 +33,7 @@
 module cv32e40s_lsu_response_filter
   import cv32e40s_pkg::*;
   #(
-      parameter               DEPTH             = 2,
+      parameter int unsigned  DEPTH             = 2,
       parameter int unsigned  OUTSTND_CNT_WIDTH = $clog2(DEPTH+1)
   )
   (
