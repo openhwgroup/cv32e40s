@@ -21,7 +21,7 @@
 module cv32e40s_prefetch_unit_sva import cv32e40s_pkg::*;
   import uvm_pkg::*;
   #(
-        parameter CLIC = 1'b0
+        parameter bit CLIC = 1'b0
   )
   (
    input logic        clk,

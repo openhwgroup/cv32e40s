@@ -22,9 +22,9 @@ module cv32e40s_load_store_unit_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
   #(
-    parameter bit    X_EXT = 0,
-    parameter        DEPTH = 0,
-    parameter bit    DEBUG = 1
+    parameter bit          X_EXT = 0,
+    parameter int unsigned DEPTH = 0,
+    parameter bit          DEBUG = 1
   )
   (input logic       clk,
    input logic       rst_n,

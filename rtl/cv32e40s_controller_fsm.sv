@@ -340,8 +340,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // Detect mret pointers in ID
   assign mret_ptr_in_id = if_id_pipe_i.instr_valid && if_id_pipe_i.instr_meta.mret_ptr;
 
-  // Note: RVFI does not use jump_taken_id (which is not in itself an issue); An assertion in id_stage_sva checks that the jump target remains stable;
-  // todo: Do we need a similar stability check for branches?
+  // Note: RVFI does not use jump_taken_id (which is not in itself an issue). An assertion in id_stage_sva checks that the jump target remains stable.
 
   // EX stage
   // Branch taken for valid branch instructions in EX with valid decision
@@ -480,8 +479,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // high, ID stage will be halted due to pending_nmi and !nmi_allowed.
   assign pending_nmi_early =  lsu_err_wb_i.bus_err || lsu_err_wb_i.integrity_err;
 
-  // todo: Halting ID and killing it later will not work for Zce (push/pop)
-
   // dcsr.nmip will always see a pending nmi if nmi_pending_q is set.
   // This CSR bit shall not be gated by debug mode or step without stepie
   assign ctrl_fsm_o.pending_nmi = nmi_pending_q;
@@ -611,7 +608,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // LSU instructions which were suppressed due to previous exceptions or trigger match
   // will be interruptable as they were converted to NOP in ID stage.
   // When a fencei is present in WB and the LSU has completed all tranfers, the fencei handshake will be initiated. This must complete and the fencei instruction must retire before allowing interrupts.
-  // TODO:OK:low May allow interuption of Zce to idempotent memories
   // Any multi operation instruction (table jumps, push/pop and double moves) may not be interrupted once the first operation has completed its operation in WB.
   //   - This is guarded with using the sequence_interruptible, which tracks sequence progress through the WB stage.
   // When a CLIC pointer is in the pipeline stages EX or WB, we must block interrupts.
@@ -1090,7 +1086,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
               jump_taken_n = 1'b1;
             end
           end else if (clic_ptr_in_id || mret_ptr_in_id) begin
-            // todo e40s: Factor in integrity related errors
             if (!(if_id_pipe_i.instr.bus_resp.err || (if_id_pipe_i.instr.mpu_status != MPU_OK) || (if_id_pipe_i.instr.align_status != ALIGN_OK))) begin
               if (!branch_taken_q) begin
                 ctrl_fsm_o.pc_set = 1'b1;
@@ -1110,28 +1105,27 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
           end
 
           // Regular mret in WB restores CSR regs
-          // todo: add !ctrl_fsm_o.halt_wb below (should be SEC clean)
-          if (mret_in_wb && !ctrl_fsm_o.kill_wb) begin
+          if (mret_in_wb && !ctrl_fsm_o.kill_wb && !ctrl_fsm_o.halt_wb) begin
             ctrl_fsm_o.csr_restore_mret  = !debug_mode_q;
           end
 
           // For mret that caused a CLIC pointer fetch, CSR updates will happen once the pointer reaches WB.
           // If the pointer has associated exceptions, the csr_restore_mret_ptr will not happen
-          if (mret_ptr_in_wb && !ctrl_fsm_o.kill_wb && !exception_in_wb) begin
+          if (mret_ptr_in_wb && !ctrl_fsm_o.kill_wb && !ctrl_fsm_o.halt_wb && !exception_in_wb) begin
             ctrl_fsm_o.csr_restore_mret_ptr  = !debug_mode_q;
           end
 
           // CLIC pointer in WB
-          if(clic_ptr_in_wb && !ctrl_fsm_o.kill_wb && !exception_in_wb) begin
+          if (clic_ptr_in_wb && !ctrl_fsm_o.kill_wb && !ctrl_fsm_o.halt_wb && !exception_in_wb) begin
             // Clear minhv if no exceptions are associated with the pointer
             ctrl_fsm_o.csr_clear_minhv = 1'b1;
           end
         end // !debug or interrupts
 
         // Single step debug entry or etrigger debug entry
-          // Need to be after (in parallell with) exception/interrupt handling
-          // to ensure mepc and if_pc are set correctly for use in dpc,
-          // and to ensure only one instruction can retire during single step
+        // Need to be after (in parallell with) exception/interrupt handling
+        // to ensure mepc and if_pc are set correctly for use in dpc,
+        // and to ensure only one instruction can retire during single step
         // Triggers other than exception trigger do not cause any state change before debug entry.
         // Exception triggers do all the side effects off taking an exception (mcause, mepc etc) but without
         // executing the first handler instruction before debug entry. If an exception trigger factored into
