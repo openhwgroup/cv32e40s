@@ -304,6 +304,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [PMP_MAX_REGIONS-1:0]   pmpaddr_wr_addr_match;
 
   logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_n[PMP_MAX_REGIONS];                    // Value written is not necessarily the value read
+  logic                         pmp_addr_bit_0_n[PMP_MAX_REGIONS];
   logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_q[PMP_MAX_REGIONS];
   logic [31:0]                  pmp_addr_n_r[PMP_MAX_REGIONS];                  // Not used in RTL (used by RVFI) (next read value)
   logic [PMP_MAX_REGIONS-1:0]   pmp_addr_n_r_unused;
@@ -2390,7 +2391,12 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign pmpaddr_wr_addr_match[i] = (csr_waddr == csr_num_e'(CSR_PMPADDR0 + i));
 
           // Keep old data if PMPADDR is locked
-          assign pmp_addr_n[i] = pmpaddr_locked[i] ? pmp_addr_q[i] : csr_wdata_int[31-:PMP_ADDR_WIDTH];
+          // Bit 0 needs special handling because modification of the read data in TOR and OFF mode could lead to
+          // wrong data being used as basis for set/clear operations.
+          // For example, if PMP_GRANULARITY=1, pmpcfg.mode=OFF, and PMPADDRn=32'hFFFFFFFF, then PMPADDRn would be read as 32'hFFFFFFFE.
+          // A set operation with mask 0 would then result in PMPADDRn = 0 | 32'hFFFFFFFE, which would clear the LSB of PMPADDRn.
+          // Using the value from pmp_addr_q directly avoids this issue.
+          assign pmp_addr_n[i] = pmpaddr_locked[i] ? pmp_addr_q[i] : {csr_wdata_int[31-:(PMP_ADDR_WIDTH-1)], pmp_addr_bit_0_n[i]};
 
           cv32e40s_csr
           #(
@@ -2415,6 +2421,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             // If G == 0, read data is unmodified
             assign pmp_addr_rdata[i]     = pmp_addr_q[i];
             assign pmp_addr_n_r[i]       = pmp_addr_n[i];
+            assign pmp_addr_bit_0_n[i]   = csr_wdata_int[0];
           end else if (PMP_GRANULARITY == 1) begin: pmp_addr_rdata_g1
             // If G == 1, bit [G-1] reads as zero in TOR or OFF mode
             always_comb begin
@@ -2425,6 +2432,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                 pmp_addr_n_r[i][PMP_GRANULARITY-1:0]   = '0;
               end
             end
+
+            assign pmp_addr_bit_0_n[i] = (csr_op == CSR_OP_SET)   ? (pmp_addr_q[i][0] ||  csr_wdata[PMP_GRANULARITY-1]) :
+                                         (csr_op == CSR_OP_CLEAR) ? (pmp_addr_q[i][0] && !csr_wdata[PMP_GRANULARITY-1]) :
+                                         csr_wdata[PMP_GRANULARITY-1];
+
           end else begin: pmp_addr_rdata_g2
             // For G >= 2, bits are masked to one or zero depending on the mode
             always_comb begin
@@ -2433,11 +2445,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
               pmp_addr_n_r[i]   = {pmp_addr_n[i], {PMP_GRANULARITY-1{1'b1}}};
 
               if ((pmpncfg_rdata[i].mode == PMP_MODE_OFF) || (pmpncfg_rdata[i].mode == PMP_MODE_TOR)) begin
-              // In TOR or OFF mode, bits [G-1:0] must read as zero
+                // In TOR or OFF mode, bits [G-1:0] must read as zero
                 pmp_addr_rdata[i][PMP_GRANULARITY-1:0] = '0;
                 pmp_addr_n_r[i][PMP_GRANULARITY-1:0]   = '0;
               end
             end
+
+            assign pmp_addr_bit_0_n[i] = (csr_op == CSR_OP_SET)   ? (pmp_addr_q[i][0] ||  csr_wdata[PMP_GRANULARITY-1]) :
+                                         (csr_op == CSR_OP_CLEAR) ? (pmp_addr_q[i][0] && !csr_wdata[PMP_GRANULARITY-1]) :
+                                         csr_wdata[PMP_GRANULARITY-1];
           end
 
           assign csr_pmp_o.addr[i] = {pmp_addr_rdata[i], 2'b00};
@@ -2459,6 +2475,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           assign pmp_addr_rdata[i]         = '0;
           assign pmp_addr_n_r[i]           = '0;
           assign pmp_addr_n_r_unused[i]    = '0;
+          assign pmp_addr_n[i]             = '0;
+          assign pmp_addr_bit_0_n[i]       = 1'b0;
+          assign pmpaddr_locked[i]         = 1'b0;
           assign pmp_addr_rd_error[i]      = 1'b0;
 
           assign pmpaddr_wr_addr_match[i]  = 1'b0;
