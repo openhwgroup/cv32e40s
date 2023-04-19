@@ -551,6 +551,7 @@ endgenerate
                .obi_instr_fifo_q(rvfi_i.rvfi_instr_obi_i.fifo_q),
                .obi_instr_rptr_q_inc(rvfi_i.rvfi_instr_obi_i.rptr_q_inc),
                .obi_instr_rptr_q(rvfi_i.rvfi_instr_obi_i.rptr_q),
+               .pc_ex_i          (core_i.id_ex_pipe.pc),
                .*);
 
 `endif //  `ifndef COREV_ASSERT_OFF
