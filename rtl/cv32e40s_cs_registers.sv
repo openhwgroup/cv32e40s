@@ -404,11 +404,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         jvt_rd_error;
   logic                         priv_lvl_rd_error;
   logic                         mstateen0_rd_error;
+  logic                         mcause_rd_error;
 
   logic                         dpc_rd_error;                                   // Not used
   logic                         dscratch0_rd_error;                             // Not used
   logic                         dscratch1_rd_error;                             // Not used
-  logic                         mcause_rd_error;                                // Not used
 
   // Signal used for RVFI to set rmask, not used internally
   logic                         mscratchcsw_in_wb;
@@ -447,7 +447,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mintthresh_rd_error ||
     jvt_rd_error ||
     priv_lvl_rd_error ||
-    mstateen0_rd_error;
+    mstateen0_rd_error ||
+    mcause_rd_error;
 
   ////////////////////////////////////////
   // Determine if CSR access is illegal //
@@ -1945,7 +1946,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       #(
         .LIB        (LIB),
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .SHADOWCOPY (1'b1),
         .RESETVALUE (MCAUSE_CLIC_RESET_VAL)
       )
       mcause_csr_i (
@@ -2041,7 +2042,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       #(
         .LIB        (LIB),
         .WIDTH      (32),
-        .SHADOWCOPY (1'b0),
+        .SHADOWCOPY (1'b1),
         .RESETVALUE (MCAUSE_BASIC_RESET_VAL)
       )
       mcause_csr_i (
@@ -2976,7 +2977,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign unused_signals = mstatush_we | misa_we | mip_we | mvendorid_we | marchid_we |
     mimpid_we | mhartid_we | mconfigptr_we | mtval_we | pmp_mseccfgh_we | mcounteren_we | menvcfg_we | menvcfgh_we |
-    dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error | mcause_rd_error |
+    dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error |
     mstateen1_we | mstateen2_we | mstateen3_we | mstateen0h_we | mstateen1h_we | mstateen2h_we |
     mstateen3h_we | (|pmp_addr_n_r_unused) | (|mnxti_n) | mscratchcsw_we | mscratchcswl_we |
     (|mscratchcsw_rdata) | (|mscratchcswl_rdata) | (|mscratchcsw_n) | (|mscratchcswl_n) |
