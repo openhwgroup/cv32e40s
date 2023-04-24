@@ -404,11 +404,11 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         jvt_rd_error;
   logic                         priv_lvl_rd_error;
   logic                         mstateen0_rd_error;
+  logic                         mcause_rd_error;
 
   logic                         dpc_rd_error;                                   // Not used
   logic                         dscratch0_rd_error;                             // Not used
   logic                         dscratch1_rd_error;                             // Not used
-  logic                         mcause_rd_error;                                // Not used
 
   // Signal used for RVFI to set rmask, not used internally
   logic                         mscratchcsw_in_wb;
