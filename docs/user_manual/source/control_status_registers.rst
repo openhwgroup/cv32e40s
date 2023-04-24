@@ -2586,6 +2586,7 @@ This applies to the following registers:
  - ``dcsr``
  - ``jvt``
  - ``mepc``
+ - ``mcause``
  - ``mie``
  - ``mintstatus``
  - ``mintthresh``
