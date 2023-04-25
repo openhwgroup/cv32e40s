@@ -178,7 +178,7 @@ Any error in the check for correct PC or branch/jump decision will result in a p
 
 Hardened CSRs
 -------------
-Critical CSRs (``jvt``, ``mstatus``, ``mtvec``, ``pmpcfg*``, ``pmpaddr*``, ``mseccfg*``, ``cpuctrl``, ``dcsr``, ``mie``, ``mepc``,
+Critical CSRs (``jvt``, ``mstatus``, ``mtvec``, ``pmpcfg*``, ``pmpaddr*``, ``mseccfg*``, ``cpuctrl``, ``dcsr``, ``mcause``, ``mie``, ``mepc``,
 ``mtvt``, ``mscratch``, ``mintstatus``, ``mintthresh``, ``mscratchcsw`` and ``mscratchcswl``)
 have extra glitch detection enabled.
 For these registers a second copy of the register is added which stores a complemented version of the main CSR data. A constant check is made that the two copies are consistent, and a major alert is signaled if not (see :ref:`security-alerts`).
