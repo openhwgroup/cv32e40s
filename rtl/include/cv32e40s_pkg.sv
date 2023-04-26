@@ -483,7 +483,7 @@ parameter CSR_CPUCTRL_MASK      = 32'h000F001F;
 parameter CSR_PMPNCFG_MASK      = 8'hFF;
 parameter CSR_PMPADDR_MASK      = 32'hFFFFFFFF;
 parameter CSR_MSECCFG_MASK      = 32'h00000007;
-parameter CSR_PRV_LVL_MASK      = 32'hFFFFFFFF; // todo: should only be two bits
+parameter CSR_PRV_LVL_MASK      = 32'h00000003;
 parameter CSR_MSTATEEN0_MASK    = 32'h00000004;
 parameter CSR_DSCRATCH0_MASK    = 32'hFFFFFFFF;
 parameter CSR_DSCRATCH1_MASK    = 32'hFFFFFFFF;
@@ -764,6 +764,7 @@ parameter DSCRATCH0_RESET_VAL          = 32'd0;
 parameter DSCRATCH1_RESET_VAL          = 32'd0;
 parameter MINTTHRESH_RESET_VAL         = 8'h00;
 parameter MIE_BASIC_RESET_VAL          = 32'd0;
+parameter MSTATEEN0_RESET_VAL          = 32'd0;
 
 parameter logic [31:0] TDATA1_RST_VAL = {
   TTYPE_MCONTROL,        // type    : address/data match
