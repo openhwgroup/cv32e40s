@@ -709,7 +709,16 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // Set privilege level to prefetcher
   // Privilege level must be updated immediatly to allow the
   // IF stage to do PMP checks with the correct privilege level
-  // todo: remove code below and use priv_lvl_ctrl_i.priv_lvl (should be SEC clean)
+  //
+  // When an mret is in the ID stage, a jump is performed and the privilege level may be changed.
+  // When the privilege level changes, priv_lvl_ctrl_i.priv_lvl_set is 1, and the new privilege level
+  // is visible on priv_lvl_ctrl_i.priv_lvl. When priv_lvl_set is 0, the privilege level
+  // as seen from the WB stage (flop output) is visible on priv_lvl_ctrl_i.priv_lvl.
+  //
+  // This means that in the time between the mret jump and privilege level change in ID and the time when
+  // the mret retires in WB, the old privilege level is visible on pvi_lvl_ctrl_i.priv_lvl.
+  // To ensure the correct privilege level for prefetches, the alignment_buffer remembers the last commanded
+  // privilege level in the instr_priv_lvl_q flops.
   assign fetch_priv_lvl_o = priv_lvl_ctrl_i.priv_lvl_set ? priv_lvl_ctrl_i.priv_lvl:
                             instr_priv_lvl_q;
 
