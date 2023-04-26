@@ -21,7 +21,7 @@
 //                                                                            //
 // Additional contributions by:                                               //
 //                                                                            //
-// Design Name:    cv32e40s_controller_fsm                                 //
+// Design Name:    cv32e40s_controller_fsm                                    //
 // Project Name:   CV32E40S                                                   //
 // Language:       SystemVerilog                                              //
 //                                                                            //
@@ -329,10 +329,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign jump_taken_id = jump_in_id && !jump_taken_q;
 
   // Signalling jump or mret in ID stage to the pc_check module.
-  // Excluding debug mode for mret as an mret in debug mode will take an exception
-  // using a different pc_mux (PC_TRAP_DBE) than mrets in machine mode (PC_JUMP)
-  // Mrets in debug will be checked by the pc_check module comparing IF PC with dm_excption_addr_i.
-  assign ctrl_fsm_o.jump_in_id_raw = jmp_id || (sys_mret_id && !debug_mode_q);
+  // Mret during debug mode will be flagged as illegal and sys_mret_id will be 0.
+  assign ctrl_fsm_o.jump_in_id_raw = jmp_id || sys_mret_id;
 
   // Detect clic pointers in ID
   assign clic_ptr_in_id = if_id_pipe_i.instr_valid && if_id_pipe_i.instr_meta.clic_ptr;
