@@ -1978,7 +1978,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       #(
         .LIB        (LIB),
         .WIDTH      (32),
-        .MASK       (CSR_MTVEC_CLIC_MASK),
+        .MASK       (CSR_CLIC_MTVEC_MASK),
         .RESETVALUE (MTVEC_CLIC_RESET_VAL),
         .SHADOWCOPY (SECURE)
       )
@@ -2075,7 +2075,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       #(
         .LIB        (LIB),
         .WIDTH      (32),
-        .MASK       (CSR_MTVEC_BASIC_MASK),
+        .MASK       (CSR_BASIC_MTVEC_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (MTVEC_BASIC_RESET_VAL)
       )
