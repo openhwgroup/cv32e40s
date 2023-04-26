@@ -61,9 +61,6 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    // PMP CSR's
    input        pmp_csr_t csr_pmp_i,
 
-   // Privilege mode
-   input              privlvl_t priv_lvl_i,
-
    // Indication from the core that there will be one pending transaction in the next cycle
    input logic  core_one_txn_pend_n,
 
@@ -92,6 +89,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   logic        core_trans_we;
   pmp_req_e    pmp_req_type;
   logic [33:0] pmp_req_addr;
+  privlvl_t    pmp_priv_lvl;
   logic        instr_fetch_access;
   logic        load_access;
   logic        wpt_match;
@@ -220,6 +218,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   );
 
   assign pmp_req_addr = {2'b00, core_trans_i.addr};
+  assign pmp_priv_lvl = privlvl_t'(core_trans_i.prot[2:1]);
 
   generate
     if (PMP) begin: pmp
@@ -235,7 +234,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
          .rst_n                             (rst_n                  ),
          .pmp_req_type_i                    (pmp_req_type           ),
          .csr_pmp_i                         (csr_pmp_i              ),
-         .priv_lvl_i                        (priv_lvl_i             ),
+         .priv_lvl_i                        (pmp_priv_lvl           ),
          .pmp_req_addr_i                    (pmp_req_addr           ),
          .pmp_req_debug_region_i            (core_trans_debug_region));
     end

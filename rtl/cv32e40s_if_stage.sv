@@ -313,7 +313,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
                                                            // Misaligned access to main is allowed, and accesses outside main will
                                                            // result in instruction access fault (which will have priority over
                                                            //  misaligned from I/O fault)
-    .priv_lvl_i           ( prefetch_priv_lvl           ), // todo: this is already encoded in the prot[2:1] bits
     .csr_pmp_i            ( csr_pmp_i                   ),
 
     .core_one_txn_pend_n  ( prefetch_one_txn_pend_n     ),

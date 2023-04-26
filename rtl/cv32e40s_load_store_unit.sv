@@ -779,7 +779,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .clk                  ( clk                ),
     .rst_n                ( rst_n              ),
     .misaligned_access_i  ( misaligned_access  ),
-    .priv_lvl_i           ( priv_lvl_lsu_i     ),
     .csr_pmp_i            ( csr_pmp_i          ),
 
     .core_one_txn_pend_n  ( cnt_is_one_next    ),
