@@ -107,7 +107,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   // Privilege mode
   input privlvlctrl_t   priv_lvl_ctrl_i,
-  input privlvl_t       priv_lvl_clic_ptr_i,    // Priv level for CLIC pointers. Must respect mstatus.mprv (done in cs_registers)
 
   // Dummy Instruction Control
   input xsecure_ctrl_t  xsecure_ctrl_i,
