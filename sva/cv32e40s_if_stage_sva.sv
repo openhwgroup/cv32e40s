@@ -114,13 +114,15 @@ module cv32e40s_if_stage_sva
                      dummy_insert && prefetch_resp_valid && !ctrl_fsm_i.kill_if |=> (ctrl_fsm_i.kill_if || (pc_if_o === $past(pc_if_o))))
       else `uvm_error("if_stage", "Prefetcher popped during dummy instruction")
 
-  // Assert that we do not trigger dummy instructions multiple cycles in a row
+  // Assert that we do not trigger dummy instructions multiple instructions in a row (guarantees forward progress)
   // Dummies may have to wait for id_ready, or even if_valid in case of halting IF.
-  // Todo: When/if we use allow_dummy_instr from controller_fsm to guarantee progress,
-  //       this assertion should be updated to check for guaranteed progress
   a_no_back_to_back_dummy_instructions :
     assert property (@(posedge clk) disable iff (!rst_n)
-                     dummy_insert && (if_valid_o && id_ready_i) |=> !dummy_insert)
+                     dummy_insert && (if_valid_o && id_ready_i)  // Dummy inserted and propagated to ID
+                     ##1                                         // One cycle later
+                     (if_valid_o && id_ready_i)[->1]             // Find next IF->ID transition
+                     |->
+                     !dummy_insert)                              // Must NOT be a dummy
       else `uvm_error("if_stage", "Two dummy instructions in a row")
 
   // Assert that we do not trigger dummy instructions when the sequencer is in the middle of a sequence
