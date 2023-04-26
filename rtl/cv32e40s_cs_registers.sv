@@ -1160,7 +1160,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     menvcfgh_n      = menvcfgh_rdata;             // Read-only
     menvcfgh_we     = 1'b0;
 
-    cpuctrl_n       = csr_wdata_int & CSR_CPUCTRL_MASK;
+    cpuctrl_n       = csr_next_value(csr_wdata_int, CSR_CPUCTRL_MASK, CPUCTRL_RESET_VAL);
     cpuctrl_we      = 1'b0;
 
     secureseed0_n   = secureseed0_rdata;          // Read-only (LFSR write uses csr_wdata_int directly)
@@ -1191,7 +1191,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     marchid_n       = marchid_rdata;              // Read-only
     marchid_we      = 1'b0;                       // Always 0
 
-    mstateen0_n     = csr_wdata_int & CSR_MSTATEEN0_MASK;
+    mstateen0_n     = csr_next_value(csr_wdata_int, CSR_MSTATEEN0_MASK, MSTATEEN0_RESET_VAL);
     mstateen0_we    = 1'b0;
 
     mstateen1_n     = mstateen1_rdata;            // Read-only
@@ -1610,7 +1610,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                                     cause     : ctrl_fsm_i.debug_cause,
                                     default   : 'd0
                                   };
-dcsr_we        = 1'b1;
+          dcsr_we        = 1'b1;
 
           dpc_n          = ctrl_fsm_i.pipe_pc;
           dpc_we         = 1'b1;
@@ -1771,7 +1771,7 @@ dcsr_we        = 1'b1;
     .WIDTH      (32),
     .MASK       (CSR_MSTATEEN0_MASK),
     .SHADOWCOPY (SECURE),
-    .RESETVALUE (32'd0)
+    .RESETVALUE (MSTATEEN0_RESET_VAL)
   )
   mstateen0_csr_i
   (
@@ -1960,7 +1960,7 @@ dcsr_we        = 1'b1;
       #(
         .LIB        (LIB                  ),
         .WIDTH      (32                   ),
-        .SHADOWCOPY (1'b1                 ),
+        .SHADOWCOPY (SECURE               ),
         .MASK       (CSR_CLIC_MCAUSE_MASK ),
         .RESETVALUE (MCAUSE_CLIC_RESET_VAL)
       )
@@ -1978,7 +1978,7 @@ dcsr_we        = 1'b1;
       #(
         .LIB        (LIB),
         .WIDTH      (32),
-        .MASK       (CSR_MTVEC_CLIC_MASK),
+        .MASK       (CSR_CLIC_MTVEC_MASK),
         .RESETVALUE (MTVEC_CLIC_RESET_VAL),
         .SHADOWCOPY (SECURE)
       )
@@ -2055,9 +2055,9 @@ dcsr_we        = 1'b1;
 
       cv32e40s_csr
       #(
-        .LIB        (LIB),
-        .WIDTH      (32),
-        .SHADOWCOPY (1'b1),
+        .LIB        (LIB                   ),
+        .WIDTH      (32                    ),
+        .SHADOWCOPY (SECURE                ),
         .MASK       (CSR_BASIC_MCAUSE_MASK ),
         .RESETVALUE (MCAUSE_BASIC_RESET_VAL)
       )
@@ -2075,7 +2075,7 @@ dcsr_we        = 1'b1;
       #(
         .LIB        (LIB),
         .WIDTH      (32),
-        .MASK       (CSR_MTVEC_BASIC_MASK),
+        .MASK       (CSR_BASIC_MTVEC_MASK),
         .SHADOWCOPY (SECURE),
         .RESETVALUE (MTVEC_BASIC_RESET_VAL)
       )
@@ -2420,7 +2420,7 @@ dcsr_we        = 1'b1;
           #(
             .LIB        (LIB),
             .WIDTH      (PMP_ADDR_WIDTH),
-            .MASK       (CSR_PMPADDR_MASK),
+            .MASK       (CSR_PMPADDR_MASK[31-:PMP_ADDR_WIDTH]),
             .SHADOWCOPY (SECURE),
             .RESETVALUE (PMP_PMPADDR_RV[i][31-:PMP_ADDR_WIDTH])
           )
