@@ -89,7 +89,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output privlvl_t                      priv_lvl_o,
   output privlvlctrl_t                  priv_lvl_if_ctrl_o,
   output privlvl_t                      priv_lvl_lsu_o,
-  output privlvl_t                      priv_lvl_clic_ptr_o,
 
   // IF/ID pipeline
   input logic                           sys_en_id_i,
@@ -2308,19 +2307,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     end
     else begin
       priv_lvl_lsu_o = mstatus_rdata.mprv ? privlvl_t'(mstatus_rdata.mpp) : id_ex_pipe_i.priv_lvl;
-    end
-  end
-
-  // Privilege level for CLIC pointer fetches in IF
-  // When an interrupt is taken, the pipeline is killed. The privilege level will be changed, so in case
-  // of a privilege level change, we need to use the level in the priv_lvl_if_ctrl_o when mprv is not set.
-  // priv_lvl_if_ctrl_o should carry the correct privilege level.
-  always_comb begin
-    if (mstatus_we) begin
-      priv_lvl_clic_ptr_o = mstatus_n.mprv ? privlvl_t'(mstatus_n.mpp) : priv_lvl_if_ctrl_o.priv_lvl;
-    end
-    else begin
-      priv_lvl_clic_ptr_o = mstatus_q.mprv ? privlvl_t'(mstatus_q.mpp) : priv_lvl_if_ctrl_o.priv_lvl;
     end
   end
 

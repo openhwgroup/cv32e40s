@@ -259,7 +259,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic csr_irq_enable_write;
 
   privlvl_t     priv_lvl_lsu;
-  privlvl_t     priv_lvl_clic_ptr;
   privlvlctrl_t priv_lvl_if_ctrl;
 
   privlvl_t     priv_lvl;
@@ -621,7 +620,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Privilege level
     .priv_lvl_ctrl_i     ( priv_lvl_if_ctrl         ),
-    .priv_lvl_clic_ptr_i ( priv_lvl_clic_ptr        ),
 
     // Dummy Instruction control
     .xsecure_ctrl_i      ( xsecure_ctrl             ),
@@ -994,7 +992,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .priv_lvl_if_ctrl_o         ( priv_lvl_if_ctrl       ),
     .priv_lvl_lsu_o             ( priv_lvl_lsu           ),
     .priv_lvl_o                 ( priv_lvl               ),
-    .priv_lvl_clic_ptr_o        ( priv_lvl_clic_ptr      ),
 
     .sys_en_id_i                ( sys_en_id              ),
     .sys_mret_id_i              ( sys_mret_insn_id       ),
