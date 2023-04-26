@@ -40,7 +40,7 @@ supported.
   +---------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
   | ``data_we_o``             | output          | Write Enable, high for writes, low for reads. Sent together with ``data_req_o``.                                             |
   +---------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-  | ``data_achk_o[11:0]``     | output          | Checksum for address phase signals                                                                                           |
+  | ``data_achk_o[12:0]``     | output          | Checksum for address phase signals                                                                                           |
   +---------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
   | ``data_rvalid_i``         | input           | ``data_rvalid_i`` will be high for exactly one cycle to signal the end of the response phase of for both read and write      |
   |                           |                 | transactions. For a read transaction ``data_rdata_i`` holds valid data when ``data_rvalid_i`` is high.                       |
