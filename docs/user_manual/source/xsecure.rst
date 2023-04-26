@@ -220,26 +220,28 @@ The OBI ([OPENHW-OBI]_) bus interfaces have associated parity and checksum signa
   +--------------+-------------------------------------------------+--------------------------------------------------------------------------------+
   | ``achk[5]``  | Odd parity(``be[3:0]``, ``we``)                 | For the instruction interface ``be[3:0]`` = 4'b1111 and ``we`` = 1'b0 is used. |
   +--------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-  | ``achk[6]``  | Odd parity(``dbg``)                             |                                                                                |
+  | ``achk[6]``  | Even parity(``mid[7:0]``)                       | ``mid[7:0]`` = 8'b0 as the ``mid`` signal is not implemented.                  |
   +--------------+-------------------------------------------------+--------------------------------------------------------------------------------+
   | ``achk[7]``  | Even parity(``atop[5:0]``)                      | ``atop[5:0]`` = 6'b0 as the **A** extension is not implemented.                |
   +--------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-  | ``achk[8]``  | Even parity(``wdata[7:0]``)                     | For the instruction interface ``wdata[7:0]`` = 8'b0.                           |
+  | ``achk[8]``  | Odd parity(``dbg``)                             |                                                                                |
   +--------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-  | ``achk[9]``  | Even parity(``wdata[15:8]``)                    | For the instruction interface ``wdata[15:8]`` = 8'b0.                          |
+  | ``achk[9]``  | Even parity(``wdata[7:0]``)                     | For the instruction interface ``wdata[7:0]`` = 8'b0.                           |
   +--------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-  | ``achk[10]`` | Even parity(``wdata[23:16]``)                   | For the instruction interface ``wdata[23:16]`` = 8'b0.                         |
+  | ``achk[10]`` | Even parity(``wdata[15:8]``)                    | For the instruction interface ``wdata[15:8]`` = 8'b0.                          |
   +--------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-  | ``achk[11]`` | Even parity(``wdata[31:24]``)                   | For the instruction interface ``wdata[31:24]`` = 8'b0.                         |
+  | ``achk[11]`` | Even parity(``wdata[23:16]``)                   | For the instruction interface ``wdata[23:16]`` = 8'b0.                         |
+  +--------------+-------------------------------------------------+--------------------------------------------------------------------------------+
+  | ``achk[12]`` | Even parity(``wdata[31:24]``)                   | For the instruction interface ``wdata[31:24]`` = 8'b0.                         |
   +--------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 
 .. note::
-   |corev| always generates its ``achk[11:8]`` bits dependent on ``wdata`` (even for read transactions). The ``achk[11:8]`` signal bits
+   |corev| always generates its ``achk[12:9]`` bits dependent on ``wdata`` (even for read transactions). The ``achk[12:9]`` signal bits
    are however not required to be checked against ``wdata`` for read transactions (see [OPENHW-OBI]_). Whether the environment performs these checks or not
    is platform specific.
 
 .. note::
-   ``achk[11:8]`` are always valid for ``wdata[31:0]`` (even for sub-word transactions).
+   ``achk[12:9]`` are always valid for ``wdata[31:0]`` (even for sub-word transactions).
 
 .. table:: Response phase checksum
   :name: Response phase checksum
