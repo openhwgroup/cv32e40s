@@ -785,7 +785,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   // stall control for multi operation ID instructions (currently only jumps and branches if SECURE=1)
   // Using if_id_pipe_i.instr_valid instead of the local instr_valid, as halt_id and kill_id are
   // factored into id_valid_o and id_ready_o regardless of muli_op_id_stall.
-  assign multi_op_id_stall = !last_sec_op && (if_id_pipe_i.instr_valid); //todo:ok Zce push/pop will use this
+  assign multi_op_id_stall = !last_sec_op && (if_id_pipe_i.instr_valid);
 
   // Stage ready/valid
   //
@@ -794,7 +794,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   // Multi operation instruction related stalls are different; in that case ready will be 0 to avoid
   // following instructions to enter ID at the same time as id_valid will be allowed to go high to update
   // operands in EX for operations within the same instruction.
-  // todo: update when Zce is included.
 
   assign id_ready_o = ctrl_fsm_i.kill_id || (!multi_op_id_stall && ex_ready_i && !ctrl_fsm_i.halt_id && !xif_waiting);
 

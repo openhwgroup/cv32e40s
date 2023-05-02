@@ -396,10 +396,9 @@ always_ff @(posedge clk , negedge rst_ni)
     end
   endgenerate
 
-  // For checking single step, ID stage is used as it contains a 'multi_op_id_stall' signal.
-  // This makes it easy to count misaligned LSU ins as one instruction instead of two.
+  // For checking single step, ID stage is used.
   logic inst_taken;
-  assign inst_taken = id_stage_id_valid && ex_ready && last_op_id && !id_stage_multi_op_id_stall; // todo: the && !id_stage_multi_cycle_id_stall signal should now no longer be needed
+  assign inst_taken = id_stage_id_valid && ex_ready && last_op_id && !id_stage_multi_op_id_stall;
 
   // Support for single step assertion
   // In case of single step + taken interrupt, the first instruction
