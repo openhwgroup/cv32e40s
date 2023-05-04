@@ -31,7 +31,6 @@
 
 module cv32e40s_controller import cv32e40s_pkg::*;
 #(
-  parameter bit          X_EXT                  = 0,
   parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
   parameter bit          CLIC                   = 0,
   parameter int unsigned CLIC_ID_WIDTH          = 5,
@@ -141,17 +140,13 @@ module cv32e40s_controller import cv32e40s_pkg::*;
 
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
-  input logic         fencei_flush_ack_i,
+  input logic         fencei_flush_ack_i
 
-  // eXtension interface
-  if_xif.cpu_commit   xif_commit_if,
-  input               xif_csr_error_i
 );
 
   // Main FSM and debug FSM
   cv32e40s_controller_fsm
   #(
-    .X_EXT                       ( X_EXT                    ),
     .CLIC                        ( CLIC                     ),
     .CLIC_ID_WIDTH               ( CLIC_ID_WIDTH            ),
     .DEBUG                       ( DEBUG                    )
@@ -242,12 +237,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .m_c_obi_data_if             ( m_c_obi_data_if          ),
 
     // Outputs
-    .ctrl_fsm_o                  ( ctrl_fsm_o               ),
-
-    // eXtension interface
-    .xif_commit_if               ( xif_commit_if            ),
-    .xif_csr_error_i             ( xif_csr_error_i          )
-  );
+    .ctrl_fsm_o                  ( ctrl_fsm_o               )
+);
 
 
   // Hazard/bypass/stall control instance

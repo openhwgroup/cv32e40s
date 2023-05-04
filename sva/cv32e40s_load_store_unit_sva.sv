@@ -22,7 +22,6 @@ module cv32e40s_load_store_unit_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
   #(
-    parameter bit          X_EXT = 0,
     parameter int unsigned DEPTH = 0,
     parameter bit          DEBUG = 1
   )
@@ -43,8 +42,6 @@ module cv32e40s_load_store_unit_sva
    input align_status_e lsu_align_status_1_o,
    input ex_wb_pipe_t ex_wb_pipe_i,
    if_c_obi.monitor  m_c_obi_data_if,
-   input logic       xif_req,
-   input logic       xif_res_q,
    input logic       id_valid,
    input logic       ex_ready,
    input logic       lsu_en_id,
@@ -148,16 +145,6 @@ module cv32e40s_load_store_unit_sva
   assert property (@(posedge clk) disable iff (!rst_n)
                     (cnt_q == 2'b00) && !(ctrl_fsm_cs == DEBUG_TAKEN) |-> !(ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid))
       else `uvm_error("load_store_unit", "cnt_q is zero when WB contains a valid LSU instruction")
-
-    // Check that no XIF request or result are produced if X_EXT is disabled
-  a_lsu_no_xif_req_if_xext_disabled:
-  assert property (@(posedge clk) disable iff (!rst_n)
-                  !X_EXT |-> !xif_req)
-    else `uvm_error("load_store_unit", "XIF transaction request despite X_EXT being disabled")
-  a_lsu_no_xif_res_if_xext_disabled:
-  assert property (@(posedge clk) disable iff (!rst_n)
-                  !X_EXT |-> !xif_res_q)
-    else `uvm_error("load_store_unit", "XIF transaction result despite X_EXT being disabled")
 
 
   // split_q must be 0 when a new LSU instruction enters the LSU

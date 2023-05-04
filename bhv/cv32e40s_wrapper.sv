@@ -261,8 +261,7 @@ module cv32e40s_wrapper
   bind cv32e40s_controller_fsm:
     core_i.controller_i.controller_fsm_i
       cv32e40s_controller_fsm_sva
-        #(.X_EXT(X_EXT),
-          .DEBUG(DEBUG),
+        #(.DEBUG(DEBUG),
           .CLIC(CLIC))
         controller_fsm_sva   (
                               .lsu_outstanding_cnt (core_i.load_store_unit_i.cnt_q),
@@ -276,8 +275,6 @@ module cv32e40s_wrapper
                               .sys_mret_insn_id_i  (core_i.id_stage_i.sys_mret_insn),
                               .id_valid_i          (core_i.id_stage_i.id_valid_o),
                               .csr_illegal_i       (core_i.cs_registers_i.csr_illegal_o),
-                              .xif_commit_kill     (1'b0), // todo: remove xif remains
-                              .xif_commit_valid    (1'b0), // todo: remove xif remains
 
                               .last_sec_op_id_i    (core_i.controller_i.last_sec_op_id_i),
                               .lsu_trans_valid     (core_i.load_store_unit_i.trans_valid),

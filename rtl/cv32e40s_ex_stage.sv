@@ -32,7 +32,6 @@
 
 module cv32e40s_ex_stage import cv32e40s_pkg::*;
 #(
-  parameter bit     X_EXT = 1'b0,
   parameter b_ext_e B_EXT = B_NONE,
   parameter m_ext_e M_EXT = M
 )
@@ -67,9 +66,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   output logic        branch_decision_o,
   output logic [31:0] branch_target_o,
 
-  // Output to controller
-  output logic        xif_csr_error_o,
-
   // LSU handshake interface
   input  logic        lsu_valid_i,
   output logic        lsu_ready_o,
@@ -100,8 +96,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   logic           mul_valid;
   logic           div_ready;
   logic           div_valid;
-  logic           xif_ready;
-  logic           xif_valid;
 
   // Result signals
   logic [31:0]    alu_result;
@@ -125,9 +119,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
 
   logic           previous_exception;
 
-  // Detect if we get an illegal CSR instruction
-  logic           csr_is_illegal;
-
   assign instr_valid = id_ex_pipe_i.instr_valid && !ctrl_fsm_i.kill_ex && !ctrl_fsm_i.halt_ex;
 
   // todo: consider not factoring halt_ex into the mul/div/lsu_en_gated below
@@ -138,18 +129,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   assign lsu_en_gated = id_ex_pipe_i.lsu_en && instr_valid; // Factoring in instr_valid to suppress bus transactions on kill/halt
 
   assign div_en = id_ex_pipe_i.div_en && id_ex_pipe_i.instr_valid; // Valid DIV in EX, not affected by kill/halt
-
-  // If pipeline is handling a valid CSR AND the same instruction is accepted by the eXtension interface
-  // we need to convert the instruction to an illegal instruction and signal commit_kill to the eXtension interface.
-  // Using registered instr_valid, as gated instr_valid would not allow killing of offloaded instruction
-  // in case of halt_ex==1. We need to kill this duplicate regardless of halt state.
-  //  Currently, halt_ex is asserted in the cycle before debug entry, and if any performance counter is being read.
-  assign xif_csr_error_o = instr_valid && (id_ex_pipe_i.xif_en && id_ex_pipe_i.xif_meta.accepted) && (id_ex_pipe_i.csr_en && !csr_illegal_i);
-
-  // CSR instruction is illegal if core signals illegal and NOT offloaded, or if both core and xif accepted it.
-  assign csr_is_illegal = ((csr_illegal_i && !(id_ex_pipe_i.xif_en && id_ex_pipe_i.xif_meta.accepted)) ||
-                           xif_csr_error_o) &&
-                           instr_valid;
 
   // Exception happened during IF or ID, or trigger match in ID (converted to NOP).
   // signal needed for ex_valid to go high in such cases
@@ -392,8 +371,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
       ex_wb_pipe_o.csr_addr           <= 12'h000;
       ex_wb_pipe_o.csr_wdata          <= 32'h00000000;
       ex_wb_pipe_o.csr_mnxti_access   <= 1'b0;
-      ex_wb_pipe_o.xif_en             <= 1'b0;
-      ex_wb_pipe_o.xif_meta           <= '0;
       ex_wb_pipe_o.first_op           <= 1'b0;
       ex_wb_pipe_o.last_op            <= 1'b0;
       ex_wb_pipe_o.last_sec_op        <= 1'b0;
@@ -412,7 +389,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
         ex_wb_pipe_o.abort_op    <= id_ex_pipe_i.abort_op; // MPU exceptions and watchpoint triggers have WB timing and will not impact ex_wb_pipe.abort_op
         // Deassert rf_we in case of illegal csr instruction or when the first half of a misaligned/split LSU goes to WB.
         // Also deassert if CSR was accepted both by eXtension if and pipeline
-        ex_wb_pipe_o.rf_we       <= (csr_is_illegal || lsu_split_i) ? 1'b0 : id_ex_pipe_i.rf_we;
+        ex_wb_pipe_o.rf_we       <= (csr_illegal_i || lsu_split_i) ? 1'b0 : id_ex_pipe_i.rf_we;
         ex_wb_pipe_o.lsu_en      <= id_ex_pipe_i.lsu_en;
 
         if (id_ex_pipe_i.rf_we) begin
@@ -429,7 +406,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
         // Update signals for CSR access in WB
         // deassert csr_en in case of an internal illegal csr instruction
         // to avoid writing to CSRs inside the core.
-        ex_wb_pipe_o.csr_en     <= (csr_illegal_i || xif_csr_error_o) ? 1'b0 : id_ex_pipe_i.csr_en;
+        ex_wb_pipe_o.csr_en     <= csr_illegal_i ? 1'b0 : id_ex_pipe_i.csr_en;
         if (id_ex_pipe_i.csr_en) begin
           // The ex_wb_pipe_o.csr_addr is used (for RVFI) even for CSR instructions that do not write to the CSR
           // Any future clock gating improvements to ex_wb_pipe.csr_addr must take this into account.
@@ -457,12 +434,9 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
         end
 
         // CSR illegal instruction detected in this stage, OR'ing in the status
-        ex_wb_pipe_o.illegal_insn   <= id_ex_pipe_i.illegal_insn || csr_is_illegal;
+        ex_wb_pipe_o.illegal_insn   <= id_ex_pipe_i.illegal_insn || csr_illegal_i;
         ex_wb_pipe_o.trigger_match  <= id_ex_pipe_i.trigger_match;
 
-        // eXtension interface
-        ex_wb_pipe_o.xif_en         <= ctrl_fsm_i.kill_xif ? 1'b0 : id_ex_pipe_i.xif_en;
-        ex_wb_pipe_o.xif_meta       <= id_ex_pipe_i.xif_meta;
       end else if (wb_ready_i) begin
         // we are ready for a new instruction, but there is none available,
         // so we introduce a bubble
@@ -493,7 +467,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   // unless the stage is being halted. The late (data_rvalid_i based) downstream wb_ready_i signal
   // fans into the ready signals of all functional units.
 
-  assign ex_ready_o = ctrl_fsm_i.kill_ex || (alu_ready && csr_ready && sys_ready && mul_ready && div_ready && lsu_ready_i && xif_ready && !ctrl_fsm_i.halt_ex);
+  assign ex_ready_o = ctrl_fsm_i.kill_ex || (alu_ready && csr_ready && sys_ready && mul_ready && div_ready && lsu_ready_i && !ctrl_fsm_i.halt_ex);
 
   // TODO:ab Reconsider setting alu_en for exception/trigger instead of using 'previous_exception'
   assign ex_valid_o = ((id_ex_pipe_i.alu_en && alu_valid)       ||
@@ -502,24 +476,9 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
                        (id_ex_pipe_i.mul_en && mul_valid)       ||
                        (id_ex_pipe_i.div_en && div_valid)       ||
                        (id_ex_pipe_i.lsu_en && lsu_valid_i)     ||
-                       (id_ex_pipe_i.xif_en && xif_valid)       ||
                        (id_ex_pipe_i.instr_meta.clic_ptr)       || // todo: Should this instead have it's own _valid?
                        (id_ex_pipe_i.instr_meta.mret_ptr)       || // todo: Should this instead have it's own _valid?
                        previous_exception // todo:ab:remove
                       ) && instr_valid;
-
-  //---------------------------------------------------------------------------
-  // eXtension interface
-  //---------------------------------------------------------------------------
-
-  // XIF is modeled as a functional unit that occupies EX for a single cycle no matter whether the
-  // result handshake is received in a single cycle or not.
-  assign xif_valid = 1'b1;
-  assign xif_ready = wb_ready_i;
-
-  // TODO:XIF The EX stage needs to be ready to receive a result from a single cycle offloaded
-  // instruction. In such case the result can be written into ex_wb_pipe_i.rf_wdata (as if the XIF
-  // is a functional unit living in EX) and then typically a cycle later the result would get
-  // written from ex_wb_pipe_i.rf_wdata into the registerfile.
 
 endmodule

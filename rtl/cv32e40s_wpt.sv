@@ -58,7 +58,7 @@ module cv32e40s_wpt import cv32e40s_pkg::*;
    input logic            core_one_txn_pend_n,
 
    // Indication from the core that watchpoint triggers should be reported after all in flight transactions
-   // are complete (default behavior for main core requests, but not used for XIF requests)
+   // are complete
    input logic            core_wpt_wait_i,
 
    // Report watchpoint triggers to the core immediatly (used in case core_wpt_wait_i is not asserted)

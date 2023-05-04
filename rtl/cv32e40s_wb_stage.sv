@@ -72,9 +72,6 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   output logic          wb_ready_o,
   output logic          wb_valid_o,
 
-  // eXtension interface
-  if_xif.cpu_result     xif_result_if,
-
   // Sticky WB outputs
   output logic          wpt_match_wb_o,
   output mpu_status_e   mpu_status_wb_o,
@@ -91,10 +88,6 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   logic                 instr_valid;
   logic                 wb_valid;
   logic                 lsu_exception;
-
-  // eXtension interface signals
-  logic                 xif_waiting;
-  logic                 xif_exception;
 
   // Flops for making volatile LSU outputs sticky until wb_valid
   mpu_status_e          lsu_mpu_status_q;
@@ -129,17 +122,15 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   // In case of MPU/PMA error, the register file should not be written.
   // rf_we_wb_o is deasserted if lsu_mpu_status is not equal to MPU_OK
 
-  // TODO:XIF Could use result interface.we into account if out of order completion is allowed.
-  assign rf_we_wb_o     = ex_wb_pipe_i.rf_we && !lsu_exception && !xif_waiting && !xif_exception && !lsu_wpt_match && instr_valid;
-  // TODO:XIF Could use result interface.rd into account if out of order completion is allowed.
+  assign rf_we_wb_o     = ex_wb_pipe_i.rf_we && !lsu_exception && !lsu_wpt_match && instr_valid;
+
   assign rf_waddr_wb_o  = ex_wb_pipe_i.rf_waddr;
-  // TODO:XIF Could use result interface.rd into account if out of order completion is allowed.
+
   // Not using any flopped/sticky version of lsu_rdata_i. The sticky bits are only needed for MPU errors and watchpoint triggers.
   // Any true load that succeeds will write the RF and will never be halted or killed by the controller. (wb_valid during the same cycle as lsu_valid_i).
-  assign rf_wdata_wb_o  = ex_wb_pipe_i.lsu_en ? lsu_rdata_i               :
-                         (ex_wb_pipe_i.xif_en ? xif_result_if.result.data :
-                         clic_pa_valid_i      ? clic_pa_i                 :
-                         ex_wb_pipe_i.rf_wdata);
+  assign rf_wdata_wb_o  = ex_wb_pipe_i.lsu_en ? lsu_rdata_i            :
+                         clic_pa_valid_i      ? clic_pa_i              :
+                                                ex_wb_pipe_i.rf_wdata;
 
   //////////////////////////////////////////////////////////////////////////////
   // LSU inputs are valid when LSU is enabled; LSU outputs need to remain valid until downstream stage is ready
@@ -154,7 +145,7 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   // Stage ready/valid
 
   // Using both ctrl_fsm_i.halt_wb and ctrl_fsm_i.halt_limited_wb to halt.
-  assign wb_ready_o = ctrl_fsm_i.kill_wb || (lsu_ready_i && !xif_waiting && !ctrl_fsm_i.halt_wb && !ctrl_fsm_i.halt_limited_wb);
+  assign wb_ready_o = ctrl_fsm_i.kill_wb || (lsu_ready_i && !ctrl_fsm_i.halt_wb && !ctrl_fsm_i.halt_limited_wb);
 
   // wb_valid
   //
@@ -164,7 +155,7 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   // - Will be 1 for both phases of a split misaligned load/store that completes without MPU errors.
   //   If an MPU error occurs, wb_valid will be 1 due to lsu_exception (for any phase where the error occurs)
   // - Will be 1 for CLIC pointer fetches. RVFI will only set rvfi_valid for CLIC pointers that caused an exception.
-  assign wb_valid = ((!ex_wb_pipe_i.lsu_en && !xif_waiting) ||    // Non-LSU instructions have valid result in WB, also for exceptions, unless we are waiting for a coprocessor
+  assign wb_valid = ((!ex_wb_pipe_i.lsu_en                ) ||    // Non-LSU instructions have valid result in WB, also for exceptions, unless we are waiting for a coprocessor
                      ( ex_wb_pipe_i.lsu_en && lsu_valid   )       // LSU instructions have valid result based on data_rvalid_i or the flopped version in case of watchpoint triggers.
                                                                   // WFI/WFE are halted in WB until the core wakes up, this pulls instr_valid low and ensures wb_valid==0 until we
                                                                   // actually retire the WFI/WFE.
@@ -216,24 +207,5 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   assign wpt_match_wb_o = lsu_wpt_match;
   assign mpu_status_wb_o = lsu_mpu_status;
   assign align_status_wb_o = lsu_align_status;
-  //---------------------------------------------------------------------------
-  // eXtension interface
-  //---------------------------------------------------------------------------
-
-  // TODO:XIF How to handle conflicting values of ex_wb_pipe_i.rf_waddr and xif_result_if.result.rd?
-  // TODO:XIF How to handle conflicting values of ex_wb_pipe_i.rf_we (based on xif_issue_if.issue_resp.writeback in ID) and xif_result_if.result.we?
-  // TODO:XIF Check whether result IDs match the instruction IDs propagated along the pipeline
-  // TODO:XIF Implement writeback to extension context status into mstatus (ecswe, ecsdata)
-
-  // Need to wait for the result
-  assign xif_waiting = ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.xif_en && !xif_result_if.result_valid;
-
-  // Coprocessor signals a synchronous exception
-  // TODO:XIF Maybe do something when an exception occurs (other than just inhibiting writeback)
-  assign xif_exception = ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.xif_en && xif_result_if.result_valid && xif_result_if.result.exc;
-
-  // todo:XIF Handle xif_result_if.result.err as NMI (do not factor into xif_exception as that signal is for synchronous exceptions)
-
-  assign xif_result_if.result_ready = ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.xif_en;
 
 endmodule

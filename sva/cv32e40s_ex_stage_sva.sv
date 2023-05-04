@@ -26,9 +26,6 @@
 module cv32e40s_ex_stage_sva
   import uvm_pkg::*;
   import cv32e40s_pkg::*;
-#(
-  parameter bit X_EXT     = 1'b0
-)
 (
   input logic           clk,
   input logic           rst_n,
@@ -67,45 +64,24 @@ module cv32e40s_ex_stage_sva
                       |-> (ex_ready_o && !ex_valid_o))
       else `uvm_error("ex_stage", "Kill should imply ready and not valid")
 
-// Only include following assertions if X_EXT=1
-generate
-  if(X_EXT == 1'b1) begin
-    // csr_en suppressed for xif accepted and pipeline accepted CSR
-    // todo: Add similar check for rf_we
-    a_suppress_csr_xif_legal_pipeline_legal :
-    assert property (@(posedge clk) disable iff (!rst_n)
-                      ((id_ex_pipe_i.xif_en && id_ex_pipe_i.xif_meta.accepted) && id_ex_pipe_i.csr_en && !csr_illegal_i) &&
-                      (id_ex_pipe_i.instr_valid && ex_valid_o && wb_ready_i)
-                      |=> !ex_wb_pipe_o.csr_en)
-      else `uvm_error("ex_stage", "csr_en not suppressed after eXtension interface and pipeline accepted CSR")
 
-    // csr_en suppressed for xif accepted and pipeline rejected CSR
-    // todo: Add similar check for rf_we
-    a_suppress_csr_xif_legal_pipeline_illegal :
-    assert property (@(posedge clk) disable iff (!rst_n)
-                      ((id_ex_pipe_i.xif_en && id_ex_pipe_i.xif_meta.accepted) && id_ex_pipe_i.csr_en && csr_illegal_i) &&
-                      (id_ex_pipe_i.instr_valid && ex_valid_o && wb_ready_i)
-                      |=> !ex_wb_pipe_o.csr_en)
-      else `uvm_error("ex_stage", "csr_en not suppressed after eXtension interface accepted and pipeline rejected CSR")
-  end
-endgenerate
-  // csr_en suppressed for xif reject and pipeline reject CSR
+  // csr_en suppressed in WB stage when cs_registers marks an access with illegal
   // todo: Add similar check for rf_we
-  a_suppress_csr_xif_illegal_pipeline_illegal :
+  a_suppress_csr_pipeline_illegal :
   assert property (@(posedge clk) disable iff (!rst_n)
-                    (!(id_ex_pipe_i.xif_en && id_ex_pipe_i.xif_meta.accepted) && id_ex_pipe_i.csr_en && csr_illegal_i) &&
+                    (id_ex_pipe_i.csr_en && csr_illegal_i) &&
                     (id_ex_pipe_i.instr_valid && ex_valid_o && wb_ready_i)
                     |=> !ex_wb_pipe_o.csr_en)
-    else `uvm_error("ex_stage", "csr_en not suppressed after eXtension interface rejected and pipeline rejected CSR")
+    else `uvm_error("ex_stage", "csr_en not suppressed after pipeline rejected CSR")
 
-    // csr_en not suppressed for xif reject and pipeline accept CSR
+    // csr_en not suppressed when pipeline accepts CSR
     // todo: Add similar check for rf_we
-    a_suppress_csr_xif_illegal_pipeline_legal :
+    a_suppress_csr_pipeline_legal :
     assert property (@(posedge clk) disable iff (!rst_n)
-                      (!(id_ex_pipe_i.xif_en && id_ex_pipe_i.xif_meta.accepted) && id_ex_pipe_i.csr_en && !csr_illegal_i) &&
+                      (id_ex_pipe_i.csr_en && !csr_illegal_i) &&
                       (id_ex_pipe_i.instr_valid && ex_valid_o && wb_ready_i)
                       |=> ex_wb_pipe_o.csr_en)
-      else `uvm_error("ex_stage", "csr_en suppressed after eXtension interface rejected and pipeline accepted CSR")
+      else `uvm_error("ex_stage", "csr_en suppressed pipeline accepted CSR")
 
   // First access of split LSU instruction should have rf_we deasserted
   a_split_rf_we:
@@ -117,7 +93,7 @@ endgenerate
   a_functional_unit_enable_onehot :
     assert property (@(posedge clk) disable iff (!rst_n)
                      $onehot0({id_ex_pipe_i.alu_en, id_ex_pipe_i.div_en, id_ex_pipe_i.mul_en,
-                     id_ex_pipe_i.csr_en, id_ex_pipe_i.sys_en, id_ex_pipe_i.lsu_en, id_ex_pipe_i.xif_en}))
+                     id_ex_pipe_i.csr_en, id_ex_pipe_i.sys_en, id_ex_pipe_i.lsu_en}))
       else `uvm_error("ex_stage", "Multiple functional units enabled")
 
   // Assert that branch decision is always 1 when dataindtiming=1
