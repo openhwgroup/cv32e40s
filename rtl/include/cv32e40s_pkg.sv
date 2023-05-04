@@ -1271,16 +1271,6 @@ typedef struct packed
   logic        pushpop;    // Operation is part of a push/pop sequence.
 } instr_meta_t;
 
-// Struct for carrying eXtension interface information
-typedef struct packed
-{
-  logic        exception;       // Can offloaded ins cause an exception?
-  logic        loadstore; // Is offloaded ins a load or store?
-  logic        dualwrite; // Will oflfoaded ins cause a dual writeback?
-  logic [31:0] id;        // ID of offloaded ins
-  logic        accepted;  // Was the offloaded instruction accepted or not?
-} xif_meta_t;
-
 typedef struct packed
 {
   logic        bus_err;
@@ -1299,7 +1289,6 @@ typedef struct packed {
   logic        illegal_c_insn;
   privlvl_t    priv_lvl;
   logic        trigger_match;
-  logic [31:0] xif_id;           // ID of offloaded instruction
   logic [31:0] ptr;              // Flops to hold 32-bit pointer
   logic        first_op;         // First part of multi operation instruction
   logic        last_op;          // Last part of multi operation instruction
@@ -1371,10 +1360,6 @@ typedef struct packed {
   // Privilege level
   privlvl_t    priv_lvl;
 
-  // eXtension interface
-  logic         xif_en;           // Instruction has been offloaded via eXtension interface
-  xif_meta_t    xif_meta;         // xif meta struct
-
   logic         first_op;         // First part of multi operation instruction
   logic         last_op;          // Last part of multi operation instruction
   logic         last_sec_op;      // Last part of SECURE jump/mret/branch. (NB: mret may have last_sec_op && !last_op in case it caused a pointer fetch)
@@ -1425,10 +1410,6 @@ typedef struct packed {
   logic         sys_wfi_insn;
   logic         sys_wfe_insn;
 
-  // eXtension interface
-  logic         xif_en;           // Instruction has been offloaded via eXtension interface
-  xif_meta_t    xif_meta;         // xif meta struct
-
   logic         first_op;         // First part of multi operation instruction
   logic         last_op;          // Last part of multi operation instruction
   logic         last_sec_op;      // Last part of SECURE jump/mret/branch. (NB: mret may have last_sec_op && !last_op in case it caused a pointer fetch)
@@ -1455,7 +1436,6 @@ typedef struct packed {
   logic         minstret_stall;         // Stall due to minstret/h read in EX
   logic         deassert_we;            // Deassert write enable and special insn bits
   logic         id_stage_abort;         // Same signal as deassert_we, with better name for use in the controller.
-  logic         xif_exception_stall;    // Stall (EX) if xif insn in WB can cause an exception
   logic         irq_enable_stall;       // Stall (EX) if an interrupt may be enabled by the instruction in WB.
 } ctrl_byp_t;
 
@@ -1537,9 +1517,6 @@ typedef struct packed {
   logic        kill_id; // Kill ID stage
   logic        kill_ex; // Kill EX stage
   logic        kill_wb; // Kill WB stage
-
-  // Kill signal for xif_commit_if
-  logic        kill_xif; // Kill (attempted) offloaded instruction
 
   // Signal that an exception is in WB
   logic        exception_in_wb;

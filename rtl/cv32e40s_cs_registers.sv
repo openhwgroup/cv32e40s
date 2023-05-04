@@ -36,9 +36,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter              LIB              = 0,
   parameter rv32_e       RV32             = RV32I,
   parameter m_ext_e      M_EXT            = M,
-  parameter bit          X_EXT            = 0,
-  parameter logic [31:0] X_MISA           = 32'h00000000,
-  parameter logic [1:0]  X_ECS_XS         = 2'b00, // todo:XIF implement related mstatus bitfields (but only if X_EXT = 1)
   parameter bit          ZC_EXT           = 0,
   parameter bit          CLIC             = 0,
   parameter int unsigned CLIC_ID_WIDTH    = 5,
@@ -152,7 +149,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   localparam bit USER = SECURE;
 
-  localparam logic [31:0] CORE_MISA =
+  localparam logic [31:0] MISA_VALUE =
     (32'(1)             <<  2) | // C - Compressed extension
     (32'(RV32 == RV32E) <<  4) | // E - RV32E/64E base ISA
     (32'(RV32 == RV32I) <<  8) | // I - RV32I/64I/128I base ISA
@@ -161,7 +158,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     (32'(1)             << 23) | // X - Non-standard extensions present
     (32'(MXL)           << 30); // M-XLEN
 
-  localparam logic [31:0] MISA_VALUE = CORE_MISA | (X_EXT ? X_MISA : 32'h0000_0000);
 
   // Set mask for minththresh based on number of bits implemented (CLIC_INTTHRESHBITS)
   localparam CSR_MINTTHRESH_MASK = ((2 ** CLIC_INTTHRESHBITS )-1) << (8 - CLIC_INTTHRESHBITS);
@@ -1033,7 +1029,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
     tcontrol_we   = 1'b0;
 
-    // TODO:XIF add support for SD/XS/FS/VS
     mstatus_n     = csr_next_value(mstatus_t'{
                                               tw:   csr_wdata_int[MSTATUS_TW_BIT],
                                               mprv: mstatus_mprv_resolve(mstatus_rdata.mprv, csr_wdata_int[MSTATUS_MPRV_BIT]),

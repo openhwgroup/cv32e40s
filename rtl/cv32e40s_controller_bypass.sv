@@ -109,7 +109,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   assign lsu_en_wb = ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid;
 
   assign rf_waddr_ex = id_ex_pipe_i.rf_waddr;
-  assign rf_waddr_wb = ex_wb_pipe_i.rf_waddr; // TODO:XIF If XIF OoO is allowed, we need to look at WB stage outputs instead
+  assign rf_waddr_wb = ex_wb_pipe_i.rf_waddr;
 
   // The following unqualified signals are such that they can have a false positive (but no false negative).
   //
@@ -262,10 +262,10 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
       ctrl_byp_o.deassert_we = 1'b1;
     end
 
-    // Stall because of load or XIF operation
+    // Stall because of load operation
     if (
-        ((id_ex_pipe_i.lsu_en || id_ex_pipe_i.xif_en) && rf_we_ex && |rf_rd_ex_hz) || // load-use hazard (EX)
-        (!wb_ready_i                                  && rf_we_wb && |rf_rd_wb_hz)    // load-use hazard (WB during wait-state)
+        (id_ex_pipe_i.lsu_en && rf_we_ex && |rf_rd_ex_hz) || // load-use hazard (EX)
+        (!wb_ready_i         && rf_we_wb && |rf_rd_wb_hz)    // load-use hazard (WB during wait-state)
        )
     begin
       ctrl_byp_o.load_stall  = 1'b1;
@@ -353,8 +353,5 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
     end
 
   end // always_comb
-
-  // Stall EX if offloaded instruction in WB may trigger an exception
-  assign ctrl_byp_o.xif_exception_stall = ex_wb_pipe_i.xif_en && ex_wb_pipe_i.xif_meta.exception && ex_wb_pipe_i.instr_valid;
 
 endmodule

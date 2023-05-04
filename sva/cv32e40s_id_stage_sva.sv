@@ -44,7 +44,6 @@ module cv32e40s_id_stage_sva
   input logic           csr_en,
   input logic           sys_en,
   input logic           lsu_en,
-  input logic           xif_en,
   input alu_op_a_mux_e  alu_op_a_mux_sel,
   input alu_op_b_mux_e  alu_op_b_mux_sel,
   input logic           lsu_we,
@@ -71,7 +70,6 @@ module cv32e40s_id_stage_sva
   input ctrl_fsm_t      ctrl_fsm_i,
   input ctrl_byp_t      ctrl_byp_i,
   input mstatus_t       mstatus_i,
-  input logic           xif_insn_accept,
   input logic           last_sec_op,
   input logic [31:0]    jalr_fw,
   input logic           alu_jmp,
@@ -115,18 +113,16 @@ module cv32e40s_id_stage_sva
 */
 
   // Check that illegal instruction has no other side effects
-  // If XIF accepts instruction, rf_we may still be 1
   a_illegal_1 :
     assert property (@(posedge clk) disable iff (!rst_n)
       (illegal_insn == 1'b1) |-> !(alu_en || csr_en || sys_en || mul_en || div_en || lsu_en))
-    else `uvm_error("id_stage", "No functional units (except for XIF) should be enabled for illegal instructions")
+    else `uvm_error("id_stage", "No functional units should be enabled for illegal instructions")
 
   a_illegal_2 :
     assert property (@(posedge clk) disable iff (!rst_n)
       (illegal_insn == 1'b1) |-> (
       (csr_op == CSR_OP_READ) &&
-      (alu_op_a_mux_sel == OP_A_NONE) && (alu_op_b_mux_sel == OP_B_NONE) || (op_c_mux_sel == OP_C_NONE) &&
-      !(rf_we && !xif_insn_accept)))
+      (alu_op_a_mux_sel == OP_A_NONE) && (alu_op_b_mux_sel == OP_B_NONE) || (op_c_mux_sel == OP_C_NONE)))
     else `uvm_error("id_stage", "Illegal instructions should not have side effects")
 
   // Halt implies not ready and not valid
@@ -195,7 +191,7 @@ module cv32e40s_id_stage_sva
   // Ensure that functional unit enables are one-hot (ALU and DIV both use the ALU though)
   a_functional_unit_enable_onehot :
     assert property (@(posedge clk) disable iff (!rst_n)
-                     $onehot0({alu_en, div_en, mul_en, csr_en, sys_en, lsu_en, xif_en}))
+                     $onehot0({alu_en, div_en, mul_en, csr_en, sys_en, lsu_en}))
       else `uvm_error("id_stage", "Multiple functional units enabled")
 
   // Check that second part of a multicycle mret does not stall on the first part of the same instruction

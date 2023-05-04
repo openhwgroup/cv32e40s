@@ -2497,16 +2497,6 @@ ifelse(eval(UMODE != 0), 1, [[[
       lsb: 13
       warl_legalize: |
         val_out = 0
-ifelse(eval(X_EXT != 0), 1, [[[
-    - field_name: FS
-      # TODO:silabs-robin "X_EXT" means 2 different things
-      description: >
-        FPU Extension Context Status.
-      type: RW
-      reset_val: 0  # Note: Based on default value of "X_ECS_XS"
-      msb: 14
-      lsb: 13
-]]])
     - field_name: MPP
       description: >
         Machine Previous Privilege mode
@@ -2524,9 +2514,6 @@ ifelse(eval(UMODE != 0), 1, [[[
       description: >
         Vector Extension Context Status
       type: WPRI
-ifelse(eval(X_EXT != 0), 1, [[[
-      type: RW
-]]])
       reset_val: 0
       msb: 10
       lsb: 9

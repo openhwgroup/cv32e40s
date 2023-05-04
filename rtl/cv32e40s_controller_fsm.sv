@@ -31,7 +31,6 @@
 
 module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 #(
-  parameter bit          X_EXT         = 0,
   parameter bit          DEBUG         = 1,
   parameter bit          CLIC          = 0,
   parameter int unsigned CLIC_ID_WIDTH = 5
@@ -131,11 +130,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input logic         fencei_flush_ack_i,
 
   // Data OBI interface monitor
-  if_c_obi.monitor     m_c_obi_data_if,
-
-  // eXtension interface
-  if_xif.cpu_commit    xif_commit_if,
-  input                xif_csr_error_i
+  if_c_obi.monitor     m_c_obi_data_if
 );
 
    // FSM state encoding
@@ -190,7 +185,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   logic ebreak_in_wb;
   logic trigger_match_in_wb;   // mcontrol6 trigger in WB
   logic etrigger_in_wb;        // exception trigger in WB
-  logic xif_in_wb;
   logic clic_ptr_in_wb;   // CLIC pointer caused by directly acking an SHV is in WB (no mret)
 
   logic pending_nmi;
@@ -460,9 +454,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // suppressed by either halt_wb followed by kill_wb (debug), or kill_wb (NMI/interrupt).
   assign etrigger_in_wb = etrigger_wb_i && wb_valid_i;
 
-  // An offloaded instruction is in WB
-  assign xif_in_wb = (ex_wb_pipe_i.xif_en && ex_wb_pipe_i.instr_valid);
-
   // Regular CLIC pointer in WB (not caused by mret)
   assign clic_ptr_in_wb = ex_wb_pipe_i.instr_meta.clic_ptr && ex_wb_pipe_i.instr_valid;
 
@@ -549,13 +540,12 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // impact the current instruction in the pipeline).
   // If the core woke up from sleep due to interrupts, the wakeup reason will be honored
   // by not allowing async debug the cycle after wakeup.
-  assign async_debug_allowed = lsu_interruptible_i && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline && sequence_interruptible &&
+  assign async_debug_allowed = lsu_interruptible_i && !fencei_ongoing && !clic_ptr_in_pipeline && sequence_interruptible &&
                                !woke_to_interrupt_q && !csr_flush_ack_q && !(ctrl_fsm_cs == SLEEP);
 
   // synchronous debug entry have far fewer restrictions than asynchronous entries. In principle synchronous debug entry should have the same
   // 'allowed' signal as exceptions - that is it should always be possible.
-  // todo:XIF When XIF is being finished, debug entry vs xif must be reevaluated.
-  assign sync_debug_allowed = !xif_in_wb && !(ctrl_fsm_cs == SLEEP);
+  assign sync_debug_allowed = !(ctrl_fsm_cs == SLEEP);
 
   // Debug pending for any other synchronous reason than single step
   // Note that the WB stage may be killed for interrupts and NMIs, thus invalidating the instruction causing the sync debug entry.
@@ -610,13 +600,13 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   //   - This is guarded with using the sequence_interruptible, which tracks sequence progress through the WB stage.
   // When a CLIC pointer is in the pipeline stages EX or WB, we must block interrupts.
   //   - Interrupt would otherwise kill the pointer and use the address of the pointer for mepc. A following mret would then return to the mtvt table, losing program progress.
-  assign interrupt_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline &&
+  assign interrupt_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !clic_ptr_in_pipeline &&
                              sequence_interruptible && !interrupt_blanking_q && !csr_flush_ack_q && !csr_flush_ack_q && !(ctrl_fsm_cs == SLEEP);
 
   // Allowing NMI's follow the same rule as regular interrupts, except we don't need to regard blanking of NMIs after a load/store.
   // If the core woke up from sleep due to either debug or regular interrupts, the wakeup reason is honored by not allowing NMIs in the cycle after
   // waking up to such an event.
-  assign nmi_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !xif_in_wb && !clic_ptr_in_pipeline &&
+  assign nmi_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !clic_ptr_in_pipeline &&
                        sequence_interruptible && !(woke_to_debug_q || woke_to_interrupt_q) && !csr_flush_ack_q && !(ctrl_fsm_cs == SLEEP);
 
   // Do not allow interrupts if in debug mode, or single stepping without dcsr.stepie set.
@@ -703,7 +693,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     // Also halting EX if an offloaded instruction in WB may cause an exception, such that a following offloaded
     // instruction can correctly receive commit_kill.
     // Halting EX when an instruction in WB may cause an interrupt to become pending.
-    ctrl_fsm_o.halt_ex          = ctrl_byp_i.minstret_stall || ctrl_byp_i.xif_exception_stall || ctrl_byp_i.irq_enable_stall || ctrl_byp_i.mnxti_ex_stall;
+    ctrl_fsm_o.halt_ex          = ctrl_byp_i.minstret_stall || ctrl_byp_i.irq_enable_stall || ctrl_byp_i.mnxti_ex_stall;
     ctrl_fsm_o.halt_wb          = 1'b0;
     ctrl_fsm_o.halt_limited_wb  = 1'b0;
 
@@ -1545,65 +1535,5 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   assign ctrl_fsm_o.debug_havereset = debug_fsm_cs[HAVERESET_INDEX];
   assign ctrl_fsm_o.debug_running   = debug_fsm_cs[RUNNING_INDEX];
   assign ctrl_fsm_o.debug_halted    = debug_fsm_cs[HALTED_INDEX];
-
-
-  //---------------------------------------------------------------------------
-  // eXtension interface
-  //---------------------------------------------------------------------------
-
-  generate
-    if (X_EXT) begin : x_ext
-      logic commit_valid_q; // Sticky bit for commit_valid
-      logic commit_kill_q;  // Sticky bit for commit_kill
-      logic kill_rejected;  // Signal used to kill rejected xif instructions
-
-      // TODO:XIF Add assertion to check the following:
-      // Every issue interface transaction (whether accepted or not) has an associated commit interface
-      // transaction and both interfaces use a matching transaction ordering.
-
-      // Commit an offloaded instruction in the first cycle where EX is not halted, or EX is killed.
-      //       Only commit when there is an offloaded instruction in EX (accepted or not), and we have not
-      //       previously signalled commit for the same instruction. Rejected xif instructions gets killed
-      //       with commit_kill=1 (pipeline is not killed as we need to handle the illegal instruction in WB)
-      // Can only allow commit when older instructions are guaranteed to complete without exceptions
-      //       - EX is halted if offloaded in WB can cause an exception, causing below to evaluate to 0.
-      assign xif_commit_if.commit_valid       = (!ctrl_fsm_o.halt_ex || ctrl_fsm_o.kill_ex) &&
-                                                 (id_ex_pipe_i.xif_en && id_ex_pipe_i.instr_valid) &&
-                                                 !commit_valid_q; // Make sure we signal only once per instruction
-
-      assign xif_commit_if.commit.id          = id_ex_pipe_i.xif_meta.id;
-      assign xif_commit_if.commit.commit_kill = xif_csr_error_i || ctrl_fsm_o.kill_ex || kill_rejected;
-
-      // Signal commit_kill=1 to all instructions rejected by the eXtension interface
-      assign kill_rejected = (id_ex_pipe_i.xif_en && !id_ex_pipe_i.xif_meta.accepted) && id_ex_pipe_i.instr_valid;
-
-      // Signal (to EX stage), that an (attempted) offloaded instructions is killed (clears ex_wb_pipe.xif_en)
-      assign ctrl_fsm_o.kill_xif = xif_commit_if.commit.commit_kill || commit_kill_q;
-
-      // Flag used to make sure we only signal commit_valid once for each instruction
-      always_ff @(posedge clk, negedge rst_n) begin : commit_valid_ctrl
-        if (rst_n == 1'b0) begin
-          commit_valid_q <= 1'b0;
-          commit_kill_q  <= 1'b0;
-        end else begin
-          if ((ex_valid_i && wb_ready_i) || ctrl_fsm_o.kill_ex) begin
-            commit_valid_q <= 1'b0;
-            commit_kill_q  <= 1'b0;
-          end else begin
-            commit_valid_q <= (xif_commit_if.commit_valid || commit_valid_q);
-            commit_kill_q  <= (xif_commit_if.commit.commit_kill || commit_kill_q);
-          end
-        end
-      end
-
-    end else begin : no_x_ext
-
-      assign xif_commit_if.commit_valid       = '0;
-      assign xif_commit_if.commit.id          = '0;
-      assign xif_commit_if.commit.commit_kill = '0;
-      assign ctrl_fsm_o.kill_xif              = 1'b0;
-
-    end
-  endgenerate
 
 endmodule

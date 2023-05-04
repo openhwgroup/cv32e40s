@@ -30,7 +30,6 @@
 
 ${DESIGN_RTL_DIR}/include/cv32e40s_pkg.sv
 ${DESIGN_RTL_DIR}/if_c_obi.sv
-${DESIGN_RTL_DIR}/if_xif.sv
 ${DESIGN_RTL_DIR}/../bhv/include/cv32e40s_rvfi_pkg.sv
 ${DESIGN_RTL_DIR}/../bhv/cv32e40s_wrapper.sv
 ${DESIGN_RTL_DIR}/cv32e40s_align_check.sv

@@ -65,7 +65,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    input logic  core_one_txn_pend_n,
 
    // Indication from the core that MPU errors should be reported after all in flight transactions
-   // are complete (default behavior for main core requests, but not used for XIF requests)
+   // are complete
    input logic  core_mpu_err_wait_i,
 
    // Report MPU errors to the core immediatly (used in case core_mpu_err_wait_i is not asserted)

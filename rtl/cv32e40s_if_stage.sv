@@ -30,8 +30,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 #(
   parameter rv32_e       RV32            = RV32I,
   parameter b_ext_e      B_EXT           = B_NONE,
-  parameter bit          X_EXT           = 0,
-  parameter int unsigned X_ID_WIDTH      = 4,
   parameter int          PMA_NUM_REGIONS = 0,
   parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
   parameter int unsigned PMP_GRANULARITY = 0,
@@ -113,11 +111,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   output  logic         lfsr_shift_o,
 
   output  logic         integrity_err_o,
-  output  logic         protocol_err_o,
-
-  // eXtension interface
-  if_xif.cpu_compressed xif_compressed_if,      // XIF compressed interface
-  input  logic          xif_offloading_id_i     // ID stage attempts to offload an instruction
+  output  logic         protocol_err_o
 );
 
   // ALBUF_DEPTH set to 3 as the alignment_buffer will need 3 entries to function correctly
@@ -175,9 +169,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   // Local instr_valid
   logic              instr_valid;
-
-  // eXtension interface signals
-  logic [X_ID_WIDTH-1:0] xif_id;
 
   // ready signal for predecoder, tied to id_ready_i
   logic              predec_ready;
@@ -530,7 +521,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       if_id_pipe_o.compressed_instr <= '0;
       if_id_pipe_o.priv_lvl         <= PRIV_LVL_M;
       if_id_pipe_o.trigger_match    <= 1'b0;
-      if_id_pipe_o.xif_id           <= '0;
       if_id_pipe_o.ptr              <= '0;
       if_id_pipe_o.last_op          <= 1'b0;
       if_id_pipe_o.first_op         <= 1'b0;
@@ -549,7 +539,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
         if_id_pipe_o.priv_lvl         <= prefetch_priv_lvl;
         if_id_pipe_o.trigger_match    <= dummy_insert ? 1'b0 : trigger_match_i;
-        if_id_pipe_o.xif_id           <= xif_id;
         if_id_pipe_o.last_op          <= last_op_o;
         if_id_pipe_o.first_op         <= first_op;
         if_id_pipe_o.abort_op         <= abort_op_o;
@@ -707,31 +696,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
     end : gen_no_dummy_instr
   endgenerate
 
-
-
-  //---------------------------------------------------------------------------
-  // eXtension interface
-  //---------------------------------------------------------------------------
-
-  generate
-    if (X_EXT) begin : x_ext
-
-      // TODO:XIF implement offloading of compressed instruction
-      assign xif_compressed_if.compressed_valid = '0;
-      assign xif_compressed_if.compressed_req   = '0;
-
-      // TODO:XIF assert that the oustanding IDs are unique
-      assign xif_id = xif_offloading_id_i ? if_id_pipe_o.xif_id + 1 : if_id_pipe_o.xif_id;
-
-    end else begin : no_x_ext
-
-      assign xif_compressed_if.compressed_valid = '0;
-      assign xif_compressed_if.compressed_req   = '0;
-
-      assign xif_id                             = '0;
-
-    end
-  endgenerate
 
   // Set error outputs
   assign integrity_err_o = integrity_err_obi;
