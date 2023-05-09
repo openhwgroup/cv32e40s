@@ -107,7 +107,7 @@ module cv32e40s_dummy_instr
   end
 
   always_comb begin
-    unique case (lfsr_instr)
+    case (lfsr_instr)
       2'b00 : begin // ADD
         funct3 = FUNCT3_ADD;
         funct7 = FUNCT7_ADD;
@@ -127,6 +127,11 @@ module cv32e40s_dummy_instr
         funct3 = FUNCT3_BLTU;
         funct7 = 7'h0; // Funct7 bits not used for B-type instructions
         opcode = OPCODE_BRANCH;
+      end
+      default: begin
+        funct3 = FUNCT3_ADD;
+        funct7 = FUNCT7_ADD;
+        opcode = OPCODE_OP;
       end
     endcase // unique case (lfsr[31:30])
   end
