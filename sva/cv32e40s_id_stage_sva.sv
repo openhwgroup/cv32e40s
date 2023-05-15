@@ -32,8 +32,6 @@ module cv32e40s_id_stage_sva
 (
   input logic           clk,
   input logic           rst_n,
-
-  input logic [31:0]    instr,
   input logic [1:0]     rf_re,
   input logic           rf_we,
   input logic           rf_we_dec,
@@ -46,14 +44,7 @@ module cv32e40s_id_stage_sva
   input logic           lsu_en,
   input alu_op_a_mux_e  alu_op_a_mux_sel,
   input alu_op_b_mux_e  alu_op_b_mux_sel,
-  input logic           lsu_we,
   input op_c_mux_e      op_c_mux_sel,
-  input logic           sys_dret_insn,
-  input logic           sys_ebrk_insn,
-  input logic           sys_ecall_insn,
-  input logic           sys_fencei_insn,
-  input logic           sys_mret_insn,
-  input logic           sys_wfi_insn,
   input logic           ex_ready_i,
   input logic           illegal_insn,
   input logic [31:0]    operand_a_fw,
@@ -62,7 +53,6 @@ module cv32e40s_id_stage_sva
   input rf_addr_t       rf_raddr_o[REGFILE_NUM_READ_PORTS],
   input rf_data_t       rf_rdata_i[REGFILE_NUM_READ_PORTS],
   input csr_opcode_e    csr_op,
-  input if_id_pipe_t    if_id_pipe_i,
   input id_ex_pipe_t    id_ex_pipe_o,
   input ex_wb_pipe_t    ex_wb_pipe,
   input logic           id_ready_o,
@@ -76,9 +66,6 @@ module cv32e40s_id_stage_sva
   input logic           alu_jmpr,
   input logic [31:0]    jmp_target_o,
   input logic           jmp_taken_id_ctrl_i
-
-
-
 );
 
 /* todo: check and fix/remove

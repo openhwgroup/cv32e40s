@@ -870,13 +870,11 @@ typedef enum logic[1:0] {
                     } alu_op_b_mux_e;
 
 // Immediate b selection
-typedef enum logic[2:0] {
-                         IMMB_I      = 3'b000,
-                         IMMB_S      = 3'b001,
-                         IMMB_U      = 3'b010,
-                         IMMB_PCINCR = 3'b011,
-                         IMMB_CIW    = 3'b100,
-                         IMMB_CL    = 3'b101
+typedef enum logic[1:0] {
+                         IMMB_I      = 2'b00,
+                         IMMB_S      = 2'b01,
+                         IMMB_U      = 2'b10,
+                         IMMB_PCINCR = 2'b11
                          } imm_b_mux_e;
 
 // Operand c selection
@@ -1430,7 +1428,7 @@ typedef struct packed {
   logic         jalr_stall;             // Stall due to JALR hazard (JALR used result from EX or LSU result in WB)
   logic         load_stall;             // Stall due to load operation
   logic         csr_stall;
-  logic         wfi_wfe_stall;
+  logic         sleep_stall;            // Stall ID due to sleep (e.g. WFI, WFE) instruction in EX
   logic         mnxti_id_stall;         // Stall ID due to mnxti CSR access in EX
   logic         mnxti_ex_stall;         // Stall EX due to LSU instruction in WB
   logic         minstret_stall;         // Stall due to minstret/h read in EX
@@ -1471,7 +1469,7 @@ typedef struct packed {
   logic        debug_mode;             // Flag signalling we are in debug mode, valid for ID, EX and WB
   logic [2:0]  debug_cause;            // cause of debug entry
   logic        debug_csr_save;         // Update debug CSRs
-  logic        debug_wfi_wfe_no_sleep; // Debug prevents core from sleeping after WFI
+  logic        debug_no_sleep;         // Debug prevents core from sleeping after WFI, etc.
   logic        debug_havereset;        // Signal to external debugger that we have reset
   logic        debug_running;          // Signal to external debugger that we are running (not in debug)
   logic        debug_halted;           // Signal to external debugger that we are halted (in debug mode)

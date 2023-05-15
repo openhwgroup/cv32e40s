@@ -684,7 +684,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
     //   - If not checking for id_stage_haltable for interrupts and debug, the core could end up in a situation where it tries to create a bubble
     //     by halting ID, but the condition disallowing interrupt or debug will not disappear until the sequence currently handled by the ID stage
     //     is done. This would create an unrecoverable deadlock.
-    ctrl_fsm_o.halt_id          = (ctrl_byp_i.jalr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.wfi_wfe_stall || ctrl_byp_i.mnxti_id_stall) ||
+    ctrl_fsm_o.halt_id          = (ctrl_byp_i.jalr_stall || ctrl_byp_i.load_stall || ctrl_byp_i.csr_stall || ctrl_byp_i.sleep_stall || ctrl_byp_i.mnxti_id_stall) ||
                                   ((pending_interrupt || pending_nmi || pending_nmi_early) && debug_interruptible && id_stage_haltable)                             ||
                                   ((pending_async_debug || pending_sync_debug) && id_stage_haltable);
 
@@ -1272,8 +1272,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   end
 
   // Wakeup from sleep
-  assign ctrl_fsm_o.wake_from_sleep        = pending_nmi || irq_wu_ctrl_i || pending_async_debug || debug_mode_q || (wfe_in_wb && wu_wfe_i); // Only WFE wakes up for wfe_wu_i
-  assign ctrl_fsm_o.debug_wfi_wfe_no_sleep = debug_mode_q || dcsr_i.step;
+  assign ctrl_fsm_o.wake_from_sleep = pending_nmi || irq_wu_ctrl_i || pending_async_debug || debug_mode_q || (wfe_in_wb && wu_wfe_i); // Only WFE wakes up for wfe_wu_i
+  assign ctrl_fsm_o.debug_no_sleep = debug_mode_q || dcsr_i.step;
 
   ////////////////////
   // Flops          //

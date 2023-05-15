@@ -207,6 +207,10 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // Prevent load/store following a WFI or WFE in the pipeline
   assign ctrl_byp_o.wfi_wfe_stall = (id_ex_pipe_i.sys_en && (id_ex_pipe_i.sys_wfi_insn || id_ex_pipe_i.sys_wfe_insn) && id_ex_pipe_i.instr_valid);
 
+  // Stall ID when instruction that can trigger sleep (e.g. WFI or WFE) is active in EX.
+  // Prevent load/store following a sleep instruction in the pipeline
+  assign ctrl_byp_o.sleep_stall = (id_ex_pipe_i.sys_en && (id_ex_pipe_i.sys_wfi_insn || id_ex_pipe_i.sys_wfe_insn) && id_ex_pipe_i.instr_valid);
+
   // Stall ID when mnxti CSR is accessed in EX
   // This is needed because the data bypass from EX uses csr_rdata, and for mnxti this is actually mstatus and not the result
   // that will be written to the register file. Could be optimized to only stall when the result from the CSR instruction is used in ID,

@@ -100,7 +100,7 @@ module cv32e40s_write_buffer import cv32e40s_pkg::*;
   ///////////////////////////////////////////
   always_ff @(posedge clk, negedge rst_n) begin
     if(!rst_n) begin
-      trans_q <= '0;
+      trans_q <= obi_data_req_t'{we: 1'b1, default: '0};
     end else if (push) begin
       trans_q <= trans_i;
     end

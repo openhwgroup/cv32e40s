@@ -70,7 +70,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
 
   // Instruction bus interface
-  if_c_obi.master       m_c_obi_instr_if,
+  cv32e40x_if_c_obi.master m_c_obi_instr_if,
 
   output if_id_pipe_t   if_id_pipe_o,           // IF/ID pipeline stage
   output logic [31:0]   pc_if_o,                // Program counter
