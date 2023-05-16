@@ -369,7 +369,7 @@ module cv32e40s_controller_fsm_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                       // Disregard higher priority exceptions and trigger match, and debug as WFI masked during debug
                       !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
-                      !ctrl_fsm_o.debug_wfi_wfe_no_sleep &&
+                      !ctrl_fsm_o.debug_no_sleep &&
                       // Check for wfi in instruction word and user mode
                       ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h10500073) && ex_wb_pipe_i.instr_valid && (priv_lvl_i == PRIV_LVL_U) && !mstatus_i.tw)
                       |-> (!exception_in_wb && (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_wfi_insn)))
