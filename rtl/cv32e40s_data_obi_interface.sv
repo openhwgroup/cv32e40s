@@ -58,7 +58,7 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   input xsecure_ctrl_t   xsecure_ctrl_i,
 
   // OBI interface
-  if_c_obi.master     m_c_obi_data_if
+  cv32e40s_if_c_obi.master m_c_obi_data_if
 );
 
 

@@ -130,7 +130,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input logic         fencei_flush_ack_i,
 
   // Data OBI interface monitor
-  if_c_obi.monitor     m_c_obi_data_if
+  cv32e40s_if_c_obi.monitor m_c_obi_data_if
 );
 
    // FSM state encoding

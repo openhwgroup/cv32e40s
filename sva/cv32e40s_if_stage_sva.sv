@@ -39,7 +39,7 @@ module cv32e40s_if_stage_sva
   input privlvl_t       prefetch_priv_lvl,
   input logic           dummy_insert,
   input if_id_pipe_t    if_id_pipe_o,
-  if_c_obi.monitor      m_c_obi_instr_if,
+  cv32e40s_if_c_obi.monitor m_c_obi_instr_if,
   input logic [31:0]    mstateen0_i,
   input logic           seq_tbljmp,
   input  logic          seq_valid,

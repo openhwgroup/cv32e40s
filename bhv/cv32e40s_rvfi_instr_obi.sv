@@ -39,7 +39,7 @@ module cv32e40s_rvfi_instr_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg:
   input logic                           prefetch_trans_ready_i,
   input logic                           prefetch_resp_valid_i,
 
-  cv32e40x_if_c_obi.monitor             m_c_obi_instr_if,
+  cv32e40s_if_c_obi.monitor             m_c_obi_instr_if,
 
   output rvfi_obi_instr_t               obi_instr                               // OBI address and response phase packet aligned to IF timing
 );
@@ -111,14 +111,14 @@ module cv32e40s_rvfi_instr_obi import cv32e40s_pkg::*; import cv32e40s_rvfi_pkg:
   // trans_accepted is based on the core side control signals from the MPU.
   // When there is no MPU fault, trans_accepted will have the same timing as
   // m_c_obi_instr_if.s_req.req, since the control signals are passed directly through the MPU,
-  // and cv32e40x_instr_obi_interface will be in TRANSPARENT mode (trans_ready_o == 1'b1).
+  // and cv32e40s_instr_obi_interface will be in TRANSPARENT mode (trans_ready_o == 1'b1).
   // Upon MPU fault, req_payload will be undefined.
   assign fifo_req_push = trans_accepted;
 
   // Push OBI response phase signals into FIFO when response is valid.
   // response_valid is based on the core side control signal from the MPU.
   // When there is no MPU fault, response_valid will have the same timing as
-  // m_c_obi_instr_if.s_rvalid.rvalid, since this signal is passed directly through cv32e40x_instr_obi_interface and the MPU.
+  // m_c_obi_instr_if.s_rvalid.rvalid, since this signal is passed directly through cv32e40s_instr_obi_interface and the MPU.
   // Upon MPU fault, resp_payload will be undefined, with the exception of resp_payload.mpu_status
   assign fifo_resp_push = response_valid;
 

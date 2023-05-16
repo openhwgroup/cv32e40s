@@ -532,7 +532,7 @@ endgenerate
 `ifndef FORMAL
   bind cv32e40s_rvfi:
     rvfi_i
-    cv32e40x_rvfi_sim_trace
+    cv32e40s_rvfi_sim_trace
       tracer_i(.*);
 `endif
 
