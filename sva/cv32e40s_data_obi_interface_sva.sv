@@ -29,7 +29,7 @@ module cv32e40s_data_obi_interface_sva
 (
   input logic           clk,
   input logic           rst_n,
-  if_c_obi.monitor      m_c_obi_data_if,
+  cv32e40s_if_c_obi.monitor m_c_obi_data_if,
   input logic           gntpar_err,
   input logic           gntpar_err_q,
   input obi_data_resp_t resp_o,

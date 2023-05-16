@@ -41,7 +41,7 @@ module cv32e40s_load_store_unit_sva
    input mpu_status_e lsu_mpu_status_1_o, // WB mpu status
    input align_status_e lsu_align_status_1_o,
    input ex_wb_pipe_t ex_wb_pipe_i,
-   if_c_obi.monitor  m_c_obi_data_if,
+   cv32e40s_if_c_obi.monitor  m_c_obi_data_if,
    input logic       id_valid,
    input logic       ex_ready,
    input logic       lsu_en_id,

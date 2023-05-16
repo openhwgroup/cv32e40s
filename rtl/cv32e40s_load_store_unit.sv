@@ -43,7 +43,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   input  ctrl_fsm_t   ctrl_fsm_i,
 
   // output to data memory
-  if_c_obi.master     m_c_obi_data_if,
+  cv32e40s_if_c_obi.master m_c_obi_data_if,
 
   // ID/EX pipeline
   input id_ex_pipe_t  id_ex_pipe_i,
@@ -116,7 +116,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic           alcheck_trans_pushpop;
   obi_data_req_t  alcheck_trans;
 
-  // Transaction request to cv32e40x_mpu
+  // Transaction request to cv32e40s_mpu
   logic           mpu_trans_valid;
   logic           mpu_trans_ready;
   logic           mpu_trans_pushpop;
@@ -137,7 +137,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic [31:0]    alcheck_resp_rdata;
   data_resp_t     alcheck_resp;
 
-  // Transaction response interface (from cv32e40x_mpu)
+  // Transaction response interface (from cv32e40s_mpu)
   logic           mpu_resp_valid;
   data_resp_t     mpu_resp;
 

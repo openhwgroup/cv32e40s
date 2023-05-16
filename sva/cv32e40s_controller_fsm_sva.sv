@@ -245,7 +245,7 @@ module cv32e40s_controller_fsm_sva
   //          lsu_err_wb_i.bus_err || lsu_err_wb_i.integrity_err |-> ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.lsu_en)
   //    else `uvm_error("controller", "lsu_error in WB with no valid LSU instruction")
 
-  // Check that fencei handshake is only exersiced when there's a fencei in the writeback stage
+  // Check that fencei handshake is only exercised when there is a fencei in the writeback stage
   a_fencei_hndshk_fencei_wb :
     assert property (@(posedge clk) disable iff (!rst_n)
            fencei_flush_req_o |-> fencei_in_wb)
@@ -369,7 +369,7 @@ module cv32e40s_controller_fsm_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                       // Disregard higher priority exceptions and trigger match, and debug as WFI masked during debug
                       !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
-                      !ctrl_fsm_o.debug_wfi_wfe_no_sleep &&
+                      !ctrl_fsm_o.debug_no_sleep &&
                       // Check for wfi in instruction word and user mode
                       ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h10500073) && ex_wb_pipe_i.instr_valid && (priv_lvl_i == PRIV_LVL_U) && !mstatus_i.tw)
                       |-> (!exception_in_wb && (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_wfi_insn)))

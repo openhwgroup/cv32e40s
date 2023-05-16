@@ -382,8 +382,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        lfsr_shift_id;
 
   // Internal OBI interfaces
-  if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
-  if_c_obi #(.REQ_TYPE(obi_data_req_t), .RESP_TYPE(obi_data_resp_t))  m_c_obi_data_if();
+  cv32e40s_if_c_obi #(.REQ_TYPE(obi_inst_req_t), .RESP_TYPE(obi_inst_resp_t))  m_c_obi_instr_if();
+  cv32e40s_if_c_obi #(.REQ_TYPE(obi_data_req_t), .RESP_TYPE(obi_data_resp_t))  m_c_obi_data_if();
 
   // Connect toplevel OBI signals to internal interfaces
   assign instr_req_o                         = m_c_obi_instr_if.s_req.req;
