@@ -40,14 +40,29 @@ module cv32e40s_dummy_instr_sva
    input logic                 cnt_rst,
    input logic                 if_valid_i,
    input logic                 id_ready_i,
-   input logic                 hint_id_i
+   input logic                 hint_if_i,
+   input logic                 ptr_in_if_i
    );
+
+   // Helper logic that remembers if the last instruction from IF to ID was a hint instruction.
+   // Hint instructions will shift LFSRs, changing the rules for allowed counter values.
+   // Excluding any pointers, as these are not counted as instructions.
+   logic last_ins_was_hint;
+   always_ff @(posedge clk, negedge rst_n) begin
+    if (rst_n == 1'b0) begin
+      last_ins_was_hint <= 1'b0;
+    end else begin
+      if (if_valid_i && id_ready_i && !ptr_in_if_i) begin
+        last_ins_was_hint <= hint_if_i;
+      end
+    end
+  end
 
   // Assert that counter stopped correctly when inserting dummy instruction
   // When no hint is in ID, the cnt_q should be exactly lfsr_cnt + 1
   a_no_count_overflow_nohint :
     assert property (@(posedge clk) disable iff (!rst_n)
-                     dummy_insert_o && !hint_id_i |-> (cnt_q == lfsr_cnt + 1))
+                     dummy_insert_o && !last_ins_was_hint |-> (cnt_q == lfsr_cnt + 1))
       else `uvm_error("Dummy Instruction Insertion", "Counter counted further than lfsr_cnt + 1");
 
   // When a dummy is inserted and at the same time a hint is in ID, the counter value
@@ -55,7 +70,7 @@ module cv32e40s_dummy_instr_sva
   // dummy insertion threshold.
   a_no_count_overflow_hint :
     assert property (@(posedge clk) disable iff (!rst_n)
-                      dummy_insert_o && hint_id_i |-> (cnt_q >= (lfsr_cnt + 1)))
+                      dummy_insert_o && last_ins_was_hint |-> (cnt_q >= (lfsr_cnt + 1)))
       else `uvm_error("Dummy Instruction Insertion", "Counter counted further than lfsr_cnt + 1");
 
   // Assert that we never count when counter has passed the compare value

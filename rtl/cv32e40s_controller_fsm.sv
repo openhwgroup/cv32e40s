@@ -295,8 +295,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   // - Blocking dummies if there is a non-first op in IF (sequencer is in the middle of a sequence)
   // a_no_back_to_back_dummy in if_stage_sva checks that dummies can't come back-to-back with no other instructions in between.
   assign  ctrl_fsm_o.allow_dummy_instr = !dcsr_i.step  &&  // Valid in IF because it can only be written in debug mode
-                                         !debug_mode_q &&  // Valid in IF because pipeline is killed when entering and exiting debug
-                                         (first_op_nondummy_if_i && prefetch_valid_if_i);
+                                         !debug_mode_q;    // Valid in IF because pipeline is killed when entering and exiting debug
+
 
   // ID stage
 

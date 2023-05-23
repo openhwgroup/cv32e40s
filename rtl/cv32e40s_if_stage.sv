@@ -676,17 +676,23 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   generate
     if (DUMMY_INSTRUCTIONS) begin : gen_dummy_instr
       logic instr_issued; // Used to count issued instructions between dummy instructions
-      assign instr_issued = if_valid_o && id_ready_i;
+
+      // Count instructions when first_op==1 to not count suboperations of sequences
+      // Do not count pointers as instructions
+      assign instr_issued = if_valid_o && id_ready_i && first_op && !ptr_in_if_o;
 
       cv32e40s_dummy_instr
         dummy_instr_i
-          (.clk            ( clk            ),
-           .rst_n          ( rst_n          ),
-           .instr_issued_i ( instr_issued   ),
-           .ctrl_fsm_i     ( ctrl_fsm_i     ),
-           .xsecure_ctrl_i ( xsecure_ctrl_i ),
-           .dummy_insert_o ( dummy_insert   ),
-           .dummy_instr_o  ( dummy_instr    )
+          (.clk                 ( clk                 ),
+           .rst_n               ( rst_n               ),
+           .instr_issued_i      ( instr_issued        ),
+           .first_op_nondummy_i ( first_op_nondummy_o ),
+           .prefetch_valid_i    ( prefetch_valid      ),
+           .ptr_in_if_i         ( ptr_in_if_o         ),
+           .ctrl_fsm_i          ( ctrl_fsm_i          ),
+           .xsecure_ctrl_i      ( xsecure_ctrl_i      ),
+           .dummy_insert_o      ( dummy_insert        ),
+           .dummy_instr_o       ( dummy_instr         )
            );
 
     end : gen_dummy_instr

@@ -212,7 +212,7 @@ module cv32e40s_wrapper
     (
       .if_valid_i ( core_i.if_valid                   ),
       .id_ready_i ( core_i.id_ready                   ),
-      .hint_id_i  ( core_i.if_id_pipe.instr_meta.hint ),
+      .hint_if_i  ( core_i.if_stage_i.instr_hint      ),
       .*
     );
     end
