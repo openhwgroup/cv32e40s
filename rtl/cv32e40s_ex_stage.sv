@@ -137,7 +137,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
                                id_ex_pipe_i.instr.bus_resp.err               ||
                                (id_ex_pipe_i.instr.mpu_status != MPU_OK)     ||
                                (id_ex_pipe_i.instr.align_status != ALIGN_OK) ||
-                               id_ex_pipe_i.trigger_match)                   &&
+                               |id_ex_pipe_i.trigger_match)                  &&
                               id_ex_pipe_i.instr_valid;
 
   // ALU write port mux
@@ -363,7 +363,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
       ex_wb_pipe_o.sys_wfi_insn       <= 1'b0;
       ex_wb_pipe_o.sys_wfe_insn       <= 1'b0;
 
-      ex_wb_pipe_o.trigger_match      <= 1'b0;
+      ex_wb_pipe_o.trigger_match      <= '0;
 
       ex_wb_pipe_o.lsu_en             <= 1'b0;
       ex_wb_pipe_o.csr_en             <= 1'b0;

@@ -332,6 +332,9 @@ module cv32e40s_wrapper
                                 .tselect_q     (core_i.cs_registers_i.debug_triggers_i.gen_triggers.tselect_q),
                                 .tdata1_q      (core_i.cs_registers_i.debug_triggers_i.gen_triggers.tdata1_q),
                                 .tdata2_q      (core_i.cs_registers_i.debug_triggers_i.gen_triggers.tdata2_q),
+                                .trigger_match_if_wb (core_i.ex_wb_pipe.trigger_match),
+                                .trigger_match_ex_wb (core_i.wpt_match_wb),
+                                .wb_valid_i          (core_i.wb_valid),
                                 .*);
     end
   endgenerate
@@ -369,7 +372,8 @@ module cv32e40s_wrapper
       #(.DEBUG (DEBUG),
         .PMA_NUM_REGIONS(PMA_NUM_REGIONS),
         .CLIC(CLIC),
-        .REGFILE_NUM_READ_PORTS(core_i.REGFILE_NUM_READ_PORTS))
+        .REGFILE_NUM_READ_PORTS(core_i.REGFILE_NUM_READ_PORTS),
+        .DBG_NUM_TRIGGERS(DBG_NUM_TRIGGERS))
       core_sva (// probed cs_registers signals
                 .cs_registers_mie_q               (core_i.cs_registers_i.mie_q),
                 .cs_registers_mepc_n              (core_i.cs_registers_i.mepc_n),
@@ -731,9 +735,6 @@ endgenerate
          .csr_tdata2_n_i           ( core_i.cs_registers_i.debug_triggers_i.tdata2_n_r                    ),
          .csr_tdata2_q_i           ( core_i.cs_registers_i.tdata2_rdata                                   ),
          .csr_tdata2_we_i          ( core_i.cs_registers_i.debug_triggers_i.tdata2_we_r                   ),
-         .csr_tdata3_n_i           ( core_i.cs_registers_i.debug_triggers_i.tdata3_n                      ),
-         .csr_tdata3_q_i           ( core_i.cs_registers_i.tdata3_rdata                                   ),
-         .csr_tdata3_we_i          ( core_i.cs_registers_i.tdata3_we                                      ),
          .csr_tinfo_n_i            ( core_i.cs_registers_i.debug_triggers_i.tinfo_n                       ),
          .csr_tinfo_q_i            ( core_i.cs_registers_i.tinfo_rdata                                    ),
          .csr_tinfo_we_i           ( core_i.cs_registers_i.tinfo_we                                       ),
@@ -761,9 +762,6 @@ endgenerate
          .csr_mstatush_n_i         ( core_i.cs_registers_i.mstatush_n                                     ),
          .csr_mstatush_q_i         ( core_i.cs_registers_i.mstatush_rdata                                 ),
          .csr_mstatush_we_i        ( core_i.cs_registers_i.mstatush_we                                    ),
-         .csr_tcontrol_n_i         ( core_i.cs_registers_i.debug_triggers_i.tcontrol_n                    ),
-         .csr_tcontrol_q_i         ( core_i.cs_registers_i.tcontrol_rdata                                 ),
-         .csr_tcontrol_we_i        ( core_i.cs_registers_i.tcontrol_we                                    ),
          .csr_tselect_n_i          ( core_i.cs_registers_i.debug_triggers_i.tselect_n                     ),
          .csr_tselect_q_i          ( core_i.cs_registers_i.tselect_rdata                                  ),
          .csr_tselect_we_i         ( core_i.cs_registers_i.tselect_we                                     ),
