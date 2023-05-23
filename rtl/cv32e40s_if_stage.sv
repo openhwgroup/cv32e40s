@@ -66,7 +66,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   input  logic [MTVT_ADDR_WIDTH-1:0]   mtvt_addr_i,            // Base address for CLIC vectoring
 
   input ctrl_fsm_t      ctrl_fsm_i,
-  input  logic          trigger_match_i,
+  input  logic [31:0]   trigger_match_i,
 
 
   // Instruction bus interface
@@ -484,7 +484,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Set flag to indicate that instruction/sequence will be aborted due to known exceptions or trigger match
   assign abort_op_o = dummy_insert ? 1'b0 :
                       (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK) ||
-                      (instr_decompressed.bus_resp.integrity_err) || (instr_decompressed.align_status != ALIGN_OK) || trigger_match_i);
+                      (instr_decompressed.bus_resp.integrity_err) || (instr_decompressed.align_status != ALIGN_OK) || |trigger_match_i);
 
   assign prefetch_valid_o = prefetch_valid;
 
@@ -520,7 +520,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       if_id_pipe_o.illegal_c_insn   <= 1'b0;
       if_id_pipe_o.compressed_instr <= '0;
       if_id_pipe_o.priv_lvl         <= PRIV_LVL_M;
-      if_id_pipe_o.trigger_match    <= 1'b0;
+      if_id_pipe_o.trigger_match    <= '0;
       if_id_pipe_o.ptr              <= '0;
       if_id_pipe_o.last_op          <= 1'b0;
       if_id_pipe_o.first_op         <= 1'b0;

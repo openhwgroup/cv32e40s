@@ -259,7 +259,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
       assign load_access           = !core_trans_i.we;
       assign core_trans_we         = core_trans_i.we;
       assign pmp_req_type          = core_trans_we ? PMP_ACC_WRITE : PMP_ACC_READ;
-      assign core_resp_o.wpt_match = 1'b0; // Will be set by upstream wpt-module within load_store_unit
+      assign core_resp_o.wpt_match = '0; // Will be set by upstream wpt-module within load_store_unit
     end
   endgenerate
 

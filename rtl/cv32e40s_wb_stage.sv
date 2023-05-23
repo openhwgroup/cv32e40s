@@ -51,7 +51,7 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   // LSU
   input  logic [31:0]   lsu_rdata_i,
   input  mpu_status_e   lsu_mpu_status_i,
-  input  logic          lsu_wpt_match_i,
+  input  logic [31:0]   lsu_wpt_match_i,
   input  align_status_e lsu_align_status_i,
 
   // Register file interface
@@ -73,7 +73,7 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   output logic          wb_valid_o,
 
   // Sticky WB outputs
-  output logic          wpt_match_wb_o,
+  output logic [31:0]   wpt_match_wb_o,
   output mpu_status_e   mpu_status_wb_o,
   output align_status_e align_status_wb_o,
 
@@ -91,12 +91,12 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
 
   // Flops for making volatile LSU outputs sticky until wb_valid
   mpu_status_e          lsu_mpu_status_q;
-  logic                 lsu_wpt_match_q;
+  logic [31:0]          lsu_wpt_match_q;
   align_status_e        lsu_align_status_q;
   logic                 lsu_valid_q;
 
   mpu_status_e          lsu_mpu_status;
-  logic                 lsu_wpt_match;
+  logic [31:0]          lsu_wpt_match;
   align_status_e        lsu_align_status;
   logic                 lsu_valid;
   // WB stage has two halt sources, ctrl_fsm_i.halt_wb and ctrl_fsm_i.halt_limited_wb. The limited halt is only set during
@@ -122,7 +122,7 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   // In case of MPU/PMA error, the register file should not be written.
   // rf_we_wb_o is deasserted if lsu_mpu_status is not equal to MPU_OK
 
-  assign rf_we_wb_o     = ex_wb_pipe_i.rf_we && !lsu_exception && !lsu_wpt_match && instr_valid;
+  assign rf_we_wb_o     = ex_wb_pipe_i.rf_we && !lsu_exception && !(|lsu_wpt_match) && instr_valid;
 
   assign rf_waddr_wb_o  = ex_wb_pipe_i.rf_waddr;
 
@@ -178,14 +178,14 @@ module cv32e40s_wb_stage import cv32e40s_pkg::*;
   always_ff @(posedge clk, negedge rst_n) begin
     if (rst_n == 1'b0) begin
       lsu_valid_q <= 1'b0;
-      lsu_wpt_match_q <= 1'b0;
+      lsu_wpt_match_q <= '0;
       lsu_mpu_status_q <= MPU_OK;
       lsu_align_status_q <= ALIGN_OK;
     end else begin
       if (wb_valid || ctrl_fsm_i.kill_wb) begin
         // Clear sticky LSU bits when WB is done
         lsu_valid_q <= 1'b0;
-        lsu_wpt_match_q <= 1'b0;
+        lsu_wpt_match_q <= '0;
         lsu_mpu_status_q <= MPU_OK;
         lsu_align_status_q <= ALIGN_OK;
       end else begin

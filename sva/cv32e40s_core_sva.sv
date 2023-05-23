@@ -29,7 +29,8 @@ module cv32e40s_core_sva
     parameter int PMA_NUM_REGIONS = 0,
     parameter bit CLIC = 0,
     parameter int unsigned REGFILE_NUM_READ_PORTS = 2,
-    parameter bit DEBUG = 1
+    parameter bit DEBUG = 1,
+    parameter int DBG_NUM_TRIGGERS = 1
   )
   (
   input logic        clk,
@@ -110,6 +111,8 @@ module cv32e40s_core_sva
 
   input rf_addr_t      rf_raddr_id[REGFILE_NUM_READ_PORTS],
   input rf_data_t      rf_rdata_id[REGFILE_NUM_READ_PORTS],
+
+  input logic [31:0]   lsu_wpt_match_wb,
 
   input logic        alu_jmpr_id_i,
   input logic        alu_en_id_i,
@@ -864,6 +867,17 @@ generate
       else `uvm_error("core", "Assertion a_single_step_no_irq failed")
 
     // todo: add similar assertion as above to check that only one instruction moves from IF to ID while taking a single step (rename inst_taken to inst_taken_id and introduce similar inst_taken_if signal)
+
+    // Check that unused trigger bits remain zero
+    a_unused_trigger_bits:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                    1'b1
+                    |->
+                    (|if_id_pipe.trigger_match[31:DBG_NUM_TRIGGERS] == 1'b0) &&
+                    (|id_ex_pipe.trigger_match[31:DBG_NUM_TRIGGERS] == 1'b0) &&
+                    (|ex_wb_pipe.trigger_match[31:DBG_NUM_TRIGGERS] == 1'b0) &&
+                    (|lsu_wpt_match_wb[31:DBG_NUM_TRIGGERS] == 1'b0))
+      else `uvm_error("core", "Unused trigger bits are not zero")
 
   end
 endgenerate

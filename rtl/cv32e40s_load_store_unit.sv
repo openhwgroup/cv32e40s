@@ -53,7 +53,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   output logic        interruptible_o,
 
   // Trigger match input
-  input logic         trigger_match_0_i,
+  input logic [31:0]  trigger_match_0_i,
 
   // Stage 0 outputs (EX)
   output logic        lsu_split_0_o,            // Misaligned access is split in two transactions (to controller)
@@ -69,7 +69,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   output lsu_err_wb_t lsu_err_1_o,
   output logic [31:0] lsu_rdata_1_o,            // LSU read data
   output mpu_status_e lsu_mpu_status_1_o,       // MPU (PMA) status, response/WB timing. To controller and wb_stage
-  output logic        lsu_wpt_match_1_o,        // Address match trigger, WB timing.
+  output logic [31:0] lsu_wpt_match_1_o,        // Address match trigger, WB timing.
 
   // PMP CSR's
   input               pmp_csr_t csr_pmp_i,

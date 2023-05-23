@@ -48,8 +48,8 @@ module cv32e40s_load_store_unit_sva
    input logic       lsu_first_op_0_o,
    input logic       valid_0_i,
    input logic       ready_0_i,
-   input logic       trigger_match_0_i,
-   input logic       lsu_wpt_match_1_o
+   input logic [31:0] trigger_match_0_i,
+   input logic [31:0] lsu_wpt_match_1_o
   );
 
   // Check that outstanding transaction count will not overflow DEPTH
@@ -225,13 +225,13 @@ if (DEBUG) begin
   assert property (@(posedge clk) disable iff (!rst_n)
                   (cnt_q == 2'b00) && (ex_wb_pipe_i.lsu_en && ex_wb_pipe_i.instr_valid)
                   |->
-                  $past(lsu_wpt_match_1_o) && (ctrl_fsm_cs == DEBUG_TAKEN))
+                  |$past(lsu_wpt_match_1_o) && (ctrl_fsm_cs == DEBUG_TAKEN))
       else `uvm_error("load_store_unit", "Illegal cause of cnt_q=0 while a valid LSU instruction is in WB")
 
   // MPU errors and watchpoint triggers cannot happen at the same time
   a_mpuerr_wpt_unique:
   assert property (@(posedge clk) disable iff (!rst_n)
-                  lsu_wpt_match_1_o
+                  |lsu_wpt_match_1_o
                   |->
                   !(lsu_mpu_status_1_o != MPU_OK))
       else `uvm_error("load_store_unit", "MPU error and watchpoint trigger not unique")
