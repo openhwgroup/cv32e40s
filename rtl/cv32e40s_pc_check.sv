@@ -73,6 +73,7 @@ module cv32e40s_pc_check import cv32e40s_pkg::*;
 
 // Flopped versions of pc_set and pc_mux
 logic    pc_set_q;        // pc_set was active previous cycle
+logic    pc_set_clicv_q;  // pc_set was for CLIC pointer or mret pointer
 logic    if_id_q;         // if_valid && id_ready was active previous cycle
 logic    jmp_taken_q;     // A jump was taken. Sticky until last part of instruction is done
 logic    bch_taken_q;     // A branch was taken. Sticky until last part of instruction is done
@@ -126,7 +127,9 @@ assign incr_addr = if_id_pipe_i.pc + (if_id_pipe_i.instr_meta.dummy      ? 32'd0
 // and an address comparison error is likely to happen.
 
 assign ctrl_flow_addr = (pc_mux_q == PC_JUMP)     ? jump_target_id_i      :
-                        (pc_mux_q == PC_MRET)     ? mepc_i                :
+                        // IF the mret caused a CLIC pointer refetch due to mcause.minhv being set, the IF stage will enforce
+                        // XLEN/8 alignment on the address. This alignment enforcing must also be performed on the check address below.
+                        (pc_mux_q == PC_MRET)     ? {mepc_i[31:2], (mepc_i[1] & !pc_set_clicv_q), mepc_i[0]} :
                         (pc_mux_q == PC_BRANCH)   ? branch_target_ex_i    :
                         (pc_mux_q == PC_TRAP_DBD) ? dm_halt_addr_i        :
                         (pc_mux_q == PC_TRAP_DBE) ? dm_exception_addr_i   :
@@ -189,6 +192,7 @@ assign ctrl_flow_err = ctrl_flow_taken_err || ctrl_flow_untaken_err;
 always_ff @(posedge clk, negedge rst_n) begin
   if (rst_n == 1'b0) begin
     pc_set_q         <= 1'b0;
+    pc_set_clicv_q   <= 1'b0;
     pc_mux_q         <= PC_BOOT;
     compare_enable_q <= 1'b0;
     if_id_q          <= 1'b0;
@@ -205,6 +209,8 @@ always_ff @(posedge clk, negedge rst_n) begin
       pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ) ||
                                         (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV) ||
                                         ((ctrl_fsm_i.pc_mux == PC_POINTER) && !if_id_pipe_i.instr_meta.tbljmp));
+
+      pc_set_clicv_q <= ctrl_fsm_i.pc_set_clicv;
 
       // Set a flag for a valid IF->ID stage transition.
       // Used for checking sequential PCs.

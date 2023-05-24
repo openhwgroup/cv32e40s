@@ -188,7 +188,6 @@ module cv32e40s_wrapper
     core_i.if_stage_i cv32e40s_if_stage_sva #(.CLIC(CLIC)) if_stage_sva
     (
       .m_c_obi_instr_if (core_i.m_c_obi_instr_if), // SVA monitor modport cannot connect to a master modport
-      .align_err_i      (core_i.if_stage_i.align_check_i.align_err),
       .*
     );
 

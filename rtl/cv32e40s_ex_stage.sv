@@ -136,7 +136,6 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
                                id_ex_pipe_i.instr.bus_resp.integrity_err     ||
                                id_ex_pipe_i.instr.bus_resp.err               ||
                                (id_ex_pipe_i.instr.mpu_status != MPU_OK)     ||
-                               (id_ex_pipe_i.instr.align_status != ALIGN_OK) ||
                                |id_ex_pipe_i.trigger_match)                  &&
                               id_ex_pipe_i.instr_valid;
 
