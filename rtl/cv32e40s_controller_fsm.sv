@@ -47,10 +47,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
 
   // From IF stage
   input  logic [31:0] pc_if_i,
-  input  logic        first_op_nondummy_if_i,     // IF stage is handling the first operation of a sequence
   input  logic        last_op_if_i,               // IF stage is handling the last operation of a sequence.
   input  logic        abort_op_if_i,              // IF stage contains an operation that will be aborted (bus error or MPU exception)
-  input  logic        prefetch_valid_if_i,        // Prefecher in IF stage has a valid instruction (similar as if_id_pipe.instr_valid)
 
   // From ID stage
   input  if_id_pipe_t if_id_pipe_i,

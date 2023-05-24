@@ -89,6 +89,10 @@ module cv32e40s_dummy_instr
   // cnt_q is updated every time an instruction goes from IF to ID
   //   - reset when a dummy goes from IF to ID
   //   - incremented when any other instruction (including hint) goes from IF to ID
+  // Not allowing dummy insertion when the IF stage is handling a pointer.
+  //   Pointers are not counted as instructions in the IF stage, thus instr_issued_i will remain
+  //   low for pointers, causing cnt_q not to reset on dummy insertion.
+  //   If allowing dummies for pointers, pointers would also need to count as instructions.
   assign dummy_insert_o = (cnt_q > lfsr_cnt) && dummy_en &&              // Limit reached and dummies enabled
                           (first_op_nondummy_i && prefetch_valid_i) &&   // IF stage is on instruction boundary
                           !ptr_in_if_i;                                  // No pointer is in IF

@@ -79,11 +79,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   output logic          ptr_in_if_o,            // The IF stage currently holds a pointer
   output privlvl_t      priv_lvl_if_o,          // Privilege level of the instruction currently in IF
 
-  output logic          first_op_nondummy_o,
   output logic          last_op_o,
   output logic          abort_op_o,
-
-  output logic          prefetch_valid_o,
 
   // Stage ready/valid
   output logic          if_valid_o,
@@ -186,6 +183,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   logic              id_ready_no_dummy; // Ready signal to acknowledge the sequencer
 
   logic              first_op;          // Local first_op, including dummies
+  logic              first_op_nondummy; // first_op, excluding dummies
 
   logic              integrity_err_obi; // Integrity error from OBI interface
   logic              protocol_err_obi;  // Protocol error from OBI interface
@@ -473,20 +471,18 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Any other instruction will be single operation, and gets first_op=1.
   // Regular CLIC pointers are single operation with first_op == last_op == 1
   // CLIC pointers that are a side effect of mret instructions will have first_op == 0 and last_op == 1
-  assign first_op_nondummy_o = seq_valid             ? seq_first :
-                               prefetch_is_mret_ptr  ? 1'b0 :
-                                                       1'b1; // Any other regular instructions are single operation.
+  assign first_op_nondummy = seq_valid             ? seq_first :
+                             prefetch_is_mret_ptr  ? 1'b0 :
+                                                     1'b1; // Any other regular instructions are single operation.
 
   // Local first_op, including dummy instructions
-  assign first_op = dummy_insert ? 1'b1 : first_op_nondummy_o;
+  assign first_op = dummy_insert ? 1'b1 : first_op_nondummy;
 
 
   // Set flag to indicate that instruction/sequence will be aborted due to known exceptions or trigger match
   assign abort_op_o = dummy_insert ? 1'b0 :
                       (instr_decompressed.bus_resp.err || (instr_decompressed.mpu_status != MPU_OK) ||
                       (instr_decompressed.bus_resp.integrity_err) || (instr_decompressed.align_status != ALIGN_OK) || |trigger_match_i);
-
-  assign prefetch_valid_o = prefetch_valid;
 
   // Signal current privilege level of IF
   assign priv_lvl_if_o = prefetch_priv_lvl;
@@ -614,7 +610,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Predecoder is purely combinatorial and is always ready for new inputs
   assign predec_ready = id_ready_i && !dummy_insert;
 
-  // Dummies are allowed when first_op_nondummy_o == 1
+  // Dummies are allowed when first_op_nondummy == 1
   // If the first operation of a sequence is ready, we allow dummies
   // but must not advance the sequencer.
   assign id_ready_no_dummy = id_ready_i && !dummy_insert;
@@ -678,6 +674,10 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
       logic instr_issued; // Used to count issued instructions between dummy instructions
 
       // Count instructions when first_op==1 to not count suboperations of sequences
+      // Using first_op instead of last_op to not double count mrets which restarts CLIC pointer fetches.
+      //   Mret instructions are not decoded in IF, and are signaled as single operation instructions. If it restarts
+      //   a pointer fetch (detected in the ID stage) the mret is stretched into two operations - one for the mret
+      //   and one for the pointer fetch. Both operations will the get last_op==1, but only the first will have first_op==1.
       // Do not count pointers as instructions
       assign instr_issued = if_valid_o && id_ready_i && first_op && !ptr_in_if_o;
 
@@ -686,7 +686,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
           (.clk                 ( clk                 ),
            .rst_n               ( rst_n               ),
            .instr_issued_i      ( instr_issued        ),
-           .first_op_nondummy_i ( first_op_nondummy_o ),
+           .first_op_nondummy_i ( first_op_nondummy   ),
            .prefetch_valid_i    ( prefetch_valid      ),
            .ptr_in_if_i         ( ptr_in_if_o         ),
            .ctrl_fsm_i          ( ctrl_fsm_i          ),

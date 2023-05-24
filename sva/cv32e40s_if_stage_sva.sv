@@ -47,7 +47,7 @@ module cv32e40s_if_stage_sva
   input  logic          illegal_c_insn,
   input  logic          instr_compressed,
   input  logic          prefetch_is_tbljmp_ptr,
-  input  logic          first_op_nondummy_o,
+  input  logic          first_op_nondummy,
   input  logic          first_op,
   input  logic          last_op_o,
   input  logic          prefetch_is_clic_ptr,
@@ -128,7 +128,7 @@ module cv32e40s_if_stage_sva
   // Assert that we do not trigger dummy instructions when the sequencer is in the middle of a sequence
   a_no_dummy_mid_sequence :
     assert property (@(posedge clk) disable iff (!rst_n)
-                      !first_op_nondummy_o |-> !dummy_insert)
+                      !first_op_nondummy |-> !dummy_insert)
       else `uvm_error("if_stage", "Dummy instruction inserted mid-sequence")
 
 
