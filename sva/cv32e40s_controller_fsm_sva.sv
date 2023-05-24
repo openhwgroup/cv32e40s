@@ -347,7 +347,7 @@ module cv32e40s_controller_fsm_sva
   a_mret_mmode :
     assert property (@(posedge clk) disable iff (!rst_n)
                       // Disregard higher priority exceptions and trigger match
-                      !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || (ex_wb_pipe_i.instr.align_status != ALIGN_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
+                      !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
                       !(ex_wb_pipe_i.instr_meta.clic_ptr || ex_wb_pipe_i.instr_meta.mret_ptr) && !ctrl_fsm_o.debug_mode &&
                       // Check for mret in instruction word and user mode
                       ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h30200073) && ex_wb_pipe_i.instr_valid && (priv_lvl_i == PRIV_LVL_M))
@@ -637,16 +637,6 @@ if (CLIC) begin
                   |=>
                   $stable(mintstatus_i))
     else `uvm_error("controller", "mintstatus changed after taking an NMI")
-
-  // The only possible cause for a instruction misaligned exception is an mret pointer.
-  a_mret_ptr_exception:
-  assert property (@(posedge clk) disable iff (!rst_n)
-                  (exception_cause_wb == EXC_CAUSE_INSTR_MISALIGNED) &&
-                  exception_in_wb
-                  |->
-                  mret_ptr_in_wb)
-
-    else `uvm_error("controller", "Instruction address misaligned exception without mret pointer.")
 
 end else begin // CLIC
   // Check that CLIC related signals are inactive when CLIC is not configured.

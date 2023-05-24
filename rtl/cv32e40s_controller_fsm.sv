@@ -371,7 +371,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   //
   assign exception_in_wb = ((ex_wb_pipe_i.instr.mpu_status != MPU_OK)                                                      ||
                              ex_wb_pipe_i.instr.bus_resp.integrity_err                                                     ||
-                            (ex_wb_pipe_i.instr.align_status != ALIGN_OK)                                                  ||
                              ex_wb_pipe_i.instr.bus_resp.err                                                               ||
                              ex_wb_pipe_i.illegal_insn                                                                     ||
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)                                           ||
@@ -389,7 +388,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   //           Bus errors will be converted to NMI as for regular loads.
   assign exception_cause_wb = (ex_wb_pipe_i.instr.mpu_status != MPU_OK)                                                      ? EXC_CAUSE_INSTR_FAULT     :
                                ex_wb_pipe_i.instr.bus_resp.integrity_err                                                     ? EXC_CAUSE_INSTR_INTEGRITY_FAULT :
-                               (ex_wb_pipe_i.instr.align_status != ALIGN_OK)                                                 ? EXC_CAUSE_INSTR_MISALIGNED :
                               ex_wb_pipe_i.instr.bus_resp.err                                                                ? EXC_CAUSE_INSTR_BUS_FAULT :
                               ex_wb_pipe_i.illegal_insn                                                                      ? EXC_CAUSE_ILLEGAL_INSN    :
                               (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ecall_insn)                                           ? (priv_lvl_i==PRIV_LVL_M ?
@@ -1085,7 +1083,7 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
               jump_taken_n = 1'b1;
             end
           end else if (clic_ptr_in_id || mret_ptr_in_id) begin
-            if (!(if_id_pipe_i.instr.bus_resp.err || if_id_pipe_i.instr.bus_resp.integrity_err || (if_id_pipe_i.instr.mpu_status != MPU_OK) || (if_id_pipe_i.instr.align_status != ALIGN_OK))) begin
+            if (!(if_id_pipe_i.instr.bus_resp.err || if_id_pipe_i.instr.bus_resp.integrity_err || (if_id_pipe_i.instr.mpu_status != MPU_OK))) begin
               if (!branch_taken_q) begin
                 ctrl_fsm_o.pc_set = 1'b1;
                 ctrl_fsm_o.pc_mux = PC_POINTER;
