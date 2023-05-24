@@ -36,6 +36,9 @@ module cv32e40s_dummy_instr
   (input  logic          clk,
    input  logic          rst_n,
    input  logic          instr_issued_i,
+   input  logic          first_op_nondummy_i,
+   input  logic          ptr_in_if_i,
+   input  logic          prefetch_valid_i,
    input  ctrl_fsm_t     ctrl_fsm_i,
    input  xsecure_ctrl_t xsecure_ctrl_i,
    output logic          dummy_insert_o,
@@ -85,8 +88,14 @@ module cv32e40s_dummy_instr
   // lfsr_cnt will update when the dummy or hint instruction leaves the ID stage
   // cnt_q is updated every time an instruction goes from IF to ID
   //   - reset when a dummy goes from IF to ID
-  //   - incremented when any other instruction (including hint) goes from ID to ID
-  assign dummy_insert_o = (cnt_q > lfsr_cnt) && dummy_en;
+  //   - incremented when any other instruction (including hint) goes from IF to ID
+  // Not allowing dummy insertion when the IF stage is handling a pointer.
+  //   Pointers are not counted as instructions in the IF stage, thus instr_issued_i will remain
+  //   low for pointers, causing cnt_q not to reset on dummy insertion.
+  //   If allowing dummies for pointers, pointers would also need to count as instructions.
+  assign dummy_insert_o = (cnt_q > lfsr_cnt) && dummy_en &&              // Limit reached and dummies enabled
+                          (first_op_nondummy_i && prefetch_valid_i) &&   // IF stage is on instruction boundary
+                          !ptr_in_if_i;                                  // No pointer is in IF
 
   assign cnt_rst        = !dummy_en                          ||      // Reset counter when dummy instructions are disabled
                           (dummy_insert_o && instr_issued_i) ||      // Reset counter when inserting dummy instruction which is propagated to the ID stage

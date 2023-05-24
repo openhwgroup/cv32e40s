@@ -913,7 +913,12 @@ module cv32e40s_rvfi
         if (is_dummy_instr_wb_i) begin
           dummy_suppressed_intr <= in_trap[STAGE_WB] || dummy_suppressed_intr;
         end else begin
-          dummy_suppressed_intr <= 1'b0;
+          // Only clear the flag once an instruction fully completes.
+          // Otherwise the first operation of a sequence could clear the flag, causing the
+          // rvfi_valid following (wb_valid && last_op) to miss its rvfi_intr.
+          if (last_op_wb_i) begin
+            dummy_suppressed_intr <= 1'b0;
+          end
         end
       end
     end
