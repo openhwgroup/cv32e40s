@@ -71,7 +71,6 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
   input  logic          last_op_wb_i,               // WB stage contains the last operation of an instruction
   input  logic          abort_op_wb_i,              // WB stage contains an (to be) aborted instruction or sequence
   input  mpu_status_e   mpu_status_wb_i,            // MPU status (WB timing)
-  input  align_status_e align_status_wb_i,          // Aligned status (atomics) in WB
   input  logic [31:0]   wpt_match_wb_i,             // LSU watchpoint trigger (WB)
 
 
@@ -375,10 +374,9 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                               !dcsr_i.ebreakm && !debug_mode_q)                                                            ||
                             (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn && (ex_wb_pipe_i.priv_lvl == PRIV_LVL_U) &&
                               !dcsr_i.ebreaku && !debug_mode_q)                                                            ||
-                            (mpu_status_wb_i != MPU_OK)                                                                    ||
-                            (align_status_wb_i != ALIGN_OK)) && ex_wb_pipe_i.instr_valid;
+                            (mpu_status_wb_i != MPU_OK)) && ex_wb_pipe_i.instr_valid;
 
-  assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
+assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
 
   // Set exception cause
   // For CLIC: Pointer fetches with PMA/PMP errors will get the exception code converted to LOAD_FAULT
@@ -395,9 +393,8 @@ module cv32e40s_controller_fsm import cv32e40s_pkg::*;
                               (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_ebrk_insn && (ex_wb_pipe_i.priv_lvl == PRIV_LVL_U) &&
                                 !dcsr_i.ebreaku && !debug_mode_q)                                                            ? EXC_CAUSE_BREAKPOINT      :
                               (mpu_status_wb_i == MPU_WR_FAULT)                                                              ? EXC_CAUSE_STORE_FAULT      :
-                              (mpu_status_wb_i == MPU_RE_FAULT)                                                              ? EXC_CAUSE_LOAD_FAULT       :
-                              (align_status_wb_i == ALIGN_WR_ERR)                                                            ? EXC_CAUSE_STORE_MISALIGNED :
-                                                                                                                               EXC_CAUSE_LOAD_MISALIGNED;
+                                                                                                                               EXC_CAUSE_LOAD_FAULT;
+
 
   assign ctrl_fsm_o.exception_cause_wb = exception_cause_wb;
 

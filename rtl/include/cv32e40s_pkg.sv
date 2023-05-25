@@ -1001,9 +1001,7 @@ typedef enum logic[3:0] {
 parameter EXC_CAUSE_INSTR_FAULT           = 11'h01;
 parameter EXC_CAUSE_ILLEGAL_INSN          = 11'h02;
 parameter EXC_CAUSE_BREAKPOINT            = 11'h03;
-parameter EXC_CAUSE_LOAD_MISALIGNED       = 11'h04;
 parameter EXC_CAUSE_LOAD_FAULT            = 11'h05;
-parameter EXC_CAUSE_STORE_MISALIGNED      = 11'h06;
 parameter EXC_CAUSE_STORE_FAULT           = 11'h07;
 parameter EXC_CAUSE_ECALL_UMODE           = 11'h08;
 parameter EXC_CAUSE_ECALL_MMODE           = 11'h0B;
@@ -1136,15 +1134,6 @@ typedef struct packed {
 } pmp_csr_t;
 
 
-// ALIGN status. Used when checking alignment for atomics and mret pointers
-typedef enum logic [1:0] {
-                          ALIGN_OK         = 2'h0,
-                          ALIGN_RE_ERR     = 2'h1,
-                          ALIGN_WR_ERR     = 2'h2
-                          } align_status_e;
-
-typedef enum logic [2:0] {ALIGN_IDLE, ALIGN_WR_ERR_RESP, ALIGN_WR_ERR_WAIT, ALIGN_RE_ERR_RESP, ALIGN_RE_ERR_WAIT} align_state_e;
-
 // WPT state machine
 typedef enum logic [1:0] {WPT_IDLE, WPT_MATCH_WAIT, WPT_MATCH_RESP} wpt_state_e;
 
@@ -1236,7 +1225,6 @@ typedef struct packed {
   obi_data_resp_t             bus_resp;
   mpu_status_e                mpu_status;
   logic [31:0]                wpt_match;
-  align_status_e              align_status;
 } data_resp_t;
 
 // LSU transaction

@@ -69,7 +69,6 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  ex_wb_pipe_t ex_wb_pipe_i,
   input  mpu_status_e mpu_status_wb_i,            // MPU status (WB stage)
   input  logic [31:0] wpt_match_wb_i,             // LSU watchpoint trigger in WB
-  input  align_status_e align_status_wb_i,        // Aligned status (atomics and mret pointers) in WB
 
   // Last operation bits
   input  logic        last_op_ex_i,               // EX contains the last operation of an instruction
@@ -187,7 +186,6 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .ex_wb_pipe_i                ( ex_wb_pipe_i             ),
     .lsu_err_wb_i                ( lsu_err_wb_i             ),
     .mpu_status_wb_i             ( mpu_status_wb_i          ),
-    .align_status_wb_i           ( align_status_wb_i        ),
     .data_stall_wb_i             ( data_stall_wb_i          ),
     .wb_ready_i                  ( wb_ready_i               ),
     .wb_valid_i                  ( wb_valid_i               ),
