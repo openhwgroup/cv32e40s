@@ -39,7 +39,6 @@ module cv32e40s_load_store_unit_sva
    input write_buffer_state_e write_buffer_state_i,
    input logic       split_q,
    input mpu_status_e lsu_mpu_status_1_o, // WB mpu status
-   input align_status_e lsu_align_status_1_o,
    input ex_wb_pipe_t ex_wb_pipe_i,
    cv32e40s_if_c_obi.monitor  m_c_obi_data_if,
    input logic       id_valid,
@@ -136,7 +135,7 @@ module cv32e40s_load_store_unit_sva
   //            gets blocked by the PMA or alignment checker.
   a_lsu_no_kill_second_half_ex:
   assert property (@(posedge clk) disable iff (!rst_n)
-                  (split_q && (lsu_mpu_status_1_o == MPU_OK) && (lsu_align_status_1_o == ALIGN_OK)) |-> !ctrl_fsm_i.kill_ex)
+                  (split_q && (lsu_mpu_status_1_o == MPU_OK)) |-> !ctrl_fsm_i.kill_ex)
     else `uvm_error("load_store_unit", "Second half of split transaction was killed")
 
   // cnt_q == 2'b00 shall be the same as !(ex_wb_pipe.lsu_en && ex_wb_pipe_i.instr_valid)

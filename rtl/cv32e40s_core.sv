@@ -264,7 +264,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        lsu_last_op_ex;
   mpu_status_e lsu_mpu_status_wb;
   logic [31:0] lsu_wpt_match_wb;
-  align_status_e lsu_align_status_wb;
   logic [31:0] lsu_rdata_wb;
   lsu_err_wb_t lsu_err_wb;
 
@@ -287,7 +286,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   logic [31:0] wpt_match_wb;       // Sticky wpt_match from WB stage
   mpu_status_e mpu_status_wb;      // Sticky mpu_status from WB stage
-  align_status_e align_status_wb;  // Sticky align_status from WB stage
 
   // Stage ready signals
   logic        id_ready;
@@ -798,7 +796,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     // Privilege level
     .priv_lvl_lsu_i        ( priv_lvl_lsu       ),
-    .lsu_align_status_1_o  ( lsu_align_status_wb),
 
     // Valid/ready
     .valid_0_i             ( lsu_valid_ex       ), // First LSU stage (EX)
@@ -840,7 +837,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .lsu_rdata_i                ( lsu_rdata_wb                 ),
     .lsu_mpu_status_i           ( lsu_mpu_status_wb            ),
     .lsu_wpt_match_i            ( lsu_wpt_match_wb             ),
-    .lsu_align_status_i         ( lsu_align_status_wb          ),
 
     // Write back to register file
     .rf_we_wb_o                 ( rf_we_wb                     ),
@@ -861,7 +857,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
     .wpt_match_wb_o             ( wpt_match_wb                 ),
     .mpu_status_wb_o            ( mpu_status_wb                ),
-    .align_status_wb_o          ( align_status_wb              ),
 
     // CSR/CLIC pointer inputs
     .clic_pa_valid_i            ( csr_clic_pa_valid            ),
@@ -1025,7 +1020,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ex_wb_pipe_i                   ( ex_wb_pipe             ),
     .mpu_status_wb_i                ( mpu_status_wb          ),
     .wpt_match_wb_i                 ( wpt_match_wb           ),
-    .align_status_wb_i              ( align_status_wb        ),
 
     // last_op bits
     .last_op_id_i                   ( last_op_id             ),

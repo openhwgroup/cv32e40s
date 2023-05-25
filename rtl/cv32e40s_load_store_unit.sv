@@ -76,7 +76,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   // Privilege mode
   input              privlvl_t priv_lvl_lsu_i,
-  output align_status_e lsu_align_status_1_o,   // Alignment status (for atomics), WB timing
 
   // Handshakes
   input  logic        valid_0_i,                // Handshakes for first LSU stage (EX)
@@ -110,12 +109,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic           wpt_trans_pushpop;
   obi_data_req_t  wpt_trans;
 
-  // Align_check transaction request (to cv32e40s_align_check)
-  logic           alcheck_trans_valid;
-  logic           alcheck_trans_ready;
-  logic           alcheck_trans_pushpop;
-  obi_data_req_t  alcheck_trans;
-
   // Transaction request to cv32e40s_mpu
   logic           mpu_trans_valid;
   logic           mpu_trans_ready;
@@ -131,11 +124,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic           wpt_resp_valid;
   logic [31:0]    wpt_resp_rdata;
   data_resp_t     wpt_resp;
-
-  // Transaction response interface (from cv32e40s_align_check)
-  logic           alcheck_resp_valid;
-  logic [31:0]    alcheck_resp_rdata;
-  data_resp_t     alcheck_resp;
 
   // Transaction response interface (from cv32e40s_mpu)
   logic           mpu_resp_valid;
@@ -509,7 +497,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   // Export mpu status and align check status to WB stage/controller
   assign lsu_mpu_status_1_o   = resp.mpu_status;
-  assign lsu_align_status_1_o = resp.align_status;
 
   // Update signals for EX/WB registers (when EX has valid data itself and is ready for next)
   assign ctrl_update = done_0 && valid_0_i;
@@ -691,7 +678,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   #(
     .IF_STAGE           ( 0                    ),
     .CORE_RESP_TYPE     ( data_resp_t          ),
-    .BUS_RESP_TYPE      ( data_resp_t          ),
+    .BUS_RESP_TYPE      ( obi_data_resp_t      ),
     .CORE_REQ_TYPE      ( obi_data_req_t       ),
     .PMA_NUM_REGIONS    ( PMA_NUM_REGIONS      ),
     .PMA_CFG            ( PMA_CFG              ),
@@ -718,49 +705,11 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     .core_resp_valid_o    ( mpu_resp_valid     ),
     .core_resp_o          ( mpu_resp           ),
 
-    .bus_trans_valid_o    ( alcheck_trans_valid ),
-    .bus_trans_ready_i    ( alcheck_trans_ready ),
-    .bus_trans_o          ( alcheck_trans       ),
-    .bus_resp_valid_i     ( alcheck_resp_valid  ),
-    .bus_resp_i           ( alcheck_resp        )
-
-  );
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Alignment checker for atomics
-  //////////////////////////////////////////////////////////////////////////////
-  assign align_check_en = 1'b0; // No atomics on cv32e40s. todo: Could remove the align_check module
-
-  cv32e40s_align_check
-  #(
-    .IF_STAGE             ( 0                    ),
-    .CORE_RESP_TYPE       ( data_resp_t          ),
-    .BUS_RESP_TYPE        ( obi_data_resp_t      ),
-    .CORE_REQ_TYPE        ( obi_data_req_t       )
-
-  )
-  align_check_i
-  (
-    .clk                  ( clk                   ),
-    .rst_n                ( rst_n                 ),
-    .align_check_en_i     ( align_check_en        ),
-    .misaligned_access_i  ( misaligned_access     ),
-
-    .core_one_txn_pend_n  ( cnt_is_one_next       ),
-    .core_align_err_wait_i( consumer_resp_wait    ),
-    .core_align_err_o     (                       ),
-
-    .core_trans_valid_i   ( alcheck_trans_valid   ),
-    .core_trans_ready_o   ( alcheck_trans_ready   ),
-    .core_trans_i         ( alcheck_trans         ),
-    .core_resp_valid_o    ( alcheck_resp_valid    ),
-    .core_resp_o          ( alcheck_resp          ),
-
-    .bus_trans_valid_o    ( filter_trans_valid    ),
-    .bus_trans_ready_i    ( filter_trans_ready    ),
-    .bus_trans_o          ( filter_trans          ),
-    .bus_resp_valid_i     ( filter_resp_valid     ),
-    .bus_resp_i           ( filter_resp           )
+    .bus_trans_valid_o    ( filter_trans_valid ),
+    .bus_trans_ready_i    ( filter_trans_ready ),
+    .bus_trans_o          ( filter_trans       ),
+    .bus_resp_valid_i     ( filter_resp_valid  ),
+    .bus_resp_i           ( filter_resp        )
 
   );
 

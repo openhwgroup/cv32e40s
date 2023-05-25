@@ -163,7 +163,6 @@ module cv32e40s_wpt import cv32e40s_pkg::*;
   assign core_resp_valid_o        = mpu_resp_valid_i || wpt_trans_valid;
   assign core_resp_o.bus_resp     = mpu_resp_i.bus_resp;
   assign core_resp_o.mpu_status   = mpu_resp_i.mpu_status;
-  assign core_resp_o.align_status = mpu_resp_i.align_status;
   assign core_resp_o.wpt_match    = wpt_match;
 
 
