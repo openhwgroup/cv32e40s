@@ -439,7 +439,7 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
     wpt_trans.prot      = {trans.mode, 1'b1};              // Transfers from LSU are data transfers
     wpt_trans.dbg       = trans.dbg;
     wpt_trans.memtype   = 2'b00;                           // Memory type is assigned in MPU
-    wpt_trans.achk      = 12'h000;                         // Set in data_obi_interface, tie off here.
+    wpt_trans.achk      = 13'h0;                           // Set in data_obi_interface, tie off here.
     wpt_trans.integrity = 1'b0;                            // PMA integrity attribute is assigned in the MPU
   end
 

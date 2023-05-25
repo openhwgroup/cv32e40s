@@ -63,7 +63,7 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
   obi_if_state_e state_q, next_state;
 
-  logic [11:0]          achk;                         // Address phase checksum
+  logic [12:0]          achk;                         // Address phase checksum
 
   logic                 gntpar_err;                   // gnt parity error (immediate)
   logic                 rvalidpar_err_resp;           // rvalid parity error (immediate during response phase)
@@ -158,8 +158,9 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
       ^{8'b0},                                         // wdata[23:16] = 8'b0
       ^{8'b0},                                         // wdata[15:8] = 8'b0
       ^{8'b0},                                         // wdata[7:0] = 8'b0
-      ^{6'b0},                                         // atop[5:0] = 6'b0
       ~^{m_c_obi_instr_if.req_payload.dbg},
+      ^{6'b0},                                         // atop[5:0] = 6'b0
+      ^{8'b0},                                         // mid[7:0]  = 8'b0
       ~^{4'b1111, 1'b0},                                // be[3:0] = 4'b1111, we = 1'b0
       ~^{m_c_obi_instr_if.req_payload.prot[2:0], m_c_obi_instr_if.req_payload.memtype[1:0]},
       ^{m_c_obi_instr_if.req_payload.addr[31:24]},

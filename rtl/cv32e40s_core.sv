@@ -81,7 +81,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic                          instr_reqpar_o,         // secure
   input  logic                          instr_gntpar_i,         // secure
   input  logic                          instr_rvalidpar_i,      // secure
-  output logic [11:0]                   instr_achk_o,           // secure
+  output logic [12:0]                   instr_achk_o,           // secure
   input  logic [4:0]                    instr_rchk_i,           // secure
 
   // Data memory interface
@@ -101,7 +101,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   output logic                          data_reqpar_o,          // secure
   input  logic                          data_gntpar_i,          // secure
   input  logic                          data_rvalidpar_i,       // secure
-  output logic [11:0]                   data_achk_o,            // secure
+  output logic [12:0]                   data_achk_o,            // secure
   input  logic [4:0]                    data_rchk_i,            // secure
 
   // Cycle count
