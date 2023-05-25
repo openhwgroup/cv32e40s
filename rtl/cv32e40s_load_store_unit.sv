@@ -189,8 +189,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   logic           integrity_err_obi;    // OBI interface integrity error
   logic           protocol_err_obi;    // OBI interface protocol error
 
-  logic           align_check_en;        // Perform alignment checks for atomics
-
   // Transaction (before aligner)
   // Generate address from operands (atomic memory transactions do not use an address offset computation)
   always_comb begin
