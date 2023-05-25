@@ -268,7 +268,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   assign core_trans.prot[0]   = 1'b0;                        // Transfers from IF stage are instruction transfers
   assign core_trans.prot[2:1] = prefetch_priv_lvl;           // Privilege level
   assign core_trans.memtype   = 2'b00;                       // memtype is assigned in the MPU
-  assign core_trans.achk      = 12'b0;                       // Integrity signals assigned in bus interface
+  assign core_trans.achk      = 13'b0;                       // Integrity signals assigned in bus interface
   assign core_trans.integrity = 1'b0;                        // PMA integrity attribute is assigned in the MPU
 
   cv32e40s_mpu

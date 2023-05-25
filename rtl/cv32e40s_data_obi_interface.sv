@@ -106,8 +106,9 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
                                         ^{m_c_obi_data_if.req_payload.wdata[23:16]},
                                         ^{m_c_obi_data_if.req_payload.wdata[15:8]},
                                         ^{m_c_obi_data_if.req_payload.wdata[7:0]},
-                                        ^{6'b0},                                         // atop[5:0] = 6'b0
                                         ~^{m_c_obi_data_if.req_payload.dbg},
+                                        ^{6'b0},                                         // atop[5:0] = 6'b0
+                                        ^{8'b0},                                         // mid[7:0]  = 8'b0
                                         ~^{m_c_obi_data_if.req_payload.be[3:0], m_c_obi_data_if.req_payload.we},
                                         ~^{m_c_obi_data_if.req_payload.prot[2:0], m_c_obi_data_if.req_payload.memtype[1:0]},
                                         ^{m_c_obi_data_if.req_payload.addr[31:24]},

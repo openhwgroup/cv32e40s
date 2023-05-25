@@ -71,7 +71,7 @@ module cv32e40s_core_sva
   input  logic        instr_rvalid_i,
   input  logic        instr_rvalidpar_i,
   input  logic [31:0] instr_addr_o,
-  input  logic [11:0] instr_achk_o,
+  input  logic [12:0] instr_achk_o,
   input  logic [1:0]  instr_memtype_o,
   input  logic [2:0]  instr_prot_o,
   input  logic        instr_dbg_o,
@@ -89,7 +89,7 @@ module cv32e40s_core_sva
   input  logic        data_we_o,
   input  logic [3:0]  data_be_o,
   input  logic [31:0] data_addr_o,
-  input  logic [11:0] data_achk_o,
+  input  logic [12:0] data_achk_o,
   input  logic [1:0]  data_memtype_o,
   input  logic [2:0]  data_prot_o,
   input  logic        data_dbg_o,
@@ -639,16 +639,17 @@ end
           else `uvm_error("core", "Parity mismatch.")
 
   // There should be no checksum error on output signals
-  logic [11:0] instr_achk_expected;
-  logic [11:0] data_achk_expected;
+  logic [12:0] instr_achk_expected;
+  logic [12:0] data_achk_expected;
 
   assign instr_achk_expected = {
     ^{8'b0},
     ^{8'b0},
     ^{8'b0},
     ^{8'b0},
-    ^{6'b0},
     ~^{instr_dbg_o},
+    ^{6'b0},
+    ^{8'h0},
     ~^{4'b1111, 1'b0},
     ~^{instr_prot_o[2:0], instr_memtype_o[1:0]},
     ^{instr_addr_o[31:24]},
@@ -662,8 +663,9 @@ end
     ^{data_wdata_o[23:16]},
     ^{data_wdata_o[15:8]},
     ^{data_wdata_o[7:0]},
-    ^{6'b0},
     ~^{data_dbg_o},
+    ^{6'b0},
+    ^{8'h0},
     ~^{data_be_o[3:0], data_we_o},
     ~^{data_prot_o[2:0], data_memtype_o[1:0]},
     ^{data_addr_o[31:24]},
