@@ -111,7 +111,7 @@ The different trap scenarios, their expected side-effects and trap signalling ar
 
 .. table:: Table of synchronous trap types
   :name: Table of synchronous trap types
-  :widths: 20 10 5 5 5 5 5 5 5 5 10 30
+  :widths: 20 10 5 5 5 5 5 5 5 10 30
   :class: no-scrollbar-table
 
   +------------------------------+-----------+---------------------------------------------------------------------------------+----------------------+------------------------------------------------------------------------------------------------------+
