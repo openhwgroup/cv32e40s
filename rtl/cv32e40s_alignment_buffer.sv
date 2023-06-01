@@ -156,8 +156,8 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   //////////////////
   // FIFO signals //
   //////////////////
-  inst_resp_t [0:ALBUF_DEPTH-1]  resp_q;
-  logic [0:ALBUF_DEPTH-1]        valid_n,   valid_int,   valid_q;
+  inst_resp_t [ALBUF_DEPTH-1:0]  resp_q;
+  logic [ALBUF_DEPTH-1:0]        valid_n,   valid_int,   valid_q;
   inst_resp_t resp_n;
 
   // Read/write pointer for FIFO

@@ -261,7 +261,8 @@ module cv32e40s_wrapper
     core_i.controller_i.controller_fsm_i
       cv32e40s_controller_fsm_sva
         #(.DEBUG(DEBUG),
-          .CLIC(CLIC))
+          .CLIC(CLIC),
+          .CLIC_ID_WIDTH(CLIC_ID_WIDTH))
         controller_fsm_sva   (
                               .lsu_outstanding_cnt (core_i.load_store_unit_i.cnt_q),
                               .rf_we_wb_i          (core_i.wb_stage_i.rf_we_wb_o  ),
