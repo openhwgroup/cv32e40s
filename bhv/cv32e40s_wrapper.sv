@@ -414,6 +414,13 @@ module cv32e40s_wrapper
                 .last_op_id                       (core_i.id_stage_i.last_op_o),
                 .mie_n                            (core_i.cs_registers_i.mie_n),
                 .mie_we                           (core_i.cs_registers_i.mie_we),
+                .lsu_wpt_match_wb                 (core_i.wb_stage_i.lsu_wpt_match),
+                .prefetch_is_mret_ptr_i           (core_i.if_stage_i.prefetch_is_mret_ptr),
+                .lsu_cnt_q                        (core_i.load_store_unit_i.cnt_q),
+                .resp_filter_bus_cnt_q            (core_i.load_store_unit_i.response_filter_i.bus_cnt_q),
+                .resp_filter_core_cnt_q           (core_i.load_store_unit_i.response_filter_i.core_cnt_q),
+                .write_buffer_state               (core_i.load_store_unit_i.write_buffer_i.state),
+                .first_op_if                      (core_i.if_stage_i.first_op),
                 .*);
 generate
 if (CLIC) begin : clic_asserts
