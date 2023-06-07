@@ -142,7 +142,7 @@ end
   a_rvfi_intr_interrupt_exception: assert property (p_rvfi_intr_interrupt_exception)
   else
     `uvm_error("rvfi",
-      $sformatf("rvfi_intr.intr set with rvfi_intr.exception or rvfi_intr.interrupt"));
+      $sformatf("rvfi_intr.intr set without rvfi_intr.exception or rvfi_intr.interrupt"));
 
   // Sequence used to locate rvfi_valid following rvfi_valid with prereq set
   sequence s_goto_next_rvfi_valid(prereq);
