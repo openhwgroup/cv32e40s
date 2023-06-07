@@ -902,21 +902,27 @@ module cv32e40s_rvfi
     rvfi_trap_next.trap = rvfi_trap_next.exception || rvfi_trap_next.debug;
   end
 
-  logic dummy_suppressed_intr;
-  // Sticky rvfi_intr bit to allow signalling rvfi_intr from ignored dummy instructions
+  rvfi_intr_t dummy_suppressed_intr;
+  // Sticky rvfi_intr to allow signalling rvfi_intr from ignored dummy instructions
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      dummy_suppressed_intr <= 1'b0;
+      dummy_suppressed_intr <= '0;
     end else begin
       if (wb_valid_i) begin
         if (is_dummy_instr_wb_i) begin
-          dummy_suppressed_intr <= in_trap[STAGE_WB] || dummy_suppressed_intr;
+          if (in_trap[STAGE_WB].intr) begin
+            // If a dummy has an associated trap, store the trap info to make it available
+            // for the next regular instruction (rvfi_valid). If several dummies arrive
+            // in WB in a row, the in_trap[WB_STAGE].intr may be zero, but the original in_trap
+            // is preserved in dummy_suppressed_intr.
+            dummy_suppressed_intr <= in_trap[STAGE_WB];
+          end
         end else begin
-          // Only clear the flag once an instruction fully completes.
+          // Only clear the flag once a non-dummy instruction fully completes.
           // Otherwise the first operation of a sequence could clear the flag, causing the
           // rvfi_valid following (wb_valid && last_op) to miss its rvfi_intr.
-          if (last_op_wb_i) begin
-            dummy_suppressed_intr <= 1'b0;
+          if (last_op_wb_i || abort_op_wb_i) begin
+            dummy_suppressed_intr <= '0;
           end
         end
       end
@@ -1236,7 +1242,7 @@ module cv32e40s_rvfi
 
         // Signal rvfi_intr if previous retirement was a dummy instruction with a suppressed/invalidated rvfi_intr signal,
         // or pick from STAGE_WB_PAST if there is an mret pointer in WB.
-        rvfi_intr      <= dummy_suppressed_intr ? 1'b1 :
+        rvfi_intr      <= dummy_suppressed_intr.intr ? dummy_suppressed_intr :
                           mret_ptr_wb           ? in_trap  [STAGE_WB_PAST] : in_trap   [STAGE_WB];
 
         rvfi_rs1_addr  <= mret_ptr_wb ? rs1_addr [STAGE_WB_PAST] : rs1_addr  [STAGE_WB];
