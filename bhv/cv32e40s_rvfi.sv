@@ -918,14 +918,24 @@ module cv32e40s_rvfi
             dummy_suppressed_intr <= in_trap[STAGE_WB];
           end
         end else begin
-          // Only clear the flag once a non-dummy instruction fully completes.
+          // Only clear the flag once a non-dummy instruction fully completes or a new trap is taken.
           // Otherwise the first operation of a sequence could clear the flag, causing the
           // rvfi_valid following (wb_valid && last_op) to miss its rvfi_intr.
-          if (last_op_wb_i || abort_op_wb_i) begin
+          if (last_op_wb_i || abort_op_wb_i || pc_mux_interrupt || pc_mux_nmi || pc_mux_exception) begin
             dummy_suppressed_intr <= '0;
           end
         end
+      end else begin
+        // No wb_valid
+        // Clear dummy_suppressed_intr if a new trap is taken to ensure next retirement
+        // gets the correct rvfi_intr and not the previous one that is now overwritten.
+        // This would typically happen if a dummy replaces the first instruction of a handler,
+        // but before the first handler instruction retires an NMI is taken.
+        if ( pc_mux_interrupt || pc_mux_nmi || pc_mux_exception) begin
+          dummy_suppressed_intr <= '0;
+        end
       end
+      //
     end
   end
 
