@@ -171,6 +171,8 @@ module cv32e40s_wrapper
 
 
 `ifndef COREV_ASSERT_OFF
+  // Localparam to avoid hierarchical bind to localparam within cs_registers.sva
+  localparam PMP_ADDR_WIDTH = (PMP_GRANULARITY > 0) ? 33 - PMP_GRANULARITY : 32;
 
   // RTL Assertions
 
@@ -294,7 +296,8 @@ module cv32e40s_wrapper
     core_i.cs_registers_i
       cv32e40s_cs_registers_sva
         #(.CLIC  (CLIC),
-          .DEBUG (DEBUG))
+          .DEBUG (DEBUG),
+          .PMP_ADDR_WIDTH (PMP_ADDR_WIDTH))
         cs_registers_sva (.wb_valid_i  (core_i.wb_valid                                 ),
                           .ctrl_fsm_cs (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
                           .*);
