@@ -39,7 +39,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter bit          ZC_EXT           = 0,
   parameter bit          CLIC             = 0,
   parameter int unsigned CLIC_ID_WIDTH    = 5,
-  parameter int unsigned CLIC_INTTHRESHBITS = 8,
   parameter int unsigned NUM_MHPMCOUNTERS = 1,
   parameter int          PMP_NUM_REGIONS  = 0,
   parameter int unsigned PMP_GRANULARITY  = 0,
@@ -75,7 +74,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   output logic [31:0]                   mepc_o,
   output logic [31:0]                   mie_o,
   output mintstatus_t                   mintstatus_o,
-  output logic [7:0]                    mintthresh_o,
+  output logic [7:0]                    mintthresh_th_o,
   output mstatus_t                      mstatus_o,
   output logic [24:0]                   mtvec_addr_o,
   output logic  [1:0]                   mtvec_mode_o,
@@ -158,9 +157,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     (32'(1)             << 23) | // X - Non-standard extensions present
     (32'(MXL)           << 30); // M-XLEN
 
-
-  // Set mask for minththresh based on number of bits implemented (CLIC_INTTHRESHBITS)
-  localparam CSR_MINTTHRESH_MASK = ((2 ** CLIC_INTTHRESHBITS )-1) << (8 - CLIC_INTTHRESHBITS);
 
   localparam logic [31:0] CSR_MTVT_MASK = {{MTVT_ADDR_WIDTH{1'b1}}, {(32-MTVT_ADDR_WIDTH){1'b0}}};
 
@@ -1666,11 +1662,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           mcause_n       = mcause_rdata;
           mcause_we      = 1'b1;
 
-          // Dret to lower privilege mode clear mintthresh
-          if (priv_lvl_n < PRIV_LVL_M) begin
-            mintthresh_n  = 32'h00000000;
-            mintthresh_we = 1'b1;
-          end
+          // Dret to lower privilege mode does not clear mintthresh
         end
 
       end //ctrl_fsm_i.csr_restore_dret
@@ -2541,17 +2533,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
   assign pmpncfg_rdata      = pmpncfg_q;
   assign pmp_mseccfg_rdata  = pmp_mseccfg_q;
-  // Implemented threshold bits are left justified, unimplemented bits are tied to 1.
-  // Special case when all 8 bits are implemented to avoid zero-replication
-  generate
-    if (CLIC_INTTHRESHBITS < 8) begin : gen_partial_thresh
-      // Unimplemented bits within [7:0] are tied to 1. Bits 31:8 always tied to 0.
-      assign mintthresh_rdata   = {mintthresh_q[31:(7-(CLIC_INTTHRESHBITS-1))], {(8-CLIC_INTTHRESHBITS) {1'b1}}};
-    end else begin : gen_full_thresh
-      // Bits 31:8 tied to 0, all bits within [7:0] are implemented in flipflops.
-      assign mintthresh_rdata   = mintthresh_q[31:0];
-    end
-  endgenerate
+  assign mintthresh_rdata   = mintthresh_q;
 
   // mnxti_rdata breaks the regular convension for CSRs. The read data used for read-modify-write is the mstatus_rdata,
   // while the value read and written back to the GPR is a pointer address if an interrupt is pending, or zero
@@ -2628,7 +2610,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign mepc_o        = mepc_rdata;
   assign mie_o         = mie_rdata;
   assign mintstatus_o  = mintstatus_rdata;
-  assign mintthresh_o  = mintthresh_rdata[7:0];
+  assign mintthresh_th_o  = mintthresh_rdata[7:0];
   assign mstatus_o     = mstatus_rdata;
   assign mtvec_addr_o  = mtvec_rdata.addr;
   assign mtvec_mode_o  = mtvec_rdata.mode;

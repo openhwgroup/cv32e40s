@@ -43,7 +43,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   parameter pma_cfg_t                   PMA_CFG[PMA_NUM_REGIONS-1:0]            = '{default:PMA_R_DEFAULT},
   parameter bit                         CLIC                                    = 0,
   parameter int unsigned                CLIC_ID_WIDTH                           = 5,
-  parameter int unsigned                CLIC_INTTHRESHBITS                      = 8,
   parameter int unsigned                PMP_GRANULARITY                         = 0,
   parameter int                         PMP_NUM_REGIONS                         = 0,
   parameter pmpncfg_t                   PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0]     = '{default:PMPNCFG_DEFAULT},
@@ -236,7 +235,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   logic [31:0] mstateen0;
 
-  logic [7:0]  mintthresh;
+  logic [7:0]  mintthresh_th;
   mintstatus_t mintstatus;
 
   mcause_t     mcause;
@@ -884,7 +883,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ZC_EXT                     ( ZC_EXT                 ),
     .CLIC                       ( CLIC                   ),
     .CLIC_ID_WIDTH              ( CLIC_ID_WIDTH          ),
-    .CLIC_INTTHRESHBITS         ( CLIC_INTTHRESHBITS     ),
     .DEBUG                      ( DEBUG                  ),
     .DBG_NUM_TRIGGERS           ( DBG_NUM_TRIGGERS       ),
     .NUM_MHPMCOUNTERS           ( NUM_MHPMCOUNTERS       ),
@@ -920,7 +918,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mepc_o                     ( mepc                   ),
     .mie_o                      ( mie                    ),
     .mintstatus_o               ( mintstatus             ),
-    .mintthresh_o               ( mintthresh             ),
+    .mintthresh_th_o            ( mintthresh_th          ),
     .mstatus_o                  ( mstatus                ),
     .mtvec_addr_o               ( mtvec_addr             ),
     .mtvec_mode_o               ( mtvec_mode             ),
@@ -1149,7 +1147,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
         // From cs_registers
         .mstatus_i            ( mstatus            ),
-        .mintthresh_i         ( mintthresh         ),
+        .mintthresh_th_i      ( mintthresh_th      ),
         .mintstatus_i         ( mintstatus         ),
         .mcause_i             ( mcause             ),
         .priv_lvl_i           ( priv_lvl           ),
