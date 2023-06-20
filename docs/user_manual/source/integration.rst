@@ -43,7 +43,6 @@ Instantiation Template
       .PMA_CFG                  (        PMA_CFG[] ),
       .CLIC                     (                0 ),
       .CLIC_ID_WIDTH            (                5 ),
-      .CLIC_INTTHRESHBITS       (                8 ),
       .LFSR0_CFG                ( LFSR_CFG_DEFAULT ),
       .LFSR1_CFG                ( LFSR_CFG_DEFAULT ),
       .LFSR2_CFG                ( LFSR_CFG_DEFAULT )
@@ -188,8 +187,6 @@ Parameters
   |                              |                         |                  | number of supported interrupts in CLIC mode is                     |
   |                              |                         |                  | ``2^CLIC_ID_WIDTH``. Trap vector table alignment is restricted     |
   |                              |                         |                  | as described in :ref:`csr-mtvt`.                                   |
-  +------------------------------+-------------------------+------------------+--------------------------------------------------------------------+
-  | ``CLIC_INTTHRESHBITS``       | int unsigned (1..8)     | 8                | Number of bits actually implemented in ``mintthresh.th`` field.    |
   +------------------------------+-------------------------+------------------+--------------------------------------------------------------------+
   | ``LFSR0``                    | lfsr_cfg_t              | LFSR_CFG_DEFAULT | LFSR0 configuration, see :ref:`xsecure`.                           |
   +------------------------------+-------------------------+------------------+--------------------------------------------------------------------+
