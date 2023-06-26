@@ -2797,7 +2797,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
                                                         !mcountinhibit_rdata[wcnt_gidx] &&
                                                         !debug_stopcount &&
                                                         hpm_events[1];
-      end else if( (wcnt_gidx>2) && (wcnt_gidx<(NUM_MHPMCOUNTERS+3))) begin : gen_mhpmcounter
+      end else if( (wcnt_gidx>2) && (wcnt_gidx<(NUM_MHPMCOUNTERS+3))) begin : gen_mhpmcounter_write_increment
         // add +1 if any event is enabled and active
         assign mhpmcounter_write_increment[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
                                                         !mhpmcounter_write_upper[wcnt_gidx] &&
@@ -2823,7 +2823,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       // Programable HPM counters start at index 3
       if( (nxt_gidx == 1) ||
           (nxt_gidx >= (NUM_MHPMCOUNTERS+3) ) )
-        begin : gen_non_implemented
+        begin : gen_non_implemented_nextvalue
           assign mhpmcounter_n[nxt_gidx]  = 'b0;
           assign mhpmcounter_we[nxt_gidx] = 2'b0;
       end
@@ -2855,10 +2855,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       // Programable HPM counters start at index 3
       if( (cnt_gidx == 1) ||
           (cnt_gidx >= (NUM_MHPMCOUNTERS+3) ) )
-        begin : gen_non_implemented
+        begin : gen_non_implemented_mhpmcounter
         assign mhpmcounter_q[cnt_gidx] = 'b0;
       end
-      else begin : gen_implemented
+      else begin : gen_implemented_mhpmcounter
         always_ff @(posedge clk, negedge rst_n)
           if (!rst_n) begin
             mhpmcounter_q[cnt_gidx] <= 'b0;
@@ -2882,10 +2882,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       // programable HPM events start at index3
       if( (evt_gidx < 3) ||
           (evt_gidx >= (NUM_MHPMCOUNTERS+3) ) )
-        begin : gen_non_implemented
+        begin : gen_non_implemented_mhpmevent
         assign mhpmevent_q[evt_gidx] = 'b0;
       end
-      else begin : gen_implemented
+      else begin : gen_implemented_mhpmevent
         if (NUM_HPM_EVENTS < 32) begin : gen_tie_off
              assign mhpmevent_q[evt_gidx][31:NUM_HPM_EVENTS] = 'b0;
         end
@@ -2924,6 +2924,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     mstateen1_we | mstateen2_we | mstateen3_we | mstateen0h_we | mstateen1h_we | mstateen2h_we |
     mstateen3h_we | (|pmp_addr_n_r_unused) | (|mnxti_n) | mscratchcsw_we | mscratchcswl_we |
     (|mscratchcsw_rdata) | (|mscratchcswl_rdata) | (|mscratchcsw_n) | (|mscratchcswl_n) |
-    mscratchcsw_in_wb | mscratchcswl_in_wb | mnxti_in_wb;
+    mscratchcsw_in_wb | mscratchcswl_in_wb | mnxti_in_wb |
+    (|mtval_n) | (|mconfigptr_n) | (|mhartid_n) | (|mimpid_n) | (|marchid_n) | (|mvendorid_n) | (|mip_n) | (|misa_n) | (|mstatush_n);
 
 endmodule
