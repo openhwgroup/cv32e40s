@@ -92,7 +92,6 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
   privlvl_t    pmp_priv_lvl;
   logic        instr_fetch_access;
   logic        load_access;
-  logic        wpt_match;
   logic        core_trans_debug_region;
 
   // Detect a debug mode transaction to the Debug Module region
