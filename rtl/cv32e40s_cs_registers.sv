@@ -2004,6 +2004,8 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         .rd_error_o     ( mintthresh_rd_error   )
       );
 
+      logic unused_clic_signals;
+      assign unused_clic_signals = mie_we | (|mie_n);
 
     end else begin : basic_mode_csrs
 
@@ -2883,7 +2885,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       if( (evt_gidx < 3) ||
           (evt_gidx >= (NUM_MHPMCOUNTERS+3) ) )
         begin : gen_non_implemented_mhpmevent
-        assign mhpmevent_q[evt_gidx] = 'b0;
+          assign mhpmevent_q[evt_gidx] = 'b0;
+
+          logic unused_mhpmevent_signals;
+          assign unused_mhpmevent_signals = (|mhpmevent_n[evt_gidx]) | (|mhpmevent_q[evt_gidx]) | (|mhpmevent_rdata[evt_gidx]);
       end
       else begin : gen_implemented_mhpmevent
         if (NUM_HPM_EVENTS < 32) begin : gen_tie_off

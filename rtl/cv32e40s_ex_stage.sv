@@ -80,8 +80,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   output logic        ex_valid_o,       // EX stage has valid (non-bubble) data for next stage
   input  logic        wb_ready_i,       // WB stage is ready for new data
 
-  output logic        last_op_o,
-  output logic        first_op_o
+  output logic        last_op_o
 );
 
   // Ready and valid signals
@@ -117,7 +116,9 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   logic [5:0]     div_shift_amt;
   logic [31:0]    div_op_b_shifted;
 
+  // Misc signals
   logic           previous_exception;
+  logic           first_op;
 
   assign instr_valid = id_ex_pipe_i.instr_valid && !ctrl_fsm_i.kill_ex && !ctrl_fsm_i.halt_ex;
 
@@ -190,7 +191,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
   // Both parts of a split misaligned load/store will reach WB, but only the second half will be marked with "last_op"
   assign last_op_o = id_ex_pipe_i.lsu_en ? (lsu_last_op_i && id_ex_pipe_i.last_op) : id_ex_pipe_i.last_op;
 
-  assign first_op_o = id_ex_pipe_i.lsu_en ? (lsu_first_op_i && id_ex_pipe_i.first_op) : id_ex_pipe_i.first_op;
+  assign first_op  = id_ex_pipe_i.lsu_en ? (lsu_first_op_i && id_ex_pipe_i.first_op) : id_ex_pipe_i.first_op;
 
   ////////////////////////////
   //     _    _    _   _    //
@@ -384,7 +385,7 @@ module cv32e40s_ex_stage import cv32e40s_pkg::*;
         ex_wb_pipe_o.priv_lvl    <= id_ex_pipe_i.priv_lvl;
         ex_wb_pipe_o.last_op     <= last_op_o;
         ex_wb_pipe_o.last_sec_op <= id_ex_pipe_i.last_sec_op;
-        ex_wb_pipe_o.first_op    <= first_op_o;
+        ex_wb_pipe_o.first_op    <= first_op;
         ex_wb_pipe_o.abort_op    <= id_ex_pipe_i.abort_op; // MPU exceptions and watchpoint triggers have WB timing and will not impact ex_wb_pipe.abort_op
         // Deassert rf_we in case of illegal csr instruction or when the first half of a misaligned/split LSU goes to WB.
         // Also deassert if CSR was accepted both by eXtension if and pipeline

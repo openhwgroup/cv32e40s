@@ -209,7 +209,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
 
   // First op bits
   logic        first_op_id;
-  logic        first_op_ex;
 
   // Register file signals from ID/decoder to controller
   logic [REGFILE_NUM_READ_PORTS-1:0] rf_re_id;
@@ -727,8 +726,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .ex_ready_o                 ( ex_ready                     ),
     .ex_valid_o                 ( ex_valid                     ),
     .wb_ready_i                 ( wb_ready                     ),
-    .last_op_o                  ( last_op_ex                   ),
-    .first_op_o                 ( first_op_ex                  )
+    .last_op_o                  ( last_op_ex                   )
   );
 
   ////////////////////////////////////////////////////////////////////////////////////////
@@ -1159,6 +1157,10 @@ module cv32e40s_core import cv32e40s_pkg::*;
         .mnxti_irq_id_o       ( mnxti_irq_id       ),
         .mnxti_irq_level_o    ( mnxti_irq_level    )
       );
+
+      logic unused_clic_signals;
+      assign unused_clic_signals = |mie;
+
     end else begin : gen_basic_interrupt
       cv32e40s_int_controller
       int_controller_i
