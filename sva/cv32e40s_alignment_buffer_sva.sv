@@ -49,7 +49,9 @@ module cv32e40s_alignment_buffer_sva
    input logic [1:0]               rptr2,
    input logic                     pop_q,
    input privlvl_t                 instr_priv_lvl_o,
-   input logic                     ptr_fetch_accepted_q
+   input logic                     ptr_fetch_accepted_q,
+   input logic                     rchk_err_q0,
+   input logic                     rchk_err_q1
    );
 
 
@@ -331,5 +333,14 @@ a_no_outstanding_instr_valid:
   else
     `uvm_error("Alignment buffer SVA", "No instr_valid when expected")
 
+  a_no_rchk_err_q0:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                    1'b1 |-> !rchk_err_q0)
+          else `uvm_error("core", "rchk_err_q0 shall be zero.")
+
+  a_no_rchk_err_q1:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                    1'b1 |-> !rchk_err_q1)
+          else `uvm_error("core", "rchk_err_q1 shall be zero.")
 endmodule // cv32e40s_alignment_buffer_sva
 

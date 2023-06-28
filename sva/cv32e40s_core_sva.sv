@@ -619,6 +619,11 @@ end
                     1'b1 |-> !pc_err_if)
           else `uvm_error("core", "pc_err_if shall be zero.")
 
+  a_no_major_exception_err:
+    assert property (@(posedge clk) disable iff (!rst_ni)
+                    1'b1 |-> !ctrl_fsm.exception_alert_major)
+          else `uvm_error("core", "ctrl_fsm.exception_alert_major shall be zero.")
+
   // There should be no parity error on output signals
   logic instr_reqpar_expected;
   logic data_reqpar_expected;
