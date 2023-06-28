@@ -175,7 +175,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   inst_resp_t        seq_instr;       // Instruction for sequenced operation
   logic              seq_tbljmp;      // Sequenced instruction is a table jump
   logic              seq_pushpop;     // Sequenced instruction is a push or pop
-  logic              first_op;
 
   logic              id_ready_no_dummy; // Ready signal to acknowledge the sequencer
 
