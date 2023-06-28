@@ -33,7 +33,6 @@ module cv32e40s_instr_obi_interface_sva
   input logic           gntpar_err,
   input logic           gntpar_err_q,
   input obi_inst_resp_t resp_o,
-  input obi_inst_req_t  trans_i,
   input logic           gntpar_err_resp
 );
 
@@ -67,7 +66,7 @@ always_comb begin
                                {gnt_fifo_q[MAX_OUTSTND_TXN-2:0], GNT_ERR} :
                                {gnt_fifo_q[MAX_OUTSTND_TXN-2:0], GNT_NOERR};
 
-        int_fifo_n = trans_i.integrity ?
+        int_fifo_n = m_c_obi_instr_if.req_payload.integrity ?
                                {int_fifo_q[MAX_OUTSTND_TXN-2:0], INT} :
                                {int_fifo_q[MAX_OUTSTND_TXN-2:0], NOINT};
       end
@@ -85,7 +84,7 @@ always_comb begin
                                {gnt_fifo_tmp[MAX_OUTSTND_TXN-2:0], GNT_NOERR};
 
         int_fifo_tmp[oldest_txn] = INT_NONE;
-        int_fifo_n = trans_i.integrity ?
+        int_fifo_n = m_c_obi_instr_if.req_payload.integrity ?
                                 {int_fifo_tmp[MAX_OUTSTND_TXN-2:0], INT} :
                                 {int_fifo_tmp[MAX_OUTSTND_TXN-2:0], NOINT};
       end

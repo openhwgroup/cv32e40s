@@ -214,31 +214,31 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
    )
   integrity_fifo_i
   (
-    .clk                (clk                              ),
-    .rst_n              (rst_n                            ),
+    .clk                (clk                                    ),
+    .rst_n              (rst_n                                  ),
 
     // gnt parity error
-    .gntpar_err_i       (gntpar_err                       ),
+    .gntpar_err_i       (gntpar_err                             ),
 
     // Transaction inputs
-    .trans_integrity_i  (trans_i.integrity                ),
-    .trans_we_i         (1'b0                             ),
+    .trans_integrity_i  (m_c_obi_instr_if.req_payload.integrity ),
+    .trans_we_i         (1'b0                                   ),
 
     // Xsecure
-    .xsecure_ctrl_i     (xsecure_ctrl_i                   ),
+    .xsecure_ctrl_i     (xsecure_ctrl_i                         ),
 
     // Response phase properties
-    .gntpar_err_resp_o  (gntpar_err_resp                  ),
-    .integrity_resp_o   (integrity_resp                   ),
-    .rchk_err_resp_o    (rchk_err_resp                    ),
+    .gntpar_err_resp_o  (gntpar_err_resp                        ),
+    .integrity_resp_o   (integrity_resp                         ),
+    .rchk_err_resp_o    (rchk_err_resp                          ),
 
-    .protocol_err_o     (protocol_err                     ),
+    .protocol_err_o     (protocol_err                           ),
 
     // OBI interface
-    .obi_req_i          (m_c_obi_instr_if.s_req.req       ),
-    .obi_gnt_i          (m_c_obi_instr_if.s_gnt.gnt       ),
-    .obi_rvalid_i       (m_c_obi_instr_if.s_rvalid.rvalid ),
-    .obi_resp_i         (resp_o                           )
+    .obi_req_i          (m_c_obi_instr_if.s_req.req             ),
+    .obi_gnt_i          (m_c_obi_instr_if.s_gnt.gnt             ),
+    .obi_rvalid_i       (m_c_obi_instr_if.s_rvalid.rvalid       ),
+    .obi_resp_i         (resp_o                                 )
   );
 
 
