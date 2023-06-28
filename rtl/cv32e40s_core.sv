@@ -341,7 +341,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        sys_mret_insn_id;
   logic        sys_wfi_insn_id;
   logic        last_sec_op_id;
-  logic        csr_en_id;
   logic        csr_en_raw_id;
   csr_opcode_e csr_op_id;
   logic        csr_illegal;

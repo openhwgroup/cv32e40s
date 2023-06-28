@@ -93,7 +93,7 @@ module cv32e40s_dummy_instr
   //   Pointers are not counted as instructions in the IF stage, thus instr_issued_i will remain
   //   low for pointers, causing cnt_q not to reset on dummy insertion.
   //   If allowing dummies for pointers, pointers would also need to count as instructions.
-  assign dummy_insert_o = (cnt_q > lfsr_cnt) && dummy_en &&              // Limit reached and dummies enabled
+  assign dummy_insert_o = (cnt_q > CNT_WIDTH'(lfsr_cnt)) && dummy_en &&  // Limit reached and dummies enabled
                           (first_op_nondummy_i && prefetch_valid_i) &&   // IF stage is on instruction boundary
                           !ptr_in_if_i;                                  // No pointer is in IF
 
@@ -101,9 +101,18 @@ module cv32e40s_dummy_instr
                           (dummy_insert_o && instr_issued_i) ||      // Reset counter when inserting dummy instruction which is propagated to the ID stage
                           xsecure_ctrl_i.cntrst;                     // Reset counter when requested by xsecure_ctrl (due to csr updates)
 
-  assign cnt_next       = cnt_rst        ? '0           : // Reset counter
-                          instr_issued_i ? cnt_q + 1'b1 : // Count issued instructions only
-                                           cnt_q;
+  always_comb begin
+    cnt_next = cnt_q;
+
+    if (cnt_rst)  begin
+      // Reset counter
+      cnt_next = '0;
+    end
+    else if (instr_issued_i) begin
+      // Count issued instructions only
+      cnt_next = cnt_q + 1'b1;
+    end
+  end
 
   always_ff @(posedge clk, negedge rst_n) begin
     if (rst_n == 1'b0) begin
@@ -149,7 +158,7 @@ module cv32e40s_dummy_instr
   // When inserting a dummy, use offset=0 because PC of the dummy instruction is the same as the target instruction.
   // When not inserting a dummy, the random instruction may be used for a HINT instruction which must branch to
   // the next instruction (PC+2 since the HINT is a compressed c.slli)
-  assign imm = dummy_insert_o ? 12'h0 : 12'h2;
+  assign imm = dummy_insert_o ? 13'h0 : 13'h2;
 
 
   assign instr[31:25] = (opcode == OPCODE_BRANCH) ? {imm[12], imm[10:5]} : funct7;
