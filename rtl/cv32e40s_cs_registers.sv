@@ -286,6 +286,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [PMP_MAX_REGIONS-1:0]   pmpncfg_wr_addr_match;
   logic [PMP_MAX_REGIONS-1:0]   pmpncfg_warl_ignore_wr;
   logic [PMP_MAX_REGIONS-1:0]   pmpaddr_wr_addr_match;
+  logic [PMP_MAX_REGIONS-1:0]   unused_pmp_region_signals;
 
   logic [PMP_ADDR_WIDTH-1:0]    pmp_addr_n[PMP_MAX_REGIONS];                    // Value written is not necessarily the value read
   logic                         pmp_addr_bit_0_n[PMP_MAX_REGIONS];
@@ -2422,11 +2423,14 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
           // pmp_addr_n_r is only used by RVFI. Assign pmp_addr_n_r_unused to ease LINT waiving
           assign pmp_addr_n_r_unused[i] = |pmp_addr_n_r[i];
 
-        end else begin: no_pmp_region
+          assign unused_pmp_region_signals[i] = 1'b0; // PMP region implemented, no signals should be unused.
+        end // block: pmp_region
+        else begin: no_pmp_region
 
           // Tie off outputs for unimplemented regions
           assign pmpncfg_locked[i]         = 1'b0;
           assign pmpncfg_n[i]              = pmpncfg_t'('0);
+          assign pmpncfg_n_int[i]          = pmpncfg_t'('0);
           assign pmpncfg_q[i]              = pmpncfg_t'('0);
           assign pmpncfg_rd_error[i]       = 1'b0;
           assign pmpncfg_warl_ignore_wr[i] = 1'b0;
@@ -2445,8 +2449,13 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
           assign csr_pmp_o.addr[i]         = '0;
           assign csr_pmp_o.cfg[i]          = pmpncfg_t'('0);
+
+          assign unused_pmp_region_signals[i] = (|pmpncfg_n[i]) | (|pmpncfg_n_int[i]) | pmpncfg_we[i] |
+                                                pmpncfg_warl_ignore_wr[i] | pmp_addr_we[i] |
+                                                (|pmp_addr_q[i]) | (|pmp_addr_n_r[i]) | (|pmp_addr_n[i]) | pmp_addr_bit_0_n[i] |
+                                                pmpaddr_locked[i];
         end
-      end
+      end // block: gen_pmp_csr
 
       // MSECCFG.MML/MSECCFG.MMWP cannot be unset once set
       assign pmp_mseccfg_n.mml  = csr_wdata_int[CSR_MSECCFG_MML_BIT]  || pmp_mseccfg_rdata.mml;
@@ -2482,11 +2491,15 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       // Combine read error signals
       assign pmp_rd_error = |pmpncfg_rd_error || |pmp_addr_rd_error || pmp_mseccfg_rd_error;
 
-    end else begin: no_csr_pmp
+    end // block: csr_pmp
+    else begin: no_csr_pmp
+
+
       // Generate tieoffs when PMP is not configured
       for (genvar i = 0; i < PMP_MAX_REGIONS; i++) begin : g_tie_pmp_rdata
         assign pmpncfg_locked[i]         = 1'b0;
         assign pmpncfg_n[i]              = pmpncfg_t'('0);
+        assign pmpncfg_n_int[i]          = pmpncfg_t'('0);
         assign pmpncfg_q[i]              = pmpncfg_t'('0);
         assign pmpncfg_rd_error[i]       = 1'b0;
         assign pmpncfg_warl_ignore_wr[i] = 1'b0;
@@ -2496,12 +2509,20 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         assign pmp_addr_rdata[i]         = '0;
         assign pmp_addr_n_r[i]           = '0;
         assign pmp_addr_n_r_unused[i]    = '0;
+        assign pmp_addr_n[i]             = '0;
+        assign pmp_addr_bit_0_n[i]       = 1'b0;
+        assign pmpaddr_locked[i]         = 1'b0;
         assign pmp_addr_rd_error[i]      = 1'b0;
 
         assign pmpaddr_wr_addr_match[i]  = 1'b0;
 
         assign csr_pmp_o.addr[i]         = '0;
         assign csr_pmp_o.cfg[i]          = pmpncfg_t'('0);
+
+        assign unused_pmp_region_signals[i] = pmpncfg_locked[i] | (|pmpncfg_n[i]) | (|pmpncfg_n_int[i]) |
+                                              pmpncfg_rd_error[i] | pmpncfg_warl_ignore_wr[i] | (|pmpncfg_rdata[i]) |
+                                              (|pmp_addr_q[i]) | (|pmp_addr_n_r[i]) | (|pmp_addr_n[i]) | pmp_addr_bit_0_n[i] |
+                                              pmpaddr_locked[i] | pmp_addr_rd_error[i];
       end
 
       assign csr_pmp_o.mseccfg    = mseccfg_t'('0);
@@ -2512,7 +2533,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       assign pmp_rd_error         = 1'b0;
 
-    end
+      logic unused_pmp_signals;
+      assign unused_pmp_signals = pmp_mseccfg_rd_error | pmp_mseccfg_we | (|pmp_mseccfg_n) | (|pmp_addr_we) | (|pmpncfg_we);
+
+    end // block: no_csr_pmp
   endgenerate
 
   ////////////////////////////////////////////////////////////////////////
@@ -2926,6 +2950,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign unused_signals = mstatush_we | misa_we | mip_we | mvendorid_we | marchid_we |
     mimpid_we | mhartid_we | mconfigptr_we | mtval_we | pmp_mseccfgh_we | mcounteren_we | menvcfg_we | menvcfgh_we |
     dpc_rd_error | dscratch0_rd_error | dscratch1_rd_error |
+    (|menvcfg_n) | (|menvcfgh_n) | (|mcounteren_n) | (|pmp_mseccfgh_n) |
+    (|secureseed0_n) | (|secureseed1_n) | (|secureseed2_n) |
+    (|mstateen1_n) | (|mstateen2_n) | (|mstateen3_n) | (|mstateen0h_n) | (|mstateen1h_n) | (|mstateen2h_n) | (|mstateen3h_n) |
     mstateen1_we | mstateen2_we | mstateen3_we | mstateen0h_we | mstateen1h_we | mstateen2h_we |
     mstateen3h_we | (|pmp_addr_n_r_unused) | (|mnxti_n) | mscratchcsw_we | mscratchcswl_we |
     (|mscratchcsw_rdata) | (|mscratchcswl_rdata) | (|mscratchcsw_n) | (|mscratchcswl_n) |

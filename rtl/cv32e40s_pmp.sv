@@ -221,4 +221,27 @@ module cv32e40s_pmp import cv32e40s_pkg::*;
   // PMP CSRs. Tie to unused signal here to prevent lint warnings.
   logic unused_csr_pmp_mseccfg_rlb;
   assign unused_csr_pmp_mseccfg_rlb = csr_pmp_i.mseccfg.rlb;
+
+  generate
+    if (PMP_NUM_REGIONS == 0) begin: gen_no_pmp
+
+      // Tie off and assign unused signals to prevent LINT warnings
+      assign region_start_addr       = '0;
+      assign region_addr_mask        = '0;
+      assign region_match_gt         = '0;
+      assign region_match_lt         = '0;
+      assign region_match_eq         = '0;
+      assign region_match_all        = '0;
+      assign region_basic_perm_check = '0;
+      assign region_mml_perm_check   = '0;
+      assign access_fault_all        = '0;
+
+      logic unused_pmp_signals;
+      assign unused_pmp_signals = (|region_start_addr) | (|region_addr_mask) | (|region_match_gt) |
+                                  (|region_match_lt) | (|region_match_eq) | (|region_match_all) |
+                                  (|region_basic_perm_check) | (|region_mml_perm_check) |
+                                  (|access_fault_all);
+    end
+  endgenerate
+
 endmodule

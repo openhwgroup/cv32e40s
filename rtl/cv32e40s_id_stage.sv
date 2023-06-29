@@ -742,4 +742,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   assign last_op_o   = (sys_en && sys_mret_insn && mcause_i.minhv && (mcause_i.mpp == PRIV_LVL_M)) ? 1'b0 : last_op;
   assign abort_op_o  = if_id_pipe_i.abort_op || ctrl_byp_i.id_stage_abort;
 
+  logic unused_signals;
+  assign unused_signals = |rf_illegal_raddr;
+
 endmodule
