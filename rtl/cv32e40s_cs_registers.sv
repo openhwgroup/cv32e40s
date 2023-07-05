@@ -49,7 +49,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   parameter lfsr_cfg_t   LFSR1_CFG        = LFSR_CFG_DEFAULT,
   parameter lfsr_cfg_t   LFSR2_CFG        = LFSR_CFG_DEFAULT,
   parameter bit          DEBUG            = 1,
-  parameter int          DBG_NUM_TRIGGERS = 1, // todo: implement support for DBG_NUM_TRIGGERS != 1
+  parameter int          DBG_NUM_TRIGGERS = 1,
   parameter int unsigned MTVT_ADDR_WIDTH  = 26
 )
 (

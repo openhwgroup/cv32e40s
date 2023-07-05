@@ -430,8 +430,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   always_comb begin
     // For last phase of misaligned/split transfer the address needs to be word aligned (as LSB of be will be set)
-    // todo: As part of the fix for https://github.com/openhwgroup/cv32e40x/issues/388 the following should be used as well:
-    // align_trans.addr   = split_q ? {trans.addr[31:2], 2'b00} + 'h4 : trans.addr;
     wpt_trans.addr      = (split_q ? {trans.addr[31:2], 2'b00} + 'h4 : trans.addr);
     wpt_trans.we        = trans.we;
     wpt_trans.be        = be;
