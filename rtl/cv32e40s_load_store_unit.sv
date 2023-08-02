@@ -139,7 +139,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
   obi_data_req_t  filter_trans;
   logic           filter_resp_valid;
   obi_data_resp_t filter_resp;
-  lsu_err_wb_t    filter_err;
 
   // Transaction request (from cv32e40s_write_buffer to cv32e40s_data_obi_interface)
   logic           bus_trans_valid;
@@ -589,8 +588,9 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   // Validate bus_error on rvalid from the bus (WB stage)
   // For bufferable transfers, this can happen many cycles after the pipeline control logic has seen the filtered resp_valid
-  // Todo: This bypasses the MPU, could be merged with mpu_status_e and passed through the MPU instead
-  assign lsu_err_1_o = filter_err;
+  assign lsu_err_1_o.bus_err       = resp.bus_resp.err[0];
+  assign lsu_err_1_o.store         = resp.bus_resp.err[1];
+  assign lsu_err_1_o.integrity_err = resp.bus_resp.integrity_err;
 
   //////////////////////////////////////////////////////////////////////////////
   // WPT
@@ -731,7 +731,6 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
        .trans_i        ( filter_trans        ),
        .resp_valid_o   ( filter_resp_valid   ),
        .resp_o         ( filter_resp         ),
-       .err_o          ( filter_err          ),
 
        .valid_o        ( buffer_trans_valid  ),
        .ready_i        ( buffer_trans_ready  ),

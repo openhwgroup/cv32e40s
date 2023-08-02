@@ -415,7 +415,8 @@ module cv32e40s_core import cv32e40s_pkg::*;
   assign m_c_obi_data_if.s_rvalid.rvalid     = data_rvalid_i;
   assign m_c_obi_data_if.s_rvalid.rvalidpar  = data_rvalidpar_i;
   assign m_c_obi_data_if.resp_payload.rdata  = data_rdata_i;
-  assign m_c_obi_data_if.resp_payload.err    = data_err_i;
+  assign m_c_obi_data_if.resp_payload.err[0] = data_err_i;
+  assign m_c_obi_data_if.resp_payload.err[1] = 1'b0; // Will be assigned in the response filter
   assign m_c_obi_data_if.resp_payload.rchk   = data_rchk_i;
   assign m_c_obi_data_if.resp_payload.integrity_err = 1'b0; // Tie off here, will we populated in data_obi_interface.
   assign m_c_obi_data_if.resp_payload.integrity     = 1'b0; // Tie off here, will we populated in data_obi_interface.
