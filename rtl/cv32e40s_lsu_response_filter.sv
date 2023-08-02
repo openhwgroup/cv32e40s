@@ -169,11 +169,13 @@ module cv32e40s_lsu_response_filter
   assign trans_o      = trans_i;
 
   // bus_resp goes straight through
-  assign resp_o.rdata  = resp_i.rdata;
-  assign resp_o.err    = {outstanding_q[bus_cnt_q].store, (resp_valid_i && resp_i.err[0])};
+  assign resp_o.rdata         = resp_i.rdata;
+  assign resp_o.integrity     = resp_i.integrity;
+  assign resp_o.rchk          = resp_i.rchk;
+  // Assign bus errors and integrity errors to response
+  assign resp_o.err           = {outstanding_q[bus_cnt_q].store, (resp_valid_i && resp_i.err[0])};
   assign resp_o.integrity_err = resp_valid_i && resp_i.integrity_err;
-  assign resp_o.integrity = resp_i.integrity;
-  assign resp_o.rchk = resp_i.rchk;
+
 
   // Raise protocol error when we get rvalid with outstanding count == 0 for either core or bus side
   assign protocol_err_o = (resp_valid_o && !(|core_cnt_q)) || (resp_valid_i && !(|bus_cnt_q));

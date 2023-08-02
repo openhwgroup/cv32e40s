@@ -588,8 +588,8 @@ module cv32e40s_load_store_unit import cv32e40s_pkg::*;
 
   // Validate bus_error on rvalid from the bus (WB stage)
   // For bufferable transfers, this can happen many cycles after the pipeline control logic has seen the filtered resp_valid
-  assign lsu_err_1_o.bus_err = resp.bus_resp.err[0];
-  assign lsu_err_1_o.store = resp.bus_resp.err[1];
+  assign lsu_err_1_o.bus_err       = resp.bus_resp.err[0];
+  assign lsu_err_1_o.store         = resp.bus_resp.err[1];
   assign lsu_err_1_o.integrity_err = resp.bus_resp.integrity_err;
 
   //////////////////////////////////////////////////////////////////////////////
