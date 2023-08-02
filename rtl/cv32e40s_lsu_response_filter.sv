@@ -56,14 +56,9 @@ module cv32e40s_lsu_response_filter
 
    output logic           busy_o,
    output logic           resp_valid_o,
-   output obi_data_resp_t resp_o, // Todo: This also carries the obi error field. Could replace by data_resp_t
+   output obi_data_resp_t resp_o,
 
-   output logic           protocol_err_o,
-
-
-   // Todo: This error signal could be merged with mpu_status_e, and be signaled via the resp_o above (if replaced by data_resp_t).
-   //       This would make the error flow all the way through the MPU and not bypass the MPU as it does now.
-   output lsu_err_wb_t    err_o   // error conditions in WB part of LSU
+   output logic           protocol_err_o
    );
 
   localparam CNT_WIDTH = $clog2(DEPTH+1);
@@ -173,15 +168,12 @@ module cv32e40s_lsu_response_filter
   assign resp_valid_o = (bus_resp_is_bufferable) ? core_resp_is_bufferable : resp_valid_i;
   assign trans_o      = trans_i;
 
-  // Signal bus error
-  assign err_o.bus_err = resp_valid_i && resp_i.err;
-  // Signal integrity error, only signal rchk_err for loads
-  assign err_o.integrity_err = resp_valid_i && resp_i.integrity_err;
-  // Signal type transaction for error (load or store)
-  assign err_o.store = outstanding_q[bus_cnt_q].store;
-
   // bus_resp goes straight through
-  assign resp_o = resp_i;
+  assign resp_o.rdata  = resp_i.rdata;
+  assign resp_o.err    = {outstanding_q[bus_cnt_q].store, (resp_valid_i && resp_i.err[0])};
+  assign resp_o.integrity_err = resp_valid_i && resp_i.integrity_err;
+  assign resp_o.integrity = resp_i.integrity;
+  assign resp_o.rchk = resp_i.rchk;
 
   // Raise protocol error when we get rvalid with outstanding count == 0 for either core or bus side
   assign protocol_err_o = (resp_valid_o && !(|core_cnt_q)) || (resp_valid_i && !(|bus_cnt_q));

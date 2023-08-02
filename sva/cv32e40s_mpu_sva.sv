@@ -230,11 +230,12 @@ module cv32e40s_mpu_sva import cv32e40s_pkg::*; import uvm_pkg::*;
   pma_cfg_t    pma_expected_cfg;
   logic        pma_expected_err;
   always_comb begin
-    pma_expected_cfg = NO_PMA_R_DEFAULT;
     if (PMA_NUM_REGIONS) begin
       pma_expected_cfg = is_pma_dbg_matched ? '{main    : 1'b1, default : '0} :
                          is_pma_matched     ? PMA_CFG[pma_lowest_match]       : PMA_R_DEFAULT;
-
+    end else begin
+      pma_expected_cfg = is_pma_dbg_matched ? '{main    : 1'b1, default : '0} :
+                         NO_PMA_R_DEFAULT;
     end
   end
   assign pma_expected_err = (instr_fetch_access && !pma_expected_cfg.main)  ||

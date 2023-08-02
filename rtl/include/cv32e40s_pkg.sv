@@ -1190,7 +1190,7 @@ typedef struct packed {
 
 typedef struct packed {
   logic [DATA_DATA_WIDTH-1:0] rdata;
-  logic                       err;
+  logic [1:0]                 err; // bit0: Error from bus, bit1: 0 for load, 1 for store
   logic [4:0]                 rchk;
   logic                       integrity_err;    // Calculated in data_obi_interface and appended to struct upon rvalid
   logic                       integrity;   // Tracked through data_obi_interface and appended to struct upon rvalid
