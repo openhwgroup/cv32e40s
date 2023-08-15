@@ -34,6 +34,7 @@ module cv32e40s_pma import cv32e40s_pkg::*;
   input  logic        trans_pushpop_i,      // Transaction is part of a PUSH or POP sequence
   input  logic        instr_fetch_access_i, // Indicate that ongoing access is an instruction fetch
   input  logic        misaligned_access_i,  // Indicate that ongoing access is part of a misaligned access
+  input  logic        modified_access_i,    // Indicate that ongoing access is part of a modified access
   input  logic        load_access_i,        // Indicate that ongoing access is a load
   output logic        pma_err_o,
   output logic        pma_integrity_o,
@@ -104,8 +105,8 @@ module cv32e40s_pma import cv32e40s_pkg::*;
       pma_err_o   = 1'b1;
     end
 
-    // Misaligned access to I/O memory
-    if (misaligned_access_i && !pma_cfg.main) begin
+    // Misaligned or modified access to I/O memory
+    if ((misaligned_access_i || modified_access_i) && !pma_cfg.main) begin
       pma_err_o   = 1'b1;
     end
 

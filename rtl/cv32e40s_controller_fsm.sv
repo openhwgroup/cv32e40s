@@ -494,8 +494,10 @@ assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
   // If a CLIC SHV interrupt is taken during single step, a pointer that reaches WB will trigger the debug entry.
   //   - For un-faulted pointer fetches, the second fetch of the CLIC vectoring took place in ID, and the final SHV handler target address will be available from IF.
   //   - A faulted pointer fetch does not perform the second fetch. Instead the exception handler fetch will occur before entering debug due to stepping.
-  // todo: Likely flop the wb_valid/last_op/abort_op to be able to evaluate all debug reasons (debug_req when pointer is in WB is not allowed, while single step is allowed)
-  // todo: can this be merged with pending_sync_debug in the future?
+  //
+  // Unlike [a]synchrounous debug entries, single step does not halt the pipeline.
+  // This causes the reason for debug entry to 'disappear' as seen from the DEBUG_TAKEN state one cycle later.
+  // The signal pending_single_step should never be used outside of the FUNCTIONAL state.
   assign pending_single_step = (!debug_mode_q && dcsr_i.step && ((wb_valid_i && (last_op_wb_i || abort_op_wb_i)) || non_shv_irq_ack || (pending_nmi && nmi_allowed)));
 
 
@@ -892,7 +894,9 @@ assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
             ctrl_fsm_o.kill_if = 1'b1;
             ctrl_fsm_o.kill_id = 1'b1;
             ctrl_fsm_o.kill_ex = 1'b1;
-            ctrl_fsm_o.kill_wb = 1'b0; // All write enables are suppressed, no need to kill WB.
+            // All write enables are suppressed, no need to kill WB.
+            // RVFI also needs wb_valid to be able to signal an exception on rvfi_valid/rvfi_trap.
+            ctrl_fsm_o.kill_wb = 1'b0;
 
             // Set pc to exception handler
             ctrl_fsm_o.pc_set = 1'b1;
@@ -1192,12 +1196,11 @@ assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
           ctrl_fsm_o.kill_id = 1'b1;
           ctrl_fsm_o.kill_ex = 1'b1;
           // Ebreak that causes debug entry should not be killed, otherwise RVFI will skip it
-          // Trigger match should also be signalled as not killed (all write enables are suppressed in ID), otherwise RVFI/ISS will not attempt to execute and detect trigger
+          // Trigger match should also be signalled as not killed (all write enables are suppressed in ID), otherwise RVFI will not properly signal a trigger match.
           // Exception trigger match should have nothing in WB, excepted instruction finished the previous cycle and set mepc and mcause due to the exception.
           // Ebreak during debug_mode restarts from dm_halt_addr, without CSR updates. Not killing ebreak due to the same RVFI/ISS reasons.
           // Neither ebreak nor trigger match have any state updates in WB. For trigger match, all write enables are suppressed in the ID stage.
           //   Thus this change is not visible to core state, only for RVFI use.
-          // todo: Move some logic to RVFI instead?
           ctrl_fsm_o.kill_wb = !((debug_cause_q == DBG_CAUSE_EBREAK) || (debug_cause_q == DBG_CAUSE_TRIGGER));
 
 
@@ -1312,7 +1315,6 @@ assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
       if ((lsu_err_wb_i.bus_err || lsu_err_wb_i.integrity_err) && !nmi_pending_q) begin
         // Set whenever an error occurs in WB for the LSU, unless we already have an NMI pending.
         // Later errors could overwrite the bit for load/store type, and with mtval the address would be overwritten.
-        // todo: if mtval is implemented, address must be sticky as well
         nmi_pending_q <= 1'b1;
         nmi_is_integrity_q <= lsu_err_wb_i.integrity_err;
         nmi_is_store_q <= lsu_err_wb_i.store;

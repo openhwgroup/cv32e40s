@@ -40,6 +40,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
    input logic  rst_n,
 
    input logic  misaligned_access_i, // Indicate that ongoing access is part of a misaligned access
+   input logic  modified_access_i,   // Indicate that ongoing access is part of a modified access
 
    // Interface towards bus interface
    input logic  bus_trans_ready_i,
@@ -208,6 +209,7 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
     .trans_pushpop_i            ( core_trans_pushpop_i    ),
     .instr_fetch_access_i       ( instr_fetch_access      ),
     .misaligned_access_i        ( misaligned_access_i     ),
+    .modified_access_i          ( modified_access_i       ),
     .load_access_i              ( load_access             ),
     .pma_err_o                  ( pma_err                 ),
     .pma_integrity_o            ( bus_trans_integrity     ),
@@ -262,7 +264,5 @@ module cv32e40s_mpu import cv32e40s_pkg::*;
       assign pmp_req_type             = core_trans_we ? PMP_ACC_WRITE : PMP_ACC_READ;
     end
   endgenerate
-
-// TODO:OE any way to check that the 2nd access of a failed misalgn will not reach the MPU?
 
 endmodule
