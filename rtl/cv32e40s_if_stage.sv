@@ -298,6 +298,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
                                                            // Misaligned access to main is allowed, and accesses outside main will
                                                            // result in instruction access fault (which will have priority over
                                                            //  misaligned from I/O fault)
+    .modified_access_i    ( 1'b0                        ), // Prefetcher will never issue a modified request
     .csr_pmp_i            ( csr_pmp_i                   ),
 
     .core_one_txn_pend_n  ( prefetch_one_txn_pend_n     ),
