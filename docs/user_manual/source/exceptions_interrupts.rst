@@ -325,6 +325,8 @@ To enable any of the CLIC interrupts, both the global interrupt enable (``MIE``)
 The external CLIC module prioritizes all interrupts and presents |corev| with the highest priority pending and enabled interrupt.
 |corev| will then prioritize the interrupts including NMI as follows:
 
+* ``store parity/checksum fault NMI (1027)``
+* ``load parity/checksum fault NMI (1026)``
 * ``store bus fault NMI (1025)``
 * ``load bus fault NMI (1024)``
 * ``clic_irq_i`` with index, level and selective hardware vectoring defined by ``clic_irq_id_i``, ``clic_irq_level_i`` and ``clic_irq_shv_i`` respectively.
