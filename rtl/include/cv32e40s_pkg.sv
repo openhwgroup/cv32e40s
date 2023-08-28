@@ -799,6 +799,16 @@ parameter logic [31:0] TDATA1_RST_VAL = {
   parameter TDATA1_TTYPE_HIGH = 31;
   parameter TDATA1_TTYPE_LOW  = 28;
 
+  // Struct for carrying read/write hazard signals
+  typedef struct packed {
+    logic impl_re_ex; // Implicit CSR read in EX
+    logic impl_wr_ex; // Implicit CSR write in EX (will perform write in WB)
+    logic expl_re_ex; // Conservative, using flopped instr_valid
+    logic expl_we_wb; // Conservative, using flopped instr_valid
+    csr_num_e expl_raddr_ex;
+    csr_num_e expl_waddr_wb;
+  } csr_hz_t;
+
 
 ///////////////////////////////////////////////
 //   ___ ____    ____  _                     //
@@ -1396,6 +1406,8 @@ typedef struct packed {
   logic         last_op;          // Last part of multi operation instruction
   logic         last_sec_op;      // Last part of SECURE jump/mret/branch. (NB: mret may have last_sec_op && !last_op in case it caused a pointer fetch)
   logic         abort_op;         // Instruction will be aborted due to known exceptions or trigger matches
+
+  logic         csr_impl_wr;      // A CSR instruction is doing an implicit write
 } ex_wb_pipe_t;
 
 // Performance counter events
@@ -1411,7 +1423,8 @@ typedef struct packed {
   jalr_fw_mux_e jalr_fw_mux_sel;        // Jump target forward mux sel
   logic         jalr_stall;             // Stall due to JALR hazard (JALR used result from EX or LSU result in WB)
   logic         load_stall;             // Stall due to load operation
-  logic         csr_stall;
+  logic         csr_stall_id;
+  logic         csr_stall_ex;
   logic         sleep_stall;            // Stall ID due to sleep (e.g. WFI, WFE) instruction in EX
   logic         mnxti_id_stall;         // Stall ID due to mnxti CSR access in EX
   logic         mnxti_ex_stall;         // Stall EX due to LSU instruction in WB
