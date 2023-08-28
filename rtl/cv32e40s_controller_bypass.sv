@@ -49,6 +49,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   input  logic        sys_mret_id_i,              // mret in ID
   input  logic        csr_en_raw_id_i,            // CSR in ID (not gated with deassert)
   input  logic        sys_wfi_id_i,               // WFI instruction in ID
+  input  logic        sys_wfe_id_i,               // WFE instruction in ID
   input  logic        last_sec_op_id_i,
 
   // From EX
@@ -129,6 +130,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   assign sys_mret_unqual_id = sys_mret_id_i && if_id_pipe_i.instr_valid;
   assign jmpr_unqual_id = alu_jmpr_id_i && if_id_pipe_i.instr_valid;
   assign sys_wfi_unqual_id = sys_wfi_id_i && if_id_pipe_i.instr_valid;
+  assign sys_wfe_unqual_id = sys_wfe_id_i && if_id_pipe_i.instr_valid;
   assign tbljmp_unqual_id = if_id_pipe_i.instr_meta.tbljmp && if_id_pipe_i.instr_valid;
 
   assign dummy_hint_id = if_id_pipe_i.instr_valid && (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint);
@@ -139,7 +141,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // mret reads mepc and mcause
   // tablejumps read jvt
   // wfi reads mstatus
-  assign csr_impl_rd_unqual_id = sys_mret_unqual_id || sys_wfi_unqual_id || tbljmp_unqual_id;
+  assign csr_impl_rd_unqual_id = sys_mret_unqual_id || sys_wfi_unqual_id || sys_wfe_unqual_id || tbljmp_unqual_id;
 
   // Detect any implicit CSR write currently in in EX (actual write will happen in WB)
   // mret, dret and CLIC/mret pointers implicitly writes to CSRs. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.

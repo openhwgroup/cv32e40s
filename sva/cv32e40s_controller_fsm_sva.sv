@@ -80,6 +80,7 @@ module cv32e40s_controller_fsm_sva
   input privlvl_t       priv_lvl_n,
   input logic           sys_en_id_i,
   input logic           sys_wfi_insn_id_i,
+  input logic           sys_wfe_insn_id_i,
   input logic           sys_mret_insn_id_i,
   input logic           lsu_busy_i,
   input logic           nmi_is_store_q,
@@ -316,6 +317,14 @@ module cv32e40s_controller_fsm_sva
                       ((sys_en_id_i && sys_wfi_insn_id_i) && if_id_pipe_i.instr_valid && csrw_ex_wb)
                       |-> (!id_valid_i && ctrl_fsm_o.halt_id))
       else `uvm_error("controller", "WFI not halted in ID when CSR write is present in EX or WB")
+
+  // Check that WFE is stalled in ID if CSR writes (explicit and implicit)
+  // are present in EX or WB
+  a_wfe_id_halt :
+  assert property (@(posedge clk) disable iff (!rst_n)
+                    ((sys_en_id_i && sys_wfe_insn_id_i) && if_id_pipe_i.instr_valid && csrw_ex_wb)
+                    |-> (!id_valid_i && ctrl_fsm_o.halt_id))
+    else `uvm_error("controller", "WFI not halted in ID when CSR write is present in EX or WB")
 
   // Check that mret is stalled in ID if CSR writes (explicit and implicit)
   // are present in EX or WB. Exluding the case where the second part of an mret is in ID while the first part

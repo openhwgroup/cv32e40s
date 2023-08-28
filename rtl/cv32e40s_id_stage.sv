@@ -76,6 +76,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   output logic        sys_mret_insn_o,
   output logic        sys_wfi_insn_o,
+  output logic        sys_wfe_insn_o,
   output logic        last_sec_op_o,
   output logic        csr_en_raw_o,
 
@@ -218,6 +219,7 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
 
   assign sys_mret_insn_o = sys_mret_insn;
   assign sys_wfi_insn_o  = sys_wfi_insn;
+  assign sys_wfe_insn_o  = sys_wfe_insn;
 
 
 

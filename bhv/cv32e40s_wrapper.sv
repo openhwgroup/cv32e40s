@@ -273,6 +273,7 @@ module cv32e40s_wrapper
                               .priv_lvl_n          (core_i.cs_registers_i.priv_lvl_n),
                               .sys_en_id_i         (core_i.id_stage_i.sys_en),
                               .sys_wfi_insn_id_i   (core_i.id_stage_i.sys_wfi_insn),
+                              .sys_wfe_insn_id_i   (core_i.id_stage_i.sys_wfe_insn),
                               .sys_mret_insn_id_i  (core_i.id_stage_i.sys_mret_insn),
                               .id_valid_i          (core_i.id_stage_i.id_valid_o),
                               .csr_illegal_i       (core_i.cs_registers_i.csr_illegal_o),

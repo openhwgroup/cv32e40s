@@ -58,6 +58,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        sys_mret_id_i,
   input  logic        csr_en_raw_id_i,
   input  logic        sys_wfi_id_i,
+  input  logic        sys_wfe_id_i,
   input  logic        first_op_id_i,
   input  logic        last_sec_op_id_i,
   input  logic        last_op_id_i,
@@ -254,6 +255,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .sys_mret_id_i              ( sys_mret_id_i            ),
     .csr_en_raw_id_i            ( csr_en_raw_id_i          ),
     .sys_wfi_id_i               ( sys_wfi_id_i             ),
+    .sys_wfe_id_i               ( sys_wfe_id_i             ),
     .last_sec_op_id_i           ( last_sec_op_id_i         ),
 
     // From EX
