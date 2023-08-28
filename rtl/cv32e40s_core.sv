@@ -250,6 +250,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
   privlvl_t     priv_lvl;
 
   logic         csr_mnxti_read;
+  csr_hz_t      csr_hz;
 
   // CLIC signals for returning pointer addresses
   // when mnxti is accessed
@@ -342,7 +343,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        sys_wfi_insn_id;
   logic        last_sec_op_id;
   logic        csr_en_raw_id;
-  csr_opcode_e csr_op_id;
   logic        csr_illegal;
 
   // irq signals
@@ -649,7 +649,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .last_sec_op_o                ( last_sec_op_id            ),
 
     .csr_en_raw_o                 ( csr_en_raw_id             ),
-    .csr_op_o                     ( csr_op_id                 ),
     .sys_en_o                     ( sys_en_id                 ),
 
     .first_op_o                   ( first_op_id               ),
@@ -705,6 +704,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_rdata_i                ( csr_rdata                    ),
     .csr_illegal_i              ( csr_illegal                  ),
     .csr_mnxti_read_i           ( csr_mnxti_read               ),
+    .csr_hz_i                   ( csr_hz                       ),
 
     // Branch decision
     .branch_decision_o          ( branch_decision_ex           ),
@@ -946,6 +946,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .csr_counter_read_o         ( csr_counter_read       ),
     .csr_mnxti_read_o           ( csr_mnxti_read         ),
     .csr_irq_enable_write_o     ( csr_irq_enable_write   ),
+    .csr_hz_o                   ( csr_hz                 ),
 
     // Interface to CSRs (SRAM like)
     .csr_rdata_o                ( csr_rdata              ),
@@ -1042,7 +1043,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .sys_en_id_i                    ( sys_en_id              ),
     .sys_mret_id_i                  ( sys_mret_insn_id       ),
     .csr_en_raw_id_i                ( csr_en_raw_id          ),
-    .csr_op_id_i                    ( csr_op_id              ),
     .sys_wfi_id_i                   ( sys_wfi_insn_id        ),
     .first_op_id_i                  ( first_op_id            ),
 
@@ -1074,6 +1074,7 @@ module cv32e40s_core import cv32e40s_pkg::*;
     .mcause_i                       ( mcause                 ),
     .xsecure_ctrl_i                 ( xsecure_ctrl           ),
     .mintstatus_i                   ( mintstatus             ),
+    .csr_hz_i                       ( csr_hz                 ),
 
     // Trigger module
     .etrigger_wb_i                  ( etrigger_wb            ),

@@ -57,7 +57,6 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        sys_en_id_i,
   input  logic        sys_mret_id_i,
   input  logic        csr_en_raw_id_i,
-  input  csr_opcode_e csr_op_id_i,
   input  logic        sys_wfi_id_i,
   input  logic        first_op_id_i,
   input  logic        last_sec_op_id_i,
@@ -117,6 +116,7 @@ module cv32e40s_controller import cv32e40s_pkg::*;
   input  logic        csr_mnxti_read_i,           // MNXTI is read in CSR (EX)
 
   input  logic        csr_irq_enable_write_i,     // An interrupt may be enabled by a write (WB)
+  input  csr_hz_t     csr_hz_i,
 
   input logic [REGFILE_NUM_READ_PORTS-1:0] rf_re_id_i,
   input rf_addr_t     rf_raddr_id_i[REGFILE_NUM_READ_PORTS],
@@ -253,7 +253,6 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     .alu_jmpr_id_i              ( alu_jmpr_id_i            ),
     .sys_mret_id_i              ( sys_mret_id_i            ),
     .csr_en_raw_id_i            ( csr_en_raw_id_i          ),
-    .csr_op_id_i                ( csr_op_id_i              ),
     .sys_wfi_id_i               ( sys_wfi_id_i             ),
     .last_sec_op_id_i           ( last_sec_op_id_i         ),
 
@@ -264,6 +263,8 @@ module cv32e40s_controller import cv32e40s_pkg::*;
     // From WB
     .wb_ready_i                 ( wb_ready_i               ),
     .csr_irq_enable_write_i     ( csr_irq_enable_write_i   ),
+
+    .csr_hz_i                   ( csr_hz_i                 ),
 
     // Outputs
     .ctrl_byp_o                 ( ctrl_byp_o               )

@@ -78,7 +78,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   output logic        sys_wfi_insn_o,
   output logic        last_sec_op_o,
   output logic        csr_en_raw_o,
-  output csr_opcode_e csr_op_o,
 
   output logic        sys_en_o,
 
@@ -712,7 +711,6 @@ module cv32e40s_id_stage import cv32e40s_pkg::*;
   assign alu_jmpr_o   = alu_jmpr;
 
   assign csr_en_raw_o = csr_en_raw;
-  assign csr_op_o = csr_op;
 
   assign last_sec_op_o = last_sec_op;
 

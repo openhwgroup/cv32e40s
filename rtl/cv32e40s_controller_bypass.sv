@@ -48,7 +48,6 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   input  logic        alu_jmpr_id_i,              // ALU jump register (JALR)
   input  logic        sys_mret_id_i,              // mret in ID
   input  logic        csr_en_raw_id_i,            // CSR in ID (not gated with deassert)
-  input  csr_opcode_e csr_op_id_i,                // CSR opcode (ID) // todo: Not used (is this on purpose or should it be used here?)
   input  logic        sys_wfi_id_i,               // WFI instruction in ID
   input  logic        last_sec_op_id_i,
 
@@ -59,6 +58,9 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // From WB
   input  logic        wb_ready_i,                 // WB stage is ready
   input  logic        csr_irq_enable_write_i,     // WB is writing to a CSR that may enable an interrupt.
+
+  // From CS registers
+  input  csr_hz_t     csr_hz_i,
 
   // Controller Bypass outputs
   output ctrl_byp_t   ctrl_byp_o
@@ -74,6 +76,11 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   logic [REGFILE_NUM_READ_PORTS-1:0] rf_rd_wb_hz_en;
 
   logic                              csr_write_in_ex_wb;        // Detect CSR write in EX or WB (implicit and explicit)
+  logic                              csr_write_in_ex;           // Detect CSR write in EX (implicit and explicit)
+  logic                              csr_write_in_wb;           // Detect CSR write in WB (implicit and explicit)
+  logic                              csr_impl_write_in_ex;      // Detect implicit CSR write in EX
+  logic                              csr_impl_write_in_wb;      // Detect implicit CSR write in WB
+  logic                              csr_expl_hz_ex;            // Explicit CSR hazard in EX
 
   logic                              rf_we_ex;                  // EX register file write enable
   logic                              rf_we_wb;                  // WB register file write enable
@@ -89,8 +96,7 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   logic jumpr_self_stall;
 
   logic                              sys_mret_unqual_id;        // MRET in ID (not qualified with sys_en)
-  logic                              csr_exp_unqual_id;         // Explicit CSR in ID (not qualified with csr_en)
-  logic                              csr_unqual_id;             // Explicit or implicit CSR in ID (not qualified)
+  logic                              csr_impl_rd_unqual_id;     // Implicit CSR read in ID (not qualified)
   logic                              jmpr_unqual_id;            // JALR in ID (not qualified with alu_en)
   logic                              sys_wfi_unqual_id;         // WFI in ID (not qualified with sys_en)
   logic                              tbljmp_unqual_id;          // Table jump in ID (not qualified with alu_en)
@@ -101,8 +107,6 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   logic                              dummy_hint_wb;
 
 
-
-  // todo: make all qualifiers here, and use those signals later in the file
 
   assign rf_we_ex = id_ex_pipe_i.rf_we && id_ex_pipe_i.instr_valid;
   assign rf_we_wb = ex_wb_pipe_i.rf_we && ex_wb_pipe_i.instr_valid;
@@ -123,17 +127,46 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // eventually empty out removing that reasons for stall conditions.
 
   assign sys_mret_unqual_id = sys_mret_id_i && if_id_pipe_i.instr_valid;
-  assign csr_exp_unqual_id = csr_en_raw_id_i && if_id_pipe_i.instr_valid;
   assign jmpr_unqual_id = alu_jmpr_id_i && if_id_pipe_i.instr_valid;
   assign sys_wfi_unqual_id = sys_wfi_id_i && if_id_pipe_i.instr_valid;
   assign tbljmp_unqual_id = if_id_pipe_i.instr_meta.tbljmp && if_id_pipe_i.instr_valid;
-
-  assign csr_unqual_id = csr_exp_unqual_id || sys_mret_unqual_id || sys_wfi_unqual_id || tbljmp_unqual_id;
 
   assign dummy_hint_id = if_id_pipe_i.instr_valid && (if_id_pipe_i.instr_meta.dummy || if_id_pipe_i.instr_meta.hint);
   assign dummy_hint_ex = id_ex_pipe_i.instr_valid && (id_ex_pipe_i.instr_meta.dummy || id_ex_pipe_i.instr_meta.hint);
   assign dummy_hint_wb = ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.instr_meta.dummy || ex_wb_pipe_i.instr_meta.hint);
 
+  // Any implicit CSR reads from the ID stage
+  // mret reads mepc and mcause
+  // tablejumps read jvt
+  // wfi reads mstatus
+  assign csr_impl_rd_unqual_id = sys_mret_unqual_id || sys_wfi_unqual_id || tbljmp_unqual_id;
+
+  // Detect any implicit CSR write currently in in EX (actual write will happen in WB)
+  // mret, dret and CLIC/mret pointers implicitly writes to CSRs. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.
+  // Some CSR instructions perform writes to other CSRs, encoded by 'ex_wb_pipe_i.csr_impl_wr'
+  assign csr_impl_write_in_ex = (id_ex_pipe_i.instr_valid &&
+                                 (((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn) || id_ex_pipe_i.instr_meta.clic_ptr || id_ex_pipe_i.instr_meta.mret_ptr) ||
+                                  (id_ex_pipe_i.csr_en && csr_hz_i.impl_wr_ex)));
+
+  // Detect any implicit CSR write in WB
+  // mret, dret and CLIC/mret pointers implicitly writes to CSRs. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.
+  // Some CSR instructions perform writes to other CSRs, encoded by 'ex_wb_pipe_i.csr_impl_wr'
+  assign csr_impl_write_in_wb = (ex_wb_pipe_i.instr_valid &&
+                                 (((ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn) || ex_wb_pipe_i.instr_meta.clic_ptr || ex_wb_pipe_i.instr_meta.mret_ptr) ||
+                                  (ex_wb_pipe_i.csr_en && ex_wb_pipe_i.csr_impl_wr)));
+
+  // Detect implicit and explicit CSR writes in EX
+  assign csr_write_in_ex = id_ex_pipe_i.instr_valid && (id_ex_pipe_i.csr_en || csr_impl_write_in_ex);
+
+  // Detect implicit and explicit CSR writes in WB
+  assign csr_write_in_wb = ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || csr_impl_write_in_wb);
+
+  // Any CSR access (implicit or explicit) in any of EX and WB stages
+  assign csr_write_in_ex_wb = csr_write_in_ex || csr_write_in_wb;
+
+  // Detect RAW hazard for explicit CSR accesses in EX vs WB
+  assign csr_expl_hz_ex = (csr_hz_i.expl_re_ex && csr_hz_i.expl_we_wb) &&
+                          (csr_hz_i.expl_raddr_ex == csr_hz_i.expl_waddr_wb);
 
   /////////////////////////////////////////////////////////////
   //  ____  _        _ _    ____            _             _  //
@@ -143,25 +176,6 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // |____/ \__\__,_|_|_|  \____\___/|_| |_|\__|_|  \___/|_| //
   //                                                         //
   /////////////////////////////////////////////////////////////
-
-  //TODO:OK:low This CSR stall check is very restrictive
-  //         Should only check EX vs WB, and also CSR/rd addr
-  //         Also consider whether ID or EX should be stalled
-  // The controller mechanism for checking mcause.mpp/mcause.minhv when an mret is in the ID stage depends on this stall.
-  // Detect when a CSR insn is in ID (including WFI which reads mstatus.tw and priv level)
-  // Note that hazard detection uses the registered instr_valid signals. Usage of the local
-  // instr_valid signals would lead to a combinatorial loop via the halt signal.
-  //
-  // For handling of mscratchcsw[l], the cs_registers depend on this stall to be able to read mstatus.mpp, mcause.mpil and mintstatus.
-  //   - The hazard here is really between EX (CSR read) and WB (CSR write). This stall works by creating a bubble in EX while the the
-  //     'offending' write moves to WB (mscratchcsw[l] stays in ID.) Since we don't squash bubbles this should be safe.
-
-  // Detect when a CSR insn  in in EX or WB
-  // mret, dret and CLIC pointers implicitly writes to CSR. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.
-  assign csr_write_in_ex_wb = (
-                              (id_ex_pipe_i.instr_valid && (id_ex_pipe_i.csr_en || (id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn) || id_ex_pipe_i.instr_meta.clic_ptr || id_ex_pipe_i.instr_meta.mret_ptr)) ||
-                              (ex_wb_pipe_i.instr_valid && (ex_wb_pipe_i.csr_en || (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn) || ex_wb_pipe_i.instr_meta.clic_ptr || ex_wb_pipe_i.instr_meta.mret_ptr))
-                              );
 
   // Detect if a secure mret has its last phase (2/2) in ID while the first is in EX or WB.
   // Used to avoid csr_stall in the case where an mret would stall on itself.
@@ -248,7 +262,8 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   begin
     ctrl_byp_o.load_stall          = 1'b0;
     ctrl_byp_o.deassert_we         = 1'b0;
-    ctrl_byp_o.csr_stall           = 1'b0;
+    ctrl_byp_o.csr_stall_id        = 1'b0;
+    ctrl_byp_o.csr_stall_ex        = 1'b0;
     ctrl_byp_o.minstret_stall      = 1'b0;
     ctrl_byp_o.irq_enable_stall    = 1'b0;
 
@@ -283,9 +298,36 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
       ctrl_byp_o.jalr_stall = 1'b0;
     end
 
-    // Stall because of CSR read (direct or implied) in ID while CSR (implied or direct) is written in EX/WB
-    if (csr_unqual_id && csr_write_in_ex_wb && !mret_self_stall) begin
-      ctrl_byp_o.csr_stall = 1'b1;
+    ////////////////
+    // CSR stalls //
+    ////////////////
+
+    // Implicit CSR read in ID: Conservatively stall on any implicit CSR write in EX or WB
+    // Implicit CSR read in ID: Conservatively stall on any explicit CSR write in EX or WB
+    // Implicit CSR read in EX: Conservatively stall on any implicit CSR write in WB
+    // Implicit CSR read in EX: Conservatively stall on any explicit CSR write in WB
+    // Explicit CSR read in EX: Conservatively stall on any implicit CSR write in WB
+    // Explicit CSR read in EX: Precise stall on any explicit CSR write in WB
+
+    // Stall ID because of an implicit CSR read is in ID while CSR (implicit or explicit) is written in EX/WB
+    // This stall is very conservative as it stalls on any CSR access in EX or WB.
+    // mret reads mcause and mepc (via controller_fsm) in the ID stage
+    // tablejumps read jvt in the ID stage
+    if (csr_impl_rd_unqual_id && csr_write_in_ex_wb && !mret_self_stall) begin
+      ctrl_byp_o.csr_stall_id = 1'b1;
+    end
+
+    // Stall EX because of
+    // 1: an implicit CSR read is being performed while an implicit or explicit CSR write is in WB,
+    // 2: or an explicit CSR read is in EX while any implicit write is in WB (conservative stall)
+    // 3: or an explicit CSR read is in EX while an explicit CSR write to the same CSR is in WB. (exact stall)
+    //
+    // Cases like accesses to mscratchcsw[l] and mnxti which reads multiple CSRs are handled by 1 above.
+    if ((csr_hz_i.impl_re_ex && csr_write_in_wb) ||
+        (id_ex_pipe_i.csr_en && id_ex_pipe_i.instr_valid && csr_impl_write_in_wb) ||
+        csr_expl_hz_ex) begin
+
+      ctrl_byp_o.csr_stall_ex = 1'b1;
     end
 
     // Stall (EX) due to performance counter read
