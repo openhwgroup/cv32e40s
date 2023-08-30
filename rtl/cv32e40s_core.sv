@@ -347,7 +347,6 @@ module cv32e40s_core import cv32e40s_pkg::*;
   logic        csr_illegal;
 
   // irq signals
-  // TODO:AB Should find a proper suffix for signals from interrupt_controller
   logic        irq_req_ctrl;
   logic [9:0]  irq_id_ctrl;
   logic        irq_wu_ctrl;
