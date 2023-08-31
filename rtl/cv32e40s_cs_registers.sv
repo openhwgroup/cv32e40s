@@ -244,9 +244,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic [31:0]                  mintthresh_q, mintthresh_n, mintthresh_rdata;
   logic                         mintthresh_we;
 
-  logic [31:0]                  mscratchcsw_n, mscratchcsw_rdata;
-  logic                         mscratchcsw_we;
-
   logic [31:0]                  mscratchcswl_n, mscratchcswl_rdata;
   logic                         mscratchcswl_we;
 
@@ -397,7 +394,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   logic                         dscratch1_rd_error;                             // Not used
 
   // Signal used for RVFI to set rmask, not used internally
-  logic                         mscratchcsw_in_wb;
   logic                         mscratchcswl_in_wb;
   logic                         mnxti_in_wb;
 
@@ -608,29 +604,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       CSR_MINTTHRESH: begin
         if (CLIC) begin
           csr_rdata_int = mintthresh_rdata;
-        end else begin
-          csr_rdata_int    = '0;
-          illegal_csr_read = 1'b1;
-        end
-      end
-
-      // mscratchcsw: Scratch Swap for Multiple Privilege Modes
-      CSR_MSCRATCHCSW: begin
-        if (CLIC) begin
-          // CLIC spec 13.2
-          // Depending on mstatus.MPP, we return either mscratch_rdata or rs1 to rd.
-          // Safe to use mstatus_rdata here (EX timing), as there is a generic stall of the ID stage
-          // whenever a CSR instruction follows another CSR instruction. Alternative implementation using
-          // a local forward of mstatus_rdata is identical (SEC).
-          csr_hz_o.impl_re_ex = 1'b1; // Reads mstatus and mscratch
-          csr_hz_o.impl_wr_ex = 1'b1; // Writes mscratch
-          if (mstatus_rdata.mpp != PRIV_LVL_M) begin
-            // Return mscratch for writing to GPR
-            csr_rdata_int = mscratch_rdata;
-          end else begin
-            // return rs1 for writing to GPR
-            csr_rdata_int = id_ex_pipe_i.alu_operand_a;
-          end
         end else begin
           csr_rdata_int    = '0;
           illegal_csr_read = 1'b1;
@@ -1073,10 +1046,7 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
       mintthresh_n             = csr_next_value(csr_wdata_int, CSR_MINTTHRESH_MASK, MINTTHRESH_RESET_VAL);
       mintthresh_we            = 1'b0;
 
-      mscratchcsw_n            = mscratch_n; // mscratchcsw operates conditionally on mscratch
-      mscratchcsw_we           = 1'b0;
-
-      mscratchcswl_n           = mscratch_n; // mscratchcsw operates conditionally on mscratch
+      mscratchcswl_n           = mscratch_n; // mscratchcswl operates conditionally on mscratch
       mscratchcswl_we          = 1'b0;
 
       mie_n                    = '0;
@@ -1117,9 +1087,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       mintthresh_n             = '0;
       mintthresh_we            = 1'b0;
-
-      mscratchcsw_n            = '0;
-      mscratchcsw_we           = 1'b0;
 
       mscratchcswl_n           = '0;
       mscratchcswl_we          = 1'b0;
@@ -1318,17 +1285,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
         CSR_MINTTHRESH: begin
           if (CLIC) begin
             mintthresh_we = 1'b1;
-          end
-        end
-
-        CSR_MSCRATCHCSW: begin
-          if (CLIC) begin
-            // mscratchcsw operates on mscratch
-            // Writing only when mstatus.mpp != PRIV_LVL_M
-            if (mstatus_rdata.mpp != PRIV_LVL_M) begin
-              mscratchcsw_we = 1'b1;
-              mscratch_we    = 1'b1;
-            end
           end
         end
 
@@ -2599,11 +2555,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // if no interrupt is pending.
   assign mnxti_rdata        = mnxti_irq_pending_i ? {mtvt_addr_o, mnxti_irq_id, 2'b00} : 32'h00000000;
 
-  // mscratchcsw_rdata breaks the regular convension for CSRs. Read data depends on mstatus.mpp
-  // mscratch_rdata is returned if mstatus.mpp differs from PRIV_LVL_M, otherwise rs1 is returned.
-  // This signal is only used by RVFI, and has WB timing (rs1 comes from ex_wb_pipe_i.csr_wdata, flopped version of id_ex_pipe.alu_operand_a)
-  assign mscratchcsw_rdata  = (mstatus_rdata.mpp != PRIV_LVL_M) ? mscratch_rdata : ex_wb_pipe_i.csr_wdata;
-
   // mscratchcswl_rdata breaks the regular convension for CSrs. Read data depend on mcause.pil and mintstatus.mil.
   // This signal is only used by RVFI, and has WB timing (rs1 comes from ex_wb_pipe_i.csr_wdata, flopped version of id_ex_pipe.alu_operand_a)
   assign mscratchcswl_rdata = ((mcause_rdata.mpil == '0) != (mintstatus_rdata.mil == 0)) ? mscratch_rdata : ex_wb_pipe_i.csr_wdata;
@@ -2990,7 +2941,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   assign mcountinhibit_rdata = mcountinhibit_q;
 
   // Assign values used for setting rmask in RVFI
-  assign mscratchcsw_in_wb  = ex_wb_pipe_i.csr_en && (csr_waddr == CSR_MSCRATCHCSW);
   assign mscratchcswl_in_wb = ex_wb_pipe_i.csr_en && (csr_waddr == CSR_MSCRATCHCSWL);
   assign mnxti_in_wb        = ex_wb_pipe_i.csr_en && (csr_waddr == CSR_MNXTI);
 
