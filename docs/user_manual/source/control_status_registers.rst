@@ -1712,6 +1712,7 @@ Detailed:
    Accessible in Debug Mode or M-Mode, depending on ``tdata1.DMODE``.
    This register stores the currently selected exception codes for an exception trigger.
 
+
 .. _csr-tdata2-type-0x6:
 
 Trigger Data Register 2 (``tdata2``) - View when ``tdata1.TYPE`` is 0x6
