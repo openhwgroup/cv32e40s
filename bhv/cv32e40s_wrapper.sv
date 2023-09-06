@@ -263,7 +263,8 @@ module cv32e40s_wrapper
       cv32e40s_controller_fsm_sva
         #(.DEBUG(DEBUG),
           .CLIC(CLIC),
-          .CLIC_ID_WIDTH(CLIC_ID_WIDTH))
+          .CLIC_ID_WIDTH(CLIC_ID_WIDTH),
+          .RV32(RV32))
         controller_fsm_sva   (
                               .lsu_outstanding_cnt (core_i.load_store_unit_i.cnt_q),
                               .rf_we_wb_i          (core_i.wb_stage_i.rf_we_wb_o  ),
@@ -291,6 +292,9 @@ module cv32e40s_wrapper
                               .ptr_in_if_i                  (core_i.if_stage_i.ptr_in_if_o),
                               .instr_req_o                  (core_i.instr_req_o),
                               .instr_dbg_o                  (core_i.instr_dbg_o),
+                              .rf_mem_i                     (core_i.register_file_wrapper_i.register_file_i.mem),
+                              .alu_jmpr_id_i                (core_i.alu_jmpr_id),
+                              .jalr_fw_id_i                 (core_i.id_stage_i.jalr_fw),
                               .*);
   bind cv32e40s_cs_registers:
     core_i.cs_registers_i

@@ -24,7 +24,7 @@ module cv32e40s_div_sva
   (
    input logic  clk,
    input logic  rst_n,
-   
+
    input logic  valid_i,
    input logic  ready_o,
 
@@ -33,7 +33,7 @@ module cv32e40s_div_sva
 
    input logic  data_ind_timing_i
 );
-  
+
   logic [5:0] cycle_count;
 
   // Division cycle counter
@@ -47,14 +47,14 @@ module cv32e40s_div_sva
     end
   end
 
-  // Assert that valid_o is set in the 34th cycle 
+  // Assert that valid_o is set in the 34th cycle
   // cycle_count==33 in the 34th cycle because the counter is reset in the cycle after division is accepted.
   a_data_ind_timing :
     assert property (@(posedge clk) disable iff (!rst_n)
                      ($rose(valid_o) && data_ind_timing_i |-> cycle_count == 33))
       else `uvm_error("div", "Data independent cycle count failed")
 
-  a_ready_o :  
+  a_ready_o :
     assert property (@(posedge clk) disable iff (!rst_n)
                      (valid_o && ready_i |-> ready_o))
       else `uvm_error("div", "ready_o not set in the same cycle as output is accepted")
@@ -63,6 +63,6 @@ module cv32e40s_div_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                      (valid_o |-> valid_i))
       else `uvm_error("div", "valid_o=1 when valid_i=0")
-    
+
 endmodule // cv32e40s_div_sva
 
