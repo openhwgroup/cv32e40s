@@ -520,11 +520,15 @@ end
 
 
   // Check priviledge level consistency accross the pipeline.
-  // The only scenario where priv_lvl_if_q and priv_lvl are allowed to differ is when there's an MRET in the pipe
+  // The only scenario where priv_lvl_if_q and priv_lvl are allowed to differ is when there's an MRET or mret pointer in the pipe
   // MRET in ID will immediatly update the priviledge level for the IF stage, but priv_lvl won't be updated until the MRET retires in the WB stage
   a_priv_lvl_consistency :
     assert property (@(posedge clk) disable iff (!rst_ni)
-                     (priv_lvl_if_q != priv_lvl) |-> ((sys_en_id && sys_mret_insn_id) || (id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn) || (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn)))
+                     (priv_lvl_if_q != priv_lvl)
+                     |->
+                     ((sys_en_id && sys_mret_insn_id) || (id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn) || (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn) ||
+                      (id_ex_pipe.instr_valid && id_ex_pipe.instr_meta.mret_ptr) ||
+                      (ex_wb_pipe.instr_valid && ex_wb_pipe.instr_meta.mret_ptr)))
     else `uvm_error("core", "IF priviledge level not consistent with current priviledge level")
 
   // Assert that change to user mode only happens when and MRET is in ID and mstatus.mpp == PRIV_LVL_U
