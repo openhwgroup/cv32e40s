@@ -581,7 +581,26 @@ endgenerate
 `endif //  `ifndef COREV_ASSERT_OFF
 
     cv32e40s_core_log
-      #(.ENABLE(CORE_LOG_ENABLE))
+      #(.ENABLE(CORE_LOG_ENABLE),
+         .RV32                               (RV32),
+         .B_EXT                              (B_EXT),
+         .M_EXT                              (M_EXT),
+         .DEBUG                              (DEBUG),
+         .DM_REGION_START                    (DM_REGION_START),
+         .DM_REGION_END                      (DM_REGION_END),
+         .DBG_NUM_TRIGGERS                   (DBG_NUM_TRIGGERS),
+         .PMA_NUM_REGIONS                    (PMA_NUM_REGIONS),
+         .PMA_CFG                            (PMA_CFG),
+         .CLIC                               (CLIC),
+         .CLIC_ID_WIDTH                      (CLIC_ID_WIDTH),
+         .PMP_GRANULARITY                    (PMP_GRANULARITY),
+         .PMP_NUM_REGIONS                    (PMP_NUM_REGIONS),
+         .PMP_PMPNCFG_RV                     (PMP_PMPNCFG_RV),
+         .PMP_PMPADDR_RV                     (PMP_PMPADDR_RV),
+         .PMP_MSECCFG_RV                     (PMP_MSECCFG_RV),
+         .LFSR0_CFG                          (LFSR0_CFG),
+         .LFSR1_CFG                          (LFSR1_CFG),
+         .LFSR2_CFG                          (LFSR2_CFG))
     core_log_i(
           .clk_i              ( core_i.id_stage_i.clk              ),
           .ex_wb_pipe_i       ( core_i.ex_wb_pipe                  ),
@@ -721,7 +740,7 @@ endgenerate
          .csr_mcountinhibit_we_i   ( core_i.cs_registers_i.mcountinhibit_we                               ),
          .csr_mhpmevent_n_i        ( core_i.cs_registers_i.mhpmevent_n                                    ),
          .csr_mhpmevent_q_i        ( core_i.cs_registers_i.mhpmevent_rdata                                ),
-         .csr_mhpmevent_we_i       ( {31'h0, core_i.cs_registers_i.mhpmevent_we} << // todo:ok: Add write enable for each register
+         .csr_mhpmevent_we_i       ( {31'h0, core_i.cs_registers_i.mhpmevent_we} <<
                                      core_i.cs_registers_i.csr_waddr[4:0] ),
          .csr_mscratch_n_i         ( core_i.cs_registers_i.mscratch_n                                     ),
          .csr_mscratch_q_i         ( core_i.cs_registers_i.mscratch_rdata                                 ),
@@ -778,8 +797,6 @@ endgenerate
          .csr_marchid_i            ( core_i.cs_registers_i.marchid_rdata                                  ),
          .csr_mhartid_i            ( core_i.cs_registers_i.mhartid_rdata                                  ),
          .csr_mimpid_i             ( core_i.cs_registers_i.mimpid_rdata                                   ),
-         // TODO Tie relevant signals below to RTL
-
          .csr_mstatush_n_i         ( core_i.cs_registers_i.mstatush_n                                     ),
          .csr_mstatush_q_i         ( core_i.cs_registers_i.mstatush_rdata                                 ),
          .csr_mstatush_we_i        ( core_i.cs_registers_i.mstatush_we                                    ),
