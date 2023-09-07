@@ -1673,11 +1673,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
             mintthresh_n  = 32'h00000000;
             mintthresh_we = 1'b1;
           end
-
-          if (ctrl_fsm_i.csr_restore_mret_ptr) begin
-            // Clear mcause.minhv if the mret also caused a successful CLIC pointer fetch
-            mcause_n.minhv = 1'b0;
-          end
         end
       end //ctrl_fsm_i.csr_restore_mret
 
@@ -1701,22 +1696,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
 
       end //ctrl_fsm_i.csr_restore_dret
 
-      // Clear mcause.minhv on successful CLIC pointer fetches
-      // This only happens for CLIC pointer that did not originate from an mret.
-      // In the case of mret restarting CLIC pointer fetches, minhv is cleared while
-      // ctrl_fsm_i.csr_restore_mret_ptr is asserted.
-      ctrl_fsm_i.csr_clear_minhv: begin
-        if (CLIC) begin
-          // Keep mcause values, only clear minhv bit.
-          mcause_n = mcause_rdata;
-          mcause_n.minhv = 1'b0;
-          mcause_we = 1'b1;
-
-          // Not really needed, but allows for asserting mstatus_we == mcause_we to check aliasing formally
-          mstatus_n  = mstatus_rdata;
-          mstatus_we = 1'b1;
-        end
-      end
       default:;
     endcase
 

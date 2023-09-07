@@ -66,22 +66,12 @@ module cv32e40s_ex_stage_sva
 
 
   // csr_en suppressed in WB stage when cs_registers marks an access with illegal
-  // todo: Add similar check for rf_we
   a_suppress_csr_pipeline_illegal :
   assert property (@(posedge clk) disable iff (!rst_n)
                     (id_ex_pipe_i.csr_en && csr_illegal_i) &&
                     (id_ex_pipe_i.instr_valid && ex_valid_o && wb_ready_i)
-                    |=> !ex_wb_pipe_o.csr_en)
+                    |=> !ex_wb_pipe_o.csr_en && !ex_wb_pipe_o.rf_we)
     else `uvm_error("ex_stage", "csr_en not suppressed after pipeline rejected CSR")
-
-    // csr_en not suppressed when pipeline accepts CSR
-    // todo: Add similar check for rf_we
-    a_suppress_csr_pipeline_legal :
-    assert property (@(posedge clk) disable iff (!rst_n)
-                      (id_ex_pipe_i.csr_en && !csr_illegal_i) &&
-                      (id_ex_pipe_i.instr_valid && ex_valid_o && wb_ready_i)
-                      |=> ex_wb_pipe_o.csr_en)
-      else `uvm_error("ex_stage", "csr_en suppressed pipeline accepted CSR")
 
   // First access of split LSU instruction should have rf_we deasserted
   a_split_rf_we:
