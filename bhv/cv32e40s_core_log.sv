@@ -104,12 +104,12 @@ module cv32e40s_core_log import cv32e40s_pkg::*;
         $display("[cv32e40s_core]: PMP_MSECCFG_RV.rlb   = %-1d", PMP_MSECCFG_RV.rlb);
         $display("[cv32e40s_core]: PMP_MSECCFG_RV.mmwp  = %-1d", PMP_MSECCFG_RV.mmwp);
         $display("[cv32e40s_core]: PMP_MSECCFG_RV.mml   = %-1d", PMP_MSECCFG_RV.mml);
-        $display("[cv32e40s_core]: LFSR0_CFG.coeffs           = %-1d", LFSR0_CFG.coeffs);
-        $display("[cv32e40s_core]: LFSR0_CFG.default_seed     = %-1d", LFSR0_CFG.default_seed);
-        $display("[cv32e40s_core]: LFSR1_CFG.coeffs           = %-1d", LFSR1_CFG.coeffs);
-        $display("[cv32e40s_core]: LFSR1_CFG.default_seed     = %-1d", LFSR1_CFG.default_seed);
-        $display("[cv32e40s_core]: LFSR2_CFG.coeffs           = %-1d", LFSR2_CFG.coeffs);
-        $display("[cv32e40s_core]: LFSR2_CFG.default_seed     = %-1d", LFSR2_CFG.default_seed);
+        $display("[cv32e40s_core]: LFSR0_CFG.coeffs           = 0x%8h", LFSR0_CFG.coeffs);
+        $display("[cv32e40s_core]: LFSR0_CFG.default_seed     = 0x%8h", LFSR0_CFG.default_seed);
+        $display("[cv32e40s_core]: LFSR1_CFG.coeffs           = 0x%8h", LFSR1_CFG.coeffs);
+        $display("[cv32e40s_core]: LFSR1_CFG.default_seed     = 0x%8h", LFSR1_CFG.default_seed);
+        $display("[cv32e40s_core]: LFSR2_CFG.coeffs           = 0x%8h", LFSR2_CFG.coeffs);
+        $display("[cv32e40s_core]: LFSR2_CFG.default_seed     = 0x%8h", LFSR2_CFG.default_seed);
       end
 
       // Log illegal instructions

@@ -178,7 +178,7 @@ module cv32e40s_controller_fsm_sva
     logic [4:0] jalr_rs_id;
     logic [31:0] rf_at_jump_id;
     @(posedge clk) disable iff (!rst_n)
-      ((jump_taken && alu_jmpr_id_i && (|if_id_pipe_i.instr.bus_resp.rdata[19:15]),                                                                                // When JALR is taken from ID,
+      ((jump_taken && alu_jmpr_id_i && (|if_id_pipe_i.instr.bus_resp.rdata[19:15]),                                                               // When JALR is taken from ID,
         rf_at_jump_id = jalr_fw_id_i,                                                                                                            // Store (possibly forwarded) RF value used for target calculation
         jalr_rs_id = if_id_pipe_i.instr.bus_resp.rdata[19:15])                                                                                   // Store RS from JALR instruction
         ##1 (!(ctrl_fsm_o.kill_ex || ctrl_fsm_o.kill_wb) throughout (ex_wb_pipe_i.alu_jmp_qual && wb_valid_i && !ex_wb_pipe_i.last_sec_op)[->1]) // Wait for JALR to retire from WB (while not being killed)
@@ -186,6 +186,19 @@ module cv32e40s_controller_fsm_sva
   endproperty : p_jalr_stable_target
 
   a_jalr_stable_target: assert property(p_jalr_stable_target) else `uvm_error("controller", "Assertion a_jalr_stable_target failed");
+
+  // Check that a JALR instruction which reads x0 gets zero as result on jalr_fw_id_i.
+  property p_jalr_target_x0;
+    logic [4:0] jalr_rs_id;
+    logic [31:0] rf_at_jump_id;
+    @(posedge clk) disable iff (!rst_n)
+      (jump_taken && alu_jmpr_id_i && !(|if_id_pipe_i.instr.bus_resp.rdata[19:15])
+      |->
+      jalr_fw_id_i == 32'd0);
+
+  endproperty : p_jalr_target_x0
+
+  a_jalr_target_x0: assert property(p_jalr_target_x0) else `uvm_error("controller", "Assertion a_jalr_target_x0 failed");
 
   // Check that xret does not coincide with CSR write (to avoid using wrong return address)
   // This check is more strict than really needed; a CSR instruction would be allowed in EX as long

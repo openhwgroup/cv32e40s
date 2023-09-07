@@ -519,9 +519,25 @@ end else begin
 end
 
 
-  // Check priviledge level consistency accross the pipeline.
+  // Check privilege level consistency accross the pipeline.
   // The only scenario where priv_lvl_if_q and priv_lvl are allowed to differ is when there's an MRET or mret pointer in the pipe
-  // MRET in ID will immediatly update the priviledge level for the IF stage, but priv_lvl won't be updated until the MRET retires in the WB stage
+  // MRET in ID will immediately update the privilege level for the IF stage, but priv_lvl won't be updated until the MRET retires in the WB stage
+  // The actual privilege level used for instructions following an mret is propagated from the IF stage along with the instructions, giving proper
+  // privilege level even though the mret will not update the architectural state until it reaches WB.
+  //
+  // mret will change IF priv while in ID, and the difference between IF stage privilege and the architectural privilege may stay until the mret retires.
+  // If an mret generates a CLIC pointer fetch (mcause.minhv == 1), the mret is split in two operations in the ID stage. The architectural state
+  // will only update when the last part (the pointer) reaches WB.
+  // For the assert, we can thus allow a privilege level difference if an mret is in ID, EX or WB, or an mret pointer is in EX or WB. See pipeline diagram.
+  //
+  //   IF     |  ID     |  EX     |  WB     |
+  //----------|---------|---------|---------|
+  // <killed> | mret    |   x     |  x      | // mret in ID kills IF
+  // pointer  | <>      | mret    |  x      | // Pointer in IF, mret is in EX
+  // <killed> | pointer |   <>    | mret    | // pointer in ID kills IF and jumps to pointer, mret is in WB (no state update due to pointer restart)
+  //     x    |     x   | pointer |  <>     | // pointer is in EX
+  //     x    |     x   |    x    | pointer | // pointer is in WB (will update architectural state)
+
   a_priv_lvl_consistency :
     assert property (@(posedge clk) disable iff (!rst_ni)
                      (priv_lvl_if_q != priv_lvl)
@@ -529,7 +545,7 @@ end
                      ((sys_en_id && sys_mret_insn_id) || (id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn) || (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn) ||
                       (id_ex_pipe.instr_valid && id_ex_pipe.instr_meta.mret_ptr) ||
                       (ex_wb_pipe.instr_valid && ex_wb_pipe.instr_meta.mret_ptr)))
-    else `uvm_error("core", "IF priviledge level not consistent with current priviledge level")
+    else `uvm_error("core", "IF privilege level not consistent with current privilege level")
 
   // Assert that change to user mode only happens when and MRET is in ID and mstatus.mpp == PRIV_LVL_U
   // or a DRET is in WB and dcsr.prv == PRIV_LVL_U
@@ -538,7 +554,7 @@ end
                      $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_U) |->
                      ((sys_en_id && sys_mret_insn_id) && if_id_pipe.instr_valid && (cs_registers_mstatus_q.mpp == PRIV_LVL_U)) ||
                      ((ex_wb_pipe.instr_valid && ex_wb_pipe.sys_dret_insn && (dcsr.prv == PRIV_LVL_U))))
-    else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
+    else `uvm_error("core", "IF privilege level changed to user mode when there's no MRET in ID stage")
 
   // Assert that MPRV is cleared when privilege mode is changed to user
   a_priv_lvl_u_mode_mprv_clr:
@@ -562,7 +578,7 @@ end
     assert property (@(posedge clk) disable iff (!rst_ni)
                      ##1 $changed(priv_lvl_if) && (priv_lvl_if == PRIV_LVL_M) |->
                      (ctrl_fsm.pc_set && pc_mux_is_trap || ctrl_fsm.kill_if))
-    else `uvm_error("core", "IF priviledge level changed to user mode when there's no MRET in ID stage")
+    else `uvm_error("core", "IF privilege level changed to user mode when there's no MRET in ID stage")
 
   // Assert that all exceptions trap to machine mode, except when in debug mode (todo: revisit when debug related part of user mode is implemented)
   a_priv_lvl_exception :
@@ -571,12 +587,12 @@ end
                       |-> (priv_lvl_if == PRIV_LVL_M))
     else `uvm_error("core", "Exception not trapping to machine mode")
 
-  // Assert that jumps to mepc is done with priviledge level from mstatus.mpp
+  // Assert that jumps to mepc is done with privilege level from mstatus.mpp
   a_priv_lvl_mepc :
     assert property (@(posedge clk) disable iff (!rst_ni)
                       (ctrl_fsm.pc_set && (ctrl_fsm.pc_mux == PC_MRET))
                       |-> (priv_lvl_if == cs_registers_mstatus_q.mpp))
-    else `uvm_error("core", "MEPC fetch not performed with priviledge level from mstatus.mpp")
+    else `uvm_error("core", "MEPC fetch not performed with privilege level from mstatus.mpp")
 
   // Check that instruction fetches are always word aligned
   a_instr_addr_word_aligned :
