@@ -663,7 +663,6 @@ endgenerate
          .branch_decision_ex_i     ( core_i.ex_stage_i.branch_decision_o                                  ),
          .dret_in_ex_i             ( core_i.ex_stage_i.id_ex_pipe_i.sys_dret_insn                         ),
          .lsu_en_ex_i              ( core_i.ex_stage_i.id_ex_pipe_i.lsu_en                                ),
-         .lsu_pmp_err_ex_i         ( 1'b0                           /* TODO: connect */                   ),
          .lsu_pma_err_ex_i         ( core_i.load_store_unit_i.mpu_i.pma_i.pma_err_o                       ),
          .lsu_pma_err_atomic_ex_i  ( 1'b0                        /* Atomics not implemented in cv32e40s*/ ),
          .lsu_pma_cfg_ex_i         ( core_i.load_store_unit_i.mpu_i.pma_i.pma_cfg                         ),

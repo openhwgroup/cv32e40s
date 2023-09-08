@@ -78,7 +78,6 @@ module cv32e40s_rvfi
    input logic                                branch_decision_ex_i,
    input logic                                dret_in_ex_i,
    input logic                                lsu_en_ex_i,
-   input logic                                lsu_pmp_err_ex_i,
    input logic                                lsu_pma_err_ex_i,
    input logic                                lsu_pma_err_atomic_ex_i,
    input pma_cfg_t                            lsu_pma_cfg_ex_i,
