@@ -686,18 +686,6 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // Output instruction address to if_stage
   assign instr_addr_o = addr_q;
 
-
-  always_ff @(posedge clk, negedge rst_n) begin
-    if (!rst_n) begin
-      instr_priv_lvl_q <= PRIV_LVL_M;
-    end
-    else begin
-      if (priv_lvl_ctrl_i.priv_lvl_set) begin
-        instr_priv_lvl_q <= priv_lvl_ctrl_i.priv_lvl;
-      end
-    end
-  end
-
   // Signal that result is a CLIC pointer
   assign instr_is_clic_ptr_o   = is_clic_ptr_q;
 
@@ -715,7 +703,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 
   // Set privilege level to prefetcher
   // Privilege level must be updated immediatly to allow the
-  // IF stage to do PMP checks with the correct privilege level
+  // IF stage to do access permission checks with the correct privilege level
   //
   // When an mret is in the ID stage, a jump is performed and the privilege level may be changed.
   // When the privilege level changes, priv_lvl_ctrl_i.priv_lvl_set is 1, and the new privilege level
@@ -728,6 +716,18 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // privilege level in the instr_priv_lvl_q flops.
   assign fetch_priv_lvl_o = priv_lvl_ctrl_i.priv_lvl_set ? priv_lvl_ctrl_i.priv_lvl:
                             instr_priv_lvl_q;
+
+  // Privilege level for the IF stage
+  always_ff @(posedge clk, negedge rst_n) begin
+    if (!rst_n) begin
+      instr_priv_lvl_q <= PRIV_LVL_M;
+    end
+    else begin
+      if (priv_lvl_ctrl_i.priv_lvl_set) begin
+        instr_priv_lvl_q <= priv_lvl_ctrl_i.priv_lvl;
+      end
+    end
+  end
 
   // Set privilege level to IF stage
   assign instr_priv_lvl_o = fetch_priv_lvl_i;
