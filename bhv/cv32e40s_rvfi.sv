@@ -464,30 +464,6 @@ module cv32e40s_rvfi
    output logic [31:0] [31:0]                 rvfi_csr_mhpmcounterh_wmask,
    output logic [31:0] [31:0]                 rvfi_csr_mhpmcounterh_rdata,
    output logic [31:0] [31:0]                 rvfi_csr_mhpmcounterh_wdata,
-   output logic [31:0]                        rvfi_csr_cycle_rmask,
-   output logic [31:0]                        rvfi_csr_cycle_wmask,
-   output logic [31:0]                        rvfi_csr_cycle_rdata,
-   output logic [31:0]                        rvfi_csr_cycle_wdata,
-   output logic [31:0]                        rvfi_csr_instret_rmask,
-   output logic [31:0]                        rvfi_csr_instret_wmask,
-   output logic [31:0]                        rvfi_csr_instret_rdata,
-   output logic [31:0]                        rvfi_csr_instret_wdata,
-   output logic [31:0] [31:0]                 rvfi_csr_hpmcounter_rmask, // 3-31 implemented
-   output logic [31:0] [31:0]                 rvfi_csr_hpmcounter_wmask,
-   output logic [31:0] [31:0]                 rvfi_csr_hpmcounter_rdata,
-   output logic [31:0] [31:0]                 rvfi_csr_hpmcounter_wdata,
-   output logic [31:0]                        rvfi_csr_cycleh_rmask,
-   output logic [31:0]                        rvfi_csr_cycleh_wmask,
-   output logic [31:0]                        rvfi_csr_cycleh_rdata,
-   output logic [31:0]                        rvfi_csr_cycleh_wdata,
-   output logic [31:0]                        rvfi_csr_instreth_rmask,
-   output logic [31:0]                        rvfi_csr_instreth_wmask,
-   output logic [31:0]                        rvfi_csr_instreth_rdata,
-   output logic [31:0]                        rvfi_csr_instreth_wdata,
-   output logic [31:0] [31:0]                 rvfi_csr_hpmcounterh_rmask, // 3-31 implemented
-   output logic [31:0] [31:0]                 rvfi_csr_hpmcounterh_wmask,
-   output logic [31:0] [31:0]                 rvfi_csr_hpmcounterh_rdata,
-   output logic [31:0] [31:0]                 rvfi_csr_hpmcounterh_wdata,
    output logic [31:0]                        rvfi_csr_mvendorid_rmask,
    output logic [31:0]                        rvfi_csr_mvendorid_wmask,
    output logic [31:0]                        rvfi_csr_mvendorid_rdata,
@@ -1669,50 +1645,6 @@ module cv32e40s_rvfi
     end
   endgenerate
 
-  assign ex_csr_rdata_d.cycle                = csr_mhpmcounter_q_l [CSR_MCYCLE & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_rdata_d.cycle              = ex_csr_rdata.cycle;
-  assign rvfi_csr_rmask_d.cycle              = '1;
-  assign rvfi_csr_wdata_d.cycle              = csr_mhpmcounter_n_l [CSR_MCYCLE & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_wmask_d.cycle              = csr_mhpmcounter_we_l[CSR_MCYCLE & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-
-  assign rvfi_csr_rdata_d.instret            = csr_mhpmcounter_q_l [CSR_MINSTRET & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_rmask_d.instret            = '1;
-  assign rvfi_csr_wdata_d.instret            = csr_mhpmcounter_n_l [CSR_MINSTRET & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_wmask_d.instret            = csr_mhpmcounter_we_l[CSR_MINSTRET & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-
-  // hpmcounter[2:0] does not exist, tie to zero
-  assign rvfi_csr_rdata_d.hpmcounter[ 2:0]   = '0;
-  assign rvfi_csr_rmask_d.hpmcounter[ 2:0]   = '0;
-  assign rvfi_csr_wdata_d.hpmcounter[ 2:0]   = '0;
-  assign rvfi_csr_wmask_d.hpmcounter[ 2:0]   = '0;
-
-  assign rvfi_csr_rdata_d.hpmcounter[31:3]   = csr_mhpmcounter_q_l [31:3]; // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
-  assign rvfi_csr_rmask_d.hpmcounter[31:3]   = '1;
-  assign rvfi_csr_wdata_d.hpmcounter[31:3]   = csr_mhpmcounter_n_l [31:3]; // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
-  assign rvfi_csr_wmask_d.hpmcounter[31:3]   = csr_mhpmcounter_we_l[31:3]; // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
-
-  assign ex_csr_rdata_d.cycleh               = csr_mhpmcounter_q_h [CSR_MCYCLEH & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_rdata_d.cycleh             = ex_csr_rdata.cycleh;
-  assign rvfi_csr_rmask_d.cycleh             = '1;                                      // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_wdata_d.cycleh             = csr_mhpmcounter_n_h [CSR_MCYCLEH & 'hF];  // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_wmask_d.cycleh             = csr_mhpmcounter_we_h[CSR_MCYCLEH & 'hF];  // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-
-  assign rvfi_csr_rdata_d.instreth           = csr_mhpmcounter_q_h [CSR_MINSTRETH & 'hF];  // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_rmask_d.instreth           = '1;
-  assign rvfi_csr_wdata_d.instreth           = csr_mhpmcounter_n_h [CSR_MINSTRETH & 'hF];  // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_wmask_d.instreth           = csr_mhpmcounter_we_h[CSR_MINSTRETH & 'hF];  // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-
-  // hpmcounterh[2:0] does not exist, tie to zero
-  assign rvfi_csr_rdata_d.hpmcounterh[ 2:0]  = '0;
-  assign rvfi_csr_rmask_d.hpmcounterh[ 2:0]  = '0;
-  assign rvfi_csr_wdata_d.hpmcounterh[ 2:0]  = '0;
-  assign rvfi_csr_wmask_d.hpmcounterh[ 2:0]  = '0;
-
-  assign rvfi_csr_rdata_d.hpmcounterh[31:3]  = csr_mhpmcounter_q_h [31:3];  // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
-  assign rvfi_csr_rmask_d.hpmcounterh[31:3]  = '1;
-  assign rvfi_csr_wdata_d.hpmcounterh[31:3]  = csr_mhpmcounter_n_h [31:3];  // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
-  assign rvfi_csr_wmask_d.hpmcounterh[31:3]  = csr_mhpmcounter_we_h[31:3];  // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
-
   // Machine info
   assign rvfi_csr_rdata_d.mvendorid          = csr_mvendorid_i;
   assign rvfi_csr_rmask_d.mvendorid          = '1;
@@ -1979,32 +1911,6 @@ module cv32e40s_rvfi
   assign rvfi_csr_mhartid_rmask           = rvfi_csr_rmask.mhartid;
   assign rvfi_csr_mhartid_wdata           = rvfi_csr_wdata.mhartid;
   assign rvfi_csr_mhartid_wmask           = rvfi_csr_wmask.mhartid;
-  assign rvfi_csr_cycle_rdata             = rvfi_csr_rdata.cycle;
-  assign rvfi_csr_cycle_rmask             = rvfi_csr_rmask.cycle;
-  assign rvfi_csr_cycle_wdata             = rvfi_csr_wdata.cycle;
-  assign rvfi_csr_cycle_wmask             = rvfi_csr_wmask.cycle;
-  assign rvfi_csr_instret_rdata           = rvfi_csr_rdata.instret;
-  assign rvfi_csr_instret_rmask           = rvfi_csr_rmask.instret;
-  assign rvfi_csr_instret_wdata           = rvfi_csr_wdata.instret;
-  assign rvfi_csr_instret_wmask           = rvfi_csr_wmask.instret;
-  assign rvfi_csr_hpmcounter_rdata        = rvfi_csr_rdata.hpmcounter;
-  assign rvfi_csr_hpmcounter_rmask[ 2:0]  = rvfi_csr_rmask.hpmcounter[2:0];
-  assign rvfi_csr_hpmcounter_rmask[31:3]  = rvfi_csr_rmask.hpmcounter[31:3];
-  assign rvfi_csr_hpmcounter_wdata        = rvfi_csr_wdata.hpmcounter;
-  assign rvfi_csr_hpmcounter_wmask        = rvfi_csr_wmask.hpmcounter;
-  assign rvfi_csr_cycleh_rdata            = rvfi_csr_rdata.cycleh;
-  assign rvfi_csr_cycleh_rmask            = rvfi_csr_rmask.cycleh;
-  assign rvfi_csr_cycleh_wdata            = rvfi_csr_wdata.cycleh;
-  assign rvfi_csr_cycleh_wmask            = rvfi_csr_wmask.cycleh;
-  assign rvfi_csr_instreth_rdata          = rvfi_csr_rdata.instreth;
-  assign rvfi_csr_instreth_rmask          = rvfi_csr_rmask.instreth;
-  assign rvfi_csr_instreth_wdata          = rvfi_csr_wdata.instreth;
-  assign rvfi_csr_instreth_wmask          = rvfi_csr_wmask.instreth;
-  assign rvfi_csr_hpmcounterh_rdata       = rvfi_csr_rdata.hpmcounterh;
-  assign rvfi_csr_hpmcounterh_rmask[ 2:0] = rvfi_csr_rmask.hpmcounterh[2:0];
-  assign rvfi_csr_hpmcounterh_rmask[31:3] = rvfi_csr_rmask.hpmcounterh[31:3];
-  assign rvfi_csr_hpmcounterh_wdata       = rvfi_csr_wdata.hpmcounterh;
-  assign rvfi_csr_hpmcounterh_wmask       = rvfi_csr_wmask.hpmcounterh;
   assign rvfi_csr_mcounteren_rdata        = rvfi_csr_rdata.mcounteren;
   assign rvfi_csr_mcounteren_rmask        = rvfi_csr_rmask.mcounteren;
   assign rvfi_csr_mcounteren_wdata        = rvfi_csr_wdata.mcounteren;
