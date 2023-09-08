@@ -204,7 +204,6 @@ always_ff @(posedge clk, negedge rst_n) begin
     // Exclude cases of PC_WB_PLUS4, PC_TRAP_IRQ and CLIC pointers as the pipeline currently has no easy way to recompute these targets.
     // Pointers (if_id_pipe.ptr) should already be hardened by parity checks.
     // Used for the address comparison
-    // Todo: may stretch this until the target instruction leaves IF stage
     if (enable) begin
       pc_set_q <= ctrl_fsm_i.pc_set && !((ctrl_fsm_i.pc_mux == PC_WB_PLUS4) || (ctrl_fsm_i.pc_mux == PC_TRAP_IRQ) ||
                                         (ctrl_fsm_i.pc_mux == PC_TRAP_CLICV) ||
