@@ -231,6 +231,7 @@ module cv32e40s_wrapper
     (
       .branch_taken_ex_ctrl_i (core_i.controller_i.controller_fsm_i.branch_taken_ex ),
       .ctrl_flush_ack_n       (core_i.controller_i.controller_fsm_i.csr_flush_ack_n ),
+      .wb_valid_i             (core_i.wb_valid                                      ),
       .*
     );
 
@@ -295,6 +296,7 @@ module cv32e40s_wrapper
                               .rf_mem_i                     (core_i.register_file_wrapper_i.register_file_i.mem),
                               .alu_jmpr_id_i                (core_i.alu_jmpr_id),
                               .jalr_fw_id_i                 (core_i.id_stage_i.jalr_fw),
+                              .response_filter_bus_cnt_q_i  (core_i.load_store_unit_i.response_filter_i.bus_cnt_q),
                               .*);
   bind cv32e40s_cs_registers:
     core_i.cs_registers_i
@@ -538,7 +540,12 @@ endgenerate
   bind cv32e40s_sequencer:
     core_i.if_stage_i.gen_seq.sequencer_i
       cv32e40s_sequencer_sva
-        sequencer_sva (.*);
+        #(.RV32(RV32))
+        sequencer_sva (.ex_wb_pipe_i         (core_i.ex_wb_pipe                                      ),
+                       .wb_valid_i           (core_i.wb_stage_i.wb_valid_o                           ),
+                       .exception_in_wb_i    (core_i.controller_i.controller_fsm_i.exception_in_wb   ),
+                       .pending_sync_debug_i (core_i.controller_i.controller_fsm_i.pending_sync_debug),
+                       .*);
 
   bind cv32e40s_instr_obi_interface :
     core_i.if_stage_i.instruction_obi_i
