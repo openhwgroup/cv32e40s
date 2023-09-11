@@ -396,17 +396,19 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
             default: decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
           endcase
 
-          // Restrict which CSR instructions that can be used with SECURESEED*
-          // Only CSRRW with rs1!=x0 will be allowed.
-          if ((instr_rdata_i[31:20] == CSR_SECURESEED0) || (instr_rdata_i[31:20] == CSR_SECURESEED1) || (instr_rdata_i[31:20] == CSR_SECURESEED2)) begin
-            if (instr_rdata_i[14:12] == 3'b001) begin // CSRRW
-              if ((instr_rdata_i[19:15] == 5'b0)) begin
-                // rs1 is zero, flag instruction as illegal
+          if (SECURE) begin
+            // Restrict which CSR instructions that can be used with SECURESEED*
+            // Only CSRRW with rs1!=x0 will be allowed.
+            if ((instr_rdata_i[31:20] == CSR_SECURESEED0) || (instr_rdata_i[31:20] == CSR_SECURESEED1) || (instr_rdata_i[31:20] == CSR_SECURESEED2)) begin
+              if (instr_rdata_i[14:12] == 3'b001) begin // CSRRW
+                if ((instr_rdata_i[19:15] == 5'b0)) begin
+                  // rs1 is zero, flag instruction as illegal
+                  decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
+                end
+              end else begin
+                // Not a CSRRW instruction, flag illegal
                 decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
               end
-            end else begin
-              // Not a CSRRW instruction, flag illegal
-              decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
             end
           end
 
