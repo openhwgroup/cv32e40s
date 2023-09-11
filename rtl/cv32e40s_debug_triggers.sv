@@ -78,7 +78,7 @@ import cv32e40s_pkg::*;
 );
 
   // Set mask for supported exception codes for exception triggers.
-  localparam logic [31:0] ETRIGGER_TDATA2_MASK = (1 << EXC_CAUSE_INSTR_BUS_FAULT) | (1 << EXC_CAUSE_INSTR_INTEGRITY_FAULT) | (1 << EXC_CAUSE_ECALL_MMODE) | (1 << EXC_CAUSE_ECALL_UMODE) | (1 << EXC_CAUSE_STORE_FAULT) |
+  localparam logic [31:0] ETRIGGER_TDATA2_MASK = (1 << EXC_CAUSE_INSTR_BUS_FAULT) | (1 << EXC_CAUSE_INSTR_INTEGRITY_FAULT) | (1 << EXC_CAUSE_ECALL_MMODE) | ((USER) << EXC_CAUSE_ECALL_UMODE) | (1 << EXC_CAUSE_STORE_FAULT) |
                                                  (1 << EXC_CAUSE_LOAD_FAULT) | (1 << EXC_CAUSE_BREAKPOINT) | (1 << EXC_CAUSE_ILLEGAL_INSN) | (1 << EXC_CAUSE_INSTR_FAULT);
 
 
