@@ -41,7 +41,8 @@ and zero stall on the data-side memory interface.
   | Integer Computational | 1                                    | Integer Computational Instructions are defined in the       |
   |                       |                                      | RISCV-V RV32I Base Integer Instruction Set.                 |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
-  | CSR Access            | 4 (``jvt``)                          | CSR Access Instruction are defined in 'Zicsr' of the        |
+  | CSR Access            | 4 (``jvt``, ``cpuctrl``, ``pmp*``    | CSR Access Instruction are defined in 'Zicsr' of the        |
+  |                       |    ``secureseed*``, ``mseccfg``)     |                                                             |
   |                       |                                      | RISC-V specification.                                       |
   |                       | 1 (all the other CSRs)               |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
@@ -64,11 +65,17 @@ and zero stall on the data-side memory interface.
   |                       | 35 (cpuctrl.dataindtiming is set)    | The maximum number of cycles is 35 when the divider is 0    |
   |                       |                                      |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
-  | Jump                  | 3                                    | Jumps are performed in the ID stage. Upon a jump the IF     |
+  | Jump                  | 2 (PC hardening disabled)            | Jumps are performed in the ID stage. Upon a jump the IF     |
   |                       |                                      | stage (including prefetch buffer) is flushed. The new PC    |
-  |                       | 4 (target is a non-word-aligned      | request will appear on the instruction-side memory          |
-  |                       | non-RVC instruction)                 | interface the same cycle the jump instruction is in the ID  |
-  |                       |                                      | stage.                                                      |
+  |                       | 3 (target is a non-word-aligned      | request will appear on the instruction-side memory          |
+  |                       | non-RVC instruction, PC hardening    | interface the same cycle the jump instruction is in the ID  |
+  |                       | disabled)                            | stage.                                                      |
+  |                       |                                      |                                                             |
+  |                       | 3 (PC hardening enabled)             |                                                             |
+  |                       |                                      |                                                             |
+  |                       | 4 (target is a non-word-aligned      |                                                             |
+  |                       | non-RVC instruction, PC hardening    |                                                             |
+  |                       | enabled)                             |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
   | mret                  | 3                                    | Mret is performed in the ID stage. Upon an mret the IF      |
   |                       |                                      | stage (including prefetch buffer) is flushed. The new PC    |
@@ -103,10 +110,13 @@ and zero stall on the data-side memory interface.
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
   | Zba, Zbb, Zbc, Zbs    | 1                                    | All instructions from Zba, Zbb, Zbc, Zbs take 1 cycle.      |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
-  | Zcmt                  | 2                                    | Table jumps take 2 cycles.                                  |
+  | Zcmt                  | 2 (PC hardening disabled)            | Table jumps take 2 cycles without PC hardening.             |
+  |                       |                                      |                                                             |
+  |                       | 4 (PC hardening enabled)             |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
-  | Zcmp                  | 2 - 18                               | The number of cycles depends on the number of registers     |
+  | Zcmp                  | 2 - 18 (PC hardening disabled)       | The number of cycles depends on the number of registers     |
   |                       |                                      | saved or restored by the instructions.                      |
+  |                       | 2 - 19 (PC hardening enabled)        |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
   | Zca, Zcb              | 1                                    | Instructions from Zca and Zcb take 1 cycle.                 |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
@@ -121,7 +131,7 @@ The |corev| experiences a 1 cycle penalty on the following hazards.
 
  * Load data hazard (in case the instruction immediately following a load uses the result of that load).
  * Jump register (``jalr``) data hazard (in case that a ``jalr`` depends on the result of an immediately preceding non-load instruction).
- * An instruction causing an implicit CSR read in ID (``mret`` or table jump) while a CSR access instruction or an instruction causing an implicit CSR access is in the WB stage.
+ * An instruction causing an implicit CSR read in ID (``mret``, ``wfi``, ``wfe`` or table jump) while a CSR access instruction or an instruction causing an implicit CSR access is in the WB stage.
  * An instruction causing an implicit CSR read in EX while a CSR access instruction or an instruction causing an implicit CSR access is in the WB stage.
  * An instruction causing an explicit CSR read in EX while an instruction causing an implicit CSR write is in the WB stage.
  * An instruction causing an explicit CSR read in EX while there is a RAW hazard with an explicit CSR write in WB.
@@ -129,7 +139,7 @@ The |corev| experiences a 1 cycle penalty on the following hazards.
 The |corev| experiences a 2 cycle penalty on the following hazards.
 
  * Jump register (``jalr``) data hazard (in case that a ``jalr`` depends on the result of an immediately preceding load instruction).
- * An instruction causing an implicit CSR read in ID (``mret`` or table jump) while a CSR access instruction or an instruction causing an implicit CSR access is in the EX stage.
+ * An instruction causing an implicit CSR read in ID (``mret``, ``wfi``, ``wfe``  or table jump) while a CSR access instruction or an instruction causing an implicit CSR access is in the EX stage.
 
 .. note::
   Implicit CSR reads are reads performed by non-CSR instructions or CSR instructions reading CSR values from another CSR.
