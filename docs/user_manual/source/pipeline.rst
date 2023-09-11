@@ -77,14 +77,28 @@ and zero stall on the data-side memory interface.
   |                       | non-RVC instruction, PC hardening    |                                                             |
   |                       | enabled)                             |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
-  | mret                  | 3                                    | Mret is performed in the ID stage. Upon an mret the IF      |
+  | mret                  | 2 (PC hardening disabled)            | Mret is performed in the ID stage. Upon an mret the IF      |
   |                       |                                      | stage (including prefetch buffer) is flushed. The new PC    |
-  |                       | 4 (target is a non-word-aligned      | request will appear on the instruction-side memory          |
-  |                       | non-RVC instruction)                 | interface the same cycle the mret instruction is in the ID  |
-  |                       |                                      | stage.                                                      |
+  |                       | 3 (target is a non-word-aligned      | request will appear on the instruction-side memory          |
+  |                       | non-RVC instruction, PC hardening    | interface the same cycle the mret instruction is in the ID  |
+  |                       | disabled)                            | stage.                                                      |
+  |                       |                                      |                                                             |
+  |                       | 3 (PC hardening enabled)             |                                                             |
+  |                       |                                      |                                                             |
+  |                       | 4 (target is a non-word-aligned      |                                                             |
+  |                       | non-RVC instruction, PC hardening    |                                                             |
+  |                       | enabled)                             |                                                             |
+  +-----------------------+--------------------------------------+-------------------------------------------------------------+
+  | Branch (Not-Taken)    | 1                                    | Any branch where the condition is not met will              |
+  | PC hardening disabled |                                      | not stall.                                                  |
+  |                       | 3 (cpuctrl.dataindtiming is set)     |                                                             |
+  |                       |                                      |                                                             |
+  |                       | 4 (cpuctrl.dataindtiming is set and  |                                                             |
+  |                       | target is a non-word-aligned         |                                                             |
+  |                       | non-RVC instruction)                 |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
   | Branch (Not-Taken)    | 2                                    | Any branch where the condition is not met will              |
-  |                       |                                      | not stall.                                                  |
+  | PC hardening enabled  |                                      | not stall.                                                  |
   |                       | 3 (cpuctrl.dataindtiming is set)     |                                                             |
   |                       |                                      |                                                             |
   |                       | 4 (cpuctrl.dataindtiming is set and  |                                                             |
