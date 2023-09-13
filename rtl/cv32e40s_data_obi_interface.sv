@@ -85,8 +85,13 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
 
   always_comb begin
     resp_o               = m_c_obi_data_if.resp_payload;
-    resp_o.integrity_err = rvalidpar_err_resp || gntpar_err_resp || rchk_err_resp;
-    resp_o.integrity     = integrity_resp;
+    if (SECURE) begin : integrity
+      resp_o.integrity_err = rvalidpar_err_resp || gntpar_err_resp || rchk_err_resp;
+      resp_o.integrity     = integrity_resp;
+    end else begin : no_integrity
+      resp_o.integrity_err = 1'b0;
+      resp_o.integrity     = 1'b0;
+    end
   end
 
   //////////////////////////////////////////////////////////////////////////////
@@ -128,49 +133,58 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
   // Integrity
   /////////////////
 
-  // Always check gnt parity
-  // alert_major will not update when in reset
-  assign gntpar_err = (m_c_obi_data_if.s_gnt.gnt == m_c_obi_data_if.s_gnt.gntpar);
+  generate
+    if (SECURE) begin : secure
 
-  cv32e40s_obi_integrity_fifo
-    #(
-        .MAX_OUTSTANDING   (MAX_OUTSTANDING  ),
-        .RESP_TYPE         (obi_data_resp_t  )
-     )
-    integrity_fifo_i
-    (
-      .clk                (clk                ),
-      .rst_n              (rst_n              ),
+      // Always check gnt parity
+      // alert_major will not update when in reset
+      assign gntpar_err = (m_c_obi_data_if.s_gnt.gnt == m_c_obi_data_if.s_gnt.gntpar);
 
-      // gnt parity error
-      .gntpar_err_i       (gntpar_err         ),
+      cv32e40s_obi_integrity_fifo
+        #(
+            .MAX_OUTSTANDING   (MAX_OUTSTANDING  ),
+            .RESP_TYPE         (obi_data_resp_t  )
+         )
+        integrity_fifo_i
+        (
+          .clk                (clk                ),
+          .rst_n              (rst_n              ),
 
-      // Transaction inputs
-      .trans_integrity_i  (trans_i.integrity  ),
-      .trans_we_i         (trans_i.we         ),
+          // gnt parity error
+          .gntpar_err_i       (gntpar_err         ),
 
-      // Xsecure
-      .xsecure_ctrl_i     (xsecure_ctrl_i     ),
+          // Transaction inputs
+          .trans_integrity_i  (trans_i.integrity  ),
+          .trans_we_i         (trans_i.we         ),
 
-      // Response phase properties
-      .gntpar_err_resp_o  (gntpar_err_resp    ),
-      .integrity_resp_o   (integrity_resp     ),
-      .rchk_err_resp_o    (rchk_err_resp      ),
+          // Xsecure
+          .xsecure_ctrl_i     (xsecure_ctrl_i     ),
 
-      .protocol_err_o     (protocol_err       ),
+          // Response phase properties
+          .gntpar_err_resp_o  (gntpar_err_resp    ),
+          .integrity_resp_o   (integrity_resp     ),
+          .rchk_err_resp_o    (rchk_err_resp      ),
 
-      // OBI interface
-      .obi_req_i          (m_c_obi_data_if.s_req.req       ),
-      .obi_gnt_i          (m_c_obi_data_if.s_gnt.gnt       ),
-      .obi_rvalid_i       (m_c_obi_data_if.s_rvalid.rvalid ),
-      .obi_resp_i         (resp_o                          )
-    );
+          .protocol_err_o     (protocol_err       ),
 
-  // Checking rvalid parity
-  // alert_major_o will go high immediately
-  assign rvalidpar_err_resp = (m_c_obi_data_if.s_rvalid.rvalid == m_c_obi_data_if.s_rvalid.rvalidpar);
+          // OBI interface
+          .obi_req_i          (m_c_obi_data_if.s_req.req       ),
+          .obi_gnt_i          (m_c_obi_data_if.s_gnt.gnt       ),
+          .obi_rvalid_i       (m_c_obi_data_if.s_rvalid.rvalid ),
+          .obi_resp_i         (resp_o                          )
+        );
 
-  assign integrity_err_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err;
-  assign protocol_err_o  = protocol_err;
+      // Checking rvalid parity
+      // alert_major_o will go high immediately
+      assign rvalidpar_err_resp = (m_c_obi_data_if.s_rvalid.rvalid == m_c_obi_data_if.s_rvalid.rvalidpar);
+
+      assign integrity_err_o = rchk_err_resp || rvalidpar_err_resp || gntpar_err;
+      assign protocol_err_o  = protocol_err;
+
+    end else begin : no_secure
+      assign integrity_err_o = 1'b0;
+      assign protocol_err_o  = 1'b0;
+    end
+  endgenerate
 
 endmodule
