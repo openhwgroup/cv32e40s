@@ -396,7 +396,7 @@ module cv32e40s_i_decoder import cv32e40s_pkg::*;
             default: decoder_ctrl_o = DECODER_CTRL_ILLEGAL_INSN;
           endcase
 
-          if (SECURE) begin
+          if (SECURE) begin : secure
             // Restrict which CSR instructions that can be used with SECURESEED*
             // Only CSRRW with rs1!=x0 will be allowed.
             if ((instr_rdata_i[31:20] == CSR_SECURESEED0) || (instr_rdata_i[31:20] == CSR_SECURESEED1) || (instr_rdata_i[31:20] == CSR_SECURESEED2)) begin

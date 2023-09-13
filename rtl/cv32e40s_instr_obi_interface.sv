@@ -87,10 +87,10 @@ module cv32e40s_instr_obi_interface import cv32e40s_pkg::*;
 
   always_comb begin
     resp_o                = m_c_obi_instr_if.resp_payload;
-    if (SECURE) begin
+    if (SECURE) begin : integrity
       resp_o.integrity_err = rvalidpar_err_resp || gntpar_err_resp || rchk_err_resp;
       resp_o.integrity     = integrity_resp;
-    end else begin
+    end else begin : no_integrity
       resp_o.integrity_err = 1'b0;
       resp_o.integrity     = 1'b0;
     end
