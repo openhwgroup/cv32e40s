@@ -88,7 +88,7 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
     if (SECURE) begin : integrity
       resp_o.integrity_err = rvalidpar_err_resp || gntpar_err_resp || rchk_err_resp;
       resp_o.integrity     = integrity_resp;
-    end else begin : no_integriity
+    end else begin : no_integrity
       resp_o.integrity_err = 1'b0;
       resp_o.integrity     = 1'b0;
     end
