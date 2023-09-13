@@ -1669,49 +1669,48 @@ module cv32e40s_rvfi
     end
   endgenerate
 
-  assign ex_csr_rdata_d.cycle                = csr_mhpmcounter_q_l [CSR_MCYCLE & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_rdata_d.cycle              = ex_csr_rdata.cycle;
-  assign rvfi_csr_rmask_d.cycle              = '1;
-  assign rvfi_csr_wdata_d.cycle              = csr_mhpmcounter_n_l [CSR_MCYCLE & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_wmask_d.cycle              = csr_mhpmcounter_we_l[CSR_MCYCLE & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
+  // cycle, instret and hpmcounter do not exist, tie to zero
+  assign ex_csr_rdata_d.cycle                = '0;
+  assign rvfi_csr_rdata_d.cycle              = '0;
+  assign rvfi_csr_rmask_d.cycle              = '0;
+  assign rvfi_csr_wdata_d.cycle              = '0;
+  assign rvfi_csr_wmask_d.cycle              = '0;
 
-  assign rvfi_csr_rdata_d.instret            = csr_mhpmcounter_q_l [CSR_MINSTRET & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_rmask_d.instret            = '1;
-  assign rvfi_csr_wdata_d.instret            = csr_mhpmcounter_n_l [CSR_MINSTRET & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_wmask_d.instret            = csr_mhpmcounter_we_l[CSR_MINSTRET & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
+  assign rvfi_csr_rdata_d.instret            = '0;
+  assign rvfi_csr_rmask_d.instret            = '0;
+  assign rvfi_csr_wdata_d.instret            = '0;
+  assign rvfi_csr_wmask_d.instret            = '0;
 
-  // hpmcounter[2:0] does not exist, tie to zero
   assign rvfi_csr_rdata_d.hpmcounter[ 2:0]   = '0;
   assign rvfi_csr_rmask_d.hpmcounter[ 2:0]   = '0;
   assign rvfi_csr_wdata_d.hpmcounter[ 2:0]   = '0;
   assign rvfi_csr_wmask_d.hpmcounter[ 2:0]   = '0;
 
-  assign rvfi_csr_rdata_d.hpmcounter[31:3]   = csr_mhpmcounter_q_l [31:3]; // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
-  assign rvfi_csr_rmask_d.hpmcounter[31:3]   = '1;
-  assign rvfi_csr_wdata_d.hpmcounter[31:3]   = csr_mhpmcounter_n_l [31:3]; // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
-  assign rvfi_csr_wmask_d.hpmcounter[31:3]   = csr_mhpmcounter_we_l[31:3]; // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
+  assign rvfi_csr_rdata_d.hpmcounter[31:3]   = '0;
+  assign rvfi_csr_rmask_d.hpmcounter[31:3]   = '0;
+  assign rvfi_csr_wdata_d.hpmcounter[31:3]   = '0;
+  assign rvfi_csr_wmask_d.hpmcounter[31:3]   = '0;
 
-  assign ex_csr_rdata_d.cycleh               = csr_mhpmcounter_q_h [CSR_MCYCLEH & 'hF]; // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_rdata_d.cycleh             = ex_csr_rdata.cycleh;
-  assign rvfi_csr_rmask_d.cycleh             = '1;                                      // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_wdata_d.cycleh             = csr_mhpmcounter_n_h [CSR_MCYCLEH & 'hF];  // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_wmask_d.cycleh             = csr_mhpmcounter_we_h[CSR_MCYCLEH & 'hF];  // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
+  assign ex_csr_rdata_d.cycleh               = '0;
+  assign rvfi_csr_rdata_d.cycleh             = '0;
+  assign rvfi_csr_rmask_d.cycleh             = '0;
+  assign rvfi_csr_wdata_d.cycleh             = '0;
+  assign rvfi_csr_wmask_d.cycleh             = '0;
 
-  assign rvfi_csr_rdata_d.instreth           = csr_mhpmcounter_q_h [CSR_MINSTRETH & 'hF];  // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_rmask_d.instreth           = '1;
-  assign rvfi_csr_wdata_d.instreth           = csr_mhpmcounter_n_h [CSR_MINSTRETH & 'hF];  // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
-  assign rvfi_csr_wmask_d.instreth           = csr_mhpmcounter_we_h[CSR_MINSTRETH & 'hF];  // todo: Temporarily using M version; should not have been 'aliased' here (need to fix on X first)
+  assign rvfi_csr_rdata_d.instreth           = '0;
+  assign rvfi_csr_rmask_d.instreth           = '0;
+  assign rvfi_csr_wdata_d.instreth           = '0;
+  assign rvfi_csr_wmask_d.instreth           = '0;
 
-  // hpmcounterh[2:0] does not exist, tie to zero
   assign rvfi_csr_rdata_d.hpmcounterh[ 2:0]  = '0;
   assign rvfi_csr_rmask_d.hpmcounterh[ 2:0]  = '0;
   assign rvfi_csr_wdata_d.hpmcounterh[ 2:0]  = '0;
   assign rvfi_csr_wmask_d.hpmcounterh[ 2:0]  = '0;
 
-  assign rvfi_csr_rdata_d.hpmcounterh[31:3]  = csr_mhpmcounter_q_h [31:3];  // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
-  assign rvfi_csr_rmask_d.hpmcounterh[31:3]  = '1;
-  assign rvfi_csr_wdata_d.hpmcounterh[31:3]  = csr_mhpmcounter_n_h [31:3];  // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
-  assign rvfi_csr_wmask_d.hpmcounterh[31:3]  = csr_mhpmcounter_we_h[31:3];  // todo: No aliasing here (RVFI is bypassing RTL (instead of checking it))
+  assign rvfi_csr_rdata_d.hpmcounterh[31:3]  = '0;
+  assign rvfi_csr_rmask_d.hpmcounterh[31:3]  = '0;
+  assign rvfi_csr_wdata_d.hpmcounterh[31:3]  = '0;
+  assign rvfi_csr_wmask_d.hpmcounterh[31:3]  = '0;
 
   // Machine info
   assign rvfi_csr_rdata_d.mvendorid          = csr_mvendorid_i;
