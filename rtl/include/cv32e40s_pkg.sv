@@ -541,7 +541,6 @@ typedef enum logic[1:0] {
   PRIV_LVL_U = 2'b00
 } privlvl_t;
 
-parameter privlvl_t PRIV_LVL_LOWEST = (USER) ? PRIV_LVL_U : PRIV_LVL_M;
 
 // Struct used for setting privilege lelve
 typedef struct packed {
@@ -824,6 +823,9 @@ parameter SECURE = 1;
 
 // Enable User Mode
 parameter bit USER = SECURE;
+
+// Lowest supported privilege level
+parameter privlvl_t PRIV_LVL_LOWEST = (USER) ? PRIV_LVL_U : PRIV_LVL_M;
 
 // Register file read/write ports
 parameter REGFILE_NUM_WRITE_PORTS = 1;
