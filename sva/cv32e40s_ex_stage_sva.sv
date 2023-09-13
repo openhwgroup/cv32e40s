@@ -138,9 +138,13 @@ module cv32e40s_ex_stage_sva
 
   // Check that instruction after taken branch is flushed (more should actually be flushed, but that is not checked here)
   // and that EX stage is ready to receive flushed instruction immediately, as long as there's no backpressure from WB
+  // Only check when PC hardening is disabled. With PC hardening enabled, a taken branch will only kill the IF stage due
+  // to the branch recompute staying in ID.
   property p_branch_taken_ex_flush;
     @(posedge clk) disable iff (!rst_n)
-      ((branch_taken_ex_ctrl_i == 1'b1) && !(ctrl_fsm_i.kill_ex || ctrl_fsm_i.halt_ex ) && wb_ready_i |->
+      ((branch_taken_ex_ctrl_i == 1'b1) && !(ctrl_fsm_i.kill_ex || ctrl_fsm_i.halt_ex ) && wb_ready_i &&
+      !xsecure_ctrl_i.cpuctrl.pc_hardening
+      |->
        ex_ready_o ##1 (id_ex_pipe_i.instr_valid == 1'b0));
   endproperty : p_branch_taken_ex_flush
 
@@ -150,9 +154,11 @@ module cv32e40s_ex_stage_sva
   // Check that there's a bubble in EX when there's a taken branch in WB
   // This complements a_branch_taken_ex_flush as a_branch_taken_ex_flush wil not check anything if there's backpressure from WB
   // when a branch is taken
+  // Only check when PC hardening is disabled. With PC hardening enabled, a taken branch will only kill the IF stage. The bubble
+  // in IF may be squashed if the branch stays in ID and EX for multiple cycles (while waiting for a load or store for instance).
   property p_bubble_ex_when_branch_taken_wb;
     @(posedge clk) disable iff (!rst_n)
-      ( ex_wb_pipe_o.alu_bch_taken_qual && wb_valid_i|->
+      ( ex_wb_pipe_o.alu_bch_taken_qual && wb_valid_i && !xsecure_ctrl_i.cpuctrl.pc_hardening |->
         (id_ex_pipe_i.instr_valid == 1'b0));
   endproperty : p_bubble_ex_when_branch_taken_wb
 
