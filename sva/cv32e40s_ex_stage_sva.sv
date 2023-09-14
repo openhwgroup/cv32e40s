@@ -33,6 +33,7 @@ module cv32e40s_ex_stage_sva
   input logic           ex_ready_o,
   input logic           ex_valid_o,
   input logic           wb_ready_i,
+  input logic           wb_valid_i,
   input ctrl_fsm_t      ctrl_fsm_i,
   input xsecure_ctrl_t  xsecure_ctrl_i,
 
@@ -135,4 +136,35 @@ module cv32e40s_ex_stage_sva
   a_bch_target_stable: assert property (p_bch_target_stable)
     else `uvm_error("ex_stage", "Branch target not stable")
 
-endmodule
+  // Check that instruction after taken branch is flushed (more should actually be flushed, but that is not checked here)
+  // and that EX stage is ready to receive flushed instruction immediately, as long as there's no backpressure from WB
+  // Only check when PC hardening is disabled. With PC hardening enabled, a taken branch will only kill the IF stage due
+  // to the branch recompute staying in ID. When PC hardening is enabled, this scenario should be covered by 'a_kill_if'
+  // in the controller_fsm_sva.
+  property p_branch_taken_ex_flush;
+    @(posedge clk) disable iff (!rst_n)
+      ((branch_taken_ex_ctrl_i == 1'b1) && !(ctrl_fsm_i.kill_ex || ctrl_fsm_i.halt_ex ) && wb_ready_i &&
+      !xsecure_ctrl_i.cpuctrl.pc_hardening
+      |->
+       ex_ready_o ##1 (id_ex_pipe_i.instr_valid == 1'b0));
+  endproperty : p_branch_taken_ex_flush
+
+  a_branch_taken_ex_flush : assert property(p_branch_taken_ex_flush)
+    else `uvm_error("id_stage", "Assertion p_branch_taken_ex failed")
+
+  // Check that there's a bubble in EX when there's a taken branch in WB
+  // This complements a_branch_taken_ex_flush as a_branch_taken_ex_flush wil not check anything if there's backpressure from WB
+  // when a branch is taken
+  // Only check when PC hardening is disabled. With PC hardening enabled, a taken branch will only kill the IF stage. The bubble
+  // in IF may be squashed if the branch stays in ID and EX for multiple cycles (while waiting for a load or store for instance).
+  // When PC hardening is enabled, this scenario should be covered by 'a_kill_if' in the controller_fsm_sva.
+  property p_bubble_ex_when_branch_taken_wb;
+    @(posedge clk) disable iff (!rst_n)
+      ( ex_wb_pipe_o.alu_bch_taken_qual && wb_valid_i && !xsecure_ctrl_i.cpuctrl.pc_hardening |->
+        (id_ex_pipe_i.instr_valid == 1'b0));
+  endproperty : p_bubble_ex_when_branch_taken_wb
+
+  a_bubble_ex_when_branch_taken_wb : assert property(p_bubble_ex_when_branch_taken_wb)
+    else `uvm_error("id_stage", "Assertion p_branch_taken_ex failed")
+
+endmodule // cv32e40s_ex_stage_sva
