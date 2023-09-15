@@ -2263,9 +2263,6 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ctrl_fsm_i.kill_wb) ||
              (sys_en_id_i && sys_mret_id_i && ctrl_fsm_i.kill_id)) begin
       // MRET got killed before retiring in the WB stage. Restore IF priviledge level
-      // In most cases, the logic behind priv_lvl_we and priv_lvl_n will take care of this.
-      // The exception is if debug mode is entered after MRET jump from ID is taken, and the MRET is killed.
-      // TODO: revisit this when implementing the debug related parts of user mode
       priv_lvl_if_ctrl_o.priv_lvl     = priv_lvl_rdata;
       priv_lvl_if_ctrl_o.priv_lvl_set = 1'b1;
     end
