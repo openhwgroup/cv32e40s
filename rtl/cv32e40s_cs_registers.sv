@@ -2262,7 +2262,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
     else if ((id_ex_pipe_i.sys_en && id_ex_pipe_i.sys_mret_insn && ctrl_fsm_i.kill_ex) ||
              (ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ctrl_fsm_i.kill_wb) ||
              (sys_en_id_i && sys_mret_id_i && ctrl_fsm_i.kill_id)) begin
-      // MRET got killed before retiring in the WB stage. Restore IF priviledge level
+      // MRET got killed before retiring in the WB stage.
+      // This will happen if the pipeline is flushed, e.g. by a fence(i) or certain CSR writes (XSECURE, PMP, JVT) preceding the MRET
+      // Restore IF privilege level.
       priv_lvl_if_ctrl_o.priv_lvl     = priv_lvl_rdata;
       priv_lvl_if_ctrl_o.priv_lvl_set = 1'b1;
     end
