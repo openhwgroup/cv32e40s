@@ -155,8 +155,7 @@ module cv32e40s_core_sva
   input logic        jmpr_unqual_id_bypass,
   input logic        mret_self_stall_bypass,
   input logic        jumpr_self_stall_bypass,
-  input logic        last_sec_op_id_i,  // todo: liekely not needed when using last_op_id.
-
+  input logic        last_sec_op_id_i,
 
   input logic        core_sleep_o,
   input logic        fencei_flush_req_o,
@@ -580,10 +579,10 @@ end
                      (ctrl_fsm.pc_set && pc_mux_is_trap || ctrl_fsm.kill_if))
     else `uvm_error("core", "IF privilege level changed to user mode when there's no MRET in ID stage")
 
-  // Assert that all exceptions trap to machine mode, except when in debug mode (todo: revisit when debug related part of user mode is implemented)
+  // Assert that all exceptions trap to machine mode
   a_priv_lvl_exception :
     assert property (@(posedge clk) disable iff (!rst_ni)
-                      (!(ctrl_fsm.debug_mode || ctrl_fsm.debug_csr_save) && ctrl_fsm.pc_set && pc_mux_is_trap)
+                      (ctrl_fsm.pc_set && pc_mux_is_trap)
                       |-> (priv_lvl_if == PRIV_LVL_M))
     else `uvm_error("core", "Exception not trapping to machine mode")
 
@@ -753,7 +752,7 @@ end
 logic mret_self_stall_qual;
 assign mret_self_stall_qual = ((sys_en_id && sys_mret_unqual_id_bypass && last_sec_op_id_i) && // MRET 2/2 in ID
                               ((id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn && !id_ex_pipe.last_op && id_ex_pipe.instr_valid) || // mret 1/2 in EX
-                               (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn && !ex_wb_pipe.last_op     && ex_wb_pipe.instr_valid))) &&  // mret 1/2 in WB
+                               (ex_wb_pipe.sys_en && ex_wb_pipe.sys_mret_insn && !ex_wb_pipe.last_op && ex_wb_pipe.instr_valid))) &&  // mret 1/2 in WB
                                !(id_ex_pipe.sys_en && id_ex_pipe.sys_mret_insn && id_ex_pipe.last_op && id_ex_pipe.instr_valid);
 a_mret_self_stall_qual:
   assert property (@(posedge clk) disable iff (!rst_ni)

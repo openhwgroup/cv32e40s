@@ -105,7 +105,7 @@ module cv32e40s_data_obi_interface import cv32e40s_pkg::*;
     m_c_obi_data_if.s_req.req        = trans_valid_i;
     m_c_obi_data_if.req_payload      = trans_i;
 
-    // Integrity // todo: ensure this will not get optimized away
+    // Integrity
     m_c_obi_data_if.req_payload.achk = {
                                         ^{m_c_obi_data_if.req_payload.wdata[31:24]},
                                         ^{m_c_obi_data_if.req_payload.wdata[23:16]},
