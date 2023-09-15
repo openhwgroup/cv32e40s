@@ -579,10 +579,10 @@ end
                      (ctrl_fsm.pc_set && pc_mux_is_trap || ctrl_fsm.kill_if))
     else `uvm_error("core", "IF privilege level changed to user mode when there's no MRET in ID stage")
 
-  // Assert that all exceptions trap to machine mode, except when in debug mode (todo: revisit when debug related part of user mode is implemented)
+  // Assert that all exceptions trap to machine mode
   a_priv_lvl_exception :
     assert property (@(posedge clk) disable iff (!rst_ni)
-                      (!(ctrl_fsm.debug_mode || ctrl_fsm.debug_csr_save) && ctrl_fsm.pc_set && pc_mux_is_trap)
+                      (ctrl_fsm.pc_set && pc_mux_is_trap)
                       |-> (priv_lvl_if == PRIV_LVL_M))
     else `uvm_error("core", "Exception not trapping to machine mode")
 
