@@ -99,23 +99,20 @@ module cv32e40s_parameter_sva import cv32e40s_pkg::*;
   generate for (genvar i_pmp = 0; i_pmp < PMP_NUM_REGIONS; i_pmp++)
   begin: pmp_region_asrt
 
-    initial begin
+    // Make sure reset value of zero bitfields is zero
+    a_param_pmpncfg_rv_zero:
+      assert property (@(posedge clk_i) disable iff (!rst_ni)
+                       PMP_PMPNCFG_RV[i_pmp].zero0 == '0)
+        else $fatal(0, $sformatf("PMP_PMPNCFG_RV[%2d].zero0 not equal to 0", i_pmp));
 
-      // Make sure reset value of zero bitfields is zero
-      a_param_pmpncfg_rv_zero:
+    // When mseccfg.mml==0, RW=01 is a reserved combination, and shall be disallowed
+    if (!PMP_MSECCFG_RV.mml) begin
+      a_param_pmp_no_rw_01:
         assert property (@(posedge clk_i) disable iff (!rst_ni)
-                         PMP_PMPNCFG_RV[i_pmp].zero0 == '0)
-          else $fatal(0, $sformatf("PMP_PMPNCFG_RV[%2d].zero0 not equal to 0", i_pmp));
-
-      // When mseccfg.mml==0, RW=01 is a reserved combination, and shall be disallowed
-      if (!PMP_MSECCFG_RV.mml) begin
-        a_param_pmp_no_rw_01:
-          assert property (@(posedge clk_i) disable iff (!rst_ni)
-                           {PMP_PMPNCFG_RV[i_pmp].read, PMP_PMPNCFG_RV[i_pmp].write} != 2'b01)
+                         {PMP_PMPNCFG_RV[i_pmp].read, PMP_PMPNCFG_RV[i_pmp].write} != 2'b01)
           else $fatal(0, $sformatf("PMP_PMPNCFG_RV[%2d] illegal value: RW = 01", i_pmp));
 
       end
-    end
   end
   endgenerate
 
