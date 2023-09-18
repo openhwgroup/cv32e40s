@@ -591,7 +591,7 @@ assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
   // When a CLIC pointer is in the pipeline stages EX or WB, we must block interrupts.
   //   - Interrupt would otherwise kill the pointer and use the address of the pointer for mepc. A following mret would then return to the mtvt table, losing program progress.
   assign interrupt_allowed = lsu_interruptible_i && debug_interruptible && !fencei_ongoing && !clic_ptr_in_pipeline &&
-                             sequence_interruptible && !interrupt_blanking_q && !csr_flush_ack_q && !csr_flush_ack_q && !(ctrl_fsm_cs == SLEEP);
+                             sequence_interruptible && !interrupt_blanking_q && !csr_flush_ack_q && !(ctrl_fsm_cs == SLEEP);
 
   // Allowing NMI's follow the same rule as regular interrupts, except we don't need to regard blanking of NMIs after a load/store.
   // If the core woke up from sleep due to either debug or regular interrupts, the wakeup reason is honored by not allowing NMIs in the cycle after
