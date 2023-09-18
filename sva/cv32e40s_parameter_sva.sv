@@ -23,15 +23,22 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_parameter_sva import cv32e40x_pkg::*;
+module cv32e40s_parameter_sva import cv32e40s_pkg::*;
   #(
-    parameter int          PMA_NUM_REGIONS              = 0,
-    parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0] = '{default:PMA_R_DEFAULT},
-    parameter logic [31:0] DM_REGION_START              = 32'hF0000000,
-    parameter logic [31:0] DM_REGION_END                = 32'hF0003FFF,
-    parameter int          DBG_NUM_TRIGGERS             = 1,
-    parameter int unsigned CLIC_ID_WIDTH                = 5,
-    parameter int unsigned NUM_MHPMCOUNTERS             = 1
+    parameter int          PMA_NUM_REGIONS                     = 0,
+    parameter pma_cfg_t    PMA_CFG[PMA_NUM_REGIONS-1:0]        = '{default:PMA_R_DEFAULT},
+    parameter logic [31:0] DM_REGION_START                     = 32'hF0000000,
+    parameter logic [31:0] DM_REGION_END                       = 32'hF0003FFF,
+    parameter int          DBG_NUM_TRIGGERS                    = 1,
+    parameter int unsigned CLIC_ID_WIDTH                       = 5,
+    parameter int unsigned NUM_MHPMCOUNTERS                    = 1,
+    parameter int          PMP_NUM_REGIONS                     =  0,
+    parameter pmpncfg_t    PMP_PMPNCFG_RV[PMP_NUM_REGIONS-1:0] = '{default:PMPNCFG_DEFAULT},
+    parameter mseccfg_t    PMP_MSECCFG_RV                      = MSECCFG_DEFAULT,
+    parameter int unsigned PMP_GRANULARITY                     = 0,
+    parameter lfsr_cfg_t   LFSR0_CFG                           = LFSR_CFG_DEFAULT,
+    parameter lfsr_cfg_t   LFSR1_CFG                           = LFSR_CFG_DEFAULT,
+    parameter lfsr_cfg_t   LFSR2_CFG                           = LFSR_CFG_DEFAULT
     )
   (
    input logic clk_i,
@@ -78,5 +85,58 @@ module cv32e40x_parameter_sva import cv32e40x_pkg::*;
     assert property (@(posedge clk_i) disable iff (!rst_ni)
                      (0 <= NUM_MHPMCOUNTERS) && (NUM_MHPMCOUNTERS <= 29))
     else $fatal(0, "Invalid NUM_MHPMCOUNTERS");
+
+  a_param_pmp_num_regions :
+    assert property (@(posedge clk_i) disable iff (!rst_ni)
+                     (0 <= PMP_NUM_REGIONS) && (PMP_NUM_REGIONS <= 64))
+    else $fatal(0, "Invalid PMP_NUM_REGIONS");
+
+  a_param_pmp_granularity :
+    assert property (@(posedge clk_i) disable iff (!rst_ni)
+                     (0 <= PMP_GRANULARITY) && (PMP_GRANULARITY <= 31))
+    else $fatal(0, "Invalid PMP_GRANULARITY");
+
+  generate for (genvar i_pmp = 0; i_pmp < PMP_NUM_REGIONS; i_pmp++)
+  begin: pmp_region_asrt
+
+    initial begin
+
+      // Make sure reset value of zero bitfields is zero
+      a_param_pmpncfg_rv_zero:
+        assert property (@(posedge clk_i) disable iff (!rst_ni)
+                         PMP_PMPNCFG_RV[i_pmp].zero0 == '0)
+          else $fatal(0, $sformatf("PMP_PMPNCFG_RV[%2d].zero0 not equal to 0", i_pmp));
+
+      // When mseccfg.mml==0, RW=01 is a reserved combination, and shall be disallowed
+      if (!PMP_MSECCFG_RV.mml) begin
+        a_param_pmp_no_rw_01:
+          assert property (@(posedge clk_i) disable iff (!rst_ni)
+                           {PMP_PMPNCFG_RV[i_pmp].read, PMP_PMPNCFG_RV[i_pmp].write} != 2'b01)
+          else $fatal(0, $sformatf("PMP_PMPNCFG_RV[%2d] illegal value: RW = 01", i_pmp));
+
+      end
+    end
+  end
+  endgenerate
+
+  a_param_mseccfg_rv_zero:
+    assert property (@(posedge clk_i) disable iff (!rst_ni)
+                     PMP_MSECCFG_RV.zero0 == '0)
+    else $fatal(0, "PMP_MSECCFG_RV.zero0 not equal to 0");
+
+  a_param_lfsr0_cfg:
+    assert property (@(posedge clk_i) disable iff (!rst_ni)
+                     LFSR0_CFG != LFSR_CFG_DEFAULT)
+    else $fatal(0, "Invalid LFSR0_CFG");
+
+  a_param_lfsr1_cfg:
+    assert property (@(posedge clk_i) disable iff (!rst_ni)
+                     LFSR1_CFG != LFSR_CFG_DEFAULT)
+    else $fatal(0, "Invalid LFSR1_CFG");
+
+  a_param_lfsr2_cfg:
+    assert property (@(posedge clk_i) disable iff (!rst_ni)
+                     LFSR2_CFG != LFSR_CFG_DEFAULT)
+    else $fatal(0, "Invalid LFSR2_CFG");
 
 endmodule

@@ -35,13 +35,13 @@
   `include "cv32e40s_sleep_unit_sva.sv"
   `include "cv32e40s_rvfi_sva.sv"
   `include "cv32e40s_pc_check_sva.sv"
-  `include "cv32e40s_param_sva.sv"
   `include "cv32e40s_sequencer_sva.sv"
   `include "cv32e40s_clic_int_controller_sva.sv"
   `include "cv32e40s_instr_obi_interface_sva.sv"
   `include "cv32e40s_data_obi_interface_sva.sv"
   `include "cv32e40s_wpt_sva.sv"
   `include "cv32e40s_debug_triggers_sva.sv"
+  `include "cv32e40s_parameter_sva.sv"
 `endif
 
 `include "cv32e40s_wrapper.vh"
@@ -175,12 +175,22 @@ module cv32e40s_wrapper
 
   // RTL Assertions
 
-  bind cv32e40s_core: core_i cv32e40s_param_sva
+  bind cv32e40s_core: core_i cv32e40s_parameter_sva
     #(
-      .PMP_NUM_REGIONS (PMP_NUM_REGIONS  ),
-      .PMP_PMPNCFG_RV  (PMP_PMPNCFG_RV   ),
-      .PMP_PMPADDR_RV  (PMP_PMPADDR_RV   ),
-      .PMP_MSECCFG_RV  (PMP_MSECCFG_RV   )
+      .PMA_NUM_REGIONS (PMA_NUM_REGIONS ),
+      .PMA_CFG         (PMA_CFG         ),
+      .DM_REGION_START (DM_REGION_START ),
+      .DM_REGION_END   (DM_REGION_END   ),
+      .DBG_NUM_TRIGGERS(DBG_NUM_TRIGGERS),
+      .CLIC_ID_WIDTH   (CLIC_ID_WIDTH   ),
+      .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS),
+      .PMP_NUM_REGIONS (PMP_NUM_REGIONS ),
+      .PMP_PMPNCFG_RV  (PMP_PMPNCFG_RV  ),
+      .PMP_MSECCFG_RV  (PMP_MSECCFG_RV  ),
+      .PMP_GRANULARITY (PMP_GRANULARITY ),
+      .LFSR0_CFG       (LFSR0_CFG       ),
+      .LFSR1_CFG       (LFSR1_CFG       ),
+      .LFSR2_CFG       (LFSR2_CFG       )
       )
   param_sva(.*);
 
