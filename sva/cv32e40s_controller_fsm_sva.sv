@@ -354,6 +354,16 @@ module cv32e40s_controller_fsm_sva
                      fencei_flush_req_o |-> !lsu_busy_i)
       else `uvm_error("controller", "Fencei handshake active while lsu_busy_o = 1")
 
+  // Check that mret in debug mode results in illegal instruction exception
+  a_mret_dbg_mode_illegal :
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     // Disregard higher priority exceptions and trigger match
+                      !((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) &&
+                      // Check for mret in instruction word and debug mode
+                      ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h30200073) && debug_mode_q && wb_valid_i)
+                      |-> exception_in_wb && (exception_cause_wb == EXC_CAUSE_ILLEGAL_INSN))
+      else `uvm_error("controller", "mret in debug mode not flagged as illegal")
+
   // Helper logic to make assertion look cleaner
   // Same logic as in the bypass module, but duplicated here to catch any changes in bypass
   // that could lead to undetected errors
@@ -414,7 +424,6 @@ module cv32e40s_controller_fsm_sva
 
   // mret in machine mode must not result in illegal instruction, unless in debug mode where it is treated as an illegal instruction.
   // Disregarding all cases of earlier exceptions, trigger match or when WB contains a clic pointer (which may have the same encoding as an mret instruction)
-  // todo: add assertion to check that mret during debug results in illegal instruction
   a_mret_mmode :
     assert property (@(posedge clk) disable iff (!rst_n)
                       // Disregard higher priority exceptions and trigger match
