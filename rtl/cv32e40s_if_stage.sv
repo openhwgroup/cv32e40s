@@ -120,6 +120,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // Otherwise the resulting concatenated address will be less than 32 bits.
   localparam int unsigned CLIC_MUX_WIDTH = (CLIC_ID_WIDTH < 4) ? 4 : CLIC_ID_WIDTH;
 
+  localparam int unsigned MAX_OUTSTANDING = 2;
+
   logic              if_ready;
 
   // prefetch buffer related signals
@@ -225,7 +227,8 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   #(
       .CLIC            (CLIC),
       .ALBUF_DEPTH     (ALBUF_DEPTH),
-      .ALBUF_CNT_WIDTH (ALBUF_CNT_WIDTH)
+      .ALBUF_CNT_WIDTH (ALBUF_CNT_WIDTH),
+      .MAX_OUTSTANDING (MAX_OUTSTANDING)
   )
   prefetch_unit_i
   (
@@ -267,7 +270,6 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
   // MPU
   //////////////////////////////////////////////////////////////////////////////
 
-  // TODO: The prot bits are currently not checked for correctness anywhere
   assign core_trans.addr      = prefetch_trans_addr;
   assign core_trans.dbg       = ctrl_fsm_i.debug_mode_if;
   assign core_trans.prot[0]   = 1'b0;                        // Transfers from IF stage are instruction transfers
@@ -325,7 +327,7 @@ module cv32e40s_if_stage import cv32e40s_pkg::*;
 
   cv32e40s_instr_obi_interface
   #(
-    .MAX_OUTSTANDING (2) // todo: hook up to parameter
+    .MAX_OUTSTANDING (MAX_OUTSTANDING)
   )
   instruction_obi_i
   (
