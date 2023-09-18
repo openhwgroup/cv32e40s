@@ -24,7 +24,8 @@
 module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
 #(
   parameter int unsigned ALBUF_DEPTH     = 3,
-  parameter int unsigned ALBUF_CNT_WIDTH = $clog2(ALBUF_DEPTH)
+  parameter int unsigned ALBUF_CNT_WIDTH = $clog2(ALBUF_DEPTH),
+  parameter int unsigned MAX_OUTSTANDING = 2
 )
 (
   input  logic           clk,
@@ -136,7 +137,7 @@ module cv32e40s_alignment_buffer import cv32e40s_pkg::*;
   // For CLIC vector loads we want to stop prefetching between an accepted pointer load and
   // the next pc_set (to the target address).
   assign fetch_valid_o = (ctrl_fsm_i.instr_req )                                     &&
-                         (outstanding_cnt_q < 2)                                     &&
+                         (outstanding_cnt_q < MAX_OUTSTANDING)                       &&
                          !(ptr_fetch_accepted_q && !ctrl_fsm_i.pc_set)               && // No fetch until next pc_set after accepted pointer fetches
                          (((instr_cnt_q - pop_q) == 'd0)                             ||
                          ((instr_cnt_q - pop_q) == 'd1 && outstanding_cnt_q == ALBUF_CNT_WIDTH'(0)) ||

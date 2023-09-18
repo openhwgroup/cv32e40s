@@ -30,7 +30,8 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
 #(
     parameter bit CLIC                     = 1'b0,
     parameter int unsigned ALBUF_DEPTH     = 3,
-    parameter int unsigned ALBUF_CNT_WIDTH = $clog2(ALBUF_DEPTH)
+    parameter int unsigned ALBUF_CNT_WIDTH = $clog2(ALBUF_DEPTH),
+    parameter int unsigned MAX_OUTSTANDING = 2
 )
 (
   input  logic        clk,
@@ -112,7 +113,8 @@ module cv32e40s_prefetch_unit import cv32e40s_pkg::*;
   cv32e40s_alignment_buffer
   #(
     .ALBUF_DEPTH(ALBUF_DEPTH),
-    .ALBUF_CNT_WIDTH(ALBUF_CNT_WIDTH)
+    .ALBUF_CNT_WIDTH(ALBUF_CNT_WIDTH),
+    .MAX_OUTSTANDING(MAX_OUTSTANDING)
   )
   alignment_buffer_i
   (
