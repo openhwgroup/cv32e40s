@@ -53,7 +53,16 @@ module cv32e40s_sequencer_sva
   input  ex_wb_pipe_t    ex_wb_pipe_i,
   input  logic           wb_valid_i,
   input  logic           exception_in_wb_i,
-  input  logic           pending_sync_debug_i
+  input  logic           pending_sync_debug_i,
+  input  logic [11:0]    csr_addr_id_i,
+  input  logic           csr_en_id_i,
+  input  logic           instr_valid_id_i,
+  input  csr_num_e       csr_raddr_ex_i, // EX stage instr valid included, raddr is zero if not CSR instruction is valid in EX
+  input  csr_num_e       csr_waddr_wb_i,
+  input  logic           csr_we_wb_i,
+  input  privlvl_t       priv_lvl_i,
+  input  privlvl_t       priv_lvl_id_i,
+  input  logic           csr_illegal_i
 );
 
   // After kill, all state must be reset.
@@ -181,6 +190,16 @@ module cv32e40s_sequencer_sva
                     (instr_cnt_q == '0))
         else `uvm_error("sequencer", "Should not count when handling table jumps")
 
+
+  a_tbljmp_mstateen:
+    assert property (@(posedge clk) disable iff (!rst_n)
+                    (valid_o && ready_i && seq_tbljmp_o) && // tablejump instruction decoded
+                    (priv_lvl_i == PRIV_LVL_U)              // in USER mode
+                    |->
+                    !(instr_valid_id_i && csr_en_id_i && (csr_num_e'(csr_addr_id_i) == CSR_MSTATEEN0) && (priv_lvl_id_i == PRIV_LVL_M)) && // No access to mstateen0 in ID
+                    !((csr_raddr_ex_i == CSR_MSTATEEN0) && !csr_illegal_i) && // or EX
+                    !((csr_waddr_wb_i == CSR_MSTATEEN0) && csr_we_wb_i))      // or WB
+        else `uvm_error("sequencer", "Sequencer emitting tablejump while mstateen0 is written")
 
   // Support logic. Sticky bit indicating synchronous exception or syncronous debug during a push or pop sequence
   logic        pushpop_sync_exc_or_dbg_q;

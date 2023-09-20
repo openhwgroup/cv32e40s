@@ -373,6 +373,9 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Detect JVT writes (requires pipeline flush)
   logic                         jvt_wr_in_wb;
 
+  // Detect mstateen0 writes (requires pipeline flush)
+  logic                         mstateen0_wr_in_wb;
+
   logic                         mscratch_rd_error;
   logic                         mstatus_rd_error;
   logic                         mtvec_rd_error;
@@ -2216,7 +2219,10 @@ module cv32e40s_cs_registers import cv32e40s_pkg::*;
   // Detect when a JVT write is in WB
   assign jvt_wr_in_wb = csr_wr_in_wb && (csr_waddr == CSR_JVT);
 
-  assign csr_wr_in_wb_flush_o = xsecure_csr_wr_in_wb || pmp_csr_wr_in_wb || jvt_wr_in_wb;
+  // Detect when a mstateen0 write is in WB
+  assign mstateen0_wr_in_wb = csr_wr_in_wb && (csr_waddr == CSR_MSTATEEN0);
+
+  assign csr_wr_in_wb_flush_o = xsecure_csr_wr_in_wb || pmp_csr_wr_in_wb || jvt_wr_in_wb || mstateen0_wr_in_wb;
 
   if (USER) begin : privlvl_user
   // Privilege level register

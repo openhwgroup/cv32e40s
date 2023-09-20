@@ -556,6 +556,14 @@ endgenerate
                        .wb_valid_i           (core_i.wb_stage_i.wb_valid_o                           ),
                        .exception_in_wb_i    (core_i.controller_i.controller_fsm_i.exception_in_wb   ),
                        .pending_sync_debug_i (core_i.controller_i.controller_fsm_i.pending_sync_debug),
+                       .csr_addr_id_i        (core_i.id_stage_i.operand_b[11:0]),
+                       .csr_en_id_i          (core_i.id_stage_i.csr_en),
+                       .instr_valid_id_i     (core_i.id_stage_i.instr_valid),
+                       .csr_raddr_ex_i       (core_i.cs_registers_i.csr_raddr),
+                       .csr_waddr_wb_i       (core_i.cs_registers_i.csr_waddr),
+                       .csr_we_wb_i          (core_i.cs_registers_i.csr_we_int),
+                       .priv_lvl_id_i        (core_i.if_id_pipe.priv_lvl),
+                       .csr_illegal_i        (core_i.cs_registers_i.csr_illegal_o),
                        .*);
 
   bind cv32e40s_instr_obi_interface :
