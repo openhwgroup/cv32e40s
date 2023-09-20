@@ -42,7 +42,8 @@ and zero stall on the data-side memory interface.
   |                       |                                      | RISCV-V RV32I Base Integer Instruction Set.                 |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
   | CSR Access            | 4 (``jvt``, ``cpuctrl``, ``pmp*``    | CSR Access Instruction are defined in 'Zicsr' of the        |
-  |                       |    ``secureseed*``, ``mseccfg``)     |                                                             |
+  |                       |    ``secureseed*``, ``mseccfg``,     |                                                             |
+  |                       |    ``mstateen0``                     |                                                             |
   |                       |                                      | RISC-V specification.                                       |
   |                       | 1 (all the other CSRs)               |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
