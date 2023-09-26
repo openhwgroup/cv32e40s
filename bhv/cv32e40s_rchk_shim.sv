@@ -83,7 +83,7 @@ module cv32e40s_rchk_shim import cv32e40s_pkg::*;
 
   /////////////////////////////////////////////////////////////
   // Outstanding transactions counter
-  // Used for tracking parity errors and integrity attribute
+  // Used for tracking the integrity attribute
   /////////////////////////////////////////////////////////////
   assign count_up = req_i && gnt_i;  // Increment upon accepted transfer request
   assign count_down = rvalid_i;      // Decrement upon accepted transfer response
@@ -155,10 +155,8 @@ module cv32e40s_rchk_shim import cv32e40s_pkg::*;
     end
 
   endgenerate
+
   // FIFO to keep track of which responses come from an integrity enabled region
-
-
-
   always_ff @ (posedge clk, negedge rst_n) begin
     if (!rst_n) begin
       fifo_q <= '0;
