@@ -168,6 +168,10 @@ module cv32e40s_wrapper
 `endif
 );
 
+  // Local signals for scrambled rchk
+logic [4:0] data_shim_rchk;
+logic [4:0] instr_shim_rchk;
+
 
 `ifndef COREV_ASSERT_OFF
   // Localparam to avoid hierarchical bind to localparam within cs_registers.sva
@@ -900,6 +904,58 @@ endgenerate
 `endif
          );
 
+    // Rchk shim for instruction OBI
+    // instr_rchk_i from regions with PMA attribue integrity==1 is passed through
+    // instr_rchk_i from regions with PMA attribue integrity==0 is bitwise flipped
+    cv32e40s_rchk_shim
+    #(  .MAX_OUTSTANDING  (2),
+        .PMA_NUM_REGIONS  (PMA_NUM_REGIONS),
+        .PMA_CFG          (PMA_CFG)
+      )
+    u_instr_rchk_shim
+    (
+      .clk       (clk_i),
+      .rst_n     (rst_ni),
+
+      // OBI address phase handshake
+      .req_i     (instr_req_o),
+      .gnt_i     (instr_gnt_i),
+      .dbg_i     (instr_dbg_o),
+      .addr_i    (instr_addr_o),
+
+      // OBI response phase signals
+      .rvalid_i  (instr_rvalid_i),
+      .rchk_i    (instr_rchk_i),    // From outside
+      .rchk_o    (instr_shim_rchk)  // to cv32e40s
+
+    );
+
+    // Rchk shim for data OBI
+    // data_rchk_i from regions with PMA attribue integrity==1 is passed through
+    // data_rchk_i from regions with PMA attribue integrity==0 is bitwise flipped
+    cv32e40s_rchk_shim
+    #(  .MAX_OUTSTANDING  (2),
+        .PMA_NUM_REGIONS  (PMA_NUM_REGIONS),
+        .PMA_CFG          (PMA_CFG)
+      )
+    u_data_rchk_shim
+    (
+      .clk       (clk_i),
+      .rst_n     (rst_ni),
+
+      // OBI address phase handshake
+      .req_i     (data_req_o),
+      .gnt_i     (data_gnt_i),
+      .dbg_i     (data_dbg_o),
+      .addr_i    (data_addr_o),
+
+      // OBI response phase signals
+      .rvalid_i  (data_rvalid_i),
+      .rchk_i    (data_rchk_i),    // From outside
+      .rchk_o    (data_shim_rchk)  // to cv32e40s
+
+    );
+
 
     // instantiate the core
     cv32e40s_core
@@ -924,6 +980,8 @@ endgenerate
           .LFSR0_CFG             ( LFSR0_CFG             ),
           .LFSR1_CFG             ( LFSR1_CFG             ),
           .LFSR2_CFG             ( LFSR2_CFG             ))
-    core_i (.*);
+    core_i (.instr_rchk_i (instr_shim_rchk),
+            .data_rchk_i  (data_shim_rchk ),
+            .*);
 
 endmodule
