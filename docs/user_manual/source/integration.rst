@@ -282,6 +282,6 @@ The |corev| instruction fetch interface does not implement the following optiona
 These signals can be thought of as being tied off as specified in [OPENHW-OBI]_.
 
 The |corev| data interface does not implement the following optional OBI signals:
-``auser``, ``wuser``, ``aid``, ``mid``, ``rready``, ``ruser``, ``rid``, ``rreadypar``.
+``auser``, ``wuser``, ``aid``, ``mid``, ``rready``, ``ruser``, ``rid``, ``rreadypar``, ``atop``, ``exokay``.
 These signals can be thought of as being tied off as specified in [OPENHW-OBI]_.
 
