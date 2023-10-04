@@ -668,7 +668,7 @@ end
           rvfi_mem_exp.atop   [(6*i_memop)  +: 6]  = 6'd0;
           rvfi_mem_exp.memtype[(2*i_memop)  +: 2]  = data_obi_req_fifo[rd_ptr_memop].memtype;
           rvfi_mem_exp.dbg    [(1*i_memop)  +: 1]  = data_obi_req_fifo[rd_ptr_memop].dbg;
-          rvfi_mem_exp.exokay [(1*i_memop)  +: 1]  = data_obi_resp_fifo[rd_ptr_memop].exokay && !data_obi_req_fifo[rd_ptr_memop].memtype[0];
+          rvfi_mem_exp.exokay [(1*i_memop)  +: 1]  = 1'b0;
 
           if(rvfi_mem_read[i_memop]) begin
             rvfi_mem_exp.rmask[(4*i_memop) +: 4] = exp_rvfi_mem_mask;
