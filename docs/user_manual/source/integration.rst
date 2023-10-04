@@ -274,3 +274,14 @@ Interfaces
   |                         |                         |     | sensitive), see :ref:`sleep_unit`.         |
   +-------------------------+-------------------------+-----+--------------------------------------------+
 
+Unimplemented OBI signals
+-------------------------
+
+The |corev| instruction fetch interface does not implement the following optional OBI signals:
+``we``, ``be``, ``wdata``, ``auser``, ``wuser``, ``aid``, ``mid``, ``rready``, ``ruser``, ``rid``, ``atop``, ``exokay``, ``rreadypar``.
+These signals can be thought of as being tied off as specified in [OPENHW-OBI]_.
+
+The |corev| data interface does not implement the following optional OBI signals:
+``auser``, ``wuser``, ``aid``, ``mid``, ``rready``, ``ruser``, ``rid``, ``rreadypar``, ``atop``, ``exokay``.
+These signals can be thought of as being tied off as specified in [OPENHW-OBI]_.
+
