@@ -140,8 +140,15 @@ module cv32e40s_controller_bypass import cv32e40s_pkg::*;
   // Any implicit CSR reads from the ID stage
   // mret reads mepc and mcause
   // tablejumps read jvt
-  // wfi reads mstatus
-  assign csr_impl_rd_unqual_id = sys_mret_unqual_id || sys_wfi_unqual_id || sys_wfe_unqual_id || tbljmp_unqual_id;
+  // WFI and WFE reads mstatus when privilege is PRIV_LVL_U
+  // IF the USER parameter is not set, no stall happens for WFI or WFE
+  generate
+    if (USER) begin : user_csr_id_unqual
+      assign csr_impl_rd_unqual_id = sys_mret_unqual_id || sys_wfi_unqual_id || sys_wfe_unqual_id || tbljmp_unqual_id;
+    end else begin: no_user_csr_id_unqual
+      assign csr_impl_rd_unqual_id = sys_mret_unqual_id || tbljmp_unqual_id;
+    end
+  endgenerate
 
   // Detect any implicit CSR write currently in in EX (actual write will happen in WB)
   // mret, dret and CLIC/mret pointers implicitly writes to CSRs. (dret is killing IF/ID/EX once it is in WB and can be disregarded here.
