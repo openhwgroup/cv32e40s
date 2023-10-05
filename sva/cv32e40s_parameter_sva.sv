@@ -53,10 +53,12 @@ module cv32e40s_parameter_sva import cv32e40s_pkg::*;
   generate for (genvar i = 0; i < PMA_NUM_REGIONS; i++)
     begin : a_pma_no_illegal_configs
 
-      a_param_pma_io_noncacheable :
-        assert property (@(posedge clk_i) disable iff (!rst_ni)
-                         !PMA_CFG[i].main |-> !PMA_CFG[i].cacheable)
-        else $fatal(0, "Invalid PMA region configuration: cacheable I/O region");
+      if (!PMA_CFG[i].main) begin
+        a_param_pma_io_noncacheable :
+          assert property (@(posedge clk_i) disable iff (!rst_ni)
+                            !PMA_CFG[i].cacheable)
+            else $fatal(0, "Invalid PMA region configuration: cacheable I/O region");
+      end
 
       a_param_pma_addr_range :
         assert property (@(posedge clk_i) disable iff (!rst_ni)
@@ -65,6 +67,7 @@ module cv32e40s_parameter_sva import cv32e40s_pkg::*;
 
     end
   endgenerate
+
 
   a_param_dm_region :
     assert property (@(posedge clk_i) disable iff (!rst_ni)
