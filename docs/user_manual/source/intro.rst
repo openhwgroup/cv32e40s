@@ -45,8 +45,8 @@ It follows these specifications:
 .. [RISC-V-DEBUG] RISC-V Debug Support, version 1.0-STABLE, 27d602966ae72e70568e4951ab90c393a6930ae4, September 11 2023,
    https://github.com/riscv/riscv-debug-spec/blob/2c8f38a0a46cd07f908057c5463c4b6810462146/riscv-debug-stable.pdf
 
-.. [RISC-V-CLIC] Core-Local Interrupt Controller (CLIC) RISC-V Privileged Architecture Extensions, version 0.9-draft, 8/1/2023,
-   https://github.com/riscv/riscv-fast-interrupt/blob/a187c10e07604bce977546f8ebdf362e35bcad27/clic.pdf
+.. [RISC-V-CLIC] Core-Local Interrupt Controller (CLIC) RISC-V Privileged Architecture Extensions, version 0.9-draft, 9/1/2023,
+   https://github.com/riscv/riscv-fast-interrupt/blob/894a16ce89dcf2c084dd951866448c2e756d3efa/clic.pdf
 
 .. [RISC-V-SMSTATEEN] RISC-V State Enable Extension, Smstateen, Version 0.6.3-70b1471, 2021-10-13: frozen,
    https://github.com/riscv/riscv-state-enable/releases/download/v0.6.3/Smstateen.pdf
