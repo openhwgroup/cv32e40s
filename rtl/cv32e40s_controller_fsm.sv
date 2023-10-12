@@ -709,7 +709,6 @@ assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
     ctrl_fsm_o.debug_csr_save   = 1'b0;
     ctrl_fsm_o.debug_trigger_hit = '0;          // Mask of which triggers did hit.
     ctrl_fsm_o.debug_trigger_hit_update = 1'b0; // Signal that hit bits of mcontrol6 shall be written.
-    ctrl_fsm_o.block_data_addr  = 1'b0;
 
     // Single step halting of IF
     single_step_halt_if_n       = single_step_halt_if_q;
@@ -1404,7 +1403,7 @@ assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
         // If debug entry is caused by a watchpoint address trigger, then abort_op_wb_i will be 1 and a debug entry is initiated.
         // This must also cause the sequence_in_progress_wb to be reset as the sequence is effectively terminated, although the instruction itself is not killed or completed
         // in a normal manner. As the WB stage is halted for debug entry on a watchcpoint trigger, wb_valid_i is zero.
-        if (ex_wb_pipe_i.instr_valid && wpt_match_wb_i && abort_op_wb_i) begin
+        if (ex_wb_pipe_i.instr_valid && (|wpt_match_wb_i) && abort_op_wb_i) begin
           sequence_in_progress_wb <= 1'b0;
         end
       end
