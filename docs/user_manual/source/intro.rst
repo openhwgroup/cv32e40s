@@ -36,14 +36,14 @@ It follows these specifications:
 .. [RISC-V-UNPRIV] RISC-V Instruction Set Manual, Volume I: User-Level ISA, Document Version 20191213 (December 13, 2019),
    https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf
 
-.. [RISC-V-PRIV] RISC-V Instruction Set Manual, Volume II: Privileged Architecture, Document Version 20211105-signoff (November 5, 2021),
-   https://github.com/riscv/riscv-isa-manual/releases/download/draft-20211105-c30284b/riscv-privileged.pdf
+.. [RISC-V-PRIV] RISC-V Instruction Set Manual, Volume II: Privileged Architecture, Document Version 20211203 (December 4, 2021),
+   https://github.com/riscv/riscv-isa-manual/releases/download/Priv-v1.12/riscv-privileged-20211203.pdf
 
 .. [RISC-V-RV32E] RISC-V Instruction Set Manual, Volume I: User-Level ISA, RV32E Base Integer Instruction Set, Document version 20191214-draft (January 31, 2023),
    https://github.com/riscv/riscv-isa-manual/releases/download/draft-20230131-c0b298a/riscv-spec.pdf
 
-.. [RISC-V-DEBUG] RISC-V Debug Support, version 1.0-STABLE, 27d602966ae72e70568e4951ab90c393a6930ae4, September 11 2023,
-   https://github.com/riscv/riscv-debug-spec/blob/2c8f38a0a46cd07f908057c5463c4b6810462146/riscv-debug-stable.pdf
+.. [RISC-V-DEBUG] RISC-V Debug Support, version 1.0-STABLE, f5b2ed3bb0eefcca075e99f3a8eece06e8d60063, October 12 2023,
+   https://github.com/riscv/riscv-debug-spec/blob/51f5a29c0126d69f314079fb4f1197876aca7622/riscv-debug-stable.pdf
 
 .. [RISC-V-CLIC] Core-Local Interrupt Controller (CLIC) RISC-V Privileged Architecture Extensions, version 0.9-draft, 9/1/2023,
    https://github.com/riscv/riscv-fast-interrupt/blob/894a16ce89dcf2c084dd951866448c2e756d3efa/clic.pdf
