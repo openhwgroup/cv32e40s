@@ -172,5 +172,7 @@ module cv32e40s_dummy_instr
   assign dummy_instr_o.bus_resp.err           = 1'b0;
   assign dummy_instr_o.mpu_status             = MPU_OK;
   assign dummy_instr_o.bus_resp.integrity_err = 1'b0;
+  assign dummy_instr_o.bus_resp.integrity     = 1'b0;  // Tie off to zero, integrity not checked for dummies
+  assign dummy_instr_o.bus_resp.rchk          = 5'd0;  // Tie off to zero, rchk not checked for dummies
 
 endmodule : cv32e40s_dummy_instr
