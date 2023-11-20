@@ -415,15 +415,16 @@ assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
   // fence in wb
   assign fence_in_wb  = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_fence_insn && ex_wb_pipe_i.instr_valid;
 
-  // mret in wb
-  // Factoring in last_sec_op. This will always be 1 for SECURE=0, but for SECURE=1 mrets will span two cycles
-  // and the mstatus and privilege level writes should only be done during the last cycle.
-  // If an mret would write to the mstatus during the first half, we would not be able to kill it due to debug or interrupts
-  // until the second part finished.
-  // mret which restarts CLIC pointer fetch will not be last_op until the pointer arrives in WB.
-  // Restricts CSR updates due to mret to not happen if the mret caused a CLIC pointer fetch, such CSR updates
-  // should only happen once the instruction fully completes (pointer arrives in WB).
-  assign mret_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.instr_valid && last_op_wb_i;
+  // mret in wb - only valid when ex_wb_pipe_i.first_op == 1.
+  // Regular mret instruction will have first_op == last_op == 1.
+  // Mret with mcause.minhv==1 will restart a CLIC pointer fetch. The mret instruction will have first_op==1 && last_op==0
+  // while the pointer will finish the sequence with first_op==0 and last_op==1. The mret related CSR updates will happen
+  // once the mret instruction reaches WB. The pointer fetch may generate an exception, causing further CSR updates
+  // once the attempted pointer fetch reaches WB.
+  //
+  // When PC hardening is enabled, the mret instruction is split in two (last_sec_op == 0 followed by last_sec_op == 1)
+  // The associated CSR updates will happen when the final part (last_sec_op == 1) is in the WB stage.
+  assign mret_in_wb = ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn && ex_wb_pipe_i.instr_valid && ex_wb_pipe_i.last_sec_op;
 
   // CLIC pointer (caused by mret) in WB.
   assign mret_ptr_in_wb = ex_wb_pipe_i.instr_meta.mret_ptr && ex_wb_pipe_i.instr_valid;
@@ -694,7 +695,6 @@ assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
     ctrl_fsm_o.kill_wb          = 1'b0;
 
     ctrl_fsm_o.csr_restore_mret = 1'b0;
-    ctrl_fsm_o.csr_restore_mret_ptr = 1'b0;
     ctrl_fsm_o.csr_restore_dret = 1'b0;
 
     ctrl_fsm_o.csr_save_cause   = 1'b0;
@@ -1086,12 +1086,6 @@ assign ctrl_fsm_o.exception_in_wb = exception_in_wb;
           // Regular mret in WB restores CSR regs
           if (mret_in_wb && !ctrl_fsm_o.kill_wb && !ctrl_fsm_o.halt_wb) begin
             ctrl_fsm_o.csr_restore_mret  = !debug_mode_q;
-          end
-
-          // For mret that caused a CLIC pointer fetch, CSR updates will happen once the pointer reaches WB.
-          // If the pointer has associated exceptions, the csr_restore_mret_ptr will not happen
-          if (mret_ptr_in_wb && !ctrl_fsm_o.kill_wb && !ctrl_fsm_o.halt_wb && !exception_in_wb) begin
-            ctrl_fsm_o.csr_restore_mret_ptr  = !debug_mode_q;
           end
 
         end // !debug or interrupts
