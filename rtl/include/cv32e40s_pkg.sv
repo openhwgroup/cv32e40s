@@ -464,7 +464,8 @@ typedef enum logic[11:0] {
 
 // CSR Bit Implementation Masks
 // A mask bit of '1' means a flipflop is implemented.
-parameter CSR_JVT_MASK          = 32'hFFFFFFC0;
+parameter CSR_JVT_MASK          = 32'hFFFFFFC0; //This mask value is used to select bits in the Jump Vector Table (JVT). The JVT is a table of addresses that specify where to jump when an exception occurs.
+
 parameter CSR_DCSR_MASK         = 32'b0000_0000_0000_0000_1001_1101_1100_0111; // NMI bit taken from ctrl_fsm
 parameter CSR_MEPC_MASK         = 32'hFFFFFFFE;
 parameter CSR_DPC_MASK          = 32'hFFFFFFFE;
