@@ -417,6 +417,8 @@ module cv32e40s_controller_fsm_sva
     assert property (@(posedge clk) disable iff (!rst_n)
                       // Disregard higher priority exceptions and trigger match
                       !(((ex_wb_pipe_i.instr.mpu_status != MPU_OK) || ex_wb_pipe_i.instr.bus_resp.err || trigger_match_in_wb) && ex_wb_pipe_i.instr_valid) &&
+                      // Disregard mret pointers, these can look like mret instructions (may only happen when mret restarts pointer fetch in user mode)
+                      !(ex_wb_pipe_i.instr_meta.mret_ptr) &&
                       // Check for mret in instruction word and user mode
                       ((ex_wb_pipe_i.instr.bus_resp.rdata == 32'h30200073) && ex_wb_pipe_i.instr_valid && (priv_lvl_i == PRIV_LVL_U))
                       |-> (exception_in_wb && (exception_cause_wb == EXC_CAUSE_ILLEGAL_INSN) && !(ex_wb_pipe_i.sys_en && ex_wb_pipe_i.sys_mret_insn)))
