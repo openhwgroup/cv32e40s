@@ -454,6 +454,8 @@ if (CLIC) begin : clic_asserts
                                  .ctrl_fsm_cs             (core_i.controller_i.controller_fsm_i.ctrl_fsm_cs),
                                  .ctrl_fsm                (core_i.ctrl_fsm),
                                  .dcsr                    (core_i.dcsr),
+                                 .ex_wb_pipe_i            (core_i.ex_wb_pipe),
+                                 .last_op_wb_i            (core_i.last_op_wb),
                                  .*);
 end
 endgenerate
@@ -692,6 +694,7 @@ endgenerate
          .lsu_pma_err_ex_i         ( core_i.load_store_unit_i.mpu_i.pma_i.pma_err_o                       ),
          .lsu_pma_err_atomic_ex_i  ( 1'b0                        /* Atomics not implemented in cv32e40s*/ ),
          .lsu_pma_cfg_ex_i         ( core_i.load_store_unit_i.mpu_i.pma_i.pma_cfg                         ),
+         .lsu_atomic_align_err_ex_i( 1'b0                        /* Atomics not implemented in cv32e40s*/ ),
          .lsu_misaligned_ex_i      ( core_i.load_store_unit_i.misaligned_access                           ),
          .buffer_trans_ex_i        ( core_i.load_store_unit_i.buffer_trans                                ),
          .buffer_trans_valid_ex_i  ( core_i.load_store_unit_i.buffer_trans_valid                          ),
