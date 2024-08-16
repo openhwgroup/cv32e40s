@@ -133,5 +133,15 @@ package cv32e40s_rvfi_pkg;
     logic           pmp_err;
   } rvfi_obi_instr_t;
 
+  // Trace struct, used in cv32e40s_rvfi_sim_trace
+  typedef struct packed {
+    bit [32*16-1:0]  c_file;
+    bit [32*16-1:0]  c_func;
+    int              c_line;
+    logic [31:0]     addr;
+    logic [31:0]     mcode;
+    bit [32*16-1:0]  asm;
+  } trace_t;
+
 endpackage
 
