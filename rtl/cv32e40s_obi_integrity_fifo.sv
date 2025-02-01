@@ -74,7 +74,7 @@ module cv32e40s_obi_integrity_fifo import cv32e40s_pkg::*;
 
   // FIFO is 1 bit deeper than the maximum value of bus_cnt_i
   // Index 0 is tied low to enable direct use of bus_cnt_i to pick correct FIFO index.
-  fifo_t [MAX_OUTSTANDING:0] fifo_q;
+  fifo_t [MAX_OUTSTANDING+1:0] fifo_q;
   fifo_t fifo_input;
 
   // Parity and rchk error signals

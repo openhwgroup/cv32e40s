@@ -82,8 +82,8 @@ module cv32e40s_lsu_response_filter
   logic                  core_resp_is_bufferable;
 
   // Shift register containing bufferable cofiguration of outstanding transfers
-  outstanding_t [DEPTH:0]        outstanding_q; // Using 1-DEPTH entries for outstanding xfers, index 0 is tied low
-  outstanding_t [DEPTH:0]        outstanding_next;
+  outstanding_t [DEPTH+1:0]        outstanding_q; // Using 1-DEPTH entries for outstanding xfers, index 0 is tied low
+  outstanding_t [DEPTH+1:0]        outstanding_next;
 
   assign busy_o              = ( bus_cnt_q != '0) || valid_i;
 
